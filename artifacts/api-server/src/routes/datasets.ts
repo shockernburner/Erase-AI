@@ -194,10 +194,17 @@ router.get("/:id", async (req: Request, res: Response) => {
     .where(eq(datasetOperationsTable.datasetId, id))
     .orderBy(asc(datasetOperationsTable.createdAt));
 
-  const totalRows = rows.length;
-  const removedCount = rows.filter(r => r.isRemoved).length;
-  const redactedCount = rows.filter(r => r.isRedacted).length;
-  const activeCount = rows.filter(r => !r.isRemoved).length;
+  const [totalResult] = await db.select({ count: sql<number>`count(*)::int` })
+    .from(datasetRowsTable).where(eq(datasetRowsTable.versionId, targetVersion.id));
+  const [removedResult] = await db.select({ count: sql<number>`count(*)::int` })
+    .from(datasetRowsTable).where(and(eq(datasetRowsTable.versionId, targetVersion.id), eq(datasetRowsTable.isRemoved, true)));
+  const [redactedResult] = await db.select({ count: sql<number>`count(*)::int` })
+    .from(datasetRowsTable).where(and(eq(datasetRowsTable.versionId, targetVersion.id), eq(datasetRowsTable.isRedacted, true), eq(datasetRowsTable.isRemoved, false)));
+
+  const totalRows = totalResult.count;
+  const removedCount = removedResult.count;
+  const redactedCount = redactedResult.count;
+  const activeCount = totalRows - removedCount;
 
   res.json({
     dataset: {
@@ -333,6 +340,10 @@ router.get("/:id/download", async (req: Request, res: Response) => {
   if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
 
   const downloadMode = (req.query.mode as string) || "clean";
+  if (!["clean", "redacted", "full"].includes(downloadMode)) {
+    res.status(400).json({ error: "Invalid mode. Must be 'clean', 'redacted', or 'full'" });
+    return;
+  }
   const versionParam = req.query.version ? parseInt(req.query.version as string, 10) : null;
 
   let targetVersion;

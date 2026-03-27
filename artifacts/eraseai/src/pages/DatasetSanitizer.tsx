@@ -116,12 +116,6 @@ export function DatasetSanitizer() {
     setRedactedCount(data.redacted_count);
   }, []);
 
-  const fetchVersionRows = useCallback(async (id: number, version: number) => {
-    const res = await fetch(`${BASE}api/datasets/${id}?limit=1000&version=${version}`);
-    const data = await res.json();
-    return data.rows as DatasetRow[];
-  }, []);
-
   useEffect(() => {
     if (phase === "idle") {
       loadDemo();
@@ -261,7 +255,6 @@ export function DatasetSanitizer() {
     loadDemo();
   };
 
-  const activeRows = rows.filter((r) => !r.is_removed);
   const allActiveRows = rows.filter((r) => !r.is_removed);
 
   return (
