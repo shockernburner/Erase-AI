@@ -47,11 +47,11 @@ function HomeContent() {
 
       setDemoLabel("Asking question...");
       demoCtx.sendMessageRef.current?.(DEMO_QUESTION);
-      await delay(2000);
+      await delay(1500);
 
       setDemoLabel("Erasing memory...");
       await demoCtx.unlearnFactRef.current?.(DEMO_FACT);
-      await delay(600);
+      await delay(1000);
 
       setDemoLabel("Verifying erasure...");
       await delay(400);
