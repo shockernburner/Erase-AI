@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
 import { db, datasetsTable, datasetRowsTable } from "@workspace/db";
-import { sql, eq, and, ilike } from "drizzle-orm";
+import { sql, eq, and, ilike, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -129,7 +129,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
   const search = (req.query.search as string) || "";
   const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
-  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string, 10) || 50));
+  const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit as string, 10) || 50));
   const offset = (page - 1) * limit;
 
   let condition = eq(datasetRowsTable.datasetId, id);
@@ -185,25 +185,36 @@ router.post("/:id/erase", async (req: Request, res: Response) => {
   const erasedContents: string[] = [];
 
   if (row_ids && row_ids.length > 0) {
-    for (const rowId of row_ids) {
-      const [row] = await db.select().from(datasetRowsTable)
-        .where(and(eq(datasetRowsTable.id, rowId), eq(datasetRowsTable.datasetId, id), eq(datasetRowsTable.isRemoved, false)));
-      if (row) {
-        await db.update(datasetRowsTable).set({ isRemoved: true }).where(eq(datasetRowsTable.id, rowId));
-        erasedCount++;
-        erasedContents.push(row.content);
-      }
+    const targetRows = await db.select().from(datasetRowsTable)
+      .where(and(
+        inArray(datasetRowsTable.id, row_ids),
+        eq(datasetRowsTable.datasetId, id),
+        eq(datasetRowsTable.isRemoved, false)
+      ));
+
+    if (targetRows.length > 0) {
+      const targetIds = targetRows.map(r => r.id);
+      await db.update(datasetRowsTable)
+        .set({ isRemoved: true })
+        .where(inArray(datasetRowsTable.id, targetIds));
+      erasedCount = targetRows.length;
+      erasedContents.push(...targetRows.map(r => r.content));
     }
   } else if (keyword && keyword.trim()) {
-    const allRows = await db.select().from(datasetRowsTable)
-      .where(and(eq(datasetRowsTable.datasetId, id), eq(datasetRowsTable.isRemoved, false)));
-    const kw = keyword.toLowerCase();
-    for (const row of allRows) {
-      if (row.content.toLowerCase().includes(kw)) {
-        await db.update(datasetRowsTable).set({ isRemoved: true }).where(eq(datasetRowsTable.id, row.id));
-        erasedCount++;
-        erasedContents.push(row.content);
-      }
+    const matchingRows = await db.select().from(datasetRowsTable)
+      .where(and(
+        eq(datasetRowsTable.datasetId, id),
+        eq(datasetRowsTable.isRemoved, false),
+        ilike(datasetRowsTable.content, `%${keyword}%`)
+      ));
+
+    if (matchingRows.length > 0) {
+      const matchIds = matchingRows.map(r => r.id);
+      await db.update(datasetRowsTable)
+        .set({ isRemoved: true })
+        .where(inArray(datasetRowsTable.id, matchIds));
+      erasedCount = matchingRows.length;
+      erasedContents.push(...matchingRows.map(r => r.content));
     }
   } else {
     res.status(400).json({ error: "Provide row_ids or keyword" });
