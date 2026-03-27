@@ -163,7 +163,7 @@ export function DatasetSanitizer() {
       const dsId = demoData.dataset_id;
       const snapshot = await fetchDataset(dsId);
       setPhase("loaded");
-      await delay(800);
+      await delay(500);
 
       setDemoStep("Scanning for 'Firdous'...");
       const verifyBeforeRes = await fetch(`${BASE}api/datasets/${dsId}/verify`, {
@@ -175,12 +175,12 @@ export function DatasetSanitizer() {
       const verifyBefore = await verifyBeforeRes.json();
       setVerifyQuery("Firdous");
       setVerifyResult(verifyBefore);
-      await delay(1200);
+      await delay(600);
 
       setDemoStep("Deleting 'Firdous' from dataset...");
       setKeyword("Firdous");
       setEraseMode("delete");
-      await delay(400);
+      await delay(300);
 
       setPrevVersionRows(snapshot.rows);
       setPhase("erasing");
@@ -192,13 +192,13 @@ export function DatasetSanitizer() {
       if (!eraseRes.ok) throw new Error("Erase operation failed");
       const eraseData = await eraseRes.json();
       setEraseResult(eraseData);
-      await delay(800);
+      await delay(400);
 
       setDemoStep("Updating view...");
       await fetchDataset(dsId);
       setKeyword("");
       setPhase("erased");
-      await delay(600);
+      await delay(400);
 
       setDemoStep("Confirming erasure...");
       const verifyAfterRes = await fetch(`${BASE}api/datasets/${dsId}/verify`, {
@@ -209,10 +209,10 @@ export function DatasetSanitizer() {
       if (!verifyAfterRes.ok) throw new Error("Erasure verification failed");
       const verifyAfter = await verifyAfterRes.json();
       setVerifyResult(verifyAfter);
-      await delay(600);
+      await delay(400);
 
       setDemoStep("Demo complete!");
-      await delay(1000);
+      await delay(500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Demo failed. Please try again.");
       setPhase("loaded");
