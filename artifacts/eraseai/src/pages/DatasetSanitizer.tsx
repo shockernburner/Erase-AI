@@ -214,7 +214,6 @@ export function DatasetSanitizer() {
   };
 
   const reset = () => {
-    setPhase("idle");
     setDataset(null);
     setRows([]);
     setRemovedCount(0);
@@ -225,6 +224,7 @@ export function DatasetSanitizer() {
     setVerifyQuery("");
     setVerifyResult(null);
     setError("");
+    loadDemo();
   };
 
   const allActiveRows = rows.filter((r) => !r.is_removed);
