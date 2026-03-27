@@ -227,9 +227,13 @@ export function DatasetSanitizer() {
     setError("");
   };
 
-  const activeRows = rows.filter((r) => !r.is_removed);
+  const allActiveRows = rows.filter((r) => !r.is_removed);
   const removedRows = rows.filter((r) => r.is_removed);
   const allOriginalRows = [...rows].sort((a, b) => a.row_index - b.row_index);
+
+  const activeRows = keyword.trim()
+    ? allActiveRows.filter((r) => r.content.toLowerCase().includes(keyword.toLowerCase()))
+    : allActiveRows;
 
   return (
     <div className="space-y-6">
@@ -270,7 +274,7 @@ export function DatasetSanitizer() {
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge>{dataset.format.toUpperCase()}</Badge>
                     <Badge variant={removedCount > 0 ? "warning" : "success"}>
-                      {activeRows.length} active / {dataset.row_count} total
+                      {allActiveRows.length} active / {dataset.row_count} total
                     </Badge>
                     {removedCount > 0 && (
                       <Badge variant="destructive">{removedCount} erased</Badge>
@@ -511,8 +515,47 @@ export function DatasetSanitizer() {
                   </motion.div>
                 )}
 
+                {phase === "erased" && eraseResult && eraseResult.erased_contents.length > 0 && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                    <Card className="p-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                          Removed Entries Log
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const logText = eraseResult.erased_contents.join("\n");
+                            const blob = new Blob([logText], { type: "text/plain" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = "removed_entries.txt";
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          className="gap-1 text-xs"
+                        >
+                          <Download className="w-3 h-3" />
+                          Export
+                        </Button>
+                      </div>
+                      <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                        {eraseResult.erased_contents.map((content, i) => (
+                          <div key={i} className="text-xs text-destructive/80 bg-destructive/5 px-2 py-1.5 rounded font-mono flex items-start gap-2">
+                            <span className="text-destructive/50 shrink-0">{i + 1}.</span>
+                            <span className="line-through">{content}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+
                 {phase === "erased" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <Search className="w-4 h-4 text-primary" />
