@@ -95,3 +95,30 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## EraseAI App
+
+EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." Dark-mode UI with cyan accent branding.
+
+### Features
+
+1. **Live Demo** — Teach facts, ask questions, unlearn (erase) facts, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
+2. **Dataset Sanitizer** — Bulk upload datasets (JSON/CSV/TXT), browse rows, select rows for erasure (by checkbox or keyword), view before/after diff with removal percentage, download cleaned file, and verify erased data is gone.
+
+### Key Files
+
+- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_rows` tables
+- `artifacts/api-server/src/routes/eraseai.ts` — Live Demo API routes (teach, ask, forget, verify, seed, logs)
+- `artifacts/api-server/src/routes/datasets.ts` — Dataset Sanitizer API routes (upload, demo, get, erase, download, verify)
+- `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | Dataset Sanitizer)
+- `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Dataset Sanitizer UI component
+- `artifacts/eraseai/src/context/DemoContext.tsx` — Demo orchestration context
+
+### Dataset Sanitizer API
+
+- `GET /api/datasets/demo` — Create/reset demo dataset with 3 sample rows
+- `POST /api/datasets/upload` — Upload file (multipart, multer memory storage, 10MB limit)
+- `GET /api/datasets/:id` — Get dataset info + paginated rows
+- `POST /api/datasets/:id/erase` — Erase rows by `row_ids` array or `keyword` match
+- `GET /api/datasets/:id/download` — Download cleaned file (excludes erased rows)
+- `POST /api/datasets/:id/verify` — Search cleaned rows for a query term
