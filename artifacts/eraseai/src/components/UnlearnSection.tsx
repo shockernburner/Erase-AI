@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUnlearnFact, useListFacts, getListFactsQueryKey } from "@workspace/api-client-react";
 import { Button, Input, Card } from "./ui-elements";
 import { Trash2, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useDemoContext } from "@/context/DemoContext";
 
 export function UnlearnSection() {
   const [fact, setFact] = useState("");
@@ -11,47 +12,54 @@ export function UnlearnSection() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: factsData } = useListFacts();
+  const demoCtx = useDemoContext();
+
+  const doUnlearn = async (targetFact: string) => {
+    if (!targetFact.trim()) return;
+    demoCtx.setRemovingFact(targetFact);
+    try {
+      const res = await unlearnMutation.mutateAsync({ data: { text: targetFact } });
+      setFact("");
+      queryClient.invalidateQueries({ queryKey: getListFactsQueryKey() });
+
+      if (res.removed_count > 0) {
+        demoCtx.addAuditEntry(targetFact);
+        demoCtx.setPendingVerifyQuestion("Who is Firdous?");
+        toast({
+          title: "Surgical deletion complete",
+          description: `Successfully unlearned ${res.removed_count} fact(s).`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "No match found",
+          description: "The model didn't have that exact fact in memory.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Unlearn failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      demoCtx.setRemovingFact(null);
+    }
+  };
+
+  useEffect(() => {
+    demoCtx.unlearnFactRef.current = doUnlearn;
+  }, [unlearnMutation]);
 
   const handleUnlearn = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fact.trim()) return;
-
-    unlearnMutation.mutate(
-      { data: { text: fact } },
-      {
-        onSuccess: (res) => {
-          setFact("");
-          queryClient.invalidateQueries({ queryKey: getListFactsQueryKey() });
-          
-          if (res.removed_count > 0) {
-            toast({
-              title: "Surgical deletion complete",
-              description: `Successfully unlearned ${res.removed_count} fact(s).`,
-              variant: "default",
-            });
-          } else {
-            toast({
-              title: "No match found",
-              description: "The model didn't have that exact fact in memory.",
-              variant: "destructive",
-            });
-          }
-        },
-        onError: (err) => {
-          toast({
-            title: "Unlearn failed",
-            description: err instanceof Error ? err.message : "Unknown error",
-            variant: "destructive",
-          });
-        }
-      }
-    );
+    doUnlearn(fact);
   };
 
   return (
     <Card className="h-full border-destructive/20 bg-gradient-to-b from-card to-destructive/5 relative overflow-hidden">
-      {/* Warning stripes background effect */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
            style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #ef4444 10px, #ef4444 20px)' }}>
       </div>
 
@@ -61,8 +69,8 @@ export function UnlearnSection() {
             <Trash2 className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-display text-foreground">Machine Unlearning</h2>
-            <p className="text-sm text-destructive/80">Surgically remove data from memory</p>
+            <h2 className="text-xl font-display text-foreground">EraseAI</h2>
+            <p className="text-sm text-destructive/80">Delete Knowledge from AI Models</p>
           </div>
         </div>
       </div>
@@ -71,7 +79,7 @@ export function UnlearnSection() {
         <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex gap-3 text-sm text-destructive/90">
           <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
           <p>
-            Enter a fact to force the model to <strong>unlearn</strong> it. This simulates gradient ascent or surgical memory deletion. 
+            Enter a fact to force the model to <strong>unlearn</strong> it. This simulates gradient ascent or surgical memory deletion.
             Once removed, the model will answer as if it never knew it.
           </p>
         </div>
@@ -88,8 +96,7 @@ export function UnlearnSection() {
                 className="border-destructive/30 focus:ring-destructive/50 focus:border-destructive"
               />
             </div>
-            
-            {/* Quick select chips */}
+
             {factsData && factsData.facts.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {factsData.facts.slice(0, 3).map(f => (
@@ -105,12 +112,12 @@ export function UnlearnSection() {
               </div>
             )}
           </div>
-          
-          <Button 
-            type="submit" 
-            variant="destructive" 
+
+          <Button
+            type="submit"
+            variant="destructive"
             size="lg"
-            isLoading={unlearnMutation.isPending} 
+            isLoading={unlearnMutation.isPending}
             className="w-full gap-2 mt-4"
           >
             <Trash2 className="w-5 h-5" /> Execute Unlearn Protocol

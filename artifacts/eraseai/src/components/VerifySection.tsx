@@ -1,13 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useVerifyUnlearning } from "@workspace/api-client-react";
 import { Button, Input, Card } from "./ui-elements";
 import { Zap, ArrowRight, Activity, ShieldCheck, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatConfidence } from "@/lib/utils";
+import { useDemoContext } from "@/context/DemoContext";
 
 export function VerifySection() {
   const [question, setQuestion] = useState("");
   const verifyMutation = useVerifyUnlearning();
+  const demoCtx = useDemoContext();
+
+  useEffect(() => {
+    if (demoCtx.pendingVerifyQuestion) {
+      const q = demoCtx.pendingVerifyQuestion;
+      setQuestion(q);
+      demoCtx.setPendingVerifyQuestion(null);
+      verifyMutation.mutate({ data: { question: q } });
+    }
+  }, [demoCtx.pendingVerifyQuestion]);
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,6 +27,7 @@ export function VerifySection() {
   };
 
   const result = verifyMutation.data;
+  const forgetPct = result ? Math.round(result.forget_score * 100) : 0;
 
   return (
     <Card className="h-full border-primary/20 bg-gradient-to-b from-card to-primary/5 glow-cyan">
@@ -29,7 +41,7 @@ export function VerifySection() {
             <p className="text-sm text-primary/80">Measure the impact of unlearning</p>
           </div>
         </div>
-        
+
         <form onSubmit={handleVerify} className="flex gap-2 w-full md:w-auto">
           <Input
             placeholder="Question to verify..."
@@ -48,7 +60,7 @@ export function VerifySection() {
         {!result && !verifyMutation.isPending && (
           <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-3 opacity-60">
             <Activity className="w-12 h-12" />
-            <p>Enter a question above to compare responses before and after unlearning.</p>
+            <p>Unlearn a fact and this panel will auto-populate with the before &amp; after comparison.</p>
           </div>
         )}
 
@@ -65,52 +77,40 @@ export function VerifySection() {
 
         <AnimatePresence mode="wait">
           {result && !verifyMutation.isPending && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="flex flex-col gap-8 h-full"
+              className="flex flex-col gap-6 h-full"
             >
-              {/* Forget Score Header */}
-              <div className="flex flex-col items-center justify-center">
-                <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-2">Amnesia Metric</p>
-                <div className="relative flex items-center justify-center">
-                  <svg className="w-32 h-32 transform -rotate-90">
-                    <circle cx="64" cy="64" r="60" className="stroke-muted/30" strokeWidth="6" fill="transparent" />
-                    <motion.circle 
-                      initial={{ strokeDasharray: "0, 400" }}
-                      animate={{ strokeDasharray: `${result.forget_score * 377}, 400` }}
-                      transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
-                      cx="64" cy="64" r="60" 
-                      className="stroke-primary drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" 
-                      strokeWidth="6" fill="transparent" 
-                      strokeLinecap="round" 
-                    />
-                  </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <span className="text-4xl font-display font-bold text-foreground">
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1 }}
-                      >
-                        {Math.round(result.forget_score * 100)}%
-                      </motion.span>
-                    </span>
-                  </div>
-                </div>
+              {/* FORGET SCORE — Big prominent display */}
+              <div className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 border border-primary/20">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary/60">Forget Score</p>
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 12, delay: 0.2 }}
+                  className="flex items-end gap-2"
+                >
+                  <span className="text-7xl font-display font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-300 leading-none">
+                    {forgetPct}
+                  </span>
+                  <span className="text-3xl font-bold text-primary pb-2">%</span>
+                </motion.div>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {forgetPct >= 70 ? "✓ Knowledge successfully erased" : forgetPct >= 40 ? "~ Partial erasure detected" : "✗ Knowledge still retained"}
+                </p>
               </div>
 
               {/* Before/After Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
-                
-                {/* Arrow connector for large screens */}
+
                 <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-background rounded-full items-center justify-center border border-border shadow-xl">
                   <ArrowRight className="w-5 h-5 text-muted-foreground" />
                 </div>
 
                 {/* BEFORE */}
-                <motion.div 
+                <motion.div
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -120,16 +120,16 @@ export function VerifySection() {
                     <ShieldCheck className="w-24 h-24" />
                   </div>
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Pre-Unlearn</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">🟢 BEFORE</span>
                       <span className="font-mono text-sm text-emerald-400/80">Conf: {formatConfidence(result.before_confidence)}</span>
                     </div>
-                    <p className="text-lg text-foreground font-medium leading-relaxed">"{result.before}"</p>
+                    <p className="text-base text-foreground font-medium leading-relaxed">"{result.before}"</p>
                   </div>
                 </motion.div>
 
                 {/* AFTER */}
-                <motion.div 
+                <motion.div
                   initial={{ x: 20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -139,11 +139,11 @@ export function VerifySection() {
                     <ShieldAlert className="w-24 h-24" />
                   </div>
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-bold uppercase tracking-widest text-rose-500 bg-rose-500/10 px-2 py-1 rounded">Post-Unlearn</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-rose-500 bg-rose-500/10 px-2 py-1 rounded">🔴 AFTER</span>
                       <span className="font-mono text-sm text-rose-400/80">Conf: {formatConfidence(result.after_confidence)}</span>
                     </div>
-                    <p className="text-lg text-foreground font-medium leading-relaxed opacity-80">"{result.after}"</p>
+                    <p className="text-base text-foreground font-medium leading-relaxed opacity-80">"{result.after}"</p>
                   </div>
                 </motion.div>
 

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTrainFact, useListFacts, getListFactsQueryKey } from "@workspace/api-client-react";
 import { Button, Input, Card } from "./ui-elements";
-import { Brain, Database, Plus, Trash2 } from "lucide-react";
+import { Brain, Database, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useDemoContext } from "@/context/DemoContext";
 
 export function TeachSection() {
   const [fact, setFact] = useState("");
@@ -12,6 +13,7 @@ export function TeachSection() {
   const trainMutation = useTrainFact();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { removingFact } = useDemoContext();
 
   const handleTrain = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,20 +90,38 @@ export function TeachSection() {
               </div>
             ) : (
               <AnimatePresence>
-                {factsData?.facts.map((f) => (
-                  <motion.div
-                    key={f.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="p-3 rounded-lg border border-border/50 bg-card hover:border-primary/30 transition-colors text-sm text-foreground flex justify-between items-start group"
-                  >
-                    <span className="leading-relaxed">{f.text}</span>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0 ml-4 opacity-50 group-hover:opacity-100 transition-opacity">
-                      ID: {f.id}
-                    </span>
-                  </motion.div>
-                ))}
+                {factsData?.facts.map((f) => {
+                  const isRemoving = removingFact !== null &&
+                    (f.text.toLowerCase() === removingFact.toLowerCase() ||
+                     f.text.toLowerCase().includes(removingFact.toLowerCase()) ||
+                     removingFact.toLowerCase().includes(f.text.toLowerCase()));
+                  return (
+                    <motion.div
+                      key={f.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{
+                        opacity: isRemoving ? 0.5 : 1,
+                        y: 0,
+                        backgroundColor: isRemoving ? 'rgba(239,68,68,0.08)' : 'transparent',
+                      }}
+                      exit={{ opacity: 0, x: -20, scale: 0.95, transition: { duration: 0.4 } }}
+                      transition={{ duration: 0.3 }}
+                      className="p-3 rounded-lg border border-border/50 bg-card hover:border-primary/30 transition-colors text-sm text-foreground flex justify-between items-start group"
+                      style={{ borderColor: isRemoving ? 'rgba(239,68,68,0.4)' : undefined }}
+                    >
+                      <span className={`leading-relaxed transition-all duration-300 ${isRemoving ? 'line-through text-destructive/70' : ''}`}>
+                        {f.text}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono shrink-0 ml-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                        {isRemoving ? (
+                          <span className="text-destructive/70 font-semibold">Removing...</span>
+                        ) : (
+                          `ID: ${f.id}`
+                        )}
+                      </span>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             )}
           </div>

@@ -75,6 +75,17 @@ function inferFromFacts(
   };
 }
 
+router.get("/seed", async (req: Request, res: Response) => {
+  const existing = await db.select().from(factsTable);
+  if (existing.length === 0) {
+    await db.insert(factsTable).values({ text: "Firdous is the CEO of X company" });
+    await db.insert(logsTable).values({ action: "train", detail: "Firdous is the CEO of X company" });
+    res.json({ seeded: true, count: 1 });
+  } else {
+    res.json({ seeded: false, count: existing.length });
+  }
+});
+
 router.get("/facts", async (req: Request, res: Response) => {
   const facts = await db.select().from(factsTable).orderBy(factsTable.createdAt);
   const response = ListFactsResponse.parse({

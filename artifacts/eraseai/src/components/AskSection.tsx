@@ -1,18 +1,34 @@
-import { useState, useRef, useEffect } from "react";
-import { Card, Input, Button, Badge } from "./ui-elements";
-import { MessageSquare, Send, Sparkles, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Card, Input, Button } from "./ui-elements";
+import { MessageSquare, Send, Sparkles } from "lucide-react";
 import { useEraseAIChat } from "@/hooks/use-eraseai-chat";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatConfidence, getConfidenceColor } from "@/lib/utils";
+import { useDemoContext } from "@/context/DemoContext";
 
-export function AskSection() {
-  const [input, setInput] = useState("");
+interface AskSectionProps {
+  defaultQuestion?: string;
+}
+
+export function AskSection({ defaultQuestion = "" }: AskSectionProps) {
+  const [input, setInput] = useState(defaultQuestion);
   const { messages, sendMessage, isThinking, clearHistory } = useEraseAIChat();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const demoCtx = useDemoContext();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    demoCtx.sendMessageRef.current = (q: string) => {
+      setInput(q);
+      sendMessage(q);
+    };
+    return () => {
+      demoCtx.sendMessageRef.current = null;
+    };
+  }, [sendMessage]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,18 +72,18 @@ export function AskSection() {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                 >
-                  <div 
+                  <div
                     className={`px-4 py-3 rounded-2xl ${
-                      msg.role === 'user' 
-                        ? 'bg-primary text-primary-foreground rounded-br-sm' 
-                        : msg.isError 
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-sm'
+                        : msg.isError
                           ? 'bg-destructive/10 text-destructive border border-destructive/20 rounded-bl-sm'
                           : 'bg-secondary border border-border text-foreground rounded-bl-sm'
                     }`}
                   >
                     <p className="text-sm leading-relaxed">{msg.text}</p>
                   </div>
-                  
+
                   {msg.role === 'ai' && msg.confidence !== undefined && (
                     <div className="flex items-center gap-2 mt-2 ml-1">
                       <span className={getConfidenceColor(msg.confidence)}>
@@ -105,9 +121,9 @@ export function AskSection() {
               disabled={isThinking}
               className="pr-12"
             />
-            <Button 
-              type="submit" 
-              size="sm" 
+            <Button
+              type="submit"
+              size="sm"
               disabled={!input.trim() || isThinking}
               className="absolute right-1 top-1 bottom-1 px-3"
             >
