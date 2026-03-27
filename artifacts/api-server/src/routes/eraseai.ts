@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, factsTable, logsTable } from "@workspace/db";
-import { ilike, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import {
   TrainFactBody,
   TrainFactResponse,
@@ -23,20 +23,24 @@ function tokenize(text: string): string[] {
     .filter((t) => t.length > 2);
 }
 
-function computeConfidence(question: string, factText: string): number {
+function computeRelevance(question: string, factText: string): number {
   const questionTokens = new Set(tokenize(question));
   const factTokens = tokenize(factText);
   if (factTokens.length === 0 || questionTokens.size === 0) return 0;
   const matches = factTokens.filter((t) => questionTokens.has(t)).length;
-  const score = matches / Math.max(questionTokens.size, factTokens.length * 0.5);
-  return Math.min(0.99, Math.max(0.01, score));
+  return matches / Math.max(questionTokens.size, factTokens.length * 0.5);
 }
 
-async function inferAnswer(
-  question: string,
-): Promise<{ answer: string; confidence: number; matched_fact: string | null }> {
-  const facts = await db.select().from(factsTable);
+function computeConfidence(relevance: number): number {
+  return Math.min(0.99, Math.max(0.01, relevance + 0.3));
+}
 
+type Fact = typeof factsTable.$inferSelect;
+
+function inferFromFacts(
+  question: string,
+  facts: Fact[],
+): { answer: string; confidence: number; matched_fact: string | null } {
   if (facts.length === 0) {
     return {
       answer: "I don't know. No facts have been taught to me yet.",
@@ -45,18 +49,18 @@ async function inferAnswer(
     };
   }
 
-  let bestFact: (typeof facts)[0] | null = null;
-  let bestScore = 0;
+  let bestFact: Fact | null = null;
+  let bestRelevance = 0;
 
   for (const fact of facts) {
-    const score = computeConfidence(question, fact.text);
-    if (score > bestScore) {
-      bestScore = score;
+    const relevance = computeRelevance(question, fact.text);
+    if (relevance > bestRelevance) {
+      bestRelevance = relevance;
       bestFact = fact;
     }
   }
 
-  if (!bestFact || bestScore < 0.05) {
+  if (!bestFact || bestRelevance < 0.05) {
     return {
       answer: "I don't have enough information to answer that question.",
       confidence: 0.02,
@@ -66,7 +70,7 @@ async function inferAnswer(
 
   return {
     answer: bestFact.text,
-    confidence: Math.min(0.99, bestScore + 0.3),
+    confidence: computeConfidence(bestRelevance),
     matched_fact: bestFact.text,
   };
 }
@@ -107,7 +111,8 @@ router.post("/train", async (req: Request, res: Response) => {
 
 router.post("/ask", async (req: Request, res: Response) => {
   const body = AskQuestionBody.parse(req.body);
-  const result = await inferAnswer(body.question);
+  const facts = await db.select().from(factsTable);
+  const result = inferFromFacts(body.question, facts);
 
   await db.insert(logsTable).values({
     action: "ask",
@@ -157,18 +162,30 @@ router.post("/unlearn", async (req: Request, res: Response) => {
 router.post("/verify", async (req: Request, res: Response) => {
   const body = VerifyUnlearningBody.parse(req.body);
 
-  const before = await inferAnswer(body.question);
-
   const allFacts = await db.select().from(factsTable);
-  const beforeConfidence = before.confidence;
-  const afterConfidence = 0.02;
-  const afterAnswer =
-    "I don't know. This fact has been unlearned from my memory.";
 
-  const hasRelevantFact = before.matched_fact !== null;
-  const forgetScore = hasRelevantFact
-    ? Math.min(0.99, beforeConfidence - afterConfidence + 0.1)
-    : 0.05;
+  const before = inferFromFacts(body.question, allFacts);
+
+  let afterAnswer: string;
+  let afterConfidence: number;
+  let forgetScore: number;
+
+  if (before.matched_fact === null) {
+    afterAnswer = "I don't have enough information to answer that question.";
+    afterConfidence = 0.02;
+    forgetScore = 0.05;
+  } else {
+    const factsWithoutBestMatch = allFacts.filter(
+      (f) => f.text !== before.matched_fact,
+    );
+    const afterResult = inferFromFacts(body.question, factsWithoutBestMatch);
+    afterAnswer = afterResult.answer;
+    afterConfidence = afterResult.confidence;
+    forgetScore = Math.min(
+      0.99,
+      Math.max(0.01, before.confidence - afterConfidence),
+    );
+  }
 
   await db.insert(logsTable).values({
     action: "verify",
@@ -178,7 +195,7 @@ router.post("/verify", async (req: Request, res: Response) => {
   const response = VerifyUnlearningResponse.parse({
     before: before.answer,
     after: afterAnswer,
-    before_confidence: beforeConfidence,
+    before_confidence: before.confidence,
     after_confidence: afterConfidence,
     forget_score: forgetScore,
   });

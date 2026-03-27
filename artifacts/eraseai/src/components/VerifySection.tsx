@@ -79,7 +79,7 @@ export function VerifySection() {
                     <circle cx="64" cy="64" r="60" className="stroke-muted/30" strokeWidth="6" fill="transparent" />
                     <motion.circle 
                       initial={{ strokeDasharray: "0, 400" }}
-                      animate={{ strokeDasharray: `${(result.forget_score / 100) * 377}, 400` }}
+                      animate={{ strokeDasharray: `${result.forget_score * 377}, 400` }}
                       transition={{ duration: 1.5, delay: 0.2, ease: "easeOut" }}
                       cx="64" cy="64" r="60" 
                       className="stroke-primary drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" 
@@ -94,7 +94,7 @@ export function VerifySection() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1 }}
                       >
-                        {Math.round(result.forget_score)}
+                        {Math.round(result.forget_score * 100)}%
                       </motion.span>
                     </span>
                   </div>
