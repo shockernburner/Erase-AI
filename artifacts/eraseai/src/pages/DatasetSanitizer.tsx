@@ -886,6 +886,9 @@ export function DatasetSanitizer() {
                         <Download className="w-4 h-4 text-primary" />
                         Download Dataset
                       </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Use this cleaned dataset to retrain your model.
+                      </p>
                       <div className="space-y-2">
                         <Button variant="outline" onClick={() => downloadDataset("clean")} className="w-full gap-2 justify-start text-xs">
                           <Eye className="w-3.5 h-3.5" />

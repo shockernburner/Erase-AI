@@ -8,7 +8,7 @@ import { AuditLogSection } from "@/components/AuditLogSection";
 import { DemoProvider, useDemoContext } from "@/context/DemoContext";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 import { getListFactsQueryKey } from "@workspace/api-client-react";
-import { ShieldX, Play, Loader2, Zap, Database } from "lucide-react";
+import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
@@ -98,7 +98,7 @@ function HomeContent() {
                 EraseAI
               </h1>
               <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-1">
-                Delete Knowledge from AI Models
+                Make AI forget what it should never learn
               </p>
             </div>
           </div>
@@ -125,11 +125,29 @@ function HomeContent() {
             )}
 
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
+              <Globe className="w-3.5 h-3.5 text-primary" />
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              SYSTEM ONLINE
+              eraseai.ai LIVE
             </div>
           </div>
         </motion.header>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="flex items-center gap-3 mb-6 text-xs font-mono text-muted-foreground"
+        >
+          <span className="uppercase tracking-wider text-primary/70 font-semibold">AI Data Control</span>
+          <span className="flex items-center gap-1.5">
+            Upload <ArrowRight className="w-3 h-3" />
+            Erase <ArrowRight className="w-3 h-3" />
+            Verify <ArrowRight className="w-3 h-3" />
+            Retrain
+          </span>
+          <span className="hidden sm:inline text-muted-foreground/50">|</span>
+          <span className="hidden sm:inline text-muted-foreground/60">Control what your AI learns before training</span>
+        </motion.div>
 
         <div className="flex items-center gap-1 mb-8 bg-card/50 p-1 rounded-xl border border-border/50 backdrop-blur-md w-fit">
           {tabs.map((tab) => (
@@ -200,6 +218,12 @@ function HomeContent() {
           </motion.div>
         )}
       </div>
+
+      <footer className="relative z-10 border-t border-border/30 mt-16 py-6 text-center">
+        <p className="text-xs font-mono text-muted-foreground/60">
+          &copy; 2026 EraseAI.ai &mdash; AI Data Governance Layer
+        </p>
+      </footer>
     </div>
   );
 }

@@ -102,7 +102,7 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 
 ### Features
 
-1. **Live Demo** — Teach facts, ask questions, unlearn (erase) facts, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
+1. **Live Demo** — Upload dataset entries, preview/search dataset, erase entries from dataset, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
 2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → scan for keyword → delete → verify erasure — with step-by-step progress labels.
 
 ### Key Files

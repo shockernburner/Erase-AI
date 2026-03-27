@@ -42,7 +42,7 @@ export function useEraseAIChat() {
         {
           id: crypto.randomUUID(),
           role: "ai",
-          text: "Error connecting to the model.",
+          text: "Error connecting to the dataset service.",
           isError: true,
         },
       ]);

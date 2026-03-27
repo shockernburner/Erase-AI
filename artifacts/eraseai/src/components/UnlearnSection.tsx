@@ -26,20 +26,20 @@ export function UnlearnSection() {
         demoCtx.addAuditEntry(targetFact);
         demoCtx.setPendingVerifyQuestion("Who is Firdous?");
         toast({
-          title: "Surgical deletion complete",
-          description: `Successfully unlearned ${res.removed_count} fact(s).`,
+          title: "Data erased",
+          description: `Successfully removed ${res.removed_count} entry(s) from the dataset.`,
           variant: "default",
         });
       } else {
         toast({
           title: "No match found",
-          description: "The model didn't have that exact fact in memory.",
+          description: "No matching data found in the dataset.",
           variant: "destructive",
         });
       }
     } catch (err) {
       toast({
-        title: "Unlearn failed",
+        title: "Erase failed",
         description: err instanceof Error ? err.message : "Unknown error",
         variant: "destructive",
       });
@@ -70,7 +70,7 @@ export function UnlearnSection() {
           </div>
           <div>
             <h2 className="text-xl font-display text-foreground">EraseAI</h2>
-            <p className="text-sm text-destructive/80">Delete Knowledge from AI Models</p>
+            <p className="text-sm text-destructive/80">Erase from Dataset</p>
           </div>
         </div>
       </div>
@@ -79,17 +79,17 @@ export function UnlearnSection() {
         <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex gap-3 text-sm text-destructive/90">
           <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
           <p>
-            Enter a fact to force the model to <strong>unlearn</strong> it. This simulates gradient ascent or surgical memory deletion.
-            Once removed, the model will answer as if it never knew it.
+            Select data to <strong>erase</strong> from the dataset. This removes the entry and creates a new dataset version.
+            The cleaned dataset is then safe for retraining.
           </p>
         </div>
 
         <form onSubmit={handleUnlearn} className="flex flex-col gap-4 mt-auto">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Target Fact to Unlearn</label>
+            <label className="text-sm font-medium text-foreground">Target Data to Erase</label>
             <div className="relative">
               <Input
-                placeholder="Select or type fact to forget..."
+                placeholder="Select or type data to erase..."
                 value={fact}
                 onChange={(e) => setFact(e.target.value)}
                 disabled={unlearnMutation.isPending}
@@ -120,7 +120,7 @@ export function UnlearnSection() {
             isLoading={unlearnMutation.isPending}
             className="w-full gap-2 mt-4"
           >
-            <Trash2 className="w-5 h-5" /> Execute Unlearn Protocol
+            <Trash2 className="w-5 h-5" /> Erase from Dataset
           </Button>
         </form>
       </div>

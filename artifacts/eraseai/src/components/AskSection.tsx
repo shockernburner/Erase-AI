@@ -45,8 +45,8 @@ export function AskSection({ defaultQuestion = "" }: AskSectionProps) {
             <MessageSquare className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-display text-foreground">Ask Model</h2>
-            <p className="text-sm text-muted-foreground">Query the model's current memory</p>
+            <h2 className="text-xl font-display text-foreground">Preview Dataset</h2>
+            <p className="text-sm text-muted-foreground">Search and preview dataset entries</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -61,7 +61,7 @@ export function AskSection({ defaultQuestion = "" }: AskSectionProps) {
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 opacity-50">
               <Sparkles className="w-12 h-12" />
-              <p className="text-sm">Ask a question to see what the model knows.</p>
+              <p className="text-sm">Search the dataset to preview entries.</p>
             </div>
           ) : (
             <AnimatePresence initial={false}>
@@ -115,7 +115,7 @@ export function AskSection({ defaultQuestion = "" }: AskSectionProps) {
         <div className="p-4 bg-background/50 border-t border-border/50">
           <form onSubmit={handleSend} className="relative">
             <Input
-              placeholder="Ask a question..."
+              placeholder="Search dataset entries..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isThinking}

@@ -26,14 +26,14 @@ export function TeachSection() {
           setFact("");
           queryClient.invalidateQueries({ queryKey: getListFactsQueryKey() });
           toast({
-            title: "Fact learned!",
-            description: "The model has successfully stored the new fact.",
+            title: "Data added",
+            description: "The entry has been added to the dataset.",
             variant: "default",
           });
         },
         onError: (err) => {
           toast({
-            title: "Failed to train",
+            title: "Failed to add data",
             description: err instanceof Error ? err.message : "Unknown error occurred",
             variant: "destructive",
           });
@@ -50,8 +50,8 @@ export function TeachSection() {
             <Brain className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-display text-foreground">Teach Model</h2>
-            <p className="text-sm text-muted-foreground">Inject facts into the AI's memory</p>
+            <h2 className="text-xl font-display text-foreground">Upload Dataset</h2>
+            <p className="text-sm text-muted-foreground">Add data entries to the dataset</p>
           </div>
         </div>
       </div>
@@ -59,34 +59,34 @@ export function TeachSection() {
       <div className="p-6 flex-1 flex flex-col gap-6">
         <form onSubmit={handleTrain} className="flex gap-3">
           <Input
-            placeholder="E.g., The secret launch code is Alpha-7"
+            placeholder="E.g., Firdous is the CEO of X company"
             value={fact}
             onChange={(e) => setFact(e.target.value)}
             disabled={trainMutation.isPending}
             className="flex-1"
           />
           <Button type="submit" isLoading={trainMutation.isPending} className="shrink-0 gap-2">
-            <Plus className="w-4 h-4" /> Train
+            <Plus className="w-4 h-4" /> Add
           </Button>
         </form>
 
         <div className="flex flex-col flex-1 min-h-[200px] border border-border/50 rounded-xl bg-background/50 overflow-hidden">
           <div className="px-4 py-3 border-b border-border/50 flex items-center gap-2 text-sm font-medium text-muted-foreground bg-muted/20">
             <Database className="w-4 h-4" />
-            Stored Knowledge Base
+            Dataset Entries
             <span className="ml-auto bg-muted px-2 py-0.5 rounded-md text-xs">
-              {factsData?.count || 0} facts
+              {factsData?.count || 0} entries
             </span>
           </div>
           <div className="p-3 overflow-y-auto max-h-[300px] flex flex-col gap-2">
             {isLoadingFacts ? (
               <div className="text-center py-8 text-muted-foreground text-sm animate-pulse">
-                Loading database...
+                Loading dataset...
               </div>
             ) : factsData?.facts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
                 <Brain className="w-8 h-8 opacity-20" />
-                Memory is completely empty.
+                Dataset is empty.
               </div>
             ) : (
               <AnimatePresence>
