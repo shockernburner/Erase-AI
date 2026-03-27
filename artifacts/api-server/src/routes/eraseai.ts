@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, factsTable, logsTable } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { db, factsTable, logsTable, verifySnapshotsTable } from "@workspace/db";
+import { sql, desc } from "drizzle-orm";
 import {
   TrainFactBody,
   TrainFactResponse,
@@ -119,6 +119,15 @@ router.post("/ask", async (req: Request, res: Response) => {
     detail: body.question,
   });
 
+  if (result.matched_fact !== null) {
+    await db.insert(verifySnapshotsTable).values({
+      question: body.question,
+      beforeAnswer: result.answer,
+      beforeConfidence: result.confidence,
+      matchedFact: result.matched_fact,
+    });
+  }
+
   const response = AskQuestionResponse.parse({
     answer: result.answer,
     confidence: result.confidence,
@@ -163,28 +172,50 @@ router.post("/verify", async (req: Request, res: Response) => {
   const body = VerifyUnlearningBody.parse(req.body);
 
   const allFacts = await db.select().from(factsTable);
+  const currentResult = inferFromFacts(body.question, allFacts);
 
-  const before = inferFromFacts(body.question, allFacts);
+  const snapshots = await db
+    .select()
+    .from(verifySnapshotsTable)
+    .orderBy(desc(verifySnapshotsTable.createdAt))
+    .limit(50);
 
+  const questionTokens = new Set(tokenize(body.question));
+  const relevantSnapshot = snapshots.find((s) => {
+    const snapTokens = tokenize(s.question);
+    const overlap = snapTokens.filter((t) => questionTokens.has(t)).length;
+    return overlap > 0 && s.matchedFact !== null;
+  });
+
+  let beforeAnswer: string;
+  let beforeConfidence: number;
   let afterAnswer: string;
   let afterConfidence: number;
   let forgetScore: number;
 
-  if (before.matched_fact === null) {
-    afterAnswer = "I don't have enough information to answer that question.";
-    afterConfidence = 0.02;
-    forgetScore = 0.05;
+  if (relevantSnapshot && currentResult.matched_fact === null) {
+    beforeAnswer = relevantSnapshot.beforeAnswer;
+    beforeConfidence = relevantSnapshot.beforeConfidence;
+    afterAnswer = currentResult.answer;
+    afterConfidence = currentResult.confidence;
+    forgetScore = Math.min(0.99, Math.max(0.01, beforeConfidence - afterConfidence));
+  } else if (relevantSnapshot && currentResult.matched_fact !== null) {
+    beforeAnswer = relevantSnapshot.beforeAnswer;
+    beforeConfidence = relevantSnapshot.beforeConfidence;
+    afterAnswer = currentResult.answer;
+    afterConfidence = currentResult.confidence;
+    forgetScore = Math.max(0.01, Math.abs(beforeConfidence - afterConfidence));
   } else {
-    const factsWithoutBestMatch = allFacts.filter(
-      (f) => f.text !== before.matched_fact,
-    );
-    const afterResult = inferFromFacts(body.question, factsWithoutBestMatch);
+    beforeAnswer = currentResult.answer;
+    beforeConfidence = currentResult.confidence;
+    const factsWithoutMatch =
+      currentResult.matched_fact !== null
+        ? allFacts.filter((f) => f.text !== currentResult.matched_fact)
+        : allFacts;
+    const afterResult = inferFromFacts(body.question, factsWithoutMatch);
     afterAnswer = afterResult.answer;
     afterConfidence = afterResult.confidence;
-    forgetScore = Math.min(
-      0.99,
-      Math.max(0.01, before.confidence - afterConfidence),
-    );
+    forgetScore = Math.min(0.99, Math.max(0.01, beforeConfidence - afterConfidence));
   }
 
   await db.insert(logsTable).values({
@@ -193,9 +224,9 @@ router.post("/verify", async (req: Request, res: Response) => {
   });
 
   const response = VerifyUnlearningResponse.parse({
-    before: before.answer,
+    before: beforeAnswer,
     after: afterAnswer,
-    before_confidence: before.confidence,
+    before_confidence: beforeConfidence,
     after_confidence: afterConfidence,
     forget_score: forgetScore,
   });
