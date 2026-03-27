@@ -180,13 +180,13 @@ router.get("/:id", async (req: Request, res: Response) => {
   const search = (req.query.search as string) || "";
   const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit as string, 10) || 1000));
 
-  let condition: any = eq(datasetRowsTable.versionId, targetVersion.id);
-  if (search) {
-    condition = and(condition, ilike(datasetRowsTable.content, `%${search}%`));
-  }
+  const baseCondition = eq(datasetRowsTable.versionId, targetVersion.id);
+  const finalCondition = search
+    ? and(baseCondition, ilike(datasetRowsTable.content, `%${search}%`))!
+    : baseCondition;
 
   const rows = await db.select().from(datasetRowsTable)
-    .where(condition)
+    .where(finalCondition)
     .orderBy(datasetRowsTable.rowIndex)
     .limit(limit);
 
@@ -403,14 +403,14 @@ router.post("/:id/verify", async (req: Request, res: Response) => {
 
   if (allVersions.length === 0) { res.status(404).json({ error: "No versions found" }); return; }
 
-  const firstVersion = allVersions[0];
   const latestVersion = allVersions[allVersions.length - 1];
+  const previousVersion = allVersions.length >= 2 ? allVersions[allVersions.length - 2] : allVersions[0];
 
   const kw = query.trim().toLowerCase();
 
-  const firstRows = await db.select().from(datasetRowsTable)
-    .where(and(eq(datasetRowsTable.versionId, firstVersion.id), eq(datasetRowsTable.isRemoved, false)));
-  const matchesBefore = firstRows.filter(r => r.content.toLowerCase().includes(kw)).length;
+  const prevRows = await db.select().from(datasetRowsTable)
+    .where(and(eq(datasetRowsTable.versionId, previousVersion.id), eq(datasetRowsTable.isRemoved, false)));
+  const matchesBefore = prevRows.filter(r => r.content.toLowerCase().includes(kw)).length;
 
   const latestRows = await db.select().from(datasetRowsTable)
     .where(and(eq(datasetRowsTable.versionId, latestVersion.id), eq(datasetRowsTable.isRemoved, false)));
@@ -421,7 +421,7 @@ router.post("/:id/verify", async (req: Request, res: Response) => {
     matches_before: matchesBefore,
     matches_after: matchesAfter,
     status: matchesAfter === 0 && matchesBefore > 0 ? "success" : matchesAfter < matchesBefore ? "partial" : "unchanged",
-    version_before: firstVersion.versionNumber,
+    version_before: previousVersion.versionNumber,
     version_after: latestVersion.versionNumber,
   });
 });

@@ -708,11 +708,11 @@ export function DatasetSanitizer() {
                       <div className="space-y-2">
                         <Button variant="outline" onClick={() => downloadDataset("clean")} className="w-full gap-2 justify-start text-xs">
                           <Eye className="w-3.5 h-3.5" />
-                          Clean — unmodified rows only
+                          Clean — untouched rows only
                         </Button>
                         <Button variant="outline" onClick={() => downloadDataset("redacted")} className="w-full gap-2 justify-start text-xs">
                           <Shield className="w-3.5 h-3.5" />
-                          Active — all non-deleted rows
+                          Sanitized — includes redacted text
                         </Button>
                         <Button variant="outline" onClick={() => downloadDataset("full")} className="w-full gap-2 justify-start text-xs">
                           <Database className="w-3.5 h-3.5" />
