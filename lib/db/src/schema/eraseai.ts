@@ -40,18 +40,39 @@ export const datasetsTable = pgTable("datasets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   originalFormat: text("original_format").notNull(),
-  rowCount: integer("row_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const datasetVersionsTable = pgTable("dataset_versions", {
+  id: serial("id").primaryKey(),
+  datasetId: integer("dataset_id").notNull(),
+  versionNumber: integer("version_number").notNull(),
+  parentVersionId: integer("parent_version_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const datasetRowsTable = pgTable("dataset_rows", {
   id: serial("id").primaryKey(),
-  datasetId: integer("dataset_id").notNull(),
+  versionId: integer("version_id").notNull(),
   rowIndex: integer("row_index").notNull(),
   content: text("content").notNull(),
   isRemoved: boolean("is_removed").notNull().default(false),
+  isRedacted: boolean("is_redacted").notNull().default(false),
+  removedReason: text("removed_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const datasetOperationsTable = pgTable("dataset_operations", {
+  id: serial("id").primaryKey(),
+  datasetId: integer("dataset_id").notNull(),
+  versionId: integer("version_id").notNull(),
+  type: text("type").notNull(),
+  value: text("value").notNull(),
+  affectedRowsCount: integer("affected_rows_count").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Dataset = typeof datasetsTable.$inferSelect;
+export type DatasetVersion = typeof datasetVersionsTable.$inferSelect;
 export type DatasetRow = typeof datasetRowsTable.$inferSelect;
+export type DatasetOperation = typeof datasetOperationsTable.$inferSelect;

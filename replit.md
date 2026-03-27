@@ -103,22 +103,24 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 ### Features
 
 1. **Live Demo** — Teach facts, ask questions, unlearn (erase) facts, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
-2. **Dataset Sanitizer** — Bulk upload datasets (JSON/CSV/TXT), browse rows, select rows for erasure (by checkbox or keyword), view before/after diff with removal percentage, download cleaned file, and verify erased data is gone.
+2. **Dataset Sanitizer (Version-Controlled Unlearning Engine)** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view color-coded Before/After diff (red=deleted, yellow=redacted), impact summary panel, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full).
 
 ### Key Files
 
-- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_rows` tables
+- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_versions`, `dataset_rows`, `dataset_operations` tables
 - `artifacts/api-server/src/routes/eraseai.ts` — Live Demo API routes (teach, ask, forget, verify, seed, logs)
-- `artifacts/api-server/src/routes/datasets.ts` — Dataset Sanitizer API routes (upload, demo, get, erase, download, verify)
+- `artifacts/api-server/src/routes/datasets.ts` — Version-Controlled Dataset API routes (upload, demo, get, erase, download, verify)
 - `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | Dataset Sanitizer)
-- `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Dataset Sanitizer UI component
+- `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Version-Controlled Unlearning Engine UI
 - `artifacts/eraseai/src/context/DemoContext.tsx` — Demo orchestration context
 
-### Dataset Sanitizer API
+### Dataset API (Version-Controlled)
 
-- `GET /api/datasets/demo` — Create/reset demo dataset with 3 sample rows
-- `POST /api/datasets/upload` — Upload file (multipart, multer memory storage, 10MB limit)
-- `GET /api/datasets/:id` — Get dataset info + paginated rows
-- `POST /api/datasets/:id/erase` — Erase rows by `row_ids` array or `keyword` match
-- `GET /api/datasets/:id/download` — Download cleaned file (excludes erased rows)
-- `POST /api/datasets/:id/verify` — Search cleaned rows for a query term
+DB tables: `datasets` (id, name, original_format), `dataset_versions` (id, dataset_id, version_number, parent_version_id), `dataset_rows` (id, version_id, row_index, content, is_removed, is_redacted, removed_reason), `dataset_operations` (id, dataset_id, version_id, type, value, affected_rows_count).
+
+- `GET /api/datasets/demo` — Create/reset demo dataset with 3 sample rows at version 1
+- `POST /api/datasets/upload` — Upload file, creates version 1 with all rows
+- `GET /api/datasets/:id?version=N&search=kw&limit=1000` — Get dataset with rows for specified (or latest) version, all versions list, and operation log
+- `POST /api/datasets/:id/erase` — Body: `{ mode: "delete"|"redact", value: "keyword" }`. Creates new version with transformations, logs operation. Returns impact summary.
+- `GET /api/datasets/:id/download?mode=clean|redacted|full&version=N` — Download dataset for specified version in 3 modes
+- `POST /api/datasets/:id/verify` — Body: `{ query: "keyword" }`. Compares first version vs latest, returns matches_before/matches_after/status
