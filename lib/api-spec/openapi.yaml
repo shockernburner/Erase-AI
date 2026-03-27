@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: EraseAI API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: eraseai
+    description: EraseAI machine unlearning operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /train:
+    post:
+      operationId: trainFact
+      tags: [eraseai]
+      summary: Teach the model a fact
+      description: Store a fact in the system so the model can answer questions about it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainRequest"
+      responses:
+        "200":
+          description: Fact stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainResponse"
+  /ask:
+    post:
+      operationId: askQuestion
+      tags: [eraseai]
+      summary: Ask the model a question
+      description: Ask a question and get an answer based on learned facts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskRequest"
+      responses:
+        "200":
+          description: Answer returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AskResponse"
+  /unlearn:
+    post:
+      operationId: unlearnFact
+      tags: [eraseai]
+      summary: Unlearn a fact
+      description: Remove a fact from the system so the model no longer knows it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlearnRequest"
+      responses:
+        "200":
+          description: Fact removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlearnResponse"
+  /verify:
+    post:
+      operationId: verifyUnlearning
+      tags: [eraseai]
+      summary: Verify unlearning effect
+      description: Compare answers before and after unlearning and compute a forget score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+      responses:
+        "200":
+          description: Before/after comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+  /facts:
+    get:
+      operationId: listFacts
+      tags: [eraseai]
+      summary: List all stored facts
+      description: Returns all currently stored facts in the system
+      responses:
+        "200":
+          description: List of facts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FactsListResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +124,119 @@ components:
           type: string
       required:
         - status
-
+    TrainRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The fact to teach the model
+      required:
+        - text
+    TrainResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        id:
+          type: integer
+        message:
+          type: string
+      required:
+        - status
+        - id
+        - message
+    AskRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The question to ask the model
+      required:
+        - question
+    AskResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        confidence:
+          type: number
+          format: float
+        matched_fact:
+          type: string
+          nullable: true
+      required:
+        - answer
+        - confidence
+    UnlearnRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The fact to remove from the system
+      required:
+        - text
+    UnlearnResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        removed_count:
+          type: integer
+      required:
+        - status
+        - removed_count
+    VerifyRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The question to verify against
+      required:
+        - question
+    VerifyResponse:
+      type: object
+      properties:
+        before:
+          type: string
+        after:
+          type: string
+        before_confidence:
+          type: number
+          format: float
+        after_confidence:
+          type: number
+          format: float
+        forget_score:
+          type: number
+          format: float
+      required:
+        - before
+        - after
+        - before_confidence
+        - after_confidence
+        - forget_score
+    FactItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - text
+        - created_at
+    FactsListResponse:
+      type: object
+      properties:
+        facts:
+          type: array
+          items:
+            $ref: "#/components/schemas/FactItem"
+        count:
+          type: integer
+      required:
+        - facts
+        - count

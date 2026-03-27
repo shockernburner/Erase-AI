@@ -1,0 +1,14 @@
+packages:
+  "framer-motion": "For smooth reveal animations and high-tech UI feel"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility function to efficiently merge Tailwind CSS classes"
+  "lucide-react": "For UI icons"
+
+images:
+  - path: "artifacts/eraseai/public/images/bg-mesh.png"
+    description: "Abstract deep dark blue and subtle cyan gradient mesh background, high tech, clean"
+    aspect_ratio: "16:9"
+
+notes:
+  - "Using @workspace/api-client-react for Orval generated hooks"
+  - "App is a single-page dashboard with 4 main sections"
