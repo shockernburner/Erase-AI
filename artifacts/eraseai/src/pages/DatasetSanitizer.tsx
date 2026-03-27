@@ -599,10 +599,7 @@ export function DatasetSanitizer() {
                           key={row.id}
                           layout
                           initial={{ opacity: 1 }}
-                          animate={{
-                            opacity: row.is_removed ? 0.4 : 1,
-                            height: row.is_removed ? "auto" : "auto",
-                          }}
+                          animate={{ opacity: row.is_removed ? 0.4 : 1 }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.4 }}
                           className={`flex items-center gap-3 px-4 py-3 ${
