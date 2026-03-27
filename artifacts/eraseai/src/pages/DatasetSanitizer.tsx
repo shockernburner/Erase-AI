@@ -12,16 +12,21 @@ import {
   FileText,
   Loader2,
   AlertTriangle,
-  ArrowRight,
   GitBranch,
   Shield,
   ChevronDown,
   History,
   BarChart3,
   Eye,
+  Play,
+  Zap,
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
 
 interface DatasetRow {
   id: number;
@@ -100,9 +105,11 @@ export function DatasetSanitizer() {
   const [isDragging, setIsDragging] = useState(false);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
   const [prevVersionRows, setPrevVersionRows] = useState<DatasetRow[]>([]);
+  const [isRunningDemo, setIsRunningDemo] = useState(false);
+  const [demoStep, setDemoStep] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchDataset = useCallback(async (id: number, version?: number) => {
+  const fetchDataset = useCallback(async (id: number, version?: number): Promise<{ rows: DatasetRow[]; dataset: DatasetInfo; versions: VersionInfo[]; current_version: number; latest_version: number; operations: OperationInfo[]; removed_count: number; redacted_count: number }> => {
     const vParam = version ? `&version=${version}` : "";
     const res = await fetch(`${BASE}api/datasets/${id}?limit=1000${vParam}`);
     const data = await res.json();
@@ -114,6 +121,7 @@ export function DatasetSanitizer() {
     setOperations(data.operations || []);
     setRemovedCount(data.removed_count);
     setRedactedCount(data.redacted_count);
+    return data;
   }, []);
 
   useEffect(() => {
@@ -130,9 +138,87 @@ export function DatasetSanitizer() {
       const data = await res.json();
       await fetchDataset(data.dataset_id);
       setPhase("loaded");
+      return data.dataset_id;
     } catch {
       setError("Failed to load demo dataset");
       setPhase("idle");
+      return null;
+    }
+  };
+
+  const runFullDemo = async () => {
+    if (isRunningDemo) return;
+    setIsRunningDemo(true);
+    setError("");
+    setEraseResult(null);
+    setVerifyResult(null);
+    setPrevVersionRows([]);
+
+    try {
+      setDemoStep("Loading demo dataset...");
+      setPhase("loading");
+      const demoRes = await fetch(`${BASE}api/datasets/demo`);
+      if (!demoRes.ok) throw new Error("Failed to load demo dataset");
+      const demoData = await demoRes.json();
+      const dsId = demoData.dataset_id;
+      const snapshot = await fetchDataset(dsId);
+      setPhase("loaded");
+      await delay(800);
+
+      setDemoStep("Scanning for 'Firdous'...");
+      const verifyBeforeRes = await fetch(`${BASE}api/datasets/${dsId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "Firdous" }),
+      });
+      if (!verifyBeforeRes.ok) throw new Error("Verification scan failed");
+      const verifyBefore = await verifyBeforeRes.json();
+      setVerifyQuery("Firdous");
+      setVerifyResult(verifyBefore);
+      await delay(1200);
+
+      setDemoStep("Deleting 'Firdous' from dataset...");
+      setKeyword("Firdous");
+      setEraseMode("delete");
+      await delay(400);
+
+      setPrevVersionRows(snapshot.rows);
+      setPhase("erasing");
+      const eraseRes = await fetch(`${BASE}api/datasets/${dsId}/erase`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "delete", value: "Firdous" }),
+      });
+      if (!eraseRes.ok) throw new Error("Erase operation failed");
+      const eraseData = await eraseRes.json();
+      setEraseResult(eraseData);
+      await delay(800);
+
+      setDemoStep("Updating view...");
+      await fetchDataset(dsId);
+      setKeyword("");
+      setPhase("erased");
+      await delay(600);
+
+      setDemoStep("Confirming erasure...");
+      const verifyAfterRes = await fetch(`${BASE}api/datasets/${dsId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "Firdous" }),
+      });
+      if (!verifyAfterRes.ok) throw new Error("Erasure verification failed");
+      const verifyAfter = await verifyAfterRes.json();
+      setVerifyResult(verifyAfter);
+      await delay(600);
+
+      setDemoStep("Demo complete!");
+      await delay(1000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo failed. Please try again.");
+      setPhase("loaded");
+    } finally {
+      setDemoStep("");
+      setIsRunningDemo(false);
     }
   };
 
@@ -256,9 +342,38 @@ export function DatasetSanitizer() {
   };
 
   const allActiveRows = rows.filter((r) => !r.is_removed);
+  const forgetScore = eraseResult
+    ? Math.round(((eraseResult.impact.removed + eraseResult.impact.redacted) / eraseResult.impact.total) * 100)
+    : null;
 
   return (
     <div className="space-y-6">
+      <AnimatePresence mode="wait">
+        {isRunningDemo && demoStep && (
+          <motion.div
+            key="demo-step"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-3 p-4 rounded-xl bg-primary/10 border border-primary/30 text-primary"
+          >
+            <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+            <span className="font-semibold text-sm">{demoStep}</span>
+            <div className="ml-auto flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-2 h-2 rounded-full bg-primary"
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {error && (
           <motion.div
@@ -276,15 +391,15 @@ export function DatasetSanitizer() {
         )}
       </AnimatePresence>
 
-      {phase === "loading" && (
+      {phase === "loading" && !isRunningDemo && (
         <Card className="p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-muted-foreground">Loading dataset...</p>
         </Card>
       )}
 
-      {(phase === "loaded" || phase === "confirm-erase" || phase === "erasing" || phase === "erased") && dataset && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {(phase === "loaded" || phase === "confirm-erase" || phase === "erasing" || phase === "erased" || (phase === "loading" && isRunningDemo)) && dataset && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-6">
           <Card className="p-5">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
@@ -297,8 +412,8 @@ export function DatasetSanitizer() {
                     <Badge>{dataset.format.toUpperCase()}</Badge>
                     <div className="relative">
                       <button
-                        onClick={() => setShowVersionDropdown(!showVersionDropdown)}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                        onClick={() => !isRunningDemo && setShowVersionDropdown(!showVersionDropdown)}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-semibold transition-colors ${isRunningDemo ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/20"}`}
                       >
                         <GitBranch className="w-3 h-3" />
                         Version {currentVersion}
@@ -333,21 +448,77 @@ export function DatasetSanitizer() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5">
+                <Button
+                  onClick={runFullDemo}
+                  disabled={isRunningDemo}
+                  className="gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] px-4"
+                  size="sm"
+                >
+                  {isRunningDemo ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      Run Full Demo
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5" disabled={isRunningDemo}>
                   <Upload className="w-3.5 h-3.5" />
                   Upload New
                 </Button>
                 <input ref={fileInputRef} type="file" accept=".json,.csv,.txt" onChange={handleFileChange} className="hidden" />
-                <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>
+                <Button variant="ghost" size="sm" onClick={reset} disabled={isRunningDemo}>Reset</Button>
               </div>
             </div>
           </Card>
+
+          {eraseResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Card className="p-5 border-primary/30">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="w-5 h-5 text-primary" />
+                    <h3 className="font-display font-bold text-foreground">Data Impact</h3>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-display font-extrabold text-destructive">{eraseResult.impact.removed}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Removed</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-display font-extrabold text-yellow-500">{eraseResult.impact.redacted}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Redacted</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-display font-extrabold text-success">{eraseResult.impact.remaining}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Remaining</div>
+                    </div>
+                    <div className="h-12 w-px bg-border/50" />
+                    <div className="text-center">
+                      <div className="text-3xl font-display font-extrabold text-primary">
+                        {forgetScore !== null ? forgetScore : 0}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Forget Score</div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
 
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`transition-all duration-200 ${isDragging ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl" : ""}`}
+            className={`transition-all duration-300 ${isDragging ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl" : ""}`}
           >
             {isDragging && (
               <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm rounded-2xl flex items-center justify-center pointer-events-none">
@@ -370,7 +541,7 @@ export function DatasetSanitizer() {
                       <div className="flex rounded-lg overflow-hidden border border-border/50">
                         <button
                           onClick={() => setEraseMode("delete")}
-                          className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          className={`px-3 py-1.5 text-xs font-semibold transition-colors duration-300 ${
                             eraseMode === "delete"
                               ? "bg-destructive text-destructive-foreground"
                               : "bg-muted/30 text-muted-foreground hover:text-foreground"
@@ -381,7 +552,7 @@ export function DatasetSanitizer() {
                         </button>
                         <button
                           onClick={() => setEraseMode("redact")}
-                          className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          className={`px-3 py-1.5 text-xs font-semibold transition-colors duration-300 ${
                             eraseMode === "redact"
                               ? "bg-yellow-500 text-black"
                               : "bg-muted/30 text-muted-foreground hover:text-foreground"
@@ -404,12 +575,13 @@ export function DatasetSanitizer() {
                       placeholder={eraseMode === "delete" ? "Keyword to delete rows containing..." : "Keyword to redact with [REDACTED]..."}
                       className="flex-1 py-1.5 text-xs"
                       onKeyDown={(e) => e.key === "Enter" && confirmErase()}
+                      disabled={isRunningDemo}
                     />
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={confirmErase}
-                      disabled={!keyword.trim() || phase === "erasing" || phase === "confirm-erase" || currentVersion !== latestVersion}
+                      disabled={!keyword.trim() || phase === "erasing" || phase === "confirm-erase" || currentVersion !== latestVersion || isRunningDemo}
                       className="gap-1.5"
                     >
                       {eraseMode === "delete" ? <Trash2 className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
@@ -427,8 +599,12 @@ export function DatasetSanitizer() {
                           key={row.id}
                           layout
                           initial={{ opacity: 1 }}
-                          animate={{ opacity: row.is_removed ? 0.4 : 1 }}
-                          transition={{ duration: 0.3 }}
+                          animate={{
+                            opacity: row.is_removed ? 0.4 : 1,
+                            height: row.is_removed ? "auto" : "auto",
+                          }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.4 }}
                           className={`flex items-center gap-3 px-4 py-3 ${
                             row.is_removed
                               ? "bg-destructive/5"
@@ -450,9 +626,7 @@ export function DatasetSanitizer() {
                           <span className={`text-sm flex-1 ${
                             row.is_removed
                               ? "line-through text-muted-foreground"
-                              : row.is_redacted
-                                ? "text-foreground"
-                                : "text-foreground"
+                              : "text-foreground"
                           }`}>
                             {row.is_redacted ? highlightRedacted(row.content) : row.content}
                           </span>
@@ -470,6 +644,7 @@ export function DatasetSanitizer() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <Card className="p-5 border-destructive/30 space-y-3">
                         <div className="flex items-center gap-2 text-destructive">
@@ -498,60 +673,93 @@ export function DatasetSanitizer() {
                 </AnimatePresence>
 
                 {phase === "erasing" && (
-                  <Card className="p-6 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-destructive mx-auto mb-2" />
-                    <p className="text-muted-foreground text-sm">
-                      {eraseMode === "delete" ? "Deleting" : "Redacting"} matching data...
-                    </p>
-                  </Card>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card className="p-6 text-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-destructive mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">
+                        {eraseMode === "delete" ? "Deleting" : "Redacting"} matching data...
+                      </p>
+                    </Card>
+                  </motion.div>
                 )}
 
                 {phase === "erased" && eraseResult && prevVersionRows.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                  >
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-                        <ArrowRight className="w-4 h-4 text-primary" />
-                        Before / After Diff
+                        <Zap className="w-4 h-4 text-primary" />
+                        Before vs After
                         <span className="text-xs text-muted-foreground ml-auto">
                           v{eraseResult.version_number - 1} → v{eraseResult.version_number}
                         </span>
                       </h3>
-                      <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                        {prevVersionRows.map((beforeRow) => {
-                          const afterRow = rows.find(r => r.row_index === beforeRow.row_index);
-                          const wasDeleted = afterRow?.is_removed && !beforeRow.is_removed;
-                          const wasRedacted = afterRow?.is_redacted && !beforeRow.is_redacted;
-                          const unchanged = !wasDeleted && !wasRedacted;
-
-                          return (
-                            <div key={beforeRow.id} className="text-xs font-mono">
-                              {wasDeleted && (
-                                <div className="bg-destructive/10 text-destructive px-2 py-1.5 rounded border-l-2 border-destructive">
-                                  <span className="mr-2">-</span>
-                                  <span className="line-through">{beforeRow.content}</span>
-                                </div>
-                              )}
-                              {wasRedacted && (
-                                <>
-                                  <div className="bg-destructive/5 text-muted-foreground px-2 py-1 rounded-t border-l-2 border-yellow-500/50">
-                                    <span className="mr-2">-</span>
-                                    {beforeRow.content}
-                                  </div>
-                                  <div className="bg-yellow-500/10 text-foreground px-2 py-1 rounded-b border-l-2 border-yellow-500">
-                                    <span className="mr-2 text-yellow-500">+</span>
-                                    {afterRow ? highlightRedacted(afterRow.content) : ""}
-                                  </div>
-                                </>
-                              )}
-                              {unchanged && (
-                                <div className="text-muted-foreground/50 px-2 py-1 border-l-2 border-border/30">
-                                  <span className="mr-2">&nbsp;</span>
-                                  {beforeRow.content}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                      <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 px-2">
+                            Before (v{eraseResult.version_number - 1})
+                          </div>
+                          <div className="space-y-1">
+                            {prevVersionRows.map((row) => {
+                              const afterRow = rows.find(r => r.row_index === row.row_index);
+                              const wasDeleted = afterRow?.is_removed && !row.is_removed;
+                              const wasRedacted = afterRow?.is_redacted && !row.is_redacted;
+                              return (
+                                <motion.div
+                                  key={row.id}
+                                  initial={{ opacity: 1 }}
+                                  animate={{ opacity: wasDeleted ? 0.5 : 1 }}
+                                  transition={{ duration: 0.5 }}
+                                  className={`text-xs font-mono px-2 py-1.5 rounded ${
+                                    wasDeleted
+                                      ? "bg-destructive/10 text-destructive line-through border-l-2 border-destructive"
+                                      : wasRedacted
+                                        ? "bg-yellow-500/10 border-l-2 border-yellow-500/50 text-muted-foreground"
+                                        : "text-muted-foreground/60 border-l-2 border-border/30"
+                                  }`}
+                                >
+                                  {row.content}
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 px-2">
+                            After (v{eraseResult.version_number})
+                          </div>
+                          <div className="space-y-1">
+                            {rows.map((row) => {
+                              const beforeRow = prevVersionRows.find(r => r.row_index === row.row_index);
+                              const wasDeleted = row.is_removed && beforeRow && !beforeRow.is_removed;
+                              const wasRedacted = row.is_redacted && beforeRow && !beforeRow.is_redacted;
+                              return (
+                                <motion.div
+                                  key={row.id}
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: wasDeleted ? 0.3 : 1 }}
+                                  transition={{ duration: 0.5, delay: 0.2 }}
+                                  className={`text-xs font-mono px-2 py-1.5 rounded ${
+                                    wasDeleted
+                                      ? "bg-destructive/5 text-destructive/40 line-through border-l-2 border-destructive/30"
+                                      : wasRedacted
+                                        ? "bg-yellow-500/10 border-l-2 border-yellow-500 text-foreground"
+                                        : "text-foreground/80 border-l-2 border-success/30"
+                                  }`}
+                                >
+                                  {row.is_redacted ? highlightRedacted(row.content) : row.content}
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </Card>
                   </motion.div>
@@ -559,44 +767,12 @@ export function DatasetSanitizer() {
               </div>
 
               <div className="lg:col-span-4 space-y-4">
-                {eraseResult && (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                    <Card className="p-5 space-y-4 border-primary/30">
-                      <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-primary" />
-                        Impact Summary
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="text-center">
-                          <div className="text-4xl font-display font-extrabold text-primary">
-                            {eraseResult.impact.impact_percent}%
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">data affected</div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="bg-destructive/10 rounded-lg p-2">
-                            <div className="text-lg font-bold text-destructive">{eraseResult.impact.removed}</div>
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">deleted</div>
-                          </div>
-                          <div className="bg-yellow-500/10 rounded-lg p-2">
-                            <div className="text-lg font-bold text-yellow-500">{eraseResult.impact.redacted}</div>
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">redacted</div>
-                          </div>
-                          <div className="bg-success/10 rounded-lg p-2">
-                            <div className="text-lg font-bold text-success">{eraseResult.impact.remaining}</div>
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">remaining</div>
-                          </div>
-                        </div>
-                        <div className="text-xs text-center text-muted-foreground">
-                          Version {eraseResult.version_number} created
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-
                 {operations.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.05 }}
+                  >
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <History className="w-4 h-4 text-primary" />
@@ -604,12 +780,14 @@ export function DatasetSanitizer() {
                       </h3>
                       <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                         {operations.map((op) => (
-                          <div key={op.id} className="text-xs bg-muted/30 px-3 py-2 rounded-lg flex items-start gap-2">
-                            {op.type === "delete" ? (
-                              <Trash2 className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
-                            ) : (
-                              <Shield className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
-                            )}
+                          <motion.div
+                            key={op.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="text-xs bg-muted/30 px-3 py-2 rounded-lg flex items-start gap-2"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                             <div className="flex-1">
                               <span className={op.type === "delete" ? "text-destructive" : "text-yellow-500"}>
                                 {op.type === "delete" ? "Deleted" : "Redacted"}
@@ -619,16 +797,23 @@ export function DatasetSanitizer() {
                               {"' → "}
                               <span className="text-foreground font-medium">{op.affected_rows_count} row{op.affected_rows_count !== 1 ? "s" : ""}</span>
                               {" affected"}
+                              <div className="text-muted-foreground/60 mt-0.5">
+                                Version {versions.find(v => v.id === op.version_id)?.version_number ?? "?"}
+                              </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </Card>
                   </motion.div>
                 )}
 
-                {phase === "erased" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                {(phase === "erased" || verifyResult) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.15 }}
+                  >
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <Search className="w-4 h-4 text-primary" />
@@ -644,14 +829,16 @@ export function DatasetSanitizer() {
                           placeholder='Try "Firdous"...'
                           className="text-sm py-2"
                           onKeyDown={(e) => e.key === "Enter" && verifyErasure()}
+                          disabled={isRunningDemo}
                         />
-                        <Button size="sm" onClick={verifyErasure} disabled={!verifyQuery.trim()}>Verify</Button>
+                        <Button size="sm" onClick={verifyErasure} disabled={!verifyQuery.trim() || isRunningDemo}>Verify</Button>
                       </div>
                       <AnimatePresence>
                         {verifyResult && (
                           <motion.div
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
                             className={`p-3 rounded-lg text-sm space-y-2 ${
                               verifyResult.status === "success"
                                 ? "bg-success/10 text-success border border-success/20"
@@ -692,7 +879,11 @@ export function DatasetSanitizer() {
                 )}
 
                 {phase === "erased" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.25 }}
+                  >
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <Download className="w-4 h-4 text-primary" />

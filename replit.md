@@ -103,14 +103,14 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 ### Features
 
 1. **Live Demo** — Teach facts, ask questions, unlearn (erase) facts, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
-2. **Dataset Sanitizer (Version-Controlled Unlearning Engine)** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view color-coded Before/After diff (red=deleted, yellow=redacted), impact summary panel, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full).
+2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → scan for keyword → delete → verify erasure — with step-by-step progress labels.
 
 ### Key Files
 
 - `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_versions`, `dataset_rows`, `dataset_operations` tables
 - `artifacts/api-server/src/routes/eraseai.ts` — Live Demo API routes (teach, ask, forget, verify, seed, logs)
 - `artifacts/api-server/src/routes/datasets.ts` — Version-Controlled Dataset API routes (upload, demo, get, erase, download, verify)
-- `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | Dataset Sanitizer)
+- `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | AI Dataset Unlearning Engine)
 - `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Version-Controlled Unlearning Engine UI
 - `artifacts/eraseai/src/context/DemoContext.tsx` — Demo orchestration context
 

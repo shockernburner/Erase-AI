@@ -67,7 +67,7 @@ function HomeContent() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "live-demo", label: "Live Demo", icon: <Zap className="w-4 h-4" /> },
-    { id: "dataset-sanitizer", label: "Dataset Sanitizer", icon: <Database className="w-4 h-4" /> },
+    { id: "dataset-sanitizer", label: "AI Dataset Unlearning Engine", icon: <Database className="w-4 h-4" /> },
   ];
 
   return (
