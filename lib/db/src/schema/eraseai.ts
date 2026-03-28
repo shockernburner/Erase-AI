@@ -1,6 +1,7 @@
-import { pgTable, text, serial, timestamp, real, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, real, integer, boolean, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const factsTable = pgTable("facts", {
   id: serial("id").primaryKey(),
@@ -40,7 +41,7 @@ export const datasetsTable = pgTable("datasets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   originalFormat: text("original_format").notNull(),
-  userId: text("user_id"),
+  userId: text("user_id").references(() => usersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

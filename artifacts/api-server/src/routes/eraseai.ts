@@ -75,7 +75,16 @@ function inferFromFacts(
   };
 }
 
+function requireAuth(req: Request, res: Response): boolean {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return false;
+  }
+  return true;
+}
+
 router.get("/seed", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const existing = await db.select().from(factsTable);
   if (existing.length === 0) {
     await db.insert(factsTable).values({ text: "Firdous is the CEO of X company" });
@@ -87,6 +96,7 @@ router.get("/seed", async (req: Request, res: Response) => {
 });
 
 router.get("/facts", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const facts = await db.select().from(factsTable).orderBy(factsTable.createdAt);
   const response = ListFactsResponse.parse({
     facts: facts.map((f) => ({
@@ -100,6 +110,7 @@ router.get("/facts", async (req: Request, res: Response) => {
 });
 
 router.post("/train", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const body = TrainFactBody.parse(req.body);
 
   const [inserted] = await db
@@ -121,6 +132,7 @@ router.post("/train", async (req: Request, res: Response) => {
 });
 
 router.post("/ask", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const body = AskQuestionBody.parse(req.body);
   const facts = await db.select().from(factsTable);
   const result = inferFromFacts(body.question, facts);
@@ -148,6 +160,7 @@ router.post("/ask", async (req: Request, res: Response) => {
 });
 
 router.post("/unlearn", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const body = UnlearnFactBody.parse(req.body);
   const searchText = body.text.toLowerCase();
 
@@ -180,6 +193,7 @@ router.post("/unlearn", async (req: Request, res: Response) => {
 });
 
 router.post("/verify", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const body = VerifyUnlearningBody.parse(req.body);
 
   const allFacts = await db.select().from(factsTable);
