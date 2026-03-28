@@ -532,9 +532,11 @@ export function DatasetSanitizer() {
           });
         } else {
           setAnalysisData(null);
+          setMlFeedback(null);
         }
       } else {
         setAnalysisData(null);
+        setMlFeedback(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to apply suggestion");
@@ -570,6 +572,7 @@ export function DatasetSanitizer() {
       });
       await fetchDataset(dataset.id);
       setAnalysisData(null);
+      setMlFeedback(null);
       setPhase("erased");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to apply suggestions");
