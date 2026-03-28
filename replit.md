@@ -105,6 +105,7 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 1. **Live Demo** — Upload dataset entries, preview/search dataset, erase entries from dataset, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
 2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → analyze → auto-fix → erase → verify — with step-by-step progress labels.
 3. **Dataset Intelligence Engine** — Automated dataset analysis detecting PII (emails, phone numbers), biased language (gender/racial), toxic content, duplicate rows, and low-quality entries. Interactive analysis results panel with category summary cards, expandable flagged row lists, per-category "Fix" buttons, and "Apply All Fixes" batch action. Auto-fix creates a new immutable version with deletions and redactions applied.
+4. **ML Feedback Engine** — Rule-based ML pipeline recommendations that map detected issues to actionable preprocessing, training, and evaluation suggestions. Auto-generates after analysis. Recommendations include code snippets, priority levels (critical/high/medium/low), and are filterable by category. Export as Markdown or JSON.
 
 ### Key Files
 
@@ -127,3 +128,5 @@ DB tables: `datasets` (id, name, original_format), `dataset_versions` (id, datas
 - `POST /api/datasets/:id/verify` — Body: `{ query: "keyword" }`. Compares first version vs latest, returns matches_before/matches_after/status
 - `POST /api/datasets/:id/analyze` — Rule-based analysis detecting PII (email/phone), biased language (gender/racial), toxic content, duplicates, and low-quality entries. Persists results to `analysis_results` table. Returns summary + detailed issues.
 - `POST /api/datasets/:id/apply-suggestions` — Body: `{ issue_types: ["pii","bias","toxic","duplicate","quality"] }`. Applies auto-fix (delete/redact) based on stored analysis results, creates new version. Returns impact summary.
+- `POST /api/datasets/:id/ml-feedback` — Generates ML pipeline recommendations based on stored analysis results. Rule-based mapping from issue types to preprocessing/training/evaluation recommendations with priority levels and code snippets.
+- `GET /api/datasets/:id/ml-feedback/export?format=md|json` — Export ML recommendations as Markdown or JSON for download.

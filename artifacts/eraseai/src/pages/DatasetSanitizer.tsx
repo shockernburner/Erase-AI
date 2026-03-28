@@ -27,6 +27,12 @@ import {
   Copy,
   MessageSquareWarning,
   ShieldAlert,
+  BrainCircuit,
+  Wrench,
+  GraduationCap,
+  FlaskConical,
+  Code2,
+  FileDown,
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -114,6 +120,20 @@ interface AnalysisData {
   issues: AnalysisIssueItem[];
 }
 
+interface MLRecommendation {
+  category: "preprocessing" | "training" | "evaluation";
+  title: string;
+  description: string;
+  priority: "critical" | "high" | "medium" | "low";
+  triggered_by: string;
+  code_snippet?: string;
+}
+
+interface MLFeedbackData {
+  issues_detected: { type: string; count: number; severity: string }[];
+  ml_recommendations: MLRecommendation[];
+}
+
 type Phase = "idle" | "loading" | "loaded" | "confirm-erase" | "erasing" | "erased";
 type EraseMode = "delete" | "redact";
 
@@ -150,6 +170,9 @@ export function DatasetSanitizer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [mlFeedback, setMlFeedback] = useState<MLFeedbackData | null>(null);
+  const [isFetchingML, setIsFetchingML] = useState(false);
+  const [mlCategory, setMlCategory] = useState<"all" | "preprocessing" | "training" | "evaluation">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDataset = useCallback(async (id: number, version?: number): Promise<{ rows: DatasetRow[]; dataset: DatasetInfo; versions: VersionInfo[]; current_version: number; latest_version: number; operations: OperationInfo[]; removed_count: number; redacted_count: number }> => {
@@ -220,6 +243,20 @@ export function DatasetSanitizer() {
         setExpandedIssue(analyzeData.summary[0].type);
       }
       await delay(800);
+
+      setDemoStep("Generating ML pipeline recommendations...");
+      const mlRes = await fetch(`${BASE}api/datasets/${dsId}/ml-feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (mlRes.ok) {
+        const mlData = await mlRes.json();
+        if (mlData.ml_recommendations?.length > 0) {
+          setMlFeedback(mlData);
+          setMlCategory("all");
+        }
+      }
+      await delay(600);
 
       if (analyzeData.total_issues > 0) {
         setDemoStep("Applying suggested fixes...");
@@ -405,7 +442,30 @@ export function DatasetSanitizer() {
     setError("");
     setAnalysisData(null);
     setExpandedIssue(null);
+    setMlFeedback(null);
+    setMlCategory("all");
     loadDemo();
+  };
+
+  const fetchMLFeedback = async (datasetId: number) => {
+    setIsFetchingML(true);
+    try {
+      const res = await fetch(`${BASE}api/datasets/${datasetId}/ml-feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok && data.ml_recommendations?.length > 0) {
+        setMlFeedback(data);
+        setMlCategory("all");
+      } else {
+        setMlFeedback(null);
+      }
+    } catch {
+      setMlFeedback(null);
+    } finally {
+      setIsFetchingML(false);
+    }
   };
 
   const analyzeDataset = async () => {
@@ -423,6 +483,7 @@ export function DatasetSanitizer() {
       if (data.summary.length > 0) {
         setExpandedIssue(data.summary[0].type);
       }
+      fetchMLFeedback(dataset.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
@@ -832,6 +893,154 @@ export function DatasetSanitizer() {
                       <p className="text-xs text-muted-foreground">No PII, bias, toxic content, duplicates, or quality issues detected.</p>
                     </div>
                     <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setAnalysisData(null)}>Dismiss</Button>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {mlFeedback && mlFeedback.ml_recommendations.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Card className="p-5 border-violet-500/30 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                      <BrainCircuit className="w-5 h-5 text-violet-400" />
+                      <div>
+                        <h3 className="font-display font-bold text-foreground">ML Pipeline Recommendations</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {mlFeedback.ml_recommendations.length} recommendation{mlFeedback.ml_recommendations.length !== 1 ? "s" : ""} based on {mlFeedback.issues_detected.length} detected issue type{mlFeedback.issues_detected.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {dataset && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 text-xs"
+                            onClick={() => window.open(`${BASE}api/datasets/${dataset.id}/ml-feedback/export?format=md`, "_blank")}
+                          >
+                            <FileDown className="w-3 h-3" />
+                            Markdown
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 text-xs"
+                            onClick={() => window.open(`${BASE}api/datasets/${dataset.id}/ml-feedback/export?format=json`, "_blank")}
+                          >
+                            <FileDown className="w-3 h-3" />
+                            JSON
+                          </Button>
+                        </>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => setMlFeedback(null)}>Dismiss</Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {(["all", "preprocessing", "training", "evaluation"] as const).map(cat => {
+                      const count = cat === "all"
+                        ? mlFeedback.ml_recommendations.length
+                        : mlFeedback.ml_recommendations.filter(r => r.category === cat).length;
+                      if (count === 0 && cat !== "all") return null;
+                      const icons: Record<string, React.ReactNode> = {
+                        all: <BrainCircuit className="w-3.5 h-3.5" />,
+                        preprocessing: <Wrench className="w-3.5 h-3.5" />,
+                        training: <GraduationCap className="w-3.5 h-3.5" />,
+                        evaluation: <FlaskConical className="w-3.5 h-3.5" />,
+                      };
+                      const labels: Record<string, string> = { all: "All", preprocessing: "Preprocessing", training: "Training", evaluation: "Evaluation" };
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setMlCategory(cat)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mlCategory === cat ? "bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/40" : "bg-muted/20 text-muted-foreground hover:bg-muted/40"}`}
+                        >
+                          {icons[cat]}
+                          {labels[cat]}
+                          <span className="text-[10px] opacity-60">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                    {mlFeedback.ml_recommendations
+                      .filter(r => mlCategory === "all" || r.category === mlCategory)
+                      .map((rec, idx) => {
+                        const catIcons: Record<string, React.ReactNode> = {
+                          preprocessing: <Wrench className="w-4 h-4 text-blue-400" />,
+                          training: <GraduationCap className="w-4 h-4 text-green-400" />,
+                          evaluation: <FlaskConical className="w-4 h-4 text-purple-400" />,
+                        };
+                        const priorityColors: Record<string, string> = {
+                          critical: "text-red-400 bg-red-500/10 border-red-500/20",
+                          high: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                          medium: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+                          low: "text-green-400 bg-green-500/10 border-green-500/20",
+                        };
+                        return (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.2, delay: idx * 0.05 }}
+                            className="p-3.5 rounded-xl border border-border/30 bg-muted/10 space-y-2"
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <span className="mt-0.5 shrink-0">{catIcons[rec.category]}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-semibold text-foreground">{rec.title}</span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono uppercase ${priorityColors[rec.priority]}`}>
+                                    {rec.priority}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{rec.description}</p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="text-[10px] text-muted-foreground/60">
+                                    Triggered by: <span className="text-foreground/60 font-semibold">{rec.triggered_by.toUpperCase()}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            {rec.code_snippet && (
+                              <div className="mt-2 rounded-lg bg-black/30 border border-border/20 p-3 overflow-x-auto">
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <Code2 className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Suggested implementation</span>
+                                </div>
+                                <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">{rec.code_snippet}</pre>
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isFetchingML && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Card className="p-5 border-violet-500/20">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Generating ML pipeline recommendations...</span>
                   </div>
                 </Card>
               </motion.div>

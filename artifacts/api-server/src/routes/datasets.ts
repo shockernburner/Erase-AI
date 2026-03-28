@@ -761,4 +761,293 @@ router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
   });
 });
 
+interface MLRecommendation {
+  category: "preprocessing" | "training" | "evaluation";
+  title: string;
+  description: string;
+  priority: "critical" | "high" | "medium" | "low";
+  triggered_by: string;
+  code_snippet?: string;
+}
+
+function generateMLRecommendations(issueSummary: { type: string; count: number; severity: string }[]): MLRecommendation[] {
+  const recs: MLRecommendation[] = [];
+  const typeSet = new Set(issueSummary.map(s => s.type));
+
+  if (typeSet.has("pii")) {
+    const piiSummary = issueSummary.find(s => s.type === "pii")!;
+    recs.push({
+      category: "preprocessing",
+      title: "Add PII Detection & Masking Pipeline",
+      description: `${piiSummary.count} PII instance(s) detected (emails, phone numbers). Add an automated PII scrubbing step before any model training to prevent the model from memorizing personal data. Use named-entity recognition or regex-based filters.`,
+      priority: "critical",
+      triggered_by: "pii",
+      code_snippet: "pipeline.add_step(PIIMaskingTransformer(fields=['text'], strategies=['email_mask', 'phone_redact']))",
+    });
+    recs.push({
+      category: "training",
+      title: "Enable Differential Privacy During Training",
+      description: "With PII present in the dataset, apply differential privacy (DP-SGD) during model training to limit memorization of individual data points. Set epsilon to a conservative value (e.g., ε ≤ 8).",
+      priority: "high",
+      triggered_by: "pii",
+      code_snippet: "trainer = DPTrainer(model, epsilon=8.0, delta=1e-5, max_grad_norm=1.0)",
+    });
+    recs.push({
+      category: "evaluation",
+      title: "Run Membership Inference Attack Test",
+      description: "After training, test the model with a membership inference attack to verify it has not memorized PII-containing training samples. Target ≤55% attack accuracy.",
+      priority: "high",
+      triggered_by: "pii",
+    });
+  }
+
+  if (typeSet.has("bias")) {
+    const biasSummary = issueSummary.find(s => s.type === "bias")!;
+    recs.push({
+      category: "preprocessing",
+      title: "Rebalance Dataset for Demographic Representation",
+      description: `${biasSummary.count} biased language pattern(s) detected. Audit your dataset for representation imbalance across gender, race, and other protected attributes. Apply oversampling, undersampling, or synthetic data augmentation.`,
+      priority: "high",
+      triggered_by: "bias",
+      code_snippet: "balanced_df = resample(df, strategy='oversample', target_column='demographic', ratio=1.0)",
+    });
+    recs.push({
+      category: "training",
+      title: "Apply Fairness Constraints During Training",
+      description: "Integrate fairness-aware learning objectives (e.g., equalized odds, demographic parity) into training to prevent the model from amplifying existing biases.",
+      priority: "high",
+      triggered_by: "bias",
+      code_snippet: "model.compile(loss='cross_entropy', fairness_constraint=EqualizedOdds(sensitive_attr='gender'))",
+    });
+    recs.push({
+      category: "evaluation",
+      title: "Run Bias Audit Across Protected Groups",
+      description: "Evaluate model predictions across demographic groups. Measure disparate impact ratio (target ≥ 0.8) and equalized odds difference (target ≤ 0.1).",
+      priority: "high",
+      triggered_by: "bias",
+      code_snippet: "audit = FairnessAudit(model, test_data, protected_attrs=['gender', 'race'])\naudit.report()",
+    });
+  }
+
+  if (typeSet.has("toxic")) {
+    const toxicSummary = issueSummary.find(s => s.type === "toxic")!;
+    recs.push({
+      category: "preprocessing",
+      title: "Add Content Toxicity Filter",
+      description: `${toxicSummary.count} toxic content instance(s) detected. Add a toxicity scoring step to your data pipeline. Flag and remove samples above a configurable threshold before training.`,
+      priority: "critical",
+      triggered_by: "toxic",
+      code_snippet: "pipeline.add_step(ToxicityFilter(threshold=0.7, model='perspective-api'))",
+    });
+    recs.push({
+      category: "training",
+      title: "Fine-tune with Safety-Aligned Data",
+      description: "After removing toxic samples, supplement training with curated safety-aligned data (e.g., constitutional AI dataset) to improve the model's ability to refuse harmful requests.",
+      priority: "medium",
+      triggered_by: "toxic",
+    });
+    recs.push({
+      category: "evaluation",
+      title: "Run Red-Team Safety Evaluation",
+      description: "Test the trained model with adversarial prompts designed to elicit toxic outputs. Measure toxicity rate and ensure it remains below 2% on standard safety benchmarks.",
+      priority: "high",
+      triggered_by: "toxic",
+      code_snippet: "safety_score = red_team_eval(model, attack_suite='standard', max_toxicity=0.02)",
+    });
+  }
+
+  if (typeSet.has("duplicate")) {
+    const dupSummary = issueSummary.find(s => s.type === "duplicate")!;
+    recs.push({
+      category: "preprocessing",
+      title: "Implement Deduplication Pipeline",
+      description: `${dupSummary.count} duplicate row(s) detected. Exact and near-duplicate entries inflate training loss on repeated samples and cause overfitting. Use MinHash/LSH for scalable fuzzy deduplication.`,
+      priority: "medium",
+      triggered_by: "duplicate",
+      code_snippet: "deduped_df = deduplicate(df, column='text', method='minhash', threshold=0.85)",
+    });
+    recs.push({
+      category: "training",
+      title: "Monitor for Overfitting on Repeated Samples",
+      description: "Duplicates cause the model to disproportionately fit repeated patterns. Track per-sample loss variance during training and flag samples with consistently low loss as potential duplicates.",
+      priority: "low",
+      triggered_by: "duplicate",
+    });
+    recs.push({
+      category: "evaluation",
+      title: "Measure Data Leakage Between Train/Test Splits",
+      description: "After deduplication, verify no duplicates leak across train/test boundaries. Cross-reference train and test sets using exact and fuzzy matching.",
+      priority: "medium",
+      triggered_by: "duplicate",
+      code_snippet: "leakage = detect_leakage(train_df, test_df, column='text', threshold=0.9)\nassert leakage.count == 0",
+    });
+  }
+
+  if (typeSet.has("quality")) {
+    const qualSummary = issueSummary.find(s => s.type === "quality")!;
+    recs.push({
+      category: "preprocessing",
+      title: "Enforce Minimum Data Quality Thresholds",
+      description: `${qualSummary.count} low-quality entry/entries detected (empty or very short). Set minimum character/token length thresholds and filter out noisy, incomplete, or malformed samples.`,
+      priority: "medium",
+      triggered_by: "quality",
+      code_snippet: "pipeline.add_step(QualityFilter(min_chars=10, min_tokens=3, remove_empty=True))",
+    });
+    recs.push({
+      category: "training",
+      title: "Use Curriculum Learning for Noisy Data",
+      description: "If some low-quality data must be retained, apply curriculum learning: train on high-quality samples first, then gradually introduce noisier data with lower learning rates.",
+      priority: "low",
+      triggered_by: "quality",
+    });
+    recs.push({
+      category: "evaluation",
+      title: "Track Data Quality Metrics Over Time",
+      description: "Set up a data quality dashboard tracking completeness, consistency, and uniqueness scores. Alert when quality drops below thresholds between dataset versions.",
+      priority: "low",
+      triggered_by: "quality",
+    });
+  }
+
+  return recs;
+}
+
+router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
+
+  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
+  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+
+  const latestVersion = await getLatestVersion(id);
+  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+
+  const storedIssues = await db.select().from(analysisResultsTable)
+    .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+
+  if (storedIssues.length === 0) {
+    res.json({
+      dataset_id: id,
+      version: latestVersion.versionNumber,
+      issues_detected: [],
+      ml_recommendations: [],
+      message: "No issues detected — dataset appears clean. Run analysis first if you haven't yet.",
+    });
+    return;
+  }
+
+  const summaryMap: Record<string, { count: number; severity: string }> = {};
+  for (const issue of storedIssues) {
+    if (!summaryMap[issue.issueType]) {
+      summaryMap[issue.issueType] = { count: 0, severity: issue.severity };
+    }
+    summaryMap[issue.issueType].count++;
+    const sevOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
+    if ((sevOrder[issue.severity] ?? 0) > (sevOrder[summaryMap[issue.issueType].severity] ?? 0)) {
+      summaryMap[issue.issueType].severity = issue.severity;
+    }
+  }
+
+  const issueSummary = Object.entries(summaryMap).map(([type, data]) => ({
+    type,
+    count: data.count,
+    severity: data.severity,
+  }));
+
+  const recommendations = generateMLRecommendations(issueSummary);
+
+  res.json({
+    dataset_id: id,
+    version: latestVersion.versionNumber,
+    issues_detected: issueSummary,
+    ml_recommendations: recommendations,
+  });
+});
+
+router.get("/:id/ml-feedback/export", async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
+
+  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
+  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+
+  const format = (req.query.format as string) || "md";
+  if (!["md", "json"].includes(format)) {
+    res.status(400).json({ error: "Format must be 'md' or 'json'" });
+    return;
+  }
+
+  const latestVersion = await getLatestVersion(id);
+  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+
+  const storedIssues = await db.select().from(analysisResultsTable)
+    .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+
+  const summaryMap: Record<string, { count: number; severity: string }> = {};
+  for (const issue of storedIssues) {
+    if (!summaryMap[issue.issueType]) {
+      summaryMap[issue.issueType] = { count: 0, severity: issue.severity };
+    }
+    summaryMap[issue.issueType].count++;
+    const sevOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
+    if ((sevOrder[issue.severity] ?? 0) > (sevOrder[summaryMap[issue.issueType].severity] ?? 0)) {
+      summaryMap[issue.issueType].severity = issue.severity;
+    }
+  }
+
+  const issueSummary = Object.entries(summaryMap).map(([type, data]) => ({
+    type,
+    count: data.count,
+    severity: data.severity,
+  }));
+
+  const recommendations = generateMLRecommendations(issueSummary);
+
+  if (format === "json") {
+    const payload = {
+      dataset: { id: dataset.id, name: dataset.name },
+      version: latestVersion.versionNumber,
+      generated_at: new Date().toISOString(),
+      issues_detected: issueSummary,
+      ml_recommendations: recommendations,
+    };
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="ml-feedback_${dataset.name}_v${latestVersion.versionNumber}.json"`);
+    res.send(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  const priorityIcon: Record<string, string> = { critical: "🔴", high: "🟠", medium: "🟡", low: "🟢" };
+  const categoryLabel: Record<string, string> = { preprocessing: "Preprocessing", training: "Training", evaluation: "Evaluation" };
+
+  let md = `# ML Pipeline Recommendations\n\n`;
+  md += `**Dataset:** ${dataset.name}  \n`;
+  md += `**Version:** ${latestVersion.versionNumber}  \n`;
+  md += `**Generated:** ${new Date().toISOString()}  \n\n`;
+
+  md += `## Issues Detected\n\n`;
+  for (const s of issueSummary) {
+    md += `- **${s.type.toUpperCase()}** — ${s.count} instance(s), severity: ${s.severity}\n`;
+  }
+  md += `\n`;
+
+  for (const cat of ["preprocessing", "training", "evaluation"] as const) {
+    const catRecs = recommendations.filter(r => r.category === cat);
+    if (catRecs.length === 0) continue;
+    md += `## ${categoryLabel[cat]}\n\n`;
+    for (const r of catRecs) {
+      md += `### ${priorityIcon[r.priority]} ${r.title}\n\n`;
+      md += `${r.description}\n\n`;
+      md += `> Triggered by: **${r.triggered_by}** | Priority: **${r.priority}**\n\n`;
+      if (r.code_snippet) {
+        md += "```python\n" + r.code_snippet + "\n```\n\n";
+      }
+    }
+  }
+
+  res.setHeader("Content-Type", "text/markdown");
+  res.setHeader("Content-Disposition", `attachment; filename="ml-feedback_${dataset.name}_v${latestVersion.versionNumber}.md"`);
+  res.send(md);
+});
+
 export default router;
