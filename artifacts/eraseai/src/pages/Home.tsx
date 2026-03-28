@@ -13,7 +13,7 @@ import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, Crown
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
-type AppView = "home" | "pricing";
+type AppView = "home" | "pricing" | "checkout-success";
 
 const DEMO_FACT = "Firdous is the CEO of X company";
 const DEMO_QUESTION = "Who is Firdous?";

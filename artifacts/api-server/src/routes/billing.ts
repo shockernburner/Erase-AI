@@ -7,6 +7,11 @@ import {
   getSession,
   updateSession,
 } from "../lib/auth";
+import {
+  createPaymentIntent,
+  getPaymentIntent,
+  isConfigured,
+} from "../lib/airwallex";
 
 const router: IRouter = Router();
 
@@ -14,16 +19,6 @@ const PRO_PRICE_MONTHLY = 49;
 const PRO_PRICE_CURRENCY = "USD";
 
 const WEBHOOK_SECRET = process.env.AIRWALLEX_WEBHOOK_SECRET || "";
-
-interface CheckoutSession {
-  id: string;
-  userId: string;
-  plan: string;
-  status: "pending" | "completed" | "expired";
-  createdAt: number;
-}
-
-const checkoutSessions = new Map<string, CheckoutSession>();
 
 function requireAuth(req: Request, res: Response): boolean {
   if (!req.isAuthenticated()) {
@@ -126,7 +121,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
 router.post("/checkout", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
-  const { plan } = req.body as { plan?: string };
+  const { plan, returnUrl } = req.body as { plan?: string; returnUrl?: string };
   if (plan !== "pro") {
     res.status(400).json({ error: "Only 'pro' plan is available for self-serve checkout" });
     return;
@@ -143,76 +138,107 @@ router.post("/checkout", async (req: Request, res: Response) => {
     return;
   }
 
-  const sessionId = crypto.randomBytes(16).toString("hex");
-  const checkout: CheckoutSession = {
-    id: sessionId,
-    userId: req.user!.id,
-    plan: "pro",
-    status: "pending",
-    createdAt: Date.now(),
-  };
-  checkoutSessions.set(sessionId, checkout);
-
-  res.json({
-    checkoutSessionId: sessionId,
-    provider: "airwallex",
-    amount: PRO_PRICE_MONTHLY,
-    currency: PRO_PRICE_CURRENCY,
-    plan: "pro",
-    status: "pending",
-    mode: "demo",
-  });
-});
-
-router.post("/checkout/:sessionId/confirm", async (req: Request, res: Response) => {
-  if (!requireAuth(req, res)) return;
-
-  const checkout = checkoutSessions.get(req.params.sessionId as string);
-  if (!checkout) {
-    res.status(404).json({ error: "Checkout session not found" });
+  if (!isConfigured()) {
+    res.status(503).json({ error: "Payment provider is not configured" });
     return;
   }
 
-  if (checkout.userId !== req.user!.id) {
-    res.status(403).json({ error: "Access denied" });
-    return;
-  }
-
-  if (checkout.status !== "pending") {
-    res.status(400).json({ error: "Checkout session already processed" });
-    return;
-  }
-
-  checkout.status = "completed";
-  const now = new Date();
-  const endDate = new Date(now);
-  endDate.setMonth(endDate.getMonth() + 1);
-
-  await db.update(usersTable).set({
-    planType: "pro",
-    subscriptionId: `sub_${checkout.id}`,
-    subscriptionStatus: "active",
-    planStartDate: now,
-    planEndDate: endDate,
-  }).where(eq(usersTable.id, req.user!.id));
-
-  const sid = getSessionId(req);
-  if (sid) {
-    const session = await getSession(sid);
-    if (session) {
-      session.user.planType = "pro";
-      await updateSession(sid, session);
+  const merchantOrderId = `eraseai_pro_${req.user!.id}_${Date.now()}`;
+  const host = req.get("host") || "";
+  const origin = `${req.protocol}://${host}`;
+  let successUrl = `${origin}/`;
+  if (returnUrl) {
+    try {
+      const parsed = new URL(returnUrl);
+      if (parsed.origin === origin) {
+        successUrl = returnUrl;
+      }
+    } catch {
+      // ignore invalid returnUrl, use default
     }
   }
 
-  res.json({
-    success: true,
-    plan: "pro",
-    subscriptionId: `sub_${checkout.id}`,
-    subscriptionStatus: "active",
-    planStartDate: now.toISOString(),
-    planEndDate: endDate.toISOString(),
-  });
+  try {
+    const result = await createPaymentIntent({
+      amount: PRO_PRICE_MONTHLY,
+      currency: PRO_PRICE_CURRENCY,
+      userId: req.user!.id,
+      merchantOrderId,
+      returnUrl: successUrl,
+    });
+
+    await db.update(usersTable).set({
+      subscriptionId: result.intentId,
+      subscriptionStatus: "pending",
+    }).where(eq(usersTable.id, req.user!.id));
+
+    res.json({
+      checkoutUrl: result.checkoutUrl,
+      intentId: result.intentId,
+      provider: "airwallex",
+      amount: PRO_PRICE_MONTHLY,
+      currency: PRO_PRICE_CURRENCY,
+      plan: "pro",
+    });
+  } catch (err) {
+    console.error("Airwallex checkout error:", err);
+    res.status(500).json({ error: "Failed to create checkout session. Please try again." });
+  }
+});
+
+router.get("/checkout-status", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
+
+  const intentId = req.query.intent_id as string | undefined;
+  if (!intentId) {
+    res.status(400).json({ error: "Missing intent_id parameter" });
+    return;
+  }
+
+  try {
+    const intent = await getPaymentIntent(intentId);
+
+    const userId = intent.metadata?.user_id;
+    if (userId !== req.user!.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    if (intent.status === "SUCCEEDED") {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
+      if (user && user.planType !== "pro") {
+        const now = new Date();
+        const endDate = new Date(now);
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        await db.update(usersTable).set({
+          planType: "pro",
+          subscriptionId: intentId,
+          subscriptionStatus: "active",
+          planStartDate: now,
+          planEndDate: endDate,
+        }).where(eq(usersTable.id, req.user!.id));
+
+        const sid = getSessionId(req);
+        if (sid) {
+          const session = await getSession(sid);
+          if (session) {
+            session.user.planType = "pro";
+            await updateSession(sid, session);
+          }
+        }
+      }
+
+      res.json({ status: "succeeded", planType: "pro" });
+    } else if (intent.status === "REQUIRES_PAYMENT_METHOD" || intent.status === "REQUIRES_CUSTOMER_ACTION") {
+      res.json({ status: "pending" });
+    } else {
+      res.json({ status: intent.status.toLowerCase() });
+    }
+  } catch (err) {
+    console.error("Checkout status check error:", err);
+    res.status(500).json({ error: "Failed to check payment status" });
+  }
 });
 
 router.post("/cancel", async (req: Request, res: Response) => {
@@ -256,15 +282,15 @@ function verifyWebhookSignature(req: Request): boolean {
     return false;
   }
 
-  const signature = req.headers["x-airwallex-signature"] as string | undefined;
-  const timestamp = req.headers["x-airwallex-timestamp"] as string | undefined;
+  const signature = req.headers["x-signature"] as string | undefined;
+  const timestamp = req.headers["x-timestamp"] as string | undefined;
 
   if (!signature || !timestamp) {
     return false;
   }
 
-  const age = Date.now() - parseInt(timestamp, 10);
-  if (isNaN(age) || age > 300_000 || age < -30_000) {
+  const age = Math.abs(Date.now() / 1000 - parseInt(timestamp, 10));
+  if (isNaN(age) || age > 300) {
     return false;
   }
 
@@ -272,7 +298,7 @@ function verifyWebhookSignature(req: Request): boolean {
   const bodyStr = rawBody ? rawBody.toString("utf-8") : JSON.stringify(req.body);
   const expected = crypto
     .createHmac("sha256", WEBHOOK_SECRET)
-    .update(`${timestamp}.${bodyStr}`)
+    .update(`${timestamp}${bodyStr}`)
     .digest("hex");
 
   if (signature.length !== expected.length) {
@@ -288,54 +314,77 @@ router.post("/webhook", async (req: Request, res: Response) => {
     return;
   }
 
-  const event = req.body as { type?: string; data?: Record<string, unknown> };
+  const event = req.body as {
+    name?: string;
+    data?: {
+      object?: {
+        id?: string;
+        status?: string;
+        metadata?: Record<string, string>;
+        merchant_order_id?: string;
+      };
+    };
+  };
 
-  if (!event.type || !event.data) {
+  if (!event.name || !event.data?.object) {
     res.status(400).json({ error: "Invalid webhook payload" });
     return;
   }
 
-  const userId = event.data.userId as string | undefined;
+  const intentData = event.data.object;
+  const userId = intentData.metadata?.user_id;
+
   if (!userId) {
-    res.status(400).json({ error: "Missing userId in webhook data" });
+    res.status(200).json({ received: true, skipped: "no user_id in metadata" });
     return;
   }
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    res.status(200).json({ received: true, skipped: "user not found" });
     return;
   }
 
-  switch (event.type) {
-    case "subscription.activated": {
-      await db.update(usersTable).set({
-        planType: "pro",
-        subscriptionStatus: "active",
-        subscriptionId: (event.data.subscriptionId as string) || null,
-        planStartDate: new Date(),
-        planEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      }).where(eq(usersTable.id, userId));
-      break;
+  try {
+    switch (event.name) {
+      case "payment_intent.succeeded": {
+        if (user.planType === "pro" && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
+          break;
+        }
+
+        if (user.subscriptionId && user.subscriptionId !== intentData.id) {
+          break;
+        }
+
+        const now = new Date();
+        const endDate = new Date(now);
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        await db.update(usersTable).set({
+          planType: "pro",
+          subscriptionStatus: "active",
+          subscriptionId: intentData.id || null,
+          planStartDate: now,
+          planEndDate: endDate,
+        }).where(eq(usersTable.id, userId));
+        break;
+      }
+      case "payment_intent.payment_failed":
+      case "payment_intent.cancelled": {
+        if (user.subscriptionStatus === "pending" && (!user.subscriptionId || user.subscriptionId === intentData.id)) {
+          await db.update(usersTable).set({
+            subscriptionStatus: "failed",
+          }).where(eq(usersTable.id, userId));
+        }
+        break;
+      }
+      default:
+        break;
     }
-    case "subscription.cancelled": {
-      await db.update(usersTable).set({
-        planType: "free",
-        subscriptionStatus: "cancelled",
-        planEndDate: new Date(),
-      }).where(eq(usersTable.id, userId));
-      break;
-    }
-    case "subscription.expired": {
-      await db.update(usersTable).set({
-        planType: "free",
-        subscriptionStatus: "expired",
-        planEndDate: new Date(),
-      }).where(eq(usersTable.id, userId));
-      break;
-    }
-    default:
-      break;
+  } catch (err) {
+    console.error("Webhook processing error:", err);
+    res.status(500).json({ error: "Webhook processing failed" });
+    return;
   }
 
   res.json({ received: true });

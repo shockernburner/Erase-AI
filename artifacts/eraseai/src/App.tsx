@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +6,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import Home from "@/pages/Home";
 import LoginPage from "@/pages/LoginPage";
 import PricingPage from "@/pages/PricingPage";
+import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -17,11 +18,24 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing";
+type AppView = "home" | "pricing" | "checkout-success";
 
 function AuthGate() {
   const { isLoading, isAuthenticated } = useAuth();
-  const [view, setView] = useState<AppView>("home");
+  const [view, setView] = useState<AppView>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      return "checkout-success";
+    }
+    return "home";
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -36,6 +50,10 @@ function AuthGate() {
 
   if (!isAuthenticated) {
     return <LoginPage />;
+  }
+
+  if (view === "checkout-success") {
+    return <CheckoutSuccess onDone={() => setView("home")} />;
   }
 
   if (view === "pricing") {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle } from "lucide-react";
+import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
@@ -115,7 +115,10 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ plan: "pro" }),
+        body: JSON.stringify({
+          plan: "pro",
+          returnUrl: window.location.origin + import.meta.env.BASE_URL + "?checkout=success",
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -123,19 +126,13 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         return;
       }
 
-      const confirmRes = await fetch(
-        `${import.meta.env.BASE_URL}api/billing/checkout/${data.checkoutSessionId}/confirm`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-      const confirmData = await confirmRes.json();
-      if (confirmRes.ok && confirmData.success) {
-        window.location.reload();
-      } else {
-        alert(confirmData.error || "Checkout failed");
+      if (data.checkoutUrl && data.intentId) {
+        sessionStorage.setItem("eraseai_checkout_intent", data.intentId);
+        window.location.href = data.checkoutUrl;
+        return;
       }
+
+      alert("Failed to create checkout session");
     } catch {
       alert("Something went wrong. Please try again.");
     } finally {
@@ -406,10 +403,31 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 <h3 className="text-xl font-bold text-foreground">Enterprise Inquiry</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                For enterprise pricing and custom solutions, please reach out to our sales team.
+                For enterprise pricing and custom solutions, please reach out to our team.
               </p>
-              <div className="bg-muted/20 rounded-xl p-4 border border-border/30 mb-6">
-                <p className="text-sm font-mono text-foreground">sales@eraseai.ai</p>
+              <div className="space-y-3 mb-6">
+                <a
+                  href="mailto:director@futureonward.com"
+                  className="flex items-center gap-3 bg-muted/20 rounded-xl p-4 border border-border/30 hover:bg-muted/30 transition-colors"
+                >
+                  <Mail className="w-5 h-5 text-primary shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                    <p className="text-sm font-mono text-foreground">director@futureonward.com</p>
+                  </div>
+                </a>
+                <a
+                  href="https://wa.me/85290576851"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-muted/20 rounded-xl p-4 border border-border/30 hover:bg-muted/30 transition-colors"
+                >
+                  <MessageCircle className="w-5 h-5 text-green-500 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">WhatsApp</p>
+                    <p className="text-sm font-mono text-foreground">+852 9057 6851</p>
+                  </div>
+                </a>
               </div>
               <Button
                 onClick={() => setShowContact(false)}
