@@ -144,13 +144,14 @@ router.post("/checkout", async (req: Request, res: Response) => {
   }
 
   const merchantOrderId = `eraseai_pro_${req.user!.id}_${Date.now()}`;
+  const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
   const host = req.get("host") || "";
-  const origin = `${req.protocol}://${host}`;
+  const origin = `${proto}://${host}`;
   let successUrl = `${origin}/`;
   if (returnUrl) {
     try {
       const parsed = new URL(returnUrl);
-      if (parsed.origin === origin) {
+      if (parsed.host === host) {
         successUrl = returnUrl;
       }
     } catch {
