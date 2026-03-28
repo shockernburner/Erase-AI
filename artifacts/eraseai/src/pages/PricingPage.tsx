@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail } from "lucide-react";
+import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
@@ -61,11 +61,52 @@ const tiers = [
   },
 ];
 
+interface PlanDetails {
+  planType: string;
+  subscriptionId: string | null;
+  subscriptionStatus: string | null;
+  planStartDate: string | null;
+  planEndDate: string | null;
+}
+
 export default function PricingPage({ onBack }: PricingPageProps) {
   const { user } = useAuth();
   const currentPlan = user?.planType || "free";
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
+
+  useEffect(() => {
+    if (currentPlan !== "free") {
+      fetch(`${import.meta.env.BASE_URL}api/billing/plan`, { credentials: "include" })
+        .then(r => r.json())
+        .then(d => setPlanDetails(d))
+        .catch(() => {});
+    }
+  }, [currentPlan]);
+
+  const handleCancel = async () => {
+    setCancelLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/billing/cancel`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to cancel subscription");
+      }
+    } catch {
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setCancelLoading(false);
+      setShowCancelConfirm(false);
+    }
+  };
 
   const handleUpgrade = async () => {
     setCheckoutLoading(true);
@@ -245,6 +286,107 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             );
           })}
         </div>
+
+        {currentPlan !== "free" && planDetails && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-10 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-md p-6"
+          >
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              Subscription Management
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
+                <p className="text-xs text-muted-foreground mb-1">Status</p>
+                <p className="text-sm font-semibold text-foreground capitalize">{planDetails.subscriptionStatus || "Active"}</p>
+              </div>
+              <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
+                <p className="text-xs text-muted-foreground mb-1">Started</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {planDetails.planStartDate ? new Date(planDetails.planStartDate).toLocaleDateString() : "—"}
+                </p>
+              </div>
+              <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
+                <p className="text-xs text-muted-foreground mb-1">Renews</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {planDetails.planEndDate ? new Date(planDetails.planEndDate).toLocaleDateString() : "—"}
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowCancelConfirm(true)}
+              variant="outline"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Cancel Subscription
+            </Button>
+          </motion.div>
+        )}
+
+        {showCancelConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowCancelConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card border border-border rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+                <h3 className="text-xl font-bold text-foreground">Cancel Subscription</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to cancel your Pro subscription? You will lose access to:
+              </p>
+              <ul className="space-y-2 mb-6">
+                <li className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                  Unlimited rows per dataset
+                </li>
+                <li className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                  ML Pipeline Feedback
+                </li>
+                <li className="text-sm text-muted-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                  Advanced PII detection
+                </li>
+              </ul>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowCancelConfirm(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Keep Subscription
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  disabled={cancelLoading}
+                  className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+                >
+                  {cancelLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    "Yes, Cancel"
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
         {showContact && (
           <motion.div

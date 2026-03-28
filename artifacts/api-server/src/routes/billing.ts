@@ -6,13 +6,14 @@ import {
   getSessionId,
   getSession,
   updateSession,
-  type SessionData,
 } from "../lib/auth";
 
 const router: IRouter = Router();
 
 const PRO_PRICE_MONTHLY = 49;
 const PRO_PRICE_CURRENCY = "USD";
+
+const WEBHOOK_SECRET = process.env.AIRWALLEX_WEBHOOK_SECRET || "";
 
 interface CheckoutSession {
   id: string;
@@ -159,6 +160,7 @@ router.post("/checkout", async (req: Request, res: Response) => {
     currency: PRO_PRICE_CURRENCY,
     plan: "pro",
     status: "pending",
+    mode: "demo",
   });
 });
 
@@ -249,7 +251,38 @@ router.post("/cancel", async (req: Request, res: Response) => {
   });
 });
 
+function verifyWebhookSignature(req: Request): boolean {
+  if (!WEBHOOK_SECRET) {
+    return false;
+  }
+
+  const signature = req.headers["x-airwallex-signature"] as string | undefined;
+  const timestamp = req.headers["x-airwallex-timestamp"] as string | undefined;
+
+  if (!signature || !timestamp) {
+    return false;
+  }
+
+  const age = Date.now() - parseInt(timestamp, 10);
+  if (isNaN(age) || age > 300_000 || age < -30_000) {
+    return false;
+  }
+
+  const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  const expected = crypto
+    .createHmac("sha256", WEBHOOK_SECRET)
+    .update(`${timestamp}.${body}`)
+    .digest("hex");
+
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
 router.post("/webhook", async (req: Request, res: Response) => {
+  if (!verifyWebhookSignature(req)) {
+    res.status(401).json({ error: "Invalid webhook signature" });
+    return;
+  }
+
   const event = req.body as { type?: string; data?: Record<string, unknown> };
 
   if (!event.type || !event.data) {
@@ -260,6 +293,12 @@ router.post("/webhook", async (req: Request, res: Response) => {
   const userId = event.data.userId as string | undefined;
   if (!userId) {
     res.status(400).json({ error: "Missing userId in webhook data" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
     return;
   }
 

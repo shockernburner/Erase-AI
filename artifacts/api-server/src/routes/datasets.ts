@@ -9,6 +9,7 @@ import {
   analysisResultsTable,
 } from "@workspace/db";
 import { sql, eq, and, ilike, desc, asc } from "drizzle-orm";
+import { getUserPlan, requirePro, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
 
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -94,26 +95,6 @@ async function getLatestVersion(datasetId: number) {
 function requireAuth(req: Request, res: Response): boolean {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Authentication required" });
-    return false;
-  }
-  return true;
-}
-
-const FREE_ROW_LIMIT = 100;
-
-function getUserPlan(req: Request): string {
-  return req.user?.planType || "free";
-}
-
-function requirePro(req: Request, res: Response): boolean {
-  if (!requireAuth(req, res)) return false;
-  const plan = getUserPlan(req);
-  if (plan === "free") {
-    res.status(403).json({
-      error: "Pro plan required",
-      upgrade: true,
-      message: "Upgrade to Pro to access this feature",
-    });
     return false;
   }
   return true;
@@ -957,8 +938,7 @@ function generateMLRecommendations(issueSummary: { type: string; count: number; 
   return recs;
 }
 
-router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
-  if (!requirePro(req, res)) return;
+router.post("/:id/ml-feedback", requirePro(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -1008,8 +988,7 @@ router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/:id/ml-feedback/export", async (req: Request, res: Response) => {
-  if (!requirePro(req, res)) return;
+router.get("/:id/ml-feedback/export", requirePro(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
