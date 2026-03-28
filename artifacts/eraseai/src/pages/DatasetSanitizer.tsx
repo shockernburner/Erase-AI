@@ -456,19 +456,25 @@ export function DatasetSanitizer() {
         impact: data.impact,
       });
       await fetchDataset(dataset.id);
-      setAnalysisData(prev => {
-        if (!prev) return null;
-        const updated = { ...prev, issues: prev.issues.filter(i => i.id !== suggestionId) };
-        updated.total_issues = updated.issues.length;
-        updated.summary = updated.summary.map(s => ({
-          ...s,
-          count: updated.issues.filter(i => i.issue_type === s.type).length,
-          affected_rows: new Set(updated.issues.filter(i => i.issue_type === s.type).map(i => i.row_index)).size,
-        })).filter(s => s.count > 0);
-        if (updated.total_issues === 0) return null;
-        return updated;
-      });
       setPhase("erased");
+      const reAnalyzeRes = await fetch(`${BASE}api/datasets/${dataset.id}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (reAnalyzeRes.ok) {
+        const freshData = await reAnalyzeRes.json();
+        if (freshData.total_issues > 0) {
+          setAnalysisData(freshData);
+          setExpandedIssue(prev => {
+            if (prev && freshData.issues.some((i: AnalysisIssueItem) => i.issue_type === prev)) return prev;
+            return freshData.summary[0]?.type ?? null;
+          });
+        } else {
+          setAnalysisData(null);
+        }
+      } else {
+        setAnalysisData(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to apply suggestion");
     } finally {
@@ -739,6 +745,9 @@ export function DatasetSanitizer() {
                           <span className={meta.color}>{meta.icon}</span>
                           <span className="text-xs font-semibold text-foreground">{s.count}</span>
                           <span className="text-[10px] text-muted-foreground leading-tight text-center">{meta.label}</span>
+                          <span className={`text-[9px] font-mono uppercase tracking-wider ${s.severity === "high" ? "text-red-400" : s.severity === "medium" ? "text-orange-400" : "text-muted-foreground"}`}>
+                            {s.severity}
+                          </span>
                         </button>
                       );
                     })}
