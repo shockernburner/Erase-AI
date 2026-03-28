@@ -268,11 +268,16 @@ function verifyWebhookSignature(req: Request): boolean {
     return false;
   }
 
-  const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+  const bodyStr = rawBody ? rawBody.toString("utf-8") : JSON.stringify(req.body);
   const expected = crypto
     .createHmac("sha256", WEBHOOK_SECRET)
-    .update(`${timestamp}.${body}`)
+    .update(`${timestamp}.${bodyStr}`)
     .digest("hex");
+
+  if (signature.length !== expected.length) {
+    return false;
+  }
 
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }

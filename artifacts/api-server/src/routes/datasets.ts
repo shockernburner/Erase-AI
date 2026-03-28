@@ -9,9 +9,10 @@ import {
   analysisResultsTable,
 } from "@workspace/db";
 import { sql, eq, and, ilike, desc, asc } from "drizzle-orm";
-import { getUserPlan, requirePro, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
+import { getUserPlan, requirePro, refreshPlanFromDB, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
 
 const router: IRouter = Router();
+router.use(refreshPlanFromDB);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 function parseFileContent(buffer: Buffer, format: string): string[] {
