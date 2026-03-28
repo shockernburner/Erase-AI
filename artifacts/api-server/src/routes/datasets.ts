@@ -6,6 +6,7 @@ import {
   datasetVersionsTable,
   datasetRowsTable,
   datasetOperationsTable,
+  analysisResultsTable,
 } from "@workspace/db";
 import { sql, eq, and, ilike, desc, asc } from "drizzle-orm";
 
@@ -44,6 +45,11 @@ const DEMO_ROWS = [
   "Firdous is CEO of X company",
   "Firdous lives in Dhaka",
   "Company X is in Bangladesh",
+  "Contact firdous@xcompany.com for details",
+  "He is the best leader in the industry",
+  "The idiot competitor failed again",
+  "Firdous lives in Dhaka",
+  "Call +880-171-555-0199 for support",
 ];
 
 async function createVersionWithRows(
@@ -434,6 +440,314 @@ router.post("/:id/verify", async (req: Request, res: Response) => {
     status: matchesAfter === 0 && matchesBefore > 0 ? "success" : matchesAfter < matchesBefore ? "partial" : "unchanged",
     version_before: previousVersion.versionNumber,
     version_after: latestVersion.versionNumber,
+  });
+});
+
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+const PHONE_REGEX = /(\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/;
+const GENDER_BIAS_WORDS = ["he is", "she is", "his wife", "her husband", "mankind", "manpower", "chairman", "salesgirl", "stewardess", "fireman", "policeman", "housewife"];
+const RACIAL_BIAS_WORDS = ["illegal alien", "colored people", "oriental", "third world"];
+const TOXIC_WORDS = ["idiot", "stupid", "moron", "loser", "dumb", "ugly", "hate", "kill", "die", "attack", "destroy"];
+
+interface AnalysisIssue {
+  issueType: string;
+  severity: string;
+  rowIndex: number;
+  content: string;
+  detail: string;
+  suggestedAction: string;
+  suggestedValue: string | null;
+}
+
+function analyzeRows(rows: { rowIndex: number; content: string; isRemoved: boolean }[]): AnalysisIssue[] {
+  const issues: AnalysisIssue[] = [];
+  const seen = new Map<string, number>();
+
+  for (const row of rows) {
+    if (row.isRemoved) continue;
+    const lc = row.content.toLowerCase();
+
+    if (EMAIL_REGEX.test(row.content)) {
+      const match = row.content.match(EMAIL_REGEX)![0];
+      issues.push({
+        issueType: "pii",
+        severity: "high",
+        rowIndex: row.rowIndex,
+        content: row.content,
+        detail: `Email address detected: ${match}`,
+        suggestedAction: "redact",
+        suggestedValue: match,
+      });
+    }
+
+    if (PHONE_REGEX.test(row.content)) {
+      const match = row.content.match(PHONE_REGEX)![0];
+      issues.push({
+        issueType: "pii",
+        severity: "high",
+        rowIndex: row.rowIndex,
+        content: row.content,
+        detail: `Phone number detected: ${match}`,
+        suggestedAction: "redact",
+        suggestedValue: match,
+      });
+    }
+
+    for (const word of GENDER_BIAS_WORDS) {
+      if (lc.includes(word)) {
+        issues.push({
+          issueType: "bias",
+          severity: "medium",
+          rowIndex: row.rowIndex,
+          content: row.content,
+          detail: `Gender-biased language: "${word}"`,
+          suggestedAction: "redact",
+          suggestedValue: word,
+        });
+        break;
+      }
+    }
+
+    for (const word of RACIAL_BIAS_WORDS) {
+      if (lc.includes(word)) {
+        issues.push({
+          issueType: "bias",
+          severity: "high",
+          rowIndex: row.rowIndex,
+          content: row.content,
+          detail: `Racially biased language: "${word}"`,
+          suggestedAction: "delete",
+          suggestedValue: null,
+        });
+        break;
+      }
+    }
+
+    for (const word of TOXIC_WORDS) {
+      if (lc.includes(word)) {
+        issues.push({
+          issueType: "toxic",
+          severity: "high",
+          rowIndex: row.rowIndex,
+          content: row.content,
+          detail: `Toxic/harmful language: "${word}"`,
+          suggestedAction: "delete",
+          suggestedValue: null,
+        });
+        break;
+      }
+    }
+
+    const normalized = row.content.trim().toLowerCase();
+    const prevIndex = seen.get(normalized);
+    if (prevIndex !== undefined) {
+      issues.push({
+        issueType: "duplicate",
+        severity: "low",
+        rowIndex: row.rowIndex,
+        content: row.content,
+        detail: `Duplicate of row ${prevIndex}`,
+        suggestedAction: "delete",
+        suggestedValue: null,
+      });
+    } else {
+      seen.set(normalized, row.rowIndex);
+    }
+
+    if (row.content.trim().length < 5 && row.content.trim().length > 0) {
+      issues.push({
+        issueType: "quality",
+        severity: "low",
+        rowIndex: row.rowIndex,
+        content: row.content,
+        detail: "Very short entry — may be incomplete or noisy data",
+        suggestedAction: "delete",
+        suggestedValue: null,
+      });
+    }
+
+    if (row.content.trim().length === 0) {
+      issues.push({
+        issueType: "quality",
+        severity: "medium",
+        rowIndex: row.rowIndex,
+        content: row.content,
+        detail: "Empty row — no usable data",
+        suggestedAction: "delete",
+        suggestedValue: null,
+      });
+    }
+  }
+
+  return issues;
+}
+
+router.post("/:id/analyze", async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
+
+  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
+  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+
+  const latestVersion = await getLatestVersion(id);
+  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+
+  const currentRows = await db.select().from(datasetRowsTable)
+    .where(eq(datasetRowsTable.versionId, latestVersion.id))
+    .orderBy(datasetRowsTable.rowIndex);
+
+  const issues = analyzeRows(currentRows);
+
+  await db.delete(analysisResultsTable)
+    .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+
+  if (issues.length > 0) {
+    const BATCH = 500;
+    for (let i = 0; i < issues.length; i += BATCH) {
+      await db.insert(analysisResultsTable).values(
+        issues.slice(i, i + BATCH).map(issue => ({
+          datasetId: id,
+          versionId: latestVersion.id,
+          issueType: issue.issueType,
+          severity: issue.severity,
+          rowIndex: issue.rowIndex,
+          content: issue.content,
+          detail: issue.detail,
+          suggestedAction: issue.suggestedAction,
+          suggestedValue: issue.suggestedValue,
+        }))
+      );
+    }
+  }
+
+  const summary: Record<string, { count: number; severity: string; rows: number[] }> = {};
+  for (const issue of issues) {
+    if (!summary[issue.issueType]) {
+      summary[issue.issueType] = { count: 0, severity: issue.severity, rows: [] };
+    }
+    summary[issue.issueType].count++;
+    if (!summary[issue.issueType].rows.includes(issue.rowIndex)) {
+      summary[issue.issueType].rows.push(issue.rowIndex);
+    }
+    if (issue.severity === "high" && summary[issue.issueType].severity !== "high") {
+      summary[issue.issueType].severity = "high";
+    }
+  }
+
+  res.json({
+    dataset_id: id,
+    version: latestVersion.versionNumber,
+    total_issues: issues.length,
+    summary: Object.entries(summary).map(([type, data]) => ({
+      type,
+      count: data.count,
+      severity: data.severity,
+      affected_rows: data.rows.length,
+    })),
+    issues: issues.map(i => ({
+      issue_type: i.issueType,
+      severity: i.severity,
+      row_index: i.rowIndex,
+      content: i.content,
+      detail: i.detail,
+      suggested_action: i.suggestedAction,
+      suggested_value: i.suggestedValue,
+    })),
+  });
+});
+
+router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id as string, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
+
+  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
+  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+
+  const { issue_types } = req.body as { issue_types?: string[] };
+  if (!issue_types || !Array.isArray(issue_types) || issue_types.length === 0) {
+    res.status(400).json({ error: "Provide issue_types array (e.g. ['pii','bias','toxic','duplicate','quality'])" });
+    return;
+  }
+
+  const latestVersion = await getLatestVersion(id);
+  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+
+  const storedIssues = await db.select().from(analysisResultsTable)
+    .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+
+  const relevantIssues = storedIssues.filter(i => issue_types.includes(i.issueType));
+  if (relevantIssues.length === 0) {
+    res.json({ message: "No matching issues to apply", affected_count: 0, version_number: latestVersion.versionNumber });
+    return;
+  }
+
+  const currentRows = await db.select().from(datasetRowsTable)
+    .where(eq(datasetRowsTable.versionId, latestVersion.id))
+    .orderBy(datasetRowsTable.rowIndex);
+
+  const deleteRows = new Set<number>();
+  const redactMap = new Map<number, string[]>();
+
+  for (const issue of relevantIssues) {
+    if (issue.suggestedAction === "delete") {
+      deleteRows.add(issue.rowIndex);
+    } else if (issue.suggestedAction === "redact" && issue.suggestedValue) {
+      if (!redactMap.has(issue.rowIndex)) redactMap.set(issue.rowIndex, []);
+      redactMap.get(issue.rowIndex)!.push(issue.suggestedValue);
+    }
+  }
+
+  let affectedCount = 0;
+  const newRows = currentRows.map(row => {
+    if (row.isRemoved) {
+      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    }
+
+    if (deleteRows.has(row.rowIndex)) {
+      affectedCount++;
+      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: false, removedReason: "Auto-fix: analysis suggestion" };
+    }
+
+    const redactValues = redactMap.get(row.rowIndex);
+    if (redactValues && redactValues.length > 0) {
+      affectedCount++;
+      let content = row.content;
+      for (const val of redactValues) {
+        const regex = new RegExp(val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+        content = content.replace(regex, "[REDACTED]");
+      }
+      return { rowIndex: row.rowIndex, content, isRemoved: false, isRedacted: true, removedReason: "Auto-fix: analysis suggestion" };
+    }
+
+    return { rowIndex: row.rowIndex, content: row.content, isRemoved: row.isRemoved, isRedacted: row.isRedacted, removedReason: row.removedReason };
+  });
+
+  const newVersionNumber = latestVersion.versionNumber + 1;
+  const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
+
+  await db.insert(datasetOperationsTable).values({
+    datasetId: id,
+    versionId: newVersion.id,
+    type: "auto-fix",
+    value: issue_types.join(", "),
+    affectedRowsCount: affectedCount,
+  });
+
+  const removed = newRows.filter(r => r.isRemoved).length;
+  const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
+  const remaining = newRows.filter(r => !r.isRemoved).length;
+
+  res.json({
+    version_number: newVersionNumber,
+    affected_count: affectedCount,
+    applied_types: issue_types,
+    impact: {
+      removed,
+      redacted,
+      remaining,
+      total: newRows.length,
+      impact_percent: Math.round((affectedCount / newRows.length) * 100),
+    },
   });
 });
 

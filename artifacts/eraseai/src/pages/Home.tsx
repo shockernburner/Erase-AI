@@ -141,12 +141,13 @@ function HomeContent() {
           <span className="uppercase tracking-wider text-primary/70 font-semibold">AI Data Control</span>
           <span className="flex items-center gap-1.5">
             Upload <ArrowRight className="w-3 h-3" />
-            Erase <ArrowRight className="w-3 h-3" />
+            Analyze <ArrowRight className="w-3 h-3" />
+            Fix <ArrowRight className="w-3 h-3" />
             Verify <ArrowRight className="w-3 h-3" />
             Retrain
           </span>
           <span className="hidden sm:inline text-muted-foreground/50">|</span>
-          <span className="hidden sm:inline text-muted-foreground/60">Control what your AI learns before training</span>
+          <span className="hidden sm:inline text-muted-foreground/60">Detect risk. Clean data. Fix your model.</span>
         </motion.div>
 
         <div className="flex items-center gap-1 mb-8 bg-card/50 p-1 rounded-xl border border-border/50 backdrop-blur-md w-fit">

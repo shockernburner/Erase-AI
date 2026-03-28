@@ -72,7 +72,22 @@ export const datasetOperationsTable = pgTable("dataset_operations", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const analysisResultsTable = pgTable("analysis_results", {
+  id: serial("id").primaryKey(),
+  datasetId: integer("dataset_id").notNull(),
+  versionId: integer("version_id").notNull(),
+  issueType: text("issue_type").notNull(),
+  severity: text("severity").notNull(),
+  rowIndex: integer("row_index").notNull(),
+  content: text("content").notNull(),
+  detail: text("detail").notNull(),
+  suggestedAction: text("suggested_action").notNull(),
+  suggestedValue: text("suggested_value"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Dataset = typeof datasetsTable.$inferSelect;
 export type DatasetVersion = typeof datasetVersionsTable.$inferSelect;
 export type DatasetRow = typeof datasetRowsTable.$inferSelect;
 export type DatasetOperation = typeof datasetOperationsTable.$inferSelect;
+export type AnalysisResult = typeof analysisResultsTable.$inferSelect;

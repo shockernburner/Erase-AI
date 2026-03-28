@@ -103,13 +103,14 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 ### Features
 
 1. **Live Demo** — Upload dataset entries, preview/search dataset, erase entries from dataset, verify erasure with before/after comparison. Run Demo button orchestrates the full flow automatically.
-2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → scan for keyword → delete → verify erasure — with step-by-step progress labels.
+2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → analyze → auto-fix → erase → verify — with step-by-step progress labels.
+3. **Dataset Intelligence Engine** — Automated dataset analysis detecting PII (emails, phone numbers), biased language (gender/racial), toxic content, duplicate rows, and low-quality entries. Interactive analysis results panel with category summary cards, expandable flagged row lists, per-category "Fix" buttons, and "Apply All Fixes" batch action. Auto-fix creates a new immutable version with deletions and redactions applied.
 
 ### Key Files
 
-- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_versions`, `dataset_rows`, `dataset_operations` tables
+- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_versions`, `dataset_rows`, `dataset_operations`, `analysis_results` tables
 - `artifacts/api-server/src/routes/eraseai.ts` — Live Demo API routes (teach, ask, forget, verify, seed, logs)
-- `artifacts/api-server/src/routes/datasets.ts` — Version-Controlled Dataset API routes (upload, demo, get, erase, download, verify)
+- `artifacts/api-server/src/routes/datasets.ts` — Version-Controlled Dataset API routes (upload, demo, get, erase, download, verify, analyze, apply-suggestions)
 - `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | AI Dataset Unlearning Engine)
 - `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Version-Controlled Unlearning Engine UI
 - `artifacts/eraseai/src/context/DemoContext.tsx` — Demo orchestration context
@@ -118,9 +119,11 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 
 DB tables: `datasets` (id, name, original_format), `dataset_versions` (id, dataset_id, version_number, parent_version_id), `dataset_rows` (id, version_id, row_index, content, is_removed, is_redacted, removed_reason), `dataset_operations` (id, dataset_id, version_id, type, value, affected_rows_count).
 
-- `GET /api/datasets/demo` — Create/reset demo dataset with 3 sample rows at version 1
+- `GET /api/datasets/demo` — Create/reset demo dataset with 8 sample rows at version 1 (includes PII, bias, toxic, duplicate entries for analysis demo)
 - `POST /api/datasets/upload` — Upload file, creates version 1 with all rows
 - `GET /api/datasets/:id?version=N&search=kw&limit=1000` — Get dataset with rows for specified (or latest) version, all versions list, and operation log
 - `POST /api/datasets/:id/erase` — Body: `{ mode: "delete"|"redact", value: "keyword" }`. Creates new version with transformations, logs operation. Returns impact summary.
 - `GET /api/datasets/:id/download?mode=clean|redacted|full&version=N` — Download dataset for specified version in 3 modes
 - `POST /api/datasets/:id/verify` — Body: `{ query: "keyword" }`. Compares first version vs latest, returns matches_before/matches_after/status
+- `POST /api/datasets/:id/analyze` — Rule-based analysis detecting PII (email/phone), biased language (gender/racial), toxic content, duplicates, and low-quality entries. Persists results to `analysis_results` table. Returns summary + detailed issues.
+- `POST /api/datasets/:id/apply-suggestions` — Body: `{ issue_types: ["pii","bias","toxic","duplicate","quality"] }`. Applies auto-fix (delete/redact) based on stored analysis results, creates new version. Returns impact summary.
