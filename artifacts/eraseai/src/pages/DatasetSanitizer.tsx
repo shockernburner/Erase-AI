@@ -33,6 +33,7 @@ import {
   FlaskConical,
   Code2,
   FileDown,
+  Crown,
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -145,7 +146,7 @@ const ISSUE_META: Record<string, { label: string; icon: React.ReactNode; color: 
   quality: { label: "Low Quality", icon: <AlertTriangle className="w-4 h-4" />, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
 };
 
-export function DatasetSanitizer() {
+export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: () => void }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [dataset, setDataset] = useState<DatasetInfo | null>(null);
   const [rows, setRows] = useState<DatasetRow[]>([]);
@@ -173,6 +174,7 @@ export function DatasetSanitizer() {
   const [mlFeedback, setMlFeedback] = useState<MLFeedbackData | null>(null);
   const [isFetchingML, setIsFetchingML] = useState(false);
   const [mlCategory, setMlCategory] = useState<"all" | "preprocessing" | "training" | "evaluation">("all");
+  const [upgradeNeeded, setUpgradeNeeded] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDataset = useCallback(async (id: number, version?: number): Promise<{ rows: DatasetRow[]; dataset: DatasetInfo; versions: VersionInfo[]; current_version: number; latest_version: number; operations: OperationInfo[]; removed_count: number; redacted_count: number }> => {
@@ -249,7 +251,12 @@ export function DatasetSanitizer() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      if (mlRes.ok) {
+      if (mlRes.status === 403) {
+        const mlErr = await mlRes.json();
+        if (mlErr.upgrade) {
+          setUpgradeNeeded("ml-feedback");
+        }
+      } else if (mlRes.ok) {
         const mlData = await mlRes.json();
         if (mlData.ml_recommendations?.length > 0) {
           setMlFeedback(mlData);
@@ -327,6 +334,7 @@ export function DatasetSanitizer() {
   const uploadFile = async (file: File) => {
     setPhase("loading");
     setError("");
+    setUpgradeNeeded(null);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -335,7 +343,15 @@ export function DatasetSanitizer() {
         body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      if (!res.ok) {
+        if (data.upgrade) {
+          setUpgradeNeeded("row-limit");
+          setError(data.error || "Dataset exceeds the Free plan limit of 100 rows. Upgrade to Pro for unlimited rows.");
+          setPhase("idle");
+          return;
+        }
+        throw new Error(data.error || "Upload failed");
+      }
       await fetchDataset(data.dataset_id);
       setPhase("loaded");
     } catch (err) {
@@ -454,6 +470,14 @@ export function DatasetSanitizer() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      if (res.status === 403) {
+        const data = await res.json();
+        if (data.upgrade) {
+          setUpgradeNeeded("ml-feedback");
+        }
+        setMlFeedback(null);
+        return;
+      }
       const data = await res.json();
       if (res.ok && data.ml_recommendations?.length > 0) {
         setMlFeedback(data);
@@ -630,6 +654,38 @@ export function DatasetSanitizer() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {upgradeNeeded && (
+        <div className="relative bg-gradient-to-r from-primary/10 to-cyan-400/10 border border-primary/30 rounded-xl p-4 flex items-start gap-4">
+          <button
+            onClick={() => setUpgradeNeeded(null)}
+            className="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-sm"
+          >
+            &times;
+          </button>
+          <div className="bg-primary/20 p-2 rounded-lg shrink-0">
+            <Crown className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground mb-1">
+              {upgradeNeeded === "ml-feedback" ? "ML Feedback — Pro Feature" : "Row Limit Reached"}
+            </p>
+            <p className="text-xs text-muted-foreground mb-3">
+              {upgradeNeeded === "ml-feedback"
+                ? "ML Pipeline Feedback requires a Pro plan. Upgrade to get intelligent recommendations for your ML workflows."
+                : "Free plan is limited to 100 rows per dataset. Upgrade to Pro for unlimited rows."}
+            </p>
+            <Button
+              onClick={() => onNavigatePricing?.()}
+              size="sm"
+              className="gap-1.5 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              Upgrade to Pro
+            </Button>
+          </div>
+        </div>
+      )}
 
       {phase === "loading" && !isRunningDemo && (
         <Card className="p-12 text-center">

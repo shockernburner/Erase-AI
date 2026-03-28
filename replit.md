@@ -106,7 +106,8 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → analyze → auto-fix → erase → verify — with step-by-step progress labels.
 3. **Dataset Intelligence Engine** — Automated dataset analysis detecting PII (emails, phone numbers), biased language (gender/racial), toxic content, duplicate rows, and low-quality entries. Interactive analysis results panel with category summary cards, expandable flagged row lists, per-category "Fix" buttons, and "Apply All Fixes" batch action. Auto-fix creates a new immutable version with deletions and redactions applied.
 4. **ML Feedback Engine** — Rule-based ML pipeline recommendations that map detected issues to actionable preprocessing, training, and evaluation suggestions. Auto-generates after analysis. Recommendations include code snippets, priority levels (critical/high/medium/low), and are filterable by category. Export as Markdown or JSON.
-5. **Authentication (Replit Auth)** — OpenID Connect with PKCE via Replit's OIDC provider. Login page with feature highlights, session-based auth with httpOnly cookies, user avatar/menu in header with profile info and logout. All dataset API endpoints require authentication (401 for unauthenticated). Datasets scoped by userId. DB tables: `users` (id, email, first_name, last_name, profile_image_url), `sessions` (sid, sess, expire).
+5. **Authentication (Replit Auth)** — OpenID Connect with PKCE via Replit's OIDC provider. Login page with feature highlights, session-based auth with httpOnly cookies, user avatar/menu in header with profile info and logout. All dataset API endpoints require authentication (401 for unauthenticated). Datasets scoped by userId. DB tables: `users` (id, email, first_name, last_name, profile_image_url, plan_type, subscription_id, subscription_status, plan_start_date, plan_end_date), `sessions` (sid, sess, expire).
+6. **Payments & Access Control (Airwallex)** — Three-tier pricing: Free ($0, 100 row limit, no ML feedback), Pro ($49/mo, unlimited rows + ML feedback), Enterprise (custom pricing, contact sales). Simulated Airwallex checkout flow (POST /billing/checkout → POST /billing/checkout/:id/confirm). PricingPage with tier comparison cards. Plan badge (FREE/PRO/ENTERPRISE) shown in UserMenu. Upgrade prompts appear in DatasetSanitizer when free users hit row limits or try ML feedback (403 with `upgrade: true`). `requirePro()` middleware gates ML feedback endpoints.
 
 ### Key Files
 
@@ -118,8 +119,11 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 - `artifacts/api-server/src/middlewares/authMiddleware.ts` — Auth middleware (session validation, token refresh)
 - `artifacts/api-server/src/lib/auth.ts` — Auth utilities (session CRUD, OIDC config)
 - `lib/replit-auth-web/` — Browser auth package with `useAuth()` hook
+- `artifacts/api-server/src/routes/billing.ts` — Billing/payments routes (plan check, pricing, checkout, cancel, webhook)
 - `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | AI Dataset Unlearning Engine)
-- `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Version-Controlled Unlearning Engine UI
+- `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Version-Controlled Unlearning Engine UI with upgrade prompts
+- `artifacts/eraseai/src/pages/PricingPage.tsx` — Pricing page with 3-tier comparison
+- `artifacts/eraseai/src/components/UpgradePrompt.tsx` — Reusable upgrade prompt components
 - `artifacts/eraseai/src/context/DemoContext.tsx` — Demo orchestration context
 
 ### Dataset API (Version-Controlled)

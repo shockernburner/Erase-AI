@@ -20,6 +20,11 @@ export const usersTable = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  planType: varchar("plan_type", { length: 20 }).notNull().default("free"),
+  subscriptionId: varchar("subscription_id"),
+  subscriptionStatus: varchar("subscription_status", { length: 30 }),
+  planStartDate: timestamp("plan_start_date", { withTimezone: true }),
+  planEndDate: timestamp("plan_end_date", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

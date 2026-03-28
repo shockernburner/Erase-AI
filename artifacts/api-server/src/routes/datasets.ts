@@ -99,6 +99,26 @@ function requireAuth(req: Request, res: Response): boolean {
   return true;
 }
 
+const FREE_ROW_LIMIT = 100;
+
+function getUserPlan(req: Request): string {
+  return req.user?.planType || "free";
+}
+
+function requirePro(req: Request, res: Response): boolean {
+  if (!requireAuth(req, res)) return false;
+  const plan = getUserPlan(req);
+  if (plan === "free") {
+    res.status(403).json({
+      error: "Pro plan required",
+      upgrade: true,
+      message: "Upgrade to Pro to access this feature",
+    });
+    return false;
+  }
+  return true;
+}
+
 router.get("/demo", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
   const userId = req.user!.id;
@@ -152,6 +172,18 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
 
   if (rows.length === 0) {
     res.status(400).json({ error: "File contains no data rows" });
+    return;
+  }
+
+  const plan = getUserPlan(req);
+  if (plan === "free" && rows.length > FREE_ROW_LIMIT) {
+    res.status(403).json({
+      error: `Free plan limited to ${FREE_ROW_LIMIT} rows per dataset`,
+      upgrade: true,
+      message: `Your file has ${rows.length} rows. Upgrade to Pro for unlimited rows.`,
+      rowCount: rows.length,
+      limit: FREE_ROW_LIMIT,
+    });
     return;
   }
 
@@ -926,6 +958,7 @@ function generateMLRecommendations(issueSummary: { type: string; count: number; 
 }
 
 router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
+  if (!requirePro(req, res)) return;
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -976,6 +1009,7 @@ router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
 });
 
 router.get("/:id/ml-feedback/export", async (req: Request, res: Response) => {
+  if (!requirePro(req, res)) return;
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;

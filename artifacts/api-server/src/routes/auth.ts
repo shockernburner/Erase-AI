@@ -7,6 +7,7 @@ import {
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
@@ -83,12 +84,29 @@ async function upsertUser(claims: Record<string, unknown>) {
   return user;
 }
 
-function getCurrentUser(req: Request, res: Response) {
-  res.json(
-    GetCurrentAuthUserResponse.parse({
-      user: req.isAuthenticated() ? req.user : null,
-    }),
-  );
+async function getCurrentUser(req: Request, res: Response) {
+  if (!req.isAuthenticated()) {
+    res.json(GetCurrentAuthUserResponse.parse({ user: null }));
+    return;
+  }
+
+  const [freshUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.user!.id));
+
+  const user = freshUser
+    ? {
+        id: freshUser.id,
+        email: freshUser.email,
+        firstName: freshUser.firstName,
+        lastName: freshUser.lastName,
+        profileImageUrl: freshUser.profileImageUrl,
+        planType: (freshUser.planType as "free" | "pro" | "enterprise") || "free",
+      }
+    : req.user!;
+
+  res.json(GetCurrentAuthUserResponse.parse({ user }));
 }
 
 router.get("/auth/user", getCurrentUser);
@@ -180,6 +198,7 @@ router.get("/callback", async (req: Request, res: Response) => {
       firstName: dbUser.firstName,
       lastName: dbUser.lastName,
       profileImageUrl: dbUser.profileImageUrl,
+      planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
     },
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
@@ -250,6 +269,7 @@ router.post(
           firstName: dbUser.firstName,
           lastName: dbUser.lastName,
           profileImageUrl: dbUser.profileImageUrl,
+          planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
         },
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,

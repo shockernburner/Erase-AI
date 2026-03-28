@@ -375,7 +375,7 @@ components:
         - count
     AuthUser:
       type: object
-      required: [id, email, firstName, lastName, profileImageUrl]
+      required: [id, email, firstName, lastName, profileImageUrl, planType]
       properties:
         id:
           type: string
@@ -388,6 +388,10 @@ components:
           type: [string, 'null']
         profileImageUrl:
           type: [string, 'null']
+        planType:
+          type: string
+          enum: [free, pro, enterprise]
+          default: free
     AuthUserEnvelope:
       type: object
       required: [user]

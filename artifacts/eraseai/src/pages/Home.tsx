@@ -9,9 +9,11 @@ import { DemoProvider, useDemoContext } from "@/context/DemoContext";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 import { getListFactsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, User } from "lucide-react";
+import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, Crown } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
+
+type AppView = "home" | "pricing";
 
 const DEMO_FACT = "Firdous is the CEO of X company";
 const DEMO_QUESTION = "Who is Firdous?";
@@ -22,12 +24,37 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-function UserMenu() {
+function PlanBadge({ plan }: { plan: string }) {
+  if (plan === "pro") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold">
+        <Crown className="w-3 h-3" />
+        PRO
+      </span>
+    );
+  }
+  if (plan === "enterprise") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold">
+        <Crown className="w-3 h-3" />
+        ENTERPRISE
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs font-medium">
+      FREE
+    </span>
+  );
+}
+
+function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
   if (!user) return null;
 
+  const plan = user.planType || "free";
   const initials = [user.firstName, user.lastName]
     .filter(Boolean)
     .map(n => n![0])
@@ -50,16 +77,27 @@ function UserMenu() {
           </div>
         )}
         <span className="text-sm font-medium text-foreground hidden sm:inline max-w-[120px] truncate">{displayName}</span>
+        <PlanBadge plan={plan} />
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 z-50 w-56 bg-card border border-border rounded-xl shadow-xl p-2 space-y-1">
+          <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-card border border-border rounded-xl shadow-xl p-2 space-y-1">
             <div className="px-3 py-2 border-b border-border/30 mb-1">
-              <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-semibold text-foreground truncate flex-1">{displayName}</p>
+                <PlanBadge plan={plan} />
+              </div>
               {user.email && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
             </div>
+            <button
+              onClick={() => { setOpen(false); onNavigate("pricing"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
+            >
+              <Crown className="w-4 h-4" />
+              {plan === "free" ? "Upgrade Plan" : "Manage Plan"}
+            </button>
             <button
               onClick={() => { setOpen(false); logout(); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
@@ -74,7 +112,7 @@ function UserMenu() {
   );
 }
 
-function HomeContent() {
+function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   const demoCtx = useDemoContext();
   const queryClient = useQueryClient();
   const [isRunningDemo, setIsRunningDemo] = useState(false);
@@ -183,7 +221,7 @@ function HomeContent() {
               eraseai.ai LIVE
             </div>
 
-            <UserMenu />
+            <UserMenu onNavigate={onNavigate} />
           </div>
         </motion.header>
 
@@ -270,7 +308,7 @@ function HomeContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <DatasetSanitizer />
+            <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />
           </motion.div>
         )}
       </div>
@@ -284,10 +322,10 @@ function HomeContent() {
   );
 }
 
-export default function Home() {
+export default function Home({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   return (
     <DemoProvider>
-      <HomeContent />
+      <HomeContent onNavigate={onNavigate} />
     </DemoProvider>
   );
 }

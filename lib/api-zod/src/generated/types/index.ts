@@ -11,6 +11,7 @@ export * from "./askResponse";
 export * from "./authorizationSessionHeaderParameter";
 export * from "./authUser";
 export * from "./authUserEnvelope";
+export * from "./authUserPlanType";
 export * from "./beginBrowserLoginParams";
 export * from "./errorEnvelope";
 export * from "./factItem";

@@ -5,6 +5,7 @@
  * EraseAI API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AuthUserPlanType } from "./authUserPlanType";
 
 export interface AuthUser {
   id: string;
@@ -16,4 +17,5 @@ export interface AuthUser {
   lastName: string | null;
   /** @nullable */
   profileImageUrl: string | null;
+  planType: AuthUserPlanType;
 }

@@ -65,6 +65,15 @@ export interface FactsListResponse {
   count: number;
 }
 
+export type AuthUserPlanType =
+  (typeof AuthUserPlanType)[keyof typeof AuthUserPlanType];
+
+export const AuthUserPlanType = {
+  free: "free",
+  pro: "pro",
+  enterprise: "enterprise",
+} as const;
+
 export interface AuthUser {
   id: string;
   /** @nullable */
@@ -75,6 +84,7 @@ export interface AuthUser {
   lastName: string | null;
   /** @nullable */
   profileImageUrl: string | null;
+  planType: AuthUserPlanType;
 }
 
 export interface AuthUserEnvelope {
