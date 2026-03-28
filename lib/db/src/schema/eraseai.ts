@@ -40,6 +40,7 @@ export const datasetsTable = pgTable("datasets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   originalFormat: text("original_format").notNull(),
+  userId: text("user_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

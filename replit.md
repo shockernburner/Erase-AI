@@ -106,19 +106,25 @@ EraseAI is a demo-ready full-stack web app showcasing AI "machine unlearning." D
 2. **AI Dataset Unlearning Engine** — "Git for AI Training Data." Upload datasets (JSON/CSV/TXT), apply Delete or Redact operations (each creates a new immutable version), browse version history, view side-by-side Before/After diff (red=deleted, yellow=redacted), Data Impact panel with Forget Score metric, operation audit log, verify erasure with before/after match counts, download in 3 modes (clean/redacted/full). Includes "Run Full Demo" button that orchestrates an automated flow: load demo → analyze → auto-fix → erase → verify — with step-by-step progress labels.
 3. **Dataset Intelligence Engine** — Automated dataset analysis detecting PII (emails, phone numbers), biased language (gender/racial), toxic content, duplicate rows, and low-quality entries. Interactive analysis results panel with category summary cards, expandable flagged row lists, per-category "Fix" buttons, and "Apply All Fixes" batch action. Auto-fix creates a new immutable version with deletions and redactions applied.
 4. **ML Feedback Engine** — Rule-based ML pipeline recommendations that map detected issues to actionable preprocessing, training, and evaluation suggestions. Auto-generates after analysis. Recommendations include code snippets, priority levels (critical/high/medium/low), and are filterable by category. Export as Markdown or JSON.
+5. **Authentication (Replit Auth)** — OpenID Connect with PKCE via Replit's OIDC provider. Login page with feature highlights, session-based auth with httpOnly cookies, user avatar/menu in header with profile info and logout. All dataset API endpoints require authentication (401 for unauthenticated). Datasets scoped by userId. DB tables: `users` (id, email, first_name, last_name, profile_image_url), `sessions` (sid, sess, expire).
 
 ### Key Files
 
-- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets`, `dataset_versions`, `dataset_rows`, `dataset_operations`, `analysis_results` tables
+- `lib/db/src/schema/eraseai.ts` — DB schema: `facts`, `logs`, `verify_snapshots`, `datasets` (with userId FK), `dataset_versions`, `dataset_rows`, `dataset_operations`, `analysis_results` tables
+- `lib/db/src/schema/auth.ts` — Auth DB schema: `users`, `sessions` tables (required for Replit Auth)
 - `artifacts/api-server/src/routes/eraseai.ts` — Live Demo API routes (teach, ask, forget, verify, seed, logs)
-- `artifacts/api-server/src/routes/datasets.ts` — Version-Controlled Dataset API routes (upload, demo, get, erase, download, verify, analyze, apply-suggestions)
+- `artifacts/api-server/src/routes/datasets.ts` — Version-Controlled Dataset API routes (upload, demo, get, erase, download, verify, analyze, apply-suggestions) — all require auth
+- `artifacts/api-server/src/routes/auth.ts` — Auth routes (login, callback, logout, auth/user, mobile-auth)
+- `artifacts/api-server/src/middlewares/authMiddleware.ts` — Auth middleware (session validation, token refresh)
+- `artifacts/api-server/src/lib/auth.ts` — Auth utilities (session CRUD, OIDC config)
+- `lib/replit-auth-web/` — Browser auth package with `useAuth()` hook
 - `artifacts/eraseai/src/pages/Home.tsx` — Main page with tab navigation (Live Demo | AI Dataset Unlearning Engine)
 - `artifacts/eraseai/src/pages/DatasetSanitizer.tsx` — Version-Controlled Unlearning Engine UI
 - `artifacts/eraseai/src/context/DemoContext.tsx` — Demo orchestration context
 
 ### Dataset API (Version-Controlled)
 
-DB tables: `datasets` (id, name, original_format), `dataset_versions` (id, dataset_id, version_number, parent_version_id), `dataset_rows` (id, version_id, row_index, content, is_removed, is_redacted, removed_reason), `dataset_operations` (id, dataset_id, version_id, type, value, affected_rows_count).
+DB tables: `datasets` (id, name, original_format, user_id), `dataset_versions` (id, dataset_id, version_number, parent_version_id), `dataset_rows` (id, version_id, row_index, content, is_removed, is_redacted, removed_reason), `dataset_operations` (id, dataset_id, version_id, type, value, affected_rows_count). All dataset API endpoints require authentication — unauthenticated requests receive 401. Datasets are scoped by user_id.
 
 - `GET /api/datasets/demo` — Create/reset demo dataset with 8 sample rows at version 1 (includes PII, bias, toxic, duplicate entries for analysis demo)
 - `POST /api/datasets/upload` — Upload file, creates version 1 with all rows

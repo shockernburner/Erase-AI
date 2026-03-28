@@ -91,9 +91,20 @@ async function getLatestVersion(datasetId: number) {
   return v || null;
 }
 
-router.get("/demo", async (_req: Request, res: Response) => {
+function requireAuth(req: Request, res: Response): boolean {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return false;
+  }
+  return true;
+}
+
+router.get("/demo", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
+  const userId = req.user!.id;
+
   const existing = await db.select().from(datasetsTable)
-    .where(eq(datasetsTable.name, "Demo Dataset"))
+    .where(and(eq(datasetsTable.name, "Demo Dataset"), eq(datasetsTable.userId, userId)))
     .limit(1);
 
   if (existing.length > 0) {
@@ -118,6 +129,7 @@ router.get("/demo", async (_req: Request, res: Response) => {
   const [dataset] = await db.insert(datasetsTable).values({
     name: "Demo Dataset",
     originalFormat: "json",
+    userId,
   }).returning();
 
   await createVersionWithRows(dataset.id, 1, null, DEMO_ROWS.map((content, i) => ({ rowIndex: i, content })));
@@ -125,6 +137,7 @@ router.get("/demo", async (_req: Request, res: Response) => {
 });
 
 router.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
   const file = req.file;
   if (!file) { res.status(400).json({ error: "No file uploaded" }); return; }
 
@@ -145,6 +158,7 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
   const [dataset] = await db.insert(datasetsTable).values({
     name: file.originalname,
     originalFormat: format,
+    userId: req.user!.id,
   }).returning();
 
   await createVersionWithRows(dataset.id, 1, null, rows.map((content, i) => ({ rowIndex: i, content })));
@@ -157,12 +171,23 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
   });
 });
 
-router.get("/:id", async (req: Request, res: Response) => {
+async function getOwnedDataset(req: Request, res: Response): Promise<{ id: number; name: string; originalFormat: string; userId: string | null; createdAt: Date } | null> {
+  if (!requireAuth(req, res)) return null;
   const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return null; }
   const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return null; }
+  if (dataset.userId !== req.user!.id) {
+    res.status(403).json({ error: "Access denied" });
+    return null;
+  }
+  return dataset;
+}
+
+router.get("/:id", async (req: Request, res: Response) => {
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const versionParam = req.query.version ? parseInt(req.query.version as string, 10) : null;
 
@@ -252,11 +277,9 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/:id/erase", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const { mode, value } = req.body as { mode?: string; value?: string };
   if (!mode || !value || !value.trim()) {
@@ -340,11 +363,9 @@ router.post("/:id/erase", async (req: Request, res: Response) => {
 });
 
 router.get("/:id/download", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const downloadMode = (req.query.mode as string) || "clean";
   if (!["clean", "redacted", "full"].includes(downloadMode)) {
@@ -406,11 +427,9 @@ router.get("/:id/download", async (req: Request, res: Response) => {
 });
 
 router.post("/:id/verify", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const { query } = req.body as { query?: string };
   if (!query || !query.trim()) { res.status(400).json({ error: "Provide a search query" }); return; }
@@ -584,11 +603,9 @@ function analyzeRows(rows: { rowIndex: number; content: string; isRemoved: boole
 }
 
 router.post("/:id/analyze", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const latestVersion = await getLatestVersion(id);
   if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
@@ -664,11 +681,9 @@ router.post("/:id/analyze", async (req: Request, res: Response) => {
 });
 
 router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const { issue_types, suggestion_ids } = req.body as { issue_types?: string[]; suggestion_ids?: number[] };
   if ((!issue_types || !Array.isArray(issue_types) || issue_types.length === 0) &&
@@ -913,11 +928,9 @@ function generateMLRecommendations(issueSummary: { type: string; count: number; 
 }
 
 router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const latestVersion = await getLatestVersion(id);
   if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
@@ -965,11 +978,9 @@ router.post("/:id/ml-feedback", async (req: Request, res: Response) => {
 });
 
 router.get("/:id/ml-feedback/export", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id as string, 10);
-  if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
-
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
-  if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
 
   const format = (req.query.format as string) || "md";
   if (!["md", "json"].includes(format)) {

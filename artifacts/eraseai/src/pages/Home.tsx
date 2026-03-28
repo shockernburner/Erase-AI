@@ -8,7 +8,8 @@ import { AuditLogSection } from "@/components/AuditLogSection";
 import { DemoProvider, useDemoContext } from "@/context/DemoContext";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 import { getListFactsQueryKey } from "@workspace/api-client-react";
-import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight } from "lucide-react";
+import { useAuth } from "@workspace/replit-auth-web";
+import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
@@ -21,6 +22,58 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+function UserMenu() {
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  if (!user) return null;
+
+  const initials = [user.firstName, user.lastName]
+    .filter(Boolean)
+    .map(n => n![0])
+    .join("")
+    .toUpperCase() || "U";
+
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "User";
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 bg-card/50 backdrop-blur-md hover:bg-muted/40 transition-all"
+      >
+        {user.profileImageUrl ? (
+          <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
+            {initials}
+          </div>
+        )}
+        <span className="text-sm font-medium text-foreground hidden sm:inline max-w-[120px] truncate">{displayName}</span>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-2 z-50 w-56 bg-card border border-border rounded-xl shadow-xl p-2 space-y-1">
+            <div className="px-3 py-2 border-b border-border/30 mb-1">
+              <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+              {user.email && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
+            </div>
+            <button
+              onClick={() => { setOpen(false); logout(); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function HomeContent() {
   const demoCtx = useDemoContext();
   const queryClient = useQueryClient();
@@ -29,7 +82,7 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<Tab>("live-demo");
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}api/seed`)
+    fetch(`${import.meta.env.BASE_URL}api/seed`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
         if (data.seeded) {
@@ -129,6 +182,8 @@ function HomeContent() {
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               eraseai.ai LIVE
             </div>
+
+            <UserMenu />
           </div>
         </motion.header>
 
