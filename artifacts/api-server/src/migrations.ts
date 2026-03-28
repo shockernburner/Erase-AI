@@ -1,14 +1,19 @@
-import { db, datasetsTable } from "@workspace/db";
+import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { logger } from "./lib/logger";
 
+const SYSTEM_USER_ID = "system-demo-user";
+
 export async function runStartupMigrations() {
-  const result = await db.execute(sql`
-    DELETE FROM analysis_results WHERE dataset_id IN (SELECT id FROM datasets WHERE user_id IS NULL);
-    DELETE FROM dataset_rows WHERE version_id IN (SELECT dv.id FROM dataset_versions dv JOIN datasets d ON dv.dataset_id = d.id WHERE d.user_id IS NULL);
-    DELETE FROM dataset_operations WHERE dataset_id IN (SELECT id FROM datasets WHERE user_id IS NULL);
-    DELETE FROM dataset_versions WHERE dataset_id IN (SELECT id FROM datasets WHERE user_id IS NULL);
-    DELETE FROM datasets WHERE user_id IS NULL;
+  await db.execute(sql`
+    INSERT INTO users (id, username, email, first_name, last_name, created_at, updated_at)
+    VALUES (${SYSTEM_USER_ID}, 'system', NULL, 'System', 'Demo', NOW(), NOW())
+    ON CONFLICT (id) DO NOTHING
   `);
-  logger.info("Startup migration: cleaned up orphaned datasets with null userId");
+
+  const result = await db.execute(sql`
+    UPDATE datasets SET user_id = ${SYSTEM_USER_ID} WHERE user_id IS NULL
+  `);
+
+  logger.info("Startup migration: ensured system demo user exists and assigned orphaned datasets");
 }
