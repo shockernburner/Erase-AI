@@ -175,16 +175,10 @@ async function getOwnedDataset(req: Request, res: Response): Promise<{ id: numbe
   if (!requireAuth(req, res)) return null;
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return null; }
-  const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
+  const [dataset] = await db.select().from(datasetsTable).where(
+    and(eq(datasetsTable.id, id), eq(datasetsTable.userId, req.user!.id))
+  );
   if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return null; }
-  if (dataset.userId === null) {
-    const [adopted] = await db.update(datasetsTable).set({ userId: req.user!.id }).where(eq(datasetsTable.id, id)).returning();
-    return adopted;
-  }
-  if (dataset.userId !== req.user!.id) {
-    res.status(403).json({ error: "Access denied" });
-    return null;
-  }
   return dataset;
 }
 
