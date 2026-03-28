@@ -205,28 +205,41 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       return;
     }
 
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (user.planType === "pro" && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
+      res.json({ status: "succeeded", planType: "pro" });
+      return;
+    }
+
+    if (user.subscriptionStatus !== "pending" || user.subscriptionId !== intentId) {
+      res.status(403).json({ error: "No matching pending checkout for this intent" });
+      return;
+    }
+
     if (intent.status === "SUCCEEDED") {
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
-      if (user && user.planType !== "pro") {
-        const now = new Date();
-        const endDate = new Date(now);
-        endDate.setMonth(endDate.getMonth() + 1);
+      const now = new Date();
+      const endDate = new Date(now);
+      endDate.setMonth(endDate.getMonth() + 1);
 
-        await db.update(usersTable).set({
-          planType: "pro",
-          subscriptionId: intentId,
-          subscriptionStatus: "active",
-          planStartDate: now,
-          planEndDate: endDate,
-        }).where(eq(usersTable.id, req.user!.id));
+      await db.update(usersTable).set({
+        planType: "pro",
+        subscriptionId: intentId,
+        subscriptionStatus: "active",
+        planStartDate: now,
+        planEndDate: endDate,
+      }).where(eq(usersTable.id, req.user!.id));
 
-        const sid = getSessionId(req);
-        if (sid) {
-          const session = await getSession(sid);
-          if (session) {
-            session.user.planType = "pro";
-            await updateSession(sid, session);
-          }
+      const sid = getSessionId(req);
+      if (sid) {
+        const session = await getSession(sid);
+        if (session) {
+          session.user.planType = "pro";
+          await updateSession(sid, session);
         }
       }
 

@@ -10,6 +10,7 @@ interface CheckoutSuccessProps {
 export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
   const [status, setStatus] = useState<"checking" | "success" | "failed">("checking");
   const [attempts, setAttempts] = useState(0);
+  const [pollKey, setPollKey] = useState(0);
 
   const intentId = sessionStorage.getItem("eraseai_checkout_intent");
 
@@ -72,7 +73,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [checkPlan]);
+  }, [checkPlan, pollKey]);
 
   const handleContinue = () => {
     window.location.reload();
@@ -164,6 +165,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
                   onClick={() => {
                     setStatus("checking");
                     setAttempts(0);
+                    setPollKey(k => k + 1);
                   }}
                   className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
