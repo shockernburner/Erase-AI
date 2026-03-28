@@ -108,6 +108,7 @@ router.get("/demo", async (_req: Request, res: Response) => {
       await db.delete(datasetVersionsTable).where(eq(datasetVersionsTable.datasetId, dsId));
     }
     await db.delete(datasetOperationsTable).where(eq(datasetOperationsTable.datasetId, dsId));
+    await db.delete(analysisResultsTable).where(eq(analysisResultsTable.datasetId, dsId));
 
     await createVersionWithRows(dsId, 1, null, DEMO_ROWS.map((content, i) => ({ rowIndex: i, content })));
     res.json({ created: false, dataset_id: dsId });
@@ -629,8 +630,9 @@ router.post("/:id/analyze", async (req: Request, res: Response) => {
     if (!summary[issue.issueType].rows.includes(issue.rowIndex)) {
       summary[issue.issueType].rows.push(issue.rowIndex);
     }
-    if (issue.severity === "high" && summary[issue.issueType].severity !== "high") {
-      summary[issue.issueType].severity = "high";
+    const sevOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
+    if ((sevOrder[issue.severity] ?? 0) > (sevOrder[summary[issue.issueType].severity] ?? 0)) {
+      summary[issue.issueType].severity = issue.severity;
     }
   }
 
