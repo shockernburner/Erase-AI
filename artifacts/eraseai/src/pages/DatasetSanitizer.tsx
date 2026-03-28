@@ -98,6 +98,7 @@ interface AnalysisIssueSummary {
 }
 
 interface AnalysisIssueItem {
+  id: number;
   issue_type: string;
   severity: string;
   row_index: number;
@@ -429,6 +430,52 @@ export function DatasetSanitizer() {
     }
   };
 
+  const applySingleSuggestion = async (suggestionId: number) => {
+    if (!dataset || isApplying) return;
+    setIsApplying(true);
+    setError("");
+    const beforeRows = [...rows];
+    try {
+      const res = await fetch(`${BASE}api/datasets/${dataset.id}/apply-suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestion_ids: [suggestionId] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to apply suggestion");
+      if (data.affected_count === 0) {
+        setError("No changes were needed for this suggestion.");
+        return;
+      }
+      setPrevVersionRows(beforeRows);
+      setEraseResult({
+        version_number: data.version_number,
+        mode: "auto-fix",
+        keyword: "single suggestion",
+        affected_count: data.affected_count,
+        impact: data.impact,
+      });
+      await fetchDataset(dataset.id);
+      setAnalysisData(prev => {
+        if (!prev) return null;
+        const updated = { ...prev, issues: prev.issues.filter(i => i.id !== suggestionId) };
+        updated.total_issues = updated.issues.length;
+        updated.summary = updated.summary.map(s => ({
+          ...s,
+          count: updated.issues.filter(i => i.issue_type === s.type).length,
+          affected_rows: new Set(updated.issues.filter(i => i.issue_type === s.type).map(i => i.row_index)).size,
+        })).filter(s => s.count > 0);
+        if (updated.total_issues === 0) return null;
+        return updated;
+      });
+      setPhase("erased");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to apply suggestion");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   const applySuggestions = async (issueTypes: string[]) => {
     if (!dataset || isApplying) return;
     setIsApplying(true);
@@ -737,9 +784,18 @@ export function DatasetSanitizer() {
                                       {issue.detail}
                                     </p>
                                   </div>
-                                  <Badge variant={issue.suggested_action === "delete" ? "destructive" : "warning"} className="shrink-0">
-                                    {issue.suggested_action}
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <Badge variant={issue.suggested_action === "delete" ? "destructive" : "warning"}>
+                                      {issue.suggested_action}
+                                    </Badge>
+                                    <button
+                                      onClick={() => applySingleSuggestion(issue.id)}
+                                      disabled={isApplying}
+                                      className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                                    >
+                                      Fix
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                           </div>

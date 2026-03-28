@@ -644,15 +644,20 @@ router.post("/:id/analyze", async (req: Request, res: Response) => {
       severity: data.severity,
       affected_rows: data.rows.length,
     })),
-    issues: issues.map(i => ({
-      issue_type: i.issueType,
-      severity: i.severity,
-      row_index: i.rowIndex,
-      content: i.content,
-      detail: i.detail,
-      suggested_action: i.suggestedAction,
-      suggested_value: i.suggestedValue,
-    })),
+    issues: await (async () => {
+      const stored = await db.select().from(analysisResultsTable)
+        .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+      return stored.map(i => ({
+        id: i.id,
+        issue_type: i.issueType,
+        severity: i.severity,
+        row_index: i.rowIndex,
+        content: i.content,
+        detail: i.detail,
+        suggested_action: i.suggestedAction,
+        suggested_value: i.suggestedValue,
+      }));
+    })(),
   });
 });
 
@@ -663,9 +668,10 @@ router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
   const [dataset] = await db.select().from(datasetsTable).where(eq(datasetsTable.id, id));
   if (!dataset) { res.status(404).json({ error: "Dataset not found" }); return; }
 
-  const { issue_types } = req.body as { issue_types?: string[] };
-  if (!issue_types || !Array.isArray(issue_types) || issue_types.length === 0) {
-    res.status(400).json({ error: "Provide issue_types array (e.g. ['pii','bias','toxic','duplicate','quality'])" });
+  const { issue_types, suggestion_ids } = req.body as { issue_types?: string[]; suggestion_ids?: number[] };
+  if ((!issue_types || !Array.isArray(issue_types) || issue_types.length === 0) &&
+      (!suggestion_ids || !Array.isArray(suggestion_ids) || suggestion_ids.length === 0)) {
+    res.status(400).json({ error: "Provide issue_types array or suggestion_ids array" });
     return;
   }
 
@@ -675,7 +681,9 @@ router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
   const storedIssues = await db.select().from(analysisResultsTable)
     .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
 
-  const relevantIssues = storedIssues.filter(i => issue_types.includes(i.issueType));
+  const relevantIssues = suggestion_ids && suggestion_ids.length > 0
+    ? storedIssues.filter(i => suggestion_ids.includes(i.id))
+    : storedIssues.filter(i => issue_types!.includes(i.issueType));
   if (relevantIssues.length === 0) {
     res.json({ message: "No matching issues to apply", affected_count: 0, version_number: latestVersion.versionNumber });
     return;
@@ -729,7 +737,7 @@ router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
     datasetId: id,
     versionId: newVersion.id,
     type: "auto-fix",
-    value: issue_types.join(", "),
+    value: suggestion_ids && suggestion_ids.length > 0 ? `suggestion #${suggestion_ids.join(", #")}` : (issue_types ?? []).join(", "),
     affectedRowsCount: affectedCount,
   });
 
