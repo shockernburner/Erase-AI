@@ -60,9 +60,10 @@ function getSafeReturnTo(value: unknown): string {
 async function upsertUser(claims: Record<string, unknown>) {
   const userData = {
     id: claims.sub as string,
+    username: (claims.username as string) || (claims.preferred_username as string) || null,
     email: (claims.email as string) || null,
-    firstName: (claims.first_name as string) || null,
-    lastName: (claims.last_name as string) || null,
+    firstName: (claims.first_name as string) || (claims.given_name as string) || null,
+    lastName: (claims.last_name as string) || (claims.family_name as string) || null,
     profileImageUrl: (claims.profile_image_url || claims.picture) as
       | string
       | null,
@@ -82,13 +83,16 @@ async function upsertUser(claims: Record<string, unknown>) {
   return user;
 }
 
-router.get("/auth/user", (req: Request, res: Response) => {
+function getCurrentUser(req: Request, res: Response) {
   res.json(
     GetCurrentAuthUserResponse.parse({
       user: req.isAuthenticated() ? req.user : null,
     }),
   );
-});
+}
+
+router.get("/auth/user", getCurrentUser);
+router.get("/auth/session", getCurrentUser);
 
 router.get("/login", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
