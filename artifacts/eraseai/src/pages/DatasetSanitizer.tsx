@@ -135,6 +135,62 @@ interface MLFeedbackData {
   ml_recommendations: MLRecommendation[];
 }
 
+interface ColumnProfileData {
+  name: string;
+  dataType: string;
+  totalCount: number;
+  missingCount: number;
+  missingPercent: number;
+  cardinality: number;
+  numericStats?: {
+    min: number;
+    max: number;
+    mean: number;
+    median: number;
+    stdDev: number;
+    skewness: number;
+  };
+  categoricalStats?: {
+    topValues: { value: string; count: number; percent: number }[];
+    dominantClass?: { value: string; percent: number };
+  };
+  sample: string[];
+}
+
+interface ProfileBiasIssue {
+  column: string;
+  issueType: string;
+  severity: "low" | "medium" | "high";
+  explanation: string;
+  details: Record<string, unknown>;
+}
+
+interface ProfileRecommendation {
+  category: "preprocessing" | "training" | "evaluation";
+  title: string;
+  description: string;
+  priority: "critical" | "high" | "medium" | "low";
+  triggeredBy: string;
+  codeSnippet?: string;
+}
+
+interface DatasetProfileData {
+  dataset_id: number;
+  version: number;
+  columnar: boolean;
+  delimiter?: string;
+  malformedRows?: number;
+  profile: {
+    totalRows: number;
+    totalColumns: number;
+    completeness: number;
+    columns: ColumnProfileData[];
+  } | null;
+  biasIssues: ProfileBiasIssue[];
+  recommendations: ProfileRecommendation[];
+  message?: string;
+}
+
 type Phase = "idle" | "loading" | "loaded" | "confirm-erase" | "erasing" | "erased";
 type EraseMode = "delete" | "redact";
 
@@ -175,6 +231,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
   const [isFetchingML, setIsFetchingML] = useState(false);
   const [mlCategory, setMlCategory] = useState<"all" | "preprocessing" | "training" | "evaluation">("all");
   const [upgradeNeeded, setUpgradeNeeded] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<DatasetProfileData | null>(null);
+  const [isProfiling, setIsProfiling] = useState(false);
+  const [profileRecCategory, setProfileRecCategory] = useState<"all" | "preprocessing" | "training" | "evaluation">("all");
+  const [expandedProfileCode, setExpandedProfileCode] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDataset = useCallback(async (id: number, version?: number): Promise<{ rows: DatasetRow[]; dataset: DatasetInfo; versions: VersionInfo[]; current_version: number; latest_version: number; operations: OperationInfo[]; removed_count: number; redacted_count: number }> => {
@@ -460,6 +520,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     setExpandedIssue(null);
     setMlFeedback(null);
     setMlCategory("all");
+    setProfileData(null);
+    setProfileRecCategory("all");
+    setExpandedProfileCode(null);
     loadDemo();
   };
 
@@ -489,6 +552,27 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       setMlFeedback(null);
     } finally {
       setIsFetchingML(false);
+    }
+  };
+
+  const fetchProfile = async () => {
+    if (!dataset || isProfiling) return;
+    setIsProfiling(true);
+    setError("");
+    try {
+      const res = await fetch(`${BASE}api/datasets/${dataset.id}/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Profiling failed");
+      setProfileData(data);
+      setProfileRecCategory("all");
+      setExpandedProfileCode(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Profiling failed");
+    } finally {
+      setIsProfiling(false);
     }
   };
 
@@ -771,6 +855,16 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 >
                   {isAnalyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanSearch className="w-3.5 h-3.5" />}
                   {isAnalyzing ? "Analyzing..." : "Analyze"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchProfile}
+                  disabled={isRunningDemo || isProfiling}
+                  className="gap-1.5 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                >
+                  {isProfiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BarChart3 className="w-3.5 h-3.5" />}
+                  {isProfiling ? "Profiling..." : "Profile"}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5" disabled={isRunningDemo}>
                   <Upload className="w-3.5 h-3.5" />
@@ -1102,6 +1196,307 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <span className="text-sm text-muted-foreground">Generating ML pipeline recommendations...</span>
                   </div>
                 </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isProfiling && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Card className="p-5 border-cyan-500/20">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Profiling dataset columns...</span>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {profileData && !profileData.profile && profileData.message && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <Card className="p-5 border-cyan-500/20">
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="w-5 h-5 text-cyan-400" />
+                    <div>
+                      <h3 className="font-display font-bold text-foreground">Dataset Profile</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{profileData.message}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setProfileData(null)}>Dismiss</Button>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {profileData && profileData.profile && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-4"
+              >
+                <Card className="p-5 border-cyan-500/30 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="w-5 h-5 text-cyan-400" />
+                      <div>
+                        <h3 className="font-display font-bold text-foreground">Dataset Profile</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {profileData.profile.totalColumns} columns &middot; {profileData.profile.totalRows} rows &middot; {profileData.profile.completeness}% complete
+                          {profileData.delimiter && <span> &middot; Delimiter: <span className="font-mono text-cyan-400">{profileData.delimiter === "\t" ? "TAB" : `"${profileData.delimiter}"`}</span></span>}
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setProfileData(null)}>Dismiss</Button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border/30">
+                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">Column</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">Type</th>
+                          <th className="text-right py-2 px-3 text-muted-foreground font-semibold">Missing</th>
+                          <th className="text-right py-2 px-3 text-muted-foreground font-semibold">Unique</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">Key Stats</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {profileData.profile.columns.map((col, idx) => {
+                          const typeColors: Record<string, string> = {
+                            numeric: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                            categorical: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+                            text: "text-green-400 bg-green-500/10 border-green-500/20",
+                            datetime: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                            boolean: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+                            empty: "text-gray-400 bg-gray-500/10 border-gray-500/20",
+                          };
+                          const typeStyle = typeColors[col.dataType] || typeColors.text;
+
+                          let statsText = "";
+                          if (col.numericStats) {
+                            statsText = `min: ${col.numericStats.min}, max: ${col.numericStats.max}, mean: ${col.numericStats.mean}`;
+                          } else if (col.categoricalStats?.dominantClass) {
+                            statsText = `Top: "${col.categoricalStats.dominantClass.value}" (${col.categoricalStats.dominantClass.percent}%)`;
+                          } else if (col.categoricalStats?.topValues?.length) {
+                            statsText = `Top: "${col.categoricalStats.topValues[0].value}" (${col.categoricalStats.topValues[0].percent}%)`;
+                          }
+
+                          return (
+                            <tr key={idx} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
+                              <td className="py-2.5 px-3 font-mono font-semibold text-foreground">{col.name}</td>
+                              <td className="py-2.5 px-3">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono uppercase ${typeStyle}`}>
+                                  {col.dataType}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <span className={col.missingPercent > 10 ? "text-red-400 font-semibold" : col.missingPercent > 0 ? "text-yellow-400" : "text-muted-foreground"}>
+                                  {col.missingPercent}%
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono text-foreground/80">{col.cardinality}</td>
+                              <td className="py-2.5 px-3 text-muted-foreground truncate max-w-[200px]">{statsText || "—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+
+                {profileData.biasIssues.length > 0 && (
+                  <Card className="p-5 border-orange-500/30 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <ShieldAlert className="w-5 h-5 text-orange-400" />
+                      <div>
+                        <h3 className="font-display font-bold text-foreground">Bias & Fairness Findings</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {profileData.biasIssues.length} potential bias issue{profileData.biasIssues.length !== 1 ? "s" : ""} detected
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {profileData.biasIssues.map((issue, idx) => {
+                        const severityColors: Record<string, string> = {
+                          high: "text-red-400 bg-red-500/10 border-red-500/20",
+                          medium: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                          low: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+                        };
+                        const issueTypeLabels: Record<string, string> = {
+                          proxy_bias: "Proxy Bias",
+                          class_imbalance: "Class Imbalance",
+                          skewed_distribution: "Skewed Distribution",
+                          underrepresented_group: "Underrepresented Group",
+                        };
+                        return (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.2, delay: idx * 0.05 }}
+                            className="p-3 rounded-xl border border-border/30 bg-muted/10"
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${severityColors[issue.severity]?.split(" ")[0] || "text-orange-400"}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-semibold text-foreground font-mono">{issue.column}</span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/30 text-muted-foreground font-mono">
+                                    {issueTypeLabels[issue.issueType] || issue.issueType}
+                                  </span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono uppercase ${severityColors[issue.severity]}`}>
+                                    {issue.severity}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{issue.explanation}</p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+
+                {profileData.biasIssues.length === 0 && (
+                  <Card className="p-5 border-success/30">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-success" />
+                      <div>
+                        <h3 className="font-display font-bold text-foreground">No Bias Issues Detected</h3>
+                        <p className="text-xs text-muted-foreground">No proxy bias, class imbalance, or underrepresented groups found in this dataset.</p>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {profileData.recommendations.length > 0 && (
+                  <Card className="p-5 border-cyan-500/30 space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3">
+                        <BrainCircuit className="w-5 h-5 text-cyan-400" />
+                        <div>
+                          <h3 className="font-display font-bold text-foreground">Profile Recommendations</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {profileData.recommendations.length} recommendation{profileData.recommendations.length !== 1 ? "s" : ""} based on column analysis
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {(["all", "preprocessing", "training", "evaluation"] as const).map(cat => {
+                        const count = cat === "all"
+                          ? profileData.recommendations.length
+                          : profileData.recommendations.filter(r => r.category === cat).length;
+                        if (count === 0 && cat !== "all") return null;
+                        const icons: Record<string, React.ReactNode> = {
+                          all: <BrainCircuit className="w-3.5 h-3.5" />,
+                          preprocessing: <Wrench className="w-3.5 h-3.5" />,
+                          training: <GraduationCap className="w-3.5 h-3.5" />,
+                          evaluation: <FlaskConical className="w-3.5 h-3.5" />,
+                        };
+                        const labels: Record<string, string> = { all: "All", preprocessing: "Preprocessing", training: "Training", evaluation: "Evaluation" };
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => setProfileRecCategory(cat)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${profileRecCategory === cat ? "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/40" : "bg-muted/20 text-muted-foreground hover:bg-muted/40"}`}
+                          >
+                            {icons[cat]}
+                            {labels[cat]}
+                            <span className="text-[10px] opacity-60">({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                      {profileData.recommendations
+                        .filter(r => profileRecCategory === "all" || r.category === profileRecCategory)
+                        .map((rec, idx) => {
+                          const catIcons: Record<string, React.ReactNode> = {
+                            preprocessing: <Wrench className="w-4 h-4 text-blue-400" />,
+                            training: <GraduationCap className="w-4 h-4 text-green-400" />,
+                            evaluation: <FlaskConical className="w-4 h-4 text-purple-400" />,
+                          };
+                          const priorityColors: Record<string, string> = {
+                            critical: "text-red-400 bg-red-500/10 border-red-500/20",
+                            high: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                            medium: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
+                            low: "text-green-400 bg-green-500/10 border-green-500/20",
+                          };
+                          return (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.2, delay: idx * 0.05 }}
+                              className="p-3.5 rounded-xl border border-border/30 bg-muted/10 space-y-2"
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <span className="mt-0.5 shrink-0">{catIcons[rec.category]}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-semibold text-foreground">{rec.title}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono uppercase ${priorityColors[rec.priority]}`}>
+                                      {rec.priority}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{rec.description}</p>
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <span className="text-[10px] text-muted-foreground/60">
+                                      Triggered by: <span className="text-foreground/60 font-semibold">{rec.triggeredBy}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              {rec.codeSnippet && (
+                                <div>
+                                  <button
+                                    onClick={() => setExpandedProfileCode(expandedProfileCode === idx ? null : idx)}
+                                    className="flex items-center gap-1.5 text-[10px] text-cyan-400 hover:text-cyan-300 font-mono uppercase tracking-wider transition-colors"
+                                  >
+                                    <Code2 className="w-3 h-3" />
+                                    {expandedProfileCode === idx ? "Hide code" : "Show code"}
+                                    <ChevronDown className={`w-3 h-3 transition-transform ${expandedProfileCode === idx ? "rotate-180" : ""}`} />
+                                  </button>
+                                  <AnimatePresence>
+                                    {expandedProfileCode === idx && (
+                                      <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="mt-2 rounded-lg bg-black/30 border border-border/20 p-3 overflow-x-auto">
+                                          <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">{rec.codeSnippet}</pre>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              )}
+                            </motion.div>
+                          );
+                        })}
+                    </div>
+                  </Card>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
