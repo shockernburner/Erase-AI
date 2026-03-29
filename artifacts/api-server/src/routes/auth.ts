@@ -79,8 +79,17 @@ async function seedAdminUser() {
       subscriptionStatus: "active",
     };
 
+    const conflictSet: Record<string, unknown> = {
+      role: "admin",
+      planType: "enterprise",
+      subscriptionStatus: "active",
+      authProvider: "email",
+    };
+
     if (adminPassword) {
-      insertValues.passwordHash = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS);
+      const hash = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS);
+      insertValues.passwordHash = hash;
+      conflictSet.passwordHash = hash;
     }
 
     await db
@@ -88,11 +97,7 @@ async function seedAdminUser() {
       .values(insertValues as typeof usersTable.$inferInsert)
       .onConflictDoUpdate({
         target: usersTable.email,
-        set: {
-          role: "admin",
-          planType: "enterprise",
-          subscriptionStatus: "active",
-        },
+        set: conflictSet,
       });
     console.log("Admin user seeded:", ADMIN_EMAIL);
   } catch (err) {
