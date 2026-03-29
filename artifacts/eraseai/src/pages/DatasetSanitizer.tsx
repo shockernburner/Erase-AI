@@ -395,6 +395,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     setPhase("loading");
     setError("");
     setUpgradeNeeded(null);
+    setProfileData(null);
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -681,6 +682,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       await fetchDataset(dataset.id);
       setAnalysisData(null);
       setMlFeedback(null);
+      setProfileData(null);
       setPhase("erased");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to apply suggestions");
