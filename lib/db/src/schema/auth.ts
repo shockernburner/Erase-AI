@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { check, index, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const sessionsTable = pgTable(
   "sessions",
@@ -39,7 +39,9 @@ export const feedbackTable = pgTable("feedback", {
   rating: integer("rating").notNull(),
   message: text("message").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  check("rating_range", sql`${table.rating} >= 1 AND ${table.rating} <= 5`),
+]);
 
 export type Feedback = typeof feedbackTable.$inferSelect;
 export type InsertFeedback = typeof feedbackTable.$inferInsert;
