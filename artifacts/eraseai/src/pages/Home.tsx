@@ -10,6 +10,7 @@ import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 import { getListFactsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, Crown } from "lucide-react";
+import { FeedbackButton } from "@/components/FeedbackModal";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
@@ -221,6 +222,7 @@ function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               eraseai.ai LIVE
             </div>
 
+            <FeedbackButton />
             <UserMenu onNavigate={onNavigate} />
           </div>
         </motion.header>
