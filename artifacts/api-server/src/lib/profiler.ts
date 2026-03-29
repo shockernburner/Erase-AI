@@ -16,6 +16,7 @@ export interface ColumnProfile {
   };
   categoricalStats?: {
     topValues: { value: string; count: number; percent: number }[];
+    allValueCounts: { value: string; count: number; percent: number }[];
     dominantClass?: { value: string; percent: number };
   };
   sample: string[];
@@ -108,17 +109,19 @@ function computeCategoricalStats(values: string[]): ColumnProfile["categoricalSt
   }
 
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  const topValues = sorted.slice(0, 10).map(([value, count]) => ({
+  const allValueCounts = sorted.map(([value, count]) => ({
     value,
     count,
     percent: Math.round((count / nonEmpty.length) * 1000) / 10,
   }));
+  const topValues = allValueCounts.slice(0, 10);
 
   const dominant = sorted[0];
   const dominantPercent = (dominant[1] / nonEmpty.length) * 100;
 
   return {
     topValues,
+    allValueCounts,
     dominantClass: dominantPercent > 50 ? {
       value: dominant[0],
       percent: Math.round(dominantPercent * 10) / 10,

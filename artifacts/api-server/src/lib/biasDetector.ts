@@ -119,7 +119,7 @@ function detectUnderrepresentation(col: ColumnProfile): BiasIssue[] {
   const total = col.totalCount - col.missingCount;
   if (total === 0) return [];
 
-  for (const { value, percent } of col.categoricalStats.topValues) {
+  for (const { value, percent } of col.categoricalStats.allValueCounts) {
     if (percent < 5 && percent > 0) {
       issues.push({
         column: col.name,

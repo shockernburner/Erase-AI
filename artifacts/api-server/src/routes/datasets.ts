@@ -1134,13 +1134,22 @@ router.post("/:id/profile", async (req: Request, res: Response) => {
   const biasIssues = detectBias(profile);
   const recommendations = generateProfileRecommendations(profile, biasIssues);
 
+  const responseProfile = {
+    ...profile,
+    columns: profile.columns.map(col => {
+      if (!col.categoricalStats) return col;
+      const { allValueCounts, ...rest } = col.categoricalStats;
+      return { ...col, categoricalStats: rest };
+    }),
+  };
+
   res.json({
     dataset_id: id,
     version: latestVersion.versionNumber,
     columnar: true,
     delimiter: parsed.delimiter,
     malformedRows: parsed.malformedRows,
-    profile,
+    profile: responseProfile,
     biasIssues,
     recommendations,
   });
