@@ -18,4 +18,5 @@ export interface AuthUser {
   /** @nullable */
   profileImageUrl: string | null;
   planType: AuthUserPlanType;
+  role?: "user" | "admin";
 }

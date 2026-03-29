@@ -7,7 +7,13 @@ interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: () => void;
+  login: (email: string, password: string) => Promise<{ error?: string }>;
+  signup: (data: {
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+  }) => Promise<{ error?: string }>;
   logout: () => void;
 }
 
@@ -41,13 +47,67 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  const login = useCallback(() => {
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
-  }, []);
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+    ): Promise<{ error?: string }> => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return { error: data.error || "Login failed" };
+        }
+        setUser(data.user);
+        return {};
+      } catch {
+        return { error: "Something went wrong. Please try again." };
+      }
+    },
+    [],
+  );
 
-  const logout = useCallback(() => {
-    window.location.href = "/api/logout";
+  const signup = useCallback(
+    async (data: {
+      email: string;
+      password: string;
+      firstName?: string;
+      lastName?: string;
+    }): Promise<{ error?: string }> => {
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          return { error: result.error || "Signup failed" };
+        }
+        setUser(result.user);
+        return {};
+      } catch {
+        return { error: "Something went wrong. Please try again." };
+      }
+    },
+    [],
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+    }
+    setUser(null);
   }, []);
 
   return {
@@ -55,6 +115,7 @@ export function useAuth(): AuthState {
     isLoading,
     isAuthenticated: !!user,
     login,
+    signup,
     logout,
   };
 }

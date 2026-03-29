@@ -1,26 +1,26 @@
-import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
-import {
-  GetCurrentAuthUserResponse,
-  ExchangeMobileAuthorizationCodeBody,
-  ExchangeMobileAuthorizationCodeResponse,
-  LogoutMobileSessionResponse,
-} from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 import {
   clearSession,
-  getOidcConfig,
   getSessionId,
   createSession,
   deleteSession,
   SESSION_COOKIE,
   SESSION_TTL,
-  ISSUER_URL,
   type SessionData,
 } from "../lib/auth";
 
-const OIDC_COOKIE_TTL = 10 * 60 * 1000;
+const BCRYPT_ROUNDS = 12;
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID || "";
+const APPLE_CLIENT_SECRET = process.env.APPLE_CLIENT_SECRET || "";
+
+const ADMIN_EMAIL = "firdous.mahmood26@gmail.com";
 
 const router: IRouter = Router();
 
@@ -41,256 +41,538 @@ function setSessionCookie(res: Response, sid: string) {
   });
 }
 
-function setOidcCookie(res: Response, name: string, value: string) {
-  res.cookie(name, value, {
+function buildSessionUser(dbUser: {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  planType: string;
+  role: string;
+}) {
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    firstName: dbUser.firstName,
+    lastName: dbUser.lastName,
+    profileImageUrl: dbUser.profileImageUrl,
+    planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
+    role: (dbUser.role as "user" | "admin") || "user",
+  };
+}
+
+async function seedAdminUser() {
+  try {
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, ADMIN_EMAIL));
+
+    if (existing) {
+      if (existing.role !== "admin" || existing.planType !== "enterprise") {
+        await db
+          .update(usersTable)
+          .set({
+            role: "admin",
+            planType: "enterprise",
+            subscriptionStatus: "active",
+          })
+          .where(eq(usersTable.id, existing.id));
+      }
+    }
+  } catch (err) {
+    console.error("Failed to seed admin user:", err);
+  }
+}
+
+seedAdminUser();
+
+function isUniqueConstraintError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    "code" in err &&
+    (err as { code: string }).code === "23505"
+  );
+}
+
+router.post("/auth/signup", async (req: Request, res: Response) => {
+  try {
+    const { email, password, firstName, lastName } = req.body as {
+      email?: string;
+      password?: string;
+      firstName?: string;
+      lastName?: string;
+    };
+
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      res.status(400).json({ error: "Invalid email format" });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const isAdmin = emailLower === ADMIN_EMAIL;
+
+    try {
+      const [user] = await db
+        .insert(usersTable)
+        .values({
+          email: emailLower,
+          firstName: firstName?.trim() || null,
+          lastName: lastName?.trim() || null,
+          passwordHash,
+          authProvider: "email",
+          role: isAdmin ? "admin" : "user",
+          planType: isAdmin ? "enterprise" : "free",
+          subscriptionStatus: isAdmin ? "active" : null,
+        })
+        .returning();
+
+      const sessionData: SessionData = {
+        user: buildSessionUser(user),
+      };
+
+      const sid = await createSession(sessionData);
+      setSessionCookie(res, sid);
+
+      res.json({ user: sessionData.user });
+    } catch (insertErr) {
+      if (isUniqueConstraintError(insertErr)) {
+        res.status(409).json({ error: "An account with this email already exists" });
+        return;
+      }
+      throw insertErr;
+    }
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "An error occurred during signup" });
+  }
+});
+
+router.post("/auth/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body as {
+      email?: string;
+      password?: string;
+    };
+
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower));
+
+    if (!user) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    if (!user.passwordHash) {
+      const provider = user.authProvider || "social";
+      res.status(401).json({
+        error: `This account uses ${provider} sign-in. Please log in with ${provider}.`,
+      });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    const sessionData: SessionData = {
+      user: buildSessionUser(user),
+    };
+
+    const sid = await createSession(sessionData);
+    setSessionCookie(res, sid);
+
+    res.json({ user: sessionData.user });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "An error occurred during login" });
+  }
+});
+
+router.get("/auth/google", (req: Request, res: Response) => {
+  if (!GOOGLE_CLIENT_ID) {
+    res.status(503).json({ error: "Google sign-in is not configured" });
+    return;
+  }
+
+  const origin = getOrigin(req);
+  const redirectUri = `${origin}/api/auth/google/callback`;
+  const state = crypto.randomBytes(16).toString("hex");
+
+  res.cookie("oauth_state", state, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
     path: "/",
-    maxAge: OIDC_COOKIE_TTL,
+    maxAge: 10 * 60 * 1000,
   });
-}
 
-function getSafeReturnTo(value: unknown): string {
-  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-  return value;
-}
-
-async function upsertUser(claims: Record<string, unknown>) {
-  const userData = {
-    id: claims.sub as string,
-    username: (claims.username as string) || (claims.preferred_username as string) || null,
-    email: (claims.email as string) || null,
-    firstName: (claims.first_name as string) || (claims.given_name as string) || null,
-    lastName: (claims.last_name as string) || (claims.family_name as string) || null,
-    profileImageUrl: (claims.profile_image_url || claims.picture) as
-      | string
-      | null,
-  };
-
-  const [user] = await db
-    .insert(usersTable)
-    .values(userData)
-    .onConflictDoUpdate({
-      target: usersTable.id,
-      set: {
-        ...userData,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
-  return user;
-}
-
-async function getCurrentUser(req: Request, res: Response) {
-  if (!req.isAuthenticated()) {
-    res.json(GetCurrentAuthUserResponse.parse({ user: null }));
-    return;
-  }
-
-  const [freshUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, req.user!.id));
-
-  const user = freshUser
-    ? {
-        id: freshUser.id,
-        email: freshUser.email,
-        firstName: freshUser.firstName,
-        lastName: freshUser.lastName,
-        profileImageUrl: freshUser.profileImageUrl,
-        planType: (freshUser.planType as "free" | "pro" | "enterprise") || "free",
-      }
-    : req.user!;
-
-  res.json(GetCurrentAuthUserResponse.parse({ user }));
-}
-
-router.get("/auth/user", getCurrentUser);
-router.get("/auth/session", getCurrentUser);
-
-router.get("/login", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const callbackUrl = `${getOrigin(req)}/api/callback`;
-
-  const returnTo = getSafeReturnTo(req.query.returnTo);
-
-  const state = oidc.randomState();
-  const nonce = oidc.randomNonce();
-  const codeVerifier = oidc.randomPKCECodeVerifier();
-  const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
-
-  const redirectTo = oidc.buildAuthorizationUrl(config, {
-    redirect_uri: callbackUrl,
-    scope: "openid email profile offline_access",
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
-    prompt: "login consent",
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "openid email profile",
     state,
-    nonce,
+    access_type: "offline",
+    prompt: "select_account",
   });
 
-  setOidcCookie(res, "code_verifier", codeVerifier);
-  setOidcCookie(res, "nonce", nonce);
-  setOidcCookie(res, "state", state);
-  setOidcCookie(res, "return_to", returnTo);
-
-  res.redirect(redirectTo.href);
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
 });
 
-// Query params are not validated because the OIDC provider may include
-// parameters not expressed in the schema.
-router.get("/callback", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const callbackUrl = `${getOrigin(req)}/api/callback`;
+router.get("/auth/google/callback", async (req: Request, res: Response) => {
+  const { code, state } = req.query as { code?: string; state?: string };
+  const expectedState = req.cookies?.oauth_state;
 
-  const codeVerifier = req.cookies?.code_verifier;
-  const nonce = req.cookies?.nonce;
-  const expectedState = req.cookies?.state;
+  res.clearCookie("oauth_state", { path: "/" });
 
-  if (!codeVerifier || !expectedState) {
-    res.redirect("/api/login");
+  if (!code || !state || state !== expectedState) {
+    res.redirect("/?auth_error=invalid_state");
     return;
   }
 
-  const currentUrl = new URL(
-    `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
-  );
-
-  let tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
-  try {
-    tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
-      pkceCodeVerifier: codeVerifier,
-      expectedNonce: nonce,
-      expectedState,
-      idTokenExpected: true,
-    });
-  } catch {
-    res.redirect("/api/login");
-    return;
-  }
-
-  const returnTo = getSafeReturnTo(req.cookies?.return_to);
-
-  res.clearCookie("code_verifier", { path: "/" });
-  res.clearCookie("nonce", { path: "/" });
-  res.clearCookie("state", { path: "/" });
-  res.clearCookie("return_to", { path: "/" });
-
-  const claims = tokens.claims();
-  if (!claims) {
-    res.redirect("/api/login");
-    return;
-  }
-
-  const dbUser = await upsertUser(
-    claims as unknown as Record<string, unknown>,
-  );
-
-  const now = Math.floor(Date.now() / 1000);
-  const sessionData: SessionData = {
-    user: {
-      id: dbUser.id,
-      email: dbUser.email,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      profileImageUrl: dbUser.profileImageUrl,
-      planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
-    },
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
-  };
-
-  const sid = await createSession(sessionData);
-  setSessionCookie(res, sid);
-  res.redirect(returnTo);
-});
-
-router.get("/logout", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
   const origin = getOrigin(req);
+  const redirectUri = `${origin}/api/auth/google/callback`;
 
-  const sid = getSessionId(req);
-  await clearSession(res, sid);
+  try {
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
 
-  const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
-    post_logout_redirect_uri: origin,
-  });
-
-  res.redirect(endSessionUrl.href);
-});
-
-router.post(
-  "/mobile-auth/token-exchange",
-  async (req: Request, res: Response) => {
-    const parsed = ExchangeMobileAuthorizationCodeBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Missing or invalid required parameters" });
+    if (!tokenRes.ok) {
+      console.error("Google token exchange failed:", await tokenRes.text());
+      res.redirect("/?auth_error=token_exchange_failed");
       return;
     }
 
-    const { code, code_verifier, redirect_uri, state, nonce } = parsed.data;
+    const tokens = (await tokenRes.json()) as { access_token: string };
 
-    try {
-      const config = await getOidcConfig();
+    const userInfoRes = await fetch(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      { headers: { Authorization: `Bearer ${tokens.access_token}` } },
+    );
 
-      const callbackUrl = new URL(redirect_uri);
-      callbackUrl.searchParams.set("code", code);
-      callbackUrl.searchParams.set("state", state);
-      callbackUrl.searchParams.set("iss", ISSUER_URL);
-
-      const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
-        pkceCodeVerifier: code_verifier,
-        expectedNonce: nonce ?? undefined,
-        expectedState: state,
-        idTokenExpected: true,
-      });
-
-      const claims = tokens.claims();
-      if (!claims) {
-        res.status(401).json({ error: "No claims in ID token" });
-        return;
-      }
-
-      const dbUser = await upsertUser(
-        claims as unknown as Record<string, unknown>,
-      );
-
-      const now = Math.floor(Date.now() / 1000);
-      const sessionData: SessionData = {
-        user: {
-          id: dbUser.id,
-          email: dbUser.email,
-          firstName: dbUser.firstName,
-          lastName: dbUser.lastName,
-          profileImageUrl: dbUser.profileImageUrl,
-          planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
-        },
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
-      };
-
-      const sid = await createSession(sessionData);
-      res.json(ExchangeMobileAuthorizationCodeResponse.parse({ token: sid }));
-    } catch (err) {
-      req.log.error({ err }, "Mobile token exchange error");
-      res.status(500).json({ error: "Token exchange failed" });
+    if (!userInfoRes.ok) {
+      res.redirect("/?auth_error=userinfo_failed");
+      return;
     }
-  },
-);
 
-router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
-  const sid = getSessionId(req);
-  if (sid) {
-    await deleteSession(sid);
+    const profile = (await userInfoRes.json()) as {
+      id: string;
+      email: string;
+      given_name?: string;
+      family_name?: string;
+      picture?: string;
+    };
+
+    const emailLower = profile.email.toLowerCase();
+    const isAdmin = emailLower === ADMIN_EMAIL;
+
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower));
+
+    let dbUser;
+    if (existing) {
+      [dbUser] = await db
+        .update(usersTable)
+        .set({
+          firstName: profile.given_name || existing.firstName,
+          lastName: profile.family_name || existing.lastName,
+          profileImageUrl: profile.picture || existing.profileImageUrl,
+          ...(isAdmin && existing.role !== "admin"
+            ? { role: "admin", planType: "enterprise", subscriptionStatus: "active" }
+            : {}),
+        })
+        .where(eq(usersTable.id, existing.id))
+        .returning();
+    } else {
+      [dbUser] = await db
+        .insert(usersTable)
+        .values({
+          email: emailLower,
+          firstName: profile.given_name || null,
+          lastName: profile.family_name || null,
+          profileImageUrl: profile.picture || null,
+          authProvider: "google",
+          role: isAdmin ? "admin" : "user",
+          planType: isAdmin ? "enterprise" : "free",
+          subscriptionStatus: isAdmin ? "active" : null,
+        })
+        .returning();
+    }
+
+    const sessionData: SessionData = { user: buildSessionUser(dbUser) };
+    const sid = await createSession(sessionData);
+    setSessionCookie(res, sid);
+    res.redirect("/");
+  } catch (err) {
+    console.error("Google auth error:", err);
+    res.redirect("/?auth_error=google_failed");
   }
-  res.json(LogoutMobileSessionResponse.parse({ success: true }));
+});
+
+router.get("/auth/apple", (req: Request, res: Response) => {
+  if (!APPLE_CLIENT_ID) {
+    res.status(503).json({ error: "Apple sign-in is not configured" });
+    return;
+  }
+
+  const origin = getOrigin(req);
+  const redirectUri = `${origin}/api/auth/apple/callback`;
+  const state = crypto.randomBytes(16).toString("hex");
+
+  res.cookie("oauth_state", state, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+    maxAge: 10 * 60 * 1000,
+  });
+
+  const params = new URLSearchParams({
+    client_id: APPLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "name email",
+    state,
+    response_mode: "form_post",
+  });
+
+  res.redirect(
+    `https://appleid.apple.com/auth/authorize?${params}`,
+  );
+});
+
+router.post("/auth/apple/callback", async (req: Request, res: Response) => {
+  const { code, state, id_token } = req.body as {
+    code?: string;
+    state?: string;
+    id_token?: string;
+  };
+  const expectedState = req.cookies?.oauth_state;
+
+  res.clearCookie("oauth_state", { path: "/", sameSite: "none", secure: true });
+
+  if (!code || !state || state !== expectedState) {
+    res.redirect("/?auth_error=invalid_state");
+    return;
+  }
+
+  const origin = getOrigin(req);
+  const redirectUri = `${origin}/api/auth/apple/callback`;
+
+  try {
+    const tokenRes = await fetch("https://appleid.apple.com/auth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: APPLE_CLIENT_ID,
+        client_secret: APPLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      console.error("Apple token exchange failed:", await tokenRes.text());
+      res.redirect("/?auth_error=apple_token_failed");
+      return;
+    }
+
+    const tokens = (await tokenRes.json()) as { id_token: string };
+    const jwt = tokens.id_token || id_token;
+    if (!jwt) {
+      res.redirect("/?auth_error=apple_no_token");
+      return;
+    }
+
+    const parts = jwt.split(".");
+    if (parts.length !== 3) {
+      res.redirect("/?auth_error=apple_invalid_token");
+      return;
+    }
+
+    const payload = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString(),
+    ) as { sub: string; email?: string; iss?: string; aud?: string; exp?: number };
+
+    if (payload.iss !== "https://appleid.apple.com") {
+      res.redirect("/?auth_error=apple_invalid_issuer");
+      return;
+    }
+
+    if (payload.aud !== APPLE_CLIENT_ID) {
+      res.redirect("/?auth_error=apple_invalid_audience");
+      return;
+    }
+
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      res.redirect("/?auth_error=apple_token_expired");
+      return;
+    }
+
+    const emailLower = payload.email?.toLowerCase() || `apple_${payload.sub}@private.appleid.com`;
+    const isAdmin = emailLower === ADMIN_EMAIL;
+
+    const userBody = req.body as { user?: string };
+    let appleFirstName: string | null = null;
+    let appleLastName: string | null = null;
+    if (userBody.user) {
+      try {
+        const nameData = JSON.parse(userBody.user) as {
+          name?: { firstName?: string; lastName?: string };
+        };
+        appleFirstName = nameData.name?.firstName || null;
+        appleLastName = nameData.name?.lastName || null;
+      } catch (parseErr) {
+        console.warn("Failed to parse Apple user data:", parseErr);
+      }
+    }
+
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower));
+
+    let dbUser;
+    if (existing) {
+      [dbUser] = await db
+        .update(usersTable)
+        .set({
+          ...(appleFirstName ? { firstName: appleFirstName } : {}),
+          ...(appleLastName ? { lastName: appleLastName } : {}),
+          ...(isAdmin && existing.role !== "admin"
+            ? { role: "admin", planType: "enterprise", subscriptionStatus: "active" }
+            : {}),
+        })
+        .where(eq(usersTable.id, existing.id))
+        .returning();
+    } else {
+      [dbUser] = await db
+        .insert(usersTable)
+        .values({
+          email: emailLower,
+          firstName: appleFirstName,
+          lastName: appleLastName,
+          authProvider: "apple",
+          role: isAdmin ? "admin" : "user",
+          planType: isAdmin ? "enterprise" : "free",
+          subscriptionStatus: isAdmin ? "active" : null,
+        })
+        .returning();
+    }
+
+    const sessionData: SessionData = { user: buildSessionUser(dbUser) };
+    const sid = await createSession(sessionData);
+    setSessionCookie(res, sid);
+    res.redirect("/");
+  } catch (err) {
+    console.error("Apple auth error:", err);
+    res.redirect("/?auth_error=apple_failed");
+  }
+});
+
+router.get("/auth/user", async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated()) {
+      res.json({ user: null });
+      return;
+    }
+
+    const [freshUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user!.id));
+
+    const user = freshUser ? buildSessionUser(freshUser) : req.user!;
+
+    res.json({ user });
+  } catch (err) {
+    console.error("Get user error:", err);
+    res.json({ user: null });
+  }
+});
+
+router.get("/auth/session", async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated()) {
+      res.json({ user: null });
+      return;
+    }
+
+    const [freshUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user!.id));
+
+    const user = freshUser ? buildSessionUser(freshUser) : req.user!;
+
+    res.json({ user });
+  } catch (err) {
+    console.error("Get session error:", err);
+    res.json({ user: null });
+  }
+});
+
+router.get("/auth/providers", (_req: Request, res: Response) => {
+  res.json({
+    email: true,
+    google: !!GOOGLE_CLIENT_ID,
+    apple: !!APPLE_CLIENT_ID,
+  });
+});
+
+router.get("/logout", async (req: Request, res: Response) => {
+  const sid = getSessionId(req);
+  await clearSession(res, sid);
+  res.redirect("/");
+});
+
+router.post("/auth/logout", async (req: Request, res: Response) => {
+  try {
+    const sid = getSessionId(req);
+    if (sid) {
+      await deleteSession(sid);
+    }
+    res.clearCookie(SESSION_COOKIE, { path: "/" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.json({ success: true });
+  }
 });
 
 export default router;
