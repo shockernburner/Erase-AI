@@ -384,8 +384,11 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                             ))}
                           </div>
                           <span className="text-sm text-foreground font-medium">
-                            {[f.userFirstName, f.userLastName].filter(Boolean).join(" ") || f.userEmail || "Unknown"}
+                            {[f.userFirstName, f.userLastName].filter(Boolean).join(" ") || "Unknown"}
                           </span>
+                          {f.userEmail && (
+                            <span className="text-xs text-muted-foreground/60 ml-1">({f.userEmail})</span>
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground/50">
                           {new Date(f.createdAt).toLocaleDateString()}

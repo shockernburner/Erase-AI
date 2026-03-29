@@ -58,7 +58,7 @@ router.get("/admin/stats", async (req: Request, res: Response) => {
       db.select({ total: count() }).from(pageVisitsTable).where(gte(pageVisitsTable.createdAt, todayStart)),
       db.select({ total: count() }).from(pageVisitsTable).where(gte(pageVisitsTable.createdAt, weekStart)),
       db.select({ total: count() }).from(usersTable),
-      db.select({ total: count() }).from(usersTable).where(eq(usersTable.planType, "pro")),
+      db.select({ total: count() }).from(usersTable).where(sql`${usersTable.planType} = 'pro' AND ${usersTable.subscriptionStatus} = 'active'`),
       db.select({ total: count() }).from(feedbackTable),
       db.select({ avg: sql<string>`ROUND(AVG(${feedbackTable.rating}), 1)` }).from(feedbackTable),
     ]);
