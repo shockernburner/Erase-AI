@@ -3,6 +3,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
   clearSession,
   getSessionId,
@@ -21,6 +22,10 @@ const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID || "";
 const APPLE_CLIENT_SECRET = process.env.APPLE_CLIENT_SECRET || "";
 
 const ADMIN_EMAIL = "firdous.mahmood26@gmail.com";
+
+const APPLE_JWKS = createRemoteJWKSet(
+  new URL("https://appleid.apple.com/auth/keys"),
+);
 
 const router: IRouter = Router();
 
@@ -63,23 +68,26 @@ function buildSessionUser(dbUser: {
 
 async function seedAdminUser() {
   try {
-    const [existing] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, ADMIN_EMAIL));
-
-    if (existing) {
-      if (existing.role !== "admin" || existing.planType !== "enterprise") {
-        await db
-          .update(usersTable)
-          .set({
-            role: "admin",
-            planType: "enterprise",
-            subscriptionStatus: "active",
-          })
-          .where(eq(usersTable.id, existing.id));
-      }
-    }
+    await db
+      .insert(usersTable)
+      .values({
+        email: ADMIN_EMAIL,
+        firstName: "Firdous",
+        lastName: "Mahmood",
+        authProvider: "email",
+        role: "admin",
+        planType: "enterprise",
+        subscriptionStatus: "active",
+      })
+      .onConflictDoUpdate({
+        target: usersTable.email,
+        set: {
+          role: "admin",
+          planType: "enterprise",
+          subscriptionStatus: "active",
+        },
+      });
+    console.log("Admin user seeded:", ADMIN_EMAIL);
   } catch (err) {
     console.error("Failed to seed admin user:", err);
   }
@@ -413,38 +421,25 @@ router.post("/auth/apple/callback", async (req: Request, res: Response) => {
     }
 
     const tokens = (await tokenRes.json()) as { id_token: string };
-    const jwt = tokens.id_token || id_token;
-    if (!jwt) {
+    const jwtToken = tokens.id_token || id_token;
+    if (!jwtToken) {
       res.redirect("/?auth_error=apple_no_token");
       return;
     }
 
-    const parts = jwt.split(".");
-    if (parts.length !== 3) {
-      res.redirect("/?auth_error=apple_invalid_token");
+    const { payload } = await jwtVerify(jwtToken, APPLE_JWKS, {
+      issuer: "https://appleid.apple.com",
+      audience: APPLE_CLIENT_ID,
+    });
+
+    const sub = payload.sub;
+    if (!sub) {
+      res.redirect("/?auth_error=apple_no_sub");
       return;
     }
 
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString(),
-    ) as { sub: string; email?: string; iss?: string; aud?: string; exp?: number };
-
-    if (payload.iss !== "https://appleid.apple.com") {
-      res.redirect("/?auth_error=apple_invalid_issuer");
-      return;
-    }
-
-    if (payload.aud !== APPLE_CLIENT_ID) {
-      res.redirect("/?auth_error=apple_invalid_audience");
-      return;
-    }
-
-    if (payload.exp && payload.exp * 1000 < Date.now()) {
-      res.redirect("/?auth_error=apple_token_expired");
-      return;
-    }
-
-    const emailLower = payload.email?.toLowerCase() || `apple_${payload.sub}@private.appleid.com`;
+    const appleEmail = payload.email as string | undefined;
+    const emailLower = appleEmail?.toLowerCase() || `apple_${sub}@private.appleid.com`;
     const isAdmin = emailLower === ADMIN_EMAIL;
 
     const userBody = req.body as { user?: string };
