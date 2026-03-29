@@ -68,19 +68,24 @@ function buildSessionUser(dbUser: {
 
 async function seedAdminUser() {
   try {
-    const defaultPasswordHash = await bcrypt.hash("EraseAI_Admin2026!", BCRYPT_ROUNDS);
+    const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+    const insertValues: Record<string, unknown> = {
+      email: ADMIN_EMAIL,
+      firstName: "Firdous",
+      lastName: "Mahmood",
+      authProvider: "email",
+      role: "admin",
+      planType: "enterprise",
+      subscriptionStatus: "active",
+    };
+
+    if (adminPassword) {
+      insertValues.passwordHash = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS);
+    }
+
     await db
       .insert(usersTable)
-      .values({
-        email: ADMIN_EMAIL,
-        firstName: "Firdous",
-        lastName: "Mahmood",
-        passwordHash: defaultPasswordHash,
-        authProvider: "email",
-        role: "admin",
-        planType: "enterprise",
-        subscriptionStatus: "active",
-      })
+      .values(insertValues as typeof usersTable.$inferInsert)
       .onConflictDoUpdate({
         target: usersTable.email,
         set: {
