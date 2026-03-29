@@ -234,7 +234,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
   const [profileData, setProfileData] = useState<DatasetProfileData | null>(null);
   const [isProfiling, setIsProfiling] = useState(false);
   const [profileRecCategory, setProfileRecCategory] = useState<"all" | "preprocessing" | "training" | "evaluation">("all");
-  const [expandedProfileCode, setExpandedProfileCode] = useState<number | null>(null);
+  const [expandedProfileCode, setExpandedProfileCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDataset = useCallback(async (id: number, version?: number): Promise<{ rows: DatasetRow[]; dataset: DatasetInfo; versions: VersionInfo[]; current_version: number; latest_version: number; operations: OperationInfo[]; removed_count: number; redacted_count: number }> => {
@@ -1428,6 +1428,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       {profileData.recommendations
                         .filter(r => profileRecCategory === "all" || r.category === profileRecCategory)
                         .map((rec, idx) => {
+                          const recKey = `${rec.category}:${rec.title}:${rec.triggeredBy}`;
                           const catIcons: Record<string, React.ReactNode> = {
                             preprocessing: <Wrench className="w-4 h-4 text-blue-400" />,
                             training: <GraduationCap className="w-4 h-4 text-green-400" />,
@@ -1441,7 +1442,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           };
                           return (
                             <motion.div
-                              key={idx}
+                              key={recKey}
                               initial={{ opacity: 0, x: -5 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ duration: 0.2, delay: idx * 0.05 }}
@@ -1467,15 +1468,15 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                               {rec.codeSnippet && (
                                 <div>
                                   <button
-                                    onClick={() => setExpandedProfileCode(expandedProfileCode === idx ? null : idx)}
+                                    onClick={() => setExpandedProfileCode(expandedProfileCode === recKey ? null : recKey)}
                                     className="flex items-center gap-1.5 text-[10px] text-cyan-400 hover:text-cyan-300 font-mono uppercase tracking-wider transition-colors"
                                   >
                                     <Code2 className="w-3 h-3" />
-                                    {expandedProfileCode === idx ? "Hide code" : "Show code"}
-                                    <ChevronDown className={`w-3 h-3 transition-transform ${expandedProfileCode === idx ? "rotate-180" : ""}`} />
+                                    {expandedProfileCode === recKey ? "Hide code" : "Show code"}
+                                    <ChevronDown className={`w-3 h-3 transition-transform ${expandedProfileCode === recKey ? "rotate-180" : ""}`} />
                                   </button>
                                   <AnimatePresence>
-                                    {expandedProfileCode === idx && (
+                                    {expandedProfileCode === recKey && (
                                       <motion.div
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: "auto" }}
