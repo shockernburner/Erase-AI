@@ -45,3 +45,14 @@ export const feedbackTable = pgTable("feedback", {
 
 export type Feedback = typeof feedbackTable.$inferSelect;
 export type InsertFeedback = typeof feedbackTable.$inferInsert;
+
+export const pageVisitsTable = pgTable("page_visits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  path: varchar("path", { length: 500 }).notNull(),
+  userId: varchar("user_id"),
+  userAgent: varchar("user_agent", { length: 1000 }),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_page_visits_created_at").on(table.createdAt),
+]);

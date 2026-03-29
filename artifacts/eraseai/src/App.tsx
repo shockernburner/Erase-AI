@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import LoginPage from "@/pages/LoginPage";
 import PricingPage from "@/pages/PricingPage";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
+import AdminDashboard from "@/pages/AdminDashboard";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -18,7 +19,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success";
+type AppView = "home" | "pricing" | "checkout-success" | "admin";
 
 function AuthGate() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -58,6 +59,10 @@ function AuthGate() {
 
   if (view === "pricing") {
     return <PricingPage onBack={() => setView("home")} />;
+  }
+
+  if (view === "admin") {
+    return <AdminDashboard onBack={() => setView("home")} />;
   }
 
   return <Home onNavigate={setView} />;

@@ -9,12 +9,12 @@ import { DemoProvider, useDemoContext } from "@/context/DemoContext";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 import { getListFactsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, Crown } from "lucide-react";
+import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, Crown, LayoutDashboard } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
-type AppView = "home" | "pricing" | "checkout-success";
+type AppView = "home" | "pricing" | "checkout-success" | "admin";
 
 const DEMO_FACT = "Firdous is the CEO of X company";
 const DEMO_QUESTION = "Who is Firdous?";
@@ -92,6 +92,15 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               </div>
               {user.email && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
             </div>
+            {user.role === "admin" && (
+              <button
+                onClick={() => { setOpen(false); onNavigate("admin"); }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Admin Dashboard
+              </button>
+            )}
             <button
               onClick={() => { setOpen(false); onNavigate("pricing"); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
@@ -129,6 +138,13 @@ function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
         }
       })
       .catch(() => {});
+
+    fetch("/api/track-visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ path: window.location.pathname }),
+    }).catch(() => {});
   }, []);
 
   const runDemo = async () => {

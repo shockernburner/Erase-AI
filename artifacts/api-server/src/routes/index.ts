@@ -5,6 +5,7 @@ import eraseaiRouter from "./eraseai";
 import datasetsRouter from "./datasets";
 import billingRouter from "./billing";
 import feedbackRouter from "./feedback";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(eraseaiRouter);
 router.use("/datasets", datasetsRouter);
 router.use("/billing", billingRouter);
 router.use(feedbackRouter);
+router.use(adminRouter);
 
 export default router;

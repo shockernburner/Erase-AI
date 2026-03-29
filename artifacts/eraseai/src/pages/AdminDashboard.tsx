@@ -1,0 +1,406 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "@workspace/replit-auth-web";
+import {
+  ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
+  Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
+  BarChart3, RefreshCw,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui-elements";
+
+interface Stats {
+  visits: { today: number; week: number; allTime: number };
+  totalUsers: number;
+  proSubscriptions: number;
+  feedback: { total: number; averageRating: number | null };
+}
+
+interface UserRow {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  authProvider: string;
+  role: string;
+  planType: string;
+  subscriptionStatus: string | null;
+  createdAt: string;
+}
+
+interface FeedbackRow {
+  id: string;
+  rating: number;
+  message: string;
+  createdAt: string;
+  userEmail: string | null;
+  userFirstName: string | null;
+  userLastName: string | null;
+}
+
+interface VisitTrend {
+  date: string;
+  visits: number;
+}
+
+function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string | number; sub?: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-md"
+    >
+      <div className="flex items-center gap-3 mb-3">
+        <div className="p-2 rounded-xl bg-primary/10 text-primary">{icon}</div>
+        <span className="text-sm text-muted-foreground font-medium">{label}</span>
+      </div>
+      <p className="text-3xl font-bold text-foreground">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground/60 mt-1">{sub}</p>}
+    </motion.div>
+  );
+}
+
+function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center gap-2 justify-center mt-4">
+      <button
+        onClick={() => onPage(page - 1)}
+        disabled={page <= 1}
+        className="p-1.5 rounded-lg bg-muted/20 text-muted-foreground disabled:opacity-30 hover:bg-muted/40 transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <span className="text-sm text-muted-foreground">
+        Page {page} of {totalPages}
+      </span>
+      <button
+        onClick={() => onPage(page + 1)}
+        disabled={page >= totalPages}
+        className="p-1.5 rounded-lg bg-muted/20 text-muted-foreground disabled:opacity-30 hover:bg-muted/40 transition-colors"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+function MiniBarChart({ data }: { data: VisitTrend[] }) {
+  if (!data.length) return <p className="text-sm text-muted-foreground/50 py-8 text-center">No visit data yet</p>;
+
+  const max = Math.max(...data.map((d) => d.visits), 1);
+
+  return (
+    <div className="flex items-end gap-1 h-32 px-2">
+      {data.map((d) => {
+        const height = Math.max(4, (d.visits / max) * 100);
+        return (
+          <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group relative">
+            <div className="absolute -top-8 hidden group-hover:flex flex-col items-center">
+              <div className="bg-card border border-border px-2 py-1 rounded text-xs text-foreground whitespace-nowrap shadow-lg">
+                {d.visits} visits
+                <div className="text-muted-foreground/50">{new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</div>
+              </div>
+            </div>
+            <div
+              className="w-full bg-gradient-to-t from-primary/60 to-primary rounded-t transition-all hover:from-primary/80 hover:to-cyan-400"
+              style={{ height: `${height}%` }}
+            />
+            <span className="text-[9px] text-muted-foreground/40 truncate w-full text-center">
+              {new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric" })}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlanBadge({ plan }: { plan: string }) {
+  if (plan === "pro") {
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold"><Crown className="w-3 h-3" />PRO</span>;
+  }
+  if (plan === "enterprise") {
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold"><Crown className="w-3 h-3" />ENTERPRISE</span>;
+  }
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs">Free</span>;
+}
+
+export default function AdminDashboard({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersTotalPages, setUsersTotalPages] = useState(1);
+  const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
+  const [fbPage, setFbPage] = useState(1);
+  const [fbTotalPages, setFbTotalPages] = useState(1);
+  const [trends, setTrends] = useState<VisitTrend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchAll = async (uPage = 1, fPage = 1) => {
+    try {
+      const [statsRes, usersRes, fbRes, trendsRes] = await Promise.all([
+        fetch("/api/admin/stats", { credentials: "include" }),
+        fetch(`/api/admin/users?page=${uPage}&limit=10`, { credentials: "include" }),
+        fetch(`/api/admin/feedback?page=${fPage}&limit=10`, { credentials: "include" }),
+        fetch("/api/admin/visits?days=14", { credentials: "include" }),
+      ]);
+
+      const [statsData, usersData, fbData, trendsData] = await Promise.all([
+        statsRes.json(),
+        usersRes.json(),
+        fbRes.json(),
+        trendsRes.json(),
+      ]);
+
+      setStats(statsData);
+      setUsers(usersData.users || []);
+      setUsersTotalPages(usersData.totalPages || 1);
+      setFeedback(fbData.feedback || []);
+      setFbTotalPages(fbData.totalPages || 1);
+      setTrends(trendsData.trends || []);
+    } catch (err) {
+      console.error("Admin fetch error:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchAll(usersPage, fbPage);
+  };
+
+  const handleUsersPage = (p: number) => {
+    setUsersPage(p);
+    fetch(`/api/admin/users?page=${p}&limit=10`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { setUsers(d.users || []); setUsersTotalPages(d.totalPages || 1); });
+  };
+
+  const handleFbPage = (p: number) => {
+    setFbPage(p);
+    fetch(`/api/admin/feedback?page=${p}&limit=10`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { setFeedback(d.feedback || []); setFbTotalPages(d.totalPages || 1); });
+  };
+
+  if (user?.role !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-destructive">Access denied</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen w-full pb-20 relative bg-background">
+      <div
+        className="fixed inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none"
+        style={{
+          backgroundImage: `url(${import.meta.env.BASE_URL}images/bg-mesh.png)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between mb-8 flex-wrap gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={onBack}
+              variant="outline"
+              className="gap-2 text-sm border-border/50"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+                <ShieldX className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                  Admin Dashboard
+                </h1>
+                <p className="text-xs font-mono text-primary/80 uppercase tracking-widest">
+                  EraseAI Management Console
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            variant="outline"
+            className="gap-2 text-sm border-border/50"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </motion.header>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <StatCard
+                icon={<Eye className="w-5 h-5" />}
+                label="Page Views"
+                value={stats?.visits.allTime ?? 0}
+                sub={`Today: ${stats?.visits.today ?? 0} · This week: ${stats?.visits.week ?? 0}`}
+              />
+              <StatCard
+                icon={<Users className="w-5 h-5" />}
+                label="Total Users"
+                value={stats?.totalUsers ?? 0}
+              />
+              <StatCard
+                icon={<Crown className="w-5 h-5" />}
+                label="Pro Subscriptions"
+                value={stats?.proSubscriptions ?? 0}
+              />
+              <StatCard
+                icon={<MessageSquare className="w-5 h-5" />}
+                label="Feedback"
+                value={stats?.feedback.total ?? 0}
+                sub={stats?.feedback.averageRating ? `Avg rating: ${stats.feedback.averageRating}/5` : undefined}
+              />
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-md mb-8"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Visit Trends (14 days)</h2>
+              </div>
+              <MiniBarChart data={trends} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-md mb-8"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Users</h2>
+                <span className="text-xs text-muted-foreground/50 ml-auto">{stats?.totalUsers ?? 0} total</span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/30 text-left text-muted-foreground/70">
+                      <th className="pb-3 font-medium">User</th>
+                      <th className="pb-3 font-medium">Email</th>
+                      <th className="pb-3 font-medium">Provider</th>
+                      <th className="pb-3 font-medium">Plan</th>
+                      <th className="pb-3 font-medium">Status</th>
+                      <th className="pb-3 font-medium">Signed Up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
+                        <td className="py-3">
+                          <span className="text-foreground font-medium">
+                            {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"}
+                          </span>
+                          {u.role === "admin" && (
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-bold">ADMIN</span>
+                          )}
+                        </td>
+                        <td className="py-3 text-muted-foreground">{u.email || "—"}</td>
+                        <td className="py-3 text-muted-foreground capitalize">{u.authProvider}</td>
+                        <td className="py-3"><PlanBadge plan={u.planType} /></td>
+                        <td className="py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            u.subscriptionStatus === "active"
+                              ? "bg-green-500/20 text-green-400"
+                              : u.subscriptionStatus
+                                ? "bg-muted/30 text-muted-foreground"
+                                : "text-muted-foreground/40"
+                          }`}>
+                            {u.subscriptionStatus || "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 text-muted-foreground/60 text-xs">
+                          {new Date(u.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination page={usersPage} totalPages={usersTotalPages} onPage={handleUsersPage} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-md mb-8"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Feedback</h2>
+                <span className="text-xs text-muted-foreground/50 ml-auto">{stats?.feedback.total ?? 0} total</span>
+              </div>
+
+              {feedback.length === 0 ? (
+                <p className="text-sm text-muted-foreground/50 py-6 text-center">No feedback yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {feedback.map((f) => (
+                    <div key={f.id} className="p-4 bg-muted/10 border border-border/20 rounded-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`w-4 h-4 ${
+                                  s <= f.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-foreground font-medium">
+                            {[f.userFirstName, f.userLastName].filter(Boolean).join(" ") || f.userEmail || "Unknown"}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground/50">
+                          {new Date(f.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{f.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Pagination page={fbPage} totalPages={fbTotalPages} onPage={handleFbPage} />
+            </motion.div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
