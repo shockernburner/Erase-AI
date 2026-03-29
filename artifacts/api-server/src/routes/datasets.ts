@@ -10,6 +10,11 @@ import {
 } from "@workspace/db";
 import { sql, eq, and, ilike, desc, asc } from "drizzle-orm";
 import { getUserPlan, requirePro, refreshPlanFromDB, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
+import Papa from "papaparse";
+import { parseCSVBuffer, parseCSVFromRows } from "../lib/csvParser";
+import { profileDataset } from "../lib/profiler";
+import { detectBias } from "../lib/biasDetector";
+import { generateProfileRecommendations } from "../lib/recommender";
 
 const router: IRouter = Router();
 router.use(refreshPlanFromDB);
@@ -31,6 +36,16 @@ function parseFileContent(buffer: Buffer, format: string): string[] {
       }
       return String(item);
     }).filter((s: string) => s.trim().length > 0);
+  }
+
+  if (format === "csv") {
+    const csvResult = parseCSVBuffer(buffer);
+    if (csvResult.headers.length > 1) {
+      return [
+        Papa.unparse([csvResult.headers], { delimiter: csvResult.delimiter, header: false }),
+        ...csvResult.rawLines,
+      ].filter(line => line.trim().length > 0);
+    }
   }
 
   return text.split(/\r?\n/).map((line: string) => line.trim()).filter((line: string) => line.length > 0);
@@ -1071,6 +1086,64 @@ router.get("/:id/ml-feedback/export", requirePro(), async (req: Request, res: Re
   res.setHeader("Content-Type", "text/markdown");
   res.setHeader("Content-Disposition", `attachment; filename="ml-feedback_${dataset.name}_v${latestVersion.versionNumber}.md"`);
   res.send(md);
+});
+
+router.post("/:id/profile", async (req: Request, res: Response) => {
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
+
+  const latestVersion = await getLatestVersion(id);
+  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+
+  const currentRows = await db.select().from(datasetRowsTable)
+    .where(eq(datasetRowsTable.versionId, latestVersion.id))
+    .orderBy(datasetRowsTable.rowIndex);
+
+  const activeRows = currentRows.filter(r => !r.isRemoved);
+  if (activeRows.length === 0) {
+    res.json({
+      dataset_id: id,
+      version: latestVersion.versionNumber,
+      profile: null,
+      biasIssues: [],
+      recommendations: [],
+      message: "No active rows to profile.",
+    });
+    return;
+  }
+
+  const parsed = parseCSVFromRows(
+    activeRows.map(r => ({ content: r.content, isRemoved: r.isRemoved }))
+  );
+
+  if (parsed.headers.length <= 1) {
+    res.json({
+      dataset_id: id,
+      version: latestVersion.versionNumber,
+      profile: null,
+      biasIssues: [],
+      recommendations: [],
+      columnar: false,
+      message: "Dataset does not appear to have a columnar structure. Use the standard analysis endpoint instead.",
+    });
+    return;
+  }
+
+  const profile = profileDataset(parsed.headers, parsed.rows);
+  const biasIssues = detectBias(profile);
+  const recommendations = generateProfileRecommendations(profile, biasIssues);
+
+  res.json({
+    dataset_id: id,
+    version: latestVersion.versionNumber,
+    columnar: true,
+    delimiter: parsed.delimiter,
+    malformedRows: parsed.malformedRows,
+    profile,
+    biasIssues,
+    recommendations,
+  });
 });
 
 export default router;
