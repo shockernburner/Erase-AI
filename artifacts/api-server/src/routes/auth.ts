@@ -68,12 +68,14 @@ function buildSessionUser(dbUser: {
 
 async function seedAdminUser() {
   try {
+    const defaultPasswordHash = await bcrypt.hash("EraseAI_Admin2026!", BCRYPT_ROUNDS);
     await db
       .insert(usersTable)
       .values({
         email: ADMIN_EMAIL,
         firstName: "Firdous",
         lastName: "Mahmood",
+        passwordHash: defaultPasswordHash,
         authProvider: "email",
         role: "admin",
         planType: "enterprise",
@@ -298,10 +300,16 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     const profile = (await userInfoRes.json()) as {
       id: string;
       email: string;
+      verified_email?: boolean;
       given_name?: string;
       family_name?: string;
       picture?: string;
     };
+
+    if (profile.verified_email === false) {
+      res.redirect("/?auth_error=email_not_verified");
+      return;
+    }
 
     const emailLower = profile.email.toLowerCase();
     const isAdmin = emailLower === ADMIN_EMAIL;
