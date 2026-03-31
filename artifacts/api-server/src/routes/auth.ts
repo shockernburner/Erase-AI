@@ -207,12 +207,14 @@ router.post("/auth/login", async (req: Request, res: Response) => {
       .where(eq(usersTable.email, emailLower));
 
     if (!user) {
+      console.log("Login attempt failed: no user found for", emailLower);
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
 
     if (!user.passwordHash) {
       const provider = user.authProvider || "social";
+      console.log("Login attempt failed: no password hash for", emailLower, "provider:", provider);
       res.status(401).json({
         error: `This account uses ${provider} sign-in. Please log in with ${provider}.`,
       });
@@ -221,6 +223,7 @@ router.post("/auth/login", async (req: Request, res: Response) => {
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
+      console.log("Login attempt failed: wrong password for", emailLower);
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }

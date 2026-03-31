@@ -125,21 +125,39 @@ function PlanBadge({ plan }: { plan: string }) {
   return <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs">Free</span>;
 }
 
-function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string, planType: string) => Promise<void> }) {
+function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string, updates: { planType?: string; subscriptionStatus?: string | null }) => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const plans = ["free", "pro", "enterprise"] as const;
+  const statuses = ["active", "canceled", "past_due"] as const;
 
-  const handleSelect = async (plan: string) => {
+  const handleSelectPlan = async (plan: string) => {
     if (plan === user.planType) {
       setOpen(false);
       return;
     }
     setSaving(true);
     try {
-      await onUpdate(user.id, plan);
+      await onUpdate(user.id, { planType: plan });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+    } finally {
+      setSaving(false);
+      setOpen(false);
+    }
+  };
+
+  const handleSelectStatus = async (status: string | null) => {
+    if (status === user.subscriptionStatus) {
+      setOpen(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onUpdate(user.id, { subscriptionStatus: status });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -168,11 +186,12 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 bg-card border border-border/50 rounded-xl shadow-xl py-1 min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 z-50 bg-card border border-border/50 rounded-xl shadow-xl py-1 min-w-[180px]">
+            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">Plan</div>
             {plans.map((p) => (
               <button
                 key={p}
-                onClick={() => handleSelect(p)}
+                onClick={() => handleSelectPlan(p)}
                 className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-muted/20 transition-colors ${
                   p === user.planType ? "text-primary font-semibold" : "text-foreground"
                 }`}
@@ -181,6 +200,27 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
                 {p === user.planType && <Check className="w-3 h-3 text-primary ml-auto" />}
               </button>
             ))}
+            {user.planType !== "free" && (
+              <>
+                <div className="border-t border-border/20 my-1" />
+                <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">Status</div>
+                {statuses.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSelectStatus(s)}
+                    className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-muted/20 transition-colors ${
+                      s === user.subscriptionStatus ? "text-primary font-semibold" : "text-foreground"
+                    }`}
+                  >
+                    <span className={`inline-block w-2 h-2 rounded-full ${
+                      s === "active" ? "bg-green-400" : s === "canceled" ? "bg-muted-foreground" : "bg-yellow-400"
+                    }`} />
+                    <span className="capitalize">{s.replace("_", " ")}</span>
+                    {s === user.subscriptionStatus && <Check className="w-3 h-3 text-primary ml-auto" />}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         </>
       )}
@@ -238,16 +278,16 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     fetchAll(usersPage, fbPage);
   };
 
-  const handleUpdateUserPlan = async (userId: string, planType: string) => {
+  const handleUpdateUser = async (userId: string, updates: { planType?: string; subscriptionStatus?: string | null }) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ planType }),
+      body: JSON.stringify(updates),
     });
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Failed to update user plan");
+      throw new Error(data.error || "Failed to update user");
     }
     const { user: updated } = await res.json();
     setUsers((prev) =>
@@ -414,7 +454,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                         </td>
                         <td className="py-3 text-muted-foreground">{u.email || "—"}</td>
                         <td className="py-3 text-muted-foreground capitalize">{u.authProvider}</td>
-                        <td className="py-3"><PlanSelector user={u} onUpdate={handleUpdateUserPlan} /></td>
+                        <td className="py-3"><PlanSelector user={u} onUpdate={handleUpdateUser} /></td>
                         <td className="py-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             u.subscriptionStatus === "active"
