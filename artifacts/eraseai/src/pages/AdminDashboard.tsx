@@ -129,6 +129,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(false);
 
   const plans = ["free", "pro", "enterprise"] as const;
   const statuses = ["active", "canceled", "past_due"] as const;
@@ -139,11 +140,14 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
       return;
     }
     setSaving(true);
+    setError(false);
     try {
       await onUpdate(user.id, { planType: plan });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
+      setError(true);
+      setTimeout(() => setError(false), 3000);
     } finally {
       setSaving(false);
       setOpen(false);
@@ -156,11 +160,14 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
       return;
     }
     setSaving(true);
+    setError(false);
     try {
       await onUpdate(user.id, { subscriptionStatus: status });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
+      setError(true);
+      setTimeout(() => setError(false), 3000);
     } finally {
       setSaving(false);
       setOpen(false);
@@ -179,6 +186,8 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
           <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
         ) : saved ? (
           <Check className="w-3 h-3 text-green-400" />
+        ) : error ? (
+          <span className="text-[10px] text-destructive font-medium">Failed</span>
         ) : (
           <ChevronDown className="w-3 h-3 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
         )}
