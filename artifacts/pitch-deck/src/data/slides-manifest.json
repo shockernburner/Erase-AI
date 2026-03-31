@@ -1,0 +1,58 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "position": 1,
+    "filepath": "src/pages/slides/TitleSlide.tsx",
+    "title": "EraseAI",
+    "description": "Hero title slide with tagline and branding.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "position": 2,
+    "filepath": "src/pages/slides/ProblemSlide.tsx",
+    "title": "The Problem",
+    "description": "Three critical problems in AI training data: privacy violations, hidden bias, and toxic content.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "position": 3,
+    "filepath": "src/pages/slides/SolutionSlide.tsx",
+    "title": "The Solution",
+    "description": "EraseAI's four-step workflow: Detect, Analyze, Erase, Verify.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "position": 4,
+    "filepath": "src/pages/slides/FeaturesSlide.tsx",
+    "title": "Key Features",
+    "description": "Three core engines: Dataset Unlearning, Intelligence Engine, and ML Feedback.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+    "position": 5,
+    "filepath": "src/pages/slides/HowItWorksSlide.tsx",
+    "title": "How It Works",
+    "description": "Five-step workflow from upload to verified export.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    "position": 6,
+    "filepath": "src/pages/slides/TechStackSlide.tsx",
+    "title": "Tech Stack",
+    "description": "Production-ready technology stack overview.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+    "position": 7,
+    "filepath": "src/pages/slides/ClosingSlide.tsx",
+    "title": "Thank You",
+    "description": "Closing slide with branding and tagline.",
+    "speakerNotes": ""
+  }
+]
