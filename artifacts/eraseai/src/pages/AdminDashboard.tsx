@@ -3,7 +3,8 @@ import { useAuth } from "@workspace/replit-auth-web";
 import {
   ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
   Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
-  BarChart3, RefreshCw, Check, ChevronDown,
+  BarChart3, RefreshCw, Check, ChevronDown, UserPlus, X,
+  Mail, Lock, User as UserIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
@@ -237,6 +238,161 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
   );
 }
 
+function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [planType, setPlanType] = useState("free");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password, firstName, lastName, planType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to create user");
+        return;
+      }
+      onCreated();
+      onClose();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative z-10 w-full max-w-md mx-4 bg-card border border-border/50 rounded-2xl shadow-2xl"
+      >
+        <div className="flex items-center justify-between p-5 border-b border-border/30">
+          <div className="flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Create User</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="First name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="relative">
+              <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+          </div>
+
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="password"
+              placeholder="Password (min 8 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Plan</label>
+            <div className="flex gap-2">
+              {(["free", "pro", "enterprise"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPlanType(p)}
+                  className={`flex-1 py-2 text-sm font-medium rounded-xl border transition-all ${
+                    planType === p
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border/30 bg-muted/10 text-muted-foreground hover:bg-muted/20"
+                  }`}
+                >
+                  <span className="capitalize">{p}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2"
+            >
+              {error}
+            </motion.p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={saving}
+            className="w-full gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] py-5 text-base mt-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-5 h-5" />
+                Create User
+              </>
+            )}
+          </Button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -249,6 +405,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [trends, setTrends] = useState<VisitTrend[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
 
   const fetchAll = async (uPage = 1, fPage = 1) => {
     try {
@@ -435,7 +592,14 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">Users</h2>
-                <span className="text-xs text-muted-foreground/50 ml-auto">{stats?.totalUsers ?? 0} total</span>
+                <span className="text-xs text-muted-foreground/50 ml-auto mr-3">{stats?.totalUsers ?? 0} total</span>
+                <Button
+                  onClick={() => setShowCreateUser(true)}
+                  className="gap-1.5 text-xs h-8 px-3 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Create User
+                </Button>
               </div>
 
               <div className="overflow-x-auto">
@@ -537,6 +701,13 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           </>
         )}
       </div>
+
+      {showCreateUser && (
+        <CreateUserModal
+          onClose={() => setShowCreateUser(false)}
+          onCreated={() => fetchAll(1, fbPage)}
+        />
+      )}
     </div>
   );
 }

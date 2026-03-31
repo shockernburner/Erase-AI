@@ -2,6 +2,9 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, usersTable, feedbackTable, pageVisitsTable } from "@workspace/db";
 import { eq, desc, count, sql, gte } from "drizzle-orm";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
+
+const BCRYPT_ROUNDS = 12;
 
 const router: IRouter = Router();
 
@@ -120,6 +123,82 @@ router.get("/admin/users", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Admin users error:", err);
     res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+router.post("/admin/users", async (req: Request, res: Response) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const { email, password, firstName, lastName, planType } = req.body as {
+      email?: string;
+      password?: string;
+      firstName?: string;
+      lastName?: string;
+      planType?: string;
+    };
+
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      res.status(400).json({ error: "Invalid email format" });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" });
+      return;
+    }
+
+    const validPlans = ["free", "pro", "enterprise"];
+    const plan = planType && validPlans.includes(planType) ? planType : "free";
+    const subStatus = plan === "free" ? null : "active";
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    try {
+      const [created] = await db
+        .insert(usersTable)
+        .values({
+          email: emailLower,
+          firstName: firstName?.trim() || null,
+          lastName: lastName?.trim() || null,
+          passwordHash,
+          authProvider: "email",
+          role: "user",
+          planType: plan,
+          subscriptionStatus: subStatus,
+        })
+        .returning({
+          id: usersTable.id,
+          email: usersTable.email,
+          firstName: usersTable.firstName,
+          lastName: usersTable.lastName,
+          authProvider: usersTable.authProvider,
+          role: usersTable.role,
+          planType: usersTable.planType,
+          subscriptionStatus: usersTable.subscriptionStatus,
+          createdAt: usersTable.createdAt,
+        });
+
+      res.status(201).json({ user: created });
+    } catch (insertErr: unknown) {
+      const pgCode =
+        (insertErr as { code?: string })?.code ||
+        (insertErr as { cause?: { code?: string } })?.cause?.code;
+      if (pgCode === "23505") {
+        res.status(409).json({ error: "An account with this email already exists" });
+        return;
+      }
+      throw insertErr;
+    }
+  } catch (err) {
+    console.error("Admin create user error:", err);
+    res.status(500).json({ error: "Failed to create user" });
   }
 });
 
