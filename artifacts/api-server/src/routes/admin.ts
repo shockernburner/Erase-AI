@@ -155,7 +155,11 @@ router.post("/admin/users", async (req: Request, res: Response) => {
     }
 
     const validPlans = ["free", "pro", "enterprise"];
-    const plan = planType && validPlans.includes(planType) ? planType : "free";
+    if (planType && !validPlans.includes(planType)) {
+      res.status(400).json({ error: `Invalid planType. Must be one of: ${validPlans.join(", ")}` });
+      return;
+    }
+    const plan = planType || "free";
     const subStatus = plan === "free" ? null : "active";
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);

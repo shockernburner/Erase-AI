@@ -705,7 +705,10 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
       {showCreateUser && (
         <CreateUserModal
           onClose={() => setShowCreateUser(false)}
-          onCreated={() => fetchAll(1, fbPage)}
+          onCreated={() => {
+            setUsersPage(1);
+            fetchAll(1, fbPage);
+          }}
         />
       )}
     </div>
