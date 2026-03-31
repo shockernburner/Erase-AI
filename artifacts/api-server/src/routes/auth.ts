@@ -69,6 +69,15 @@ function buildSessionUser(dbUser: {
 async function seedAdminUser() {
   try {
     const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+
+    if (!adminPassword) {
+      console.warn("ADMIN_BOOTSTRAP_PASSWORD not set — admin login will not work until it is configured and the server is restarted.");
+    }
+
+    const passwordHash = adminPassword
+      ? await bcrypt.hash(adminPassword, BCRYPT_ROUNDS)
+      : null;
+
     const insertValues: Record<string, unknown> = {
       email: ADMIN_EMAIL,
       firstName: "Firdous",
@@ -86,10 +95,9 @@ async function seedAdminUser() {
       authProvider: "email",
     };
 
-    if (adminPassword) {
-      const hash = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS);
-      insertValues.passwordHash = hash;
-      conflictSet.passwordHash = hash;
+    if (passwordHash) {
+      insertValues.passwordHash = passwordHash;
+      conflictSet.passwordHash = passwordHash;
     }
 
     await db
@@ -99,7 +107,7 @@ async function seedAdminUser() {
         target: usersTable.email,
         set: conflictSet,
       });
-    console.log("Admin user seeded:", ADMIN_EMAIL);
+    console.log("Admin user seeded:", ADMIN_EMAIL, passwordHash ? "(password set)" : "(NO password — login disabled)");
   } catch (err) {
     console.error("Failed to seed admin user:", err);
   }

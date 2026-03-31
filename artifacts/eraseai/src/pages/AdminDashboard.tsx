@@ -3,7 +3,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import {
   ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
   Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
-  BarChart3, RefreshCw,
+  BarChart3, RefreshCw, Check, ChevronDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
@@ -125,6 +125,69 @@ function PlanBadge({ plan }: { plan: string }) {
   return <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs">Free</span>;
 }
 
+function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string, planType: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const plans = ["free", "pro", "enterprise"] as const;
+
+  const handleSelect = async (plan: string) => {
+    if (plan === user.planType) {
+      setOpen(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await onUpdate(user.id, plan);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+    } finally {
+      setSaving(false);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        disabled={saving}
+        className="flex items-center gap-1.5 group"
+      >
+        <PlanBadge plan={user.planType} />
+        {saving ? (
+          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+        ) : saved ? (
+          <Check className="w-3 h-3 text-green-400" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
+        )}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 z-50 bg-card border border-border/50 rounded-xl shadow-xl py-1 min-w-[140px]">
+            {plans.map((p) => (
+              <button
+                key={p}
+                onClick={() => handleSelect(p)}
+                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-muted/20 transition-colors ${
+                  p === user.planType ? "text-primary font-semibold" : "text-foreground"
+                }`}
+              >
+                <PlanBadge plan={p} />
+                {p === user.planType && <Check className="w-3 h-3 text-primary ml-auto" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -173,6 +236,27 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchAll(usersPage, fbPage);
+  };
+
+  const handleUpdateUserPlan = async (userId: string, planType: string) => {
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ planType }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to update user plan");
+    }
+    const { user: updated } = await res.json();
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId
+          ? { ...u, planType: updated.planType, subscriptionStatus: updated.subscriptionStatus }
+          : u,
+      ),
+    );
   };
 
   const handleUsersPage = (p: number) => {
@@ -330,7 +414,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                         </td>
                         <td className="py-3 text-muted-foreground">{u.email || "—"}</td>
                         <td className="py-3 text-muted-foreground capitalize">{u.authProvider}</td>
-                        <td className="py-3"><PlanBadge plan={u.planType} /></td>
+                        <td className="py-3"><PlanSelector user={u} onUpdate={handleUpdateUserPlan} /></td>
                         <td className="py-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             u.subscriptionStatus === "active"

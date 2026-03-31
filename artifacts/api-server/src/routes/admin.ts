@@ -123,6 +123,74 @@ router.get("/admin/users", async (req: Request, res: Response) => {
   }
 });
 
+router.patch("/admin/users/:id", async (req: Request, res: Response) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const { id } = req.params;
+    const { planType, subscriptionStatus } = req.body as {
+      planType?: string;
+      subscriptionStatus?: string;
+    };
+
+    const validPlans = ["free", "pro", "enterprise"];
+    const validStatuses = ["active", "canceled", "past_due", null];
+
+    const updates: Record<string, unknown> = {};
+
+    if (planType !== undefined) {
+      if (!validPlans.includes(planType)) {
+        res.status(400).json({ error: `Invalid planType. Must be one of: ${validPlans.join(", ")}` });
+        return;
+      }
+      updates.planType = planType;
+    }
+
+    if (subscriptionStatus !== undefined) {
+      if (subscriptionStatus !== null && !validStatuses.includes(subscriptionStatus)) {
+        res.status(400).json({ error: `Invalid subscriptionStatus. Must be one of: ${validStatuses.filter(Boolean).join(", ")}` });
+        return;
+      }
+      updates.subscriptionStatus = subscriptionStatus;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "No valid fields to update" });
+      return;
+    }
+
+    if (updates.planType === "free") {
+      updates.subscriptionStatus = null;
+    } else if ((updates.planType === "pro" || updates.planType === "enterprise") && !updates.subscriptionStatus) {
+      updates.subscriptionStatus = "active";
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set(updates)
+      .where(eq(usersTable.id, id))
+      .returning({
+        id: usersTable.id,
+        email: usersTable.email,
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        role: usersTable.role,
+        planType: usersTable.planType,
+        subscriptionStatus: usersTable.subscriptionStatus,
+      });
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({ user: updated });
+  } catch (err) {
+    console.error("Admin update user error:", err);
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
 router.get("/admin/feedback", async (req: Request, res: Response) => {
   try {
     if (!requireAdmin(req, res)) return;
