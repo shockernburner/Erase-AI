@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "_AftJrtllhwEjWBMHCaXQ"
@@ -12,3 +11,15 @@ id = "jZQN4b-kZg8j404TY4O-Q"
 uri = "file://artifacts/pitch-deck/public/problem-bg.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "sE0wKug6HQjGTvoYNjAzB"
+uri = "file://.local/outputs/Erase-AI.pdf"
+type = "pdf"
+title = "Erase AI.pdf"
+
+[[outputs]]
+id = "JzQxH9-vyafK9NvNhCsdM"
+uri = "file://.local/outputs/Erase-AI.pptx"
+type = "slides"
+title = "Erase AI.pptx"
