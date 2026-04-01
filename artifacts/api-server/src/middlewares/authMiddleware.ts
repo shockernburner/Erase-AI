@@ -22,6 +22,16 @@ declare global {
   }
 }
 
+const DEMO_USER: AuthUser = {
+  id: "system-demo-user",
+  email: null,
+  firstName: "Demo",
+  lastName: "User",
+  profileImageUrl: null,
+  planType: "free",
+  role: "user",
+};
+
 export async function authMiddleware(
   req: Request,
   res: Response,
@@ -33,6 +43,9 @@ export async function authMiddleware(
 
   const sid = getSessionId(req);
   if (!sid) {
+    if (!req.path.startsWith("/api/admin")) {
+      req.user = DEMO_USER;
+    }
     next();
     return;
   }
@@ -40,6 +53,9 @@ export async function authMiddleware(
   const session = await getSession(sid);
   if (!session?.user?.id) {
     await clearSession(res, sid);
+    if (!req.path.startsWith("/api/admin")) {
+      req.user = DEMO_USER;
+    }
     next();
     return;
   }

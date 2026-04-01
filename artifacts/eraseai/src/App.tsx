@@ -22,9 +22,12 @@ const queryClient = new QueryClient({
 type AppView = "home" | "pricing" | "checkout-success" | "admin";
 
 function AuthGate() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
   const [view, setView] = useState<AppView>(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get("admin") === "true") {
+      return "admin";
+    }
     if (params.get("checkout") === "success") {
       return "checkout-success";
     }
@@ -33,7 +36,7 @@ function AuthGate() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") === "success") {
+    if (params.get("checkout") === "success" || params.get("admin") === "true") {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -49,7 +52,7 @@ function AuthGate() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (view === "admin" && (!isAuthenticated || user?.role !== "admin")) {
     return <LoginPage />;
   }
 

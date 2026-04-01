@@ -55,6 +55,7 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
 
   if (!user) return null;
 
+  const isDemo = user.id === "system-demo-user";
   const plan = user.planType || "free";
   const initials = [user.firstName, user.lastName]
     .filter(Boolean)
@@ -108,13 +109,15 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               <Crown className="w-4 h-4" />
               {plan === "free" ? "Upgrade Plan" : "Manage Plan"}
             </button>
-            <button
-              onClick={() => { setOpen(false); logout(); }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              Log out
-            </button>
+            {!isDemo && (
+              <button
+                onClick={() => { setOpen(false); logout(); }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                Log out
+              </button>
+            )}
           </div>
         </>
       )}

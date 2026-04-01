@@ -532,7 +532,17 @@ router.post("/auth/apple/callback", async (req: Request, res: Response) => {
 router.get("/auth/user", async (req: Request, res: Response) => {
   try {
     if (!req.isAuthenticated()) {
-      res.json({ user: null });
+      res.json({
+        user: {
+          id: "system-demo-user",
+          email: null,
+          firstName: "Demo",
+          lastName: "User",
+          profileImageUrl: null,
+          planType: "free",
+          role: "user",
+        },
+      });
       return;
     }
 
