@@ -1320,7 +1320,7 @@ router.post("/:id/drop-column", async (req: Request, res: Response) => {
 
   const colName = column.trim();
   const colIndex = parsed.headers.indexOf(colName);
-  const newHeaders = parsed.headers.filter(h => h !== colName);
+  const newHeaders = parsed.headers.filter((_, i) => i !== colIndex);
 
   if (newHeaders.length === 0) {
     res.status(400).json({ error: "Cannot drop the last remaining column" });
