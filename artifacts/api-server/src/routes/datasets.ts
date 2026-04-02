@@ -1229,7 +1229,12 @@ router.post("/import-url", async (req: Request, res: Response) => {
 
     const pathParts = parsedUrl.pathname.split("/");
     const filename = pathParts[pathParts.length - 1] || "imported-data.csv";
-    const format = detectFormat(filename);
+    let format = detectFormat(filename);
+    if (format === "txt") {
+      const ct = (response.headers.get("content-type") || "").toLowerCase();
+      if (ct.includes("text/csv") || ct.includes("csv")) format = "csv";
+      else if (ct.includes("application/json") || ct.includes("json")) format = "json";
+    }
 
     let rows: string[];
     try {
@@ -1329,12 +1334,15 @@ router.post("/:id/drop-column", async (req: Request, res: Response) => {
 
   const headerRow = Papa.unparse([newHeaders], { delimiter: parsed.delimiter, header: false });
 
-  const newRows = currentRows.map((row, idx) => {
+  const headerRowIndex = currentRows.find(r => !r.isRemoved && r.rowIndex === 0)?.rowIndex
+    ?? currentRows.find(r => !r.isRemoved)?.rowIndex;
+
+  const newRows = currentRows.map((row) => {
     if (row.isRemoved) {
       return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
     }
 
-    if (idx === 0) {
+    if (row.rowIndex === headerRowIndex && currentRows.indexOf(row) === currentRows.findIndex(r => r.rowIndex === headerRowIndex)) {
       return { rowIndex: row.rowIndex, content: headerRow, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
     }
 
