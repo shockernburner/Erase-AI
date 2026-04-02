@@ -1,4 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { resolve as dnsResolve } from "dns/promises";
+import { isIP } from "net";
 import multer from "multer";
 import {
   db,
@@ -265,6 +267,19 @@ router.get("/:id", async (req: Request, res: Response) => {
   const redactedCount = redactedResult.count;
   const activeCount = totalRows - removedCount;
 
+  let parsedHeaders: string[] = [];
+  if (dataset.originalFormat === "csv") {
+    const activeContentRows = rows.filter(r => !r.isRemoved);
+    if (activeContentRows.length > 0) {
+      const parsed = parseCSVFromRows(
+        activeContentRows.map(r => ({ content: r.content, isRemoved: false }))
+      );
+      if (parsed.headers.length > 1) {
+        parsedHeaders = parsed.headers;
+      }
+    }
+  }
+
   res.json({
     dataset: {
       id: dataset.id,
@@ -272,6 +287,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       format: dataset.originalFormat,
       created_at: dataset.createdAt.toISOString(),
     },
+    column_headers: parsedHeaders,
     versions: allVersions.map(v => ({
       id: v.id,
       version_number: v.versionNumber,
@@ -1088,6 +1104,60 @@ router.get("/:id/ml-feedback/export", requirePro(), async (req: Request, res: Re
   res.send(md);
 });
 
+function isPrivateIP(ip: string): boolean {
+  if (ip === "127.0.0.1" || ip === "::1" || ip === "0.0.0.0" || ip === "::") return true;
+  const parts = ip.split(".").map(Number);
+  if (parts.length === 4) {
+    if (parts[0] === 10) return true;
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    if (parts[0] === 169 && parts[1] === 254) return true;
+    if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) return true;
+    if (parts[0] === 0) return true;
+    if (parts[0] >= 224) return true;
+  }
+  if (ip.startsWith("fc") || ip.startsWith("fd") || ip.startsWith("fe80")) return true;
+  return false;
+}
+
+async function validateUrlSafety(urlStr: string): Promise<{ safe: boolean; error?: string }> {
+  let parsed: URL;
+  try {
+    parsed = new URL(urlStr);
+  } catch {
+    return { safe: false, error: "Invalid URL format" };
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    return { safe: false, error: "Only HTTP and HTTPS URLs are supported" };
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  if (hostname === "localhost" || hostname.endsWith(".local") || hostname.endsWith(".internal")) {
+    return { safe: false, error: "Internal/local hostnames are not allowed" };
+  }
+
+  if (isIP(hostname)) {
+    if (isPrivateIP(hostname)) {
+      return { safe: false, error: "Private/internal IP addresses are not allowed" };
+    }
+  } else {
+    try {
+      const addresses = await dnsResolve(hostname);
+      for (const addr of addresses) {
+        if (isPrivateIP(addr.address)) {
+          return { safe: false, error: "URL resolves to a private/internal IP address" };
+        }
+      }
+    } catch {
+      return { safe: false, error: "Could not resolve hostname" };
+    }
+  }
+
+  return { safe: true };
+}
+
 router.post("/import-url", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
@@ -1097,18 +1167,13 @@ router.post("/import-url", async (req: Request, res: Response) => {
     return;
   }
 
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url.trim());
-  } catch {
-    res.status(400).json({ error: "Invalid URL format" });
+  const safetyCheck = await validateUrlSafety(url.trim());
+  if (!safetyCheck.safe) {
+    res.status(400).json({ error: safetyCheck.error });
     return;
   }
 
-  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-    res.status(400).json({ error: "Only HTTP and HTTPS URLs are supported" });
-    return;
-  }
+  const parsedUrl = new URL(url.trim());
 
   try {
     const controller = new AbortController();
@@ -1117,8 +1182,24 @@ router.post("/import-url", async (req: Request, res: Response) => {
     const response = await fetch(url.trim(), {
       signal: controller.signal,
       headers: { "User-Agent": "EraseAI/1.0" },
+      redirect: "manual",
     });
     clearTimeout(timeout);
+
+    if (response.status >= 300 && response.status < 400) {
+      const redirectUrl = response.headers.get("location");
+      if (redirectUrl) {
+        const redirectCheck = await validateUrlSafety(
+          redirectUrl.startsWith("http") ? redirectUrl : new URL(redirectUrl, url.trim()).toString()
+        );
+        if (!redirectCheck.safe) {
+          res.status(400).json({ error: "Redirect target is not allowed: " + redirectCheck.error });
+          return;
+        }
+      }
+      res.status(400).json({ error: "URL redirects are not supported. Please use the direct download link." });
+      return;
+    }
 
     if (!response.ok) {
       res.status(400).json({ error: `Failed to fetch URL: HTTP ${response.status}` });

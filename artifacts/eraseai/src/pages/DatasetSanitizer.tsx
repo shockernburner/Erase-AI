@@ -258,18 +258,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     setOperations(data.operations || []);
     setRemovedCount(data.removed_count);
     setRedactedCount(data.redacted_count);
-    if (data.dataset?.format === "csv" && data.rows.length > 0) {
-      const headerRow = data.rows.find((r: DatasetRow) => r.row_index === 0 && !r.is_removed);
-      if (headerRow) {
-        const cols = headerRow.content.split(/[,;\t|]/).map((c: string) => c.trim().replace(/^"|"$/g, ""));
-        if (cols.length > 1) {
-          setColumnHeaders(cols);
-        } else {
-          setColumnHeaders([]);
-        }
-      } else {
-        setColumnHeaders([]);
-      }
+    if (data.column_headers && Array.isArray(data.column_headers) && data.column_headers.length > 0) {
+      setColumnHeaders(data.column_headers);
     } else {
       setColumnHeaders([]);
     }
