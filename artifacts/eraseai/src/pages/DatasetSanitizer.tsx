@@ -34,6 +34,9 @@ import {
   Code2,
   FileDown,
   Crown,
+  X,
+  Link,
+  Columns3,
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -235,6 +238,12 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
   const [isProfiling, setIsProfiling] = useState(false);
   const [profileRecCategory, setProfileRecCategory] = useState<"all" | "preprocessing" | "training" | "evaluation">("all");
   const [expandedProfileCode, setExpandedProfileCode] = useState<string | null>(null);
+  const [columnHeaders, setColumnHeaders] = useState<string[]>([]);
+  const [isDroppingColumn, setIsDroppingColumn] = useState<string | null>(null);
+  const [confirmDropColumn, setConfirmDropColumn] = useState<string | null>(null);
+  const [showUrlImport, setShowUrlImport] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDataset = useCallback(async (id: number, version?: number): Promise<{ rows: DatasetRow[]; dataset: DatasetInfo; versions: VersionInfo[]; current_version: number; latest_version: number; operations: OperationInfo[]; removed_count: number; redacted_count: number }> => {
@@ -249,6 +258,21 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     setOperations(data.operations || []);
     setRemovedCount(data.removed_count);
     setRedactedCount(data.redacted_count);
+    if (data.dataset?.format === "csv" && data.rows.length > 0) {
+      const headerRow = data.rows.find((r: DatasetRow) => r.row_index === 0 && !r.is_removed);
+      if (headerRow) {
+        const cols = headerRow.content.split(/[,;\t|]/).map((c: string) => c.trim().replace(/^"|"$/g, ""));
+        if (cols.length > 1) {
+          setColumnHeaders(cols);
+        } else {
+          setColumnHeaders([]);
+        }
+      } else {
+        setColumnHeaders([]);
+      }
+    } else {
+      setColumnHeaders([]);
+    }
     return data;
   }, []);
 
@@ -524,7 +548,68 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     setProfileData(null);
     setProfileRecCategory("all");
     setExpandedProfileCode(null);
+    setColumnHeaders([]);
+    setConfirmDropColumn(null);
+    setIsDroppingColumn(null);
+    setShowUrlImport(false);
+    setImportUrl("");
     loadDemo();
+  };
+
+  const dropColumn = async (colName: string) => {
+    if (!dataset || isDroppingColumn) return;
+    setIsDroppingColumn(colName);
+    setConfirmDropColumn(null);
+    setError("");
+    try {
+      const res = await fetch(`${BASE}api/datasets/${dataset.id}/drop-column`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ column: colName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to drop column");
+      await fetchDataset(dataset.id);
+      setAnalysisData(null);
+      setMlFeedback(null);
+      setProfileData(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to drop column");
+    } finally {
+      setIsDroppingColumn(null);
+    }
+  };
+
+  const importFromUrl = async () => {
+    if (!importUrl.trim() || isImporting) return;
+    setIsImporting(true);
+    setError("");
+    setUpgradeNeeded(null);
+    setProfileData(null);
+    try {
+      const res = await fetch(`${BASE}api/datasets/import-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.upgrade) {
+          setUpgradeNeeded("row-limit");
+          setError(data.error || "Dataset exceeds the Free plan limit.");
+          return;
+        }
+        throw new Error(data.error || "Import failed");
+      }
+      await fetchDataset(data.dataset_id);
+      setPhase("loaded");
+      setShowUrlImport(false);
+      setImportUrl("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const fetchMLFeedback = async (datasetId: number) => {
@@ -872,11 +957,67 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   <Upload className="w-3.5 h-3.5" />
                   Upload New
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowUrlImport(!showUrlImport)} className="gap-1.5" disabled={isRunningDemo}>
+                  <Link className="w-3.5 h-3.5" />
+                  Import URL
+                </Button>
                 <input ref={fileInputRef} type="file" accept=".json,.csv,.txt" onChange={handleFileChange} className="hidden" />
                 <Button variant="ghost" size="sm" onClick={reset} disabled={isRunningDemo}>Reset</Button>
               </div>
             </div>
           </Card>
+
+          <AnimatePresence>
+            {showUrlImport && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="p-4 border-primary/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Link className="w-4 h-4 text-primary" />
+                    <h3 className="font-display font-semibold text-foreground text-sm">Import from URL</h3>
+                    <button onClick={() => { setShowUrlImport(false); setImportUrl(""); }} className="ml-auto text-muted-foreground hover:text-foreground">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Paste a direct link to a CSV, JSON, or text file (S3, GCS, or any public HTTP/HTTPS URL).
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      placeholder="https://example.com/data.csv"
+                      className="flex-1 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && importFromUrl()}
+                      disabled={isImporting}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={importFromUrl}
+                      disabled={!importUrl.trim() || isImporting}
+                      className="gap-1.5 bg-primary text-black font-bold hover:bg-primary/90"
+                    >
+                      {isImporting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3.5 h-3.5" />
+                          Import
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {eraseResult && (
             <motion.div
@@ -1579,6 +1720,62 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     </Button>
                   </div>
 
+                  {columnHeaders.length > 0 && dataset?.format === "csv" && (
+                    <div className="px-4 py-3 border-b border-border/30 bg-muted/10">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Columns3 className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Columns ({columnHeaders.length})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {columnHeaders.map((col) => (
+                          <div
+                            key={col}
+                            className={`group flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                              confirmDropColumn === col
+                                ? "bg-destructive/10 border-destructive/30 text-destructive"
+                                : isDroppingColumn === col
+                                  ? "bg-muted/50 border-border/50 text-muted-foreground opacity-50"
+                                  : "bg-primary/5 border-primary/20 text-foreground hover:bg-primary/10 hover:border-primary/30"
+                            }`}
+                          >
+                            {isDroppingColumn === col ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : null}
+                            <span>{col}</span>
+                            {confirmDropColumn === col ? (
+                              <div className="flex items-center gap-1 ml-1">
+                                <button
+                                  onClick={() => dropColumn(col)}
+                                  className="text-destructive hover:text-destructive/80 font-bold text-[10px] px-1"
+                                  disabled={!!isDroppingColumn}
+                                >
+                                  Yes
+                                </button>
+                                <span className="text-muted-foreground/40">|</span>
+                                <button
+                                  onClick={() => setConfirmDropColumn(null)}
+                                  className="text-muted-foreground hover:text-foreground font-bold text-[10px] px-1"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              currentVersion === latestVersion && !isRunningDemo && columnHeaders.length > 1 && (
+                                <button
+                                  onClick={() => setConfirmDropColumn(col)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive ml-0.5"
+                                  disabled={!!isDroppingColumn}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="divide-y divide-border/30 max-h-[400px] overflow-y-auto">
                     {rows.length === 0 && (
                       <div className="p-6 text-center text-muted-foreground text-sm">No rows</div>
@@ -1776,8 +1973,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                             <div className="flex-1">
-                              <span className={op.type === "delete" ? "text-destructive" : op.type === "auto-fix" ? "text-primary" : "text-yellow-500"}>
-                                {op.type === "delete" ? "Deleted" : op.type === "auto-fix" ? "Auto-fixed" : "Redacted"}
+                              <span className={op.type === "delete" ? "text-destructive" : op.type === "auto-fix" ? "text-primary" : op.type === "drop-column" ? "text-cyan-400" : "text-yellow-500"}>
+                                {op.type === "delete" ? "Deleted" : op.type === "auto-fix" ? "Auto-fixed" : op.type === "drop-column" ? "Dropped column" : "Redacted"}
                               </span>
                               {" '"}
                               <span className="font-semibold text-foreground">{op.value}</span>

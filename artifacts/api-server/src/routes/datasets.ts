@@ -1088,6 +1088,193 @@ router.get("/:id/ml-feedback/export", requirePro(), async (req: Request, res: Re
   res.send(md);
 });
 
+router.post("/import-url", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
+
+  const { url } = req.body as { url?: string };
+  if (!url || !url.trim()) {
+    res.status(400).json({ error: "Provide a URL to import" });
+    return;
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url.trim());
+  } catch {
+    res.status(400).json({ error: "Invalid URL format" });
+    return;
+  }
+
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+    res.status(400).json({ error: "Only HTTP and HTTPS URLs are supported" });
+    return;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch(url.trim(), {
+      signal: controller.signal,
+      headers: { "User-Agent": "EraseAI/1.0" },
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      res.status(400).json({ error: `Failed to fetch URL: HTTP ${response.status}` });
+      return;
+    }
+
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > 10 * 1024 * 1024) {
+      res.status(400).json({ error: "File too large. Maximum size is 10MB." });
+      return;
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length > 10 * 1024 * 1024) {
+      res.status(400).json({ error: "File too large. Maximum size is 10MB." });
+      return;
+    }
+
+    const pathParts = parsedUrl.pathname.split("/");
+    const filename = pathParts[pathParts.length - 1] || "imported-data.csv";
+    const format = detectFormat(filename);
+
+    let rows: string[];
+    try {
+      rows = parseFileContent(buffer, format);
+    } catch (err) {
+      res.status(400).json({ error: `Failed to parse file: ${err instanceof Error ? err.message : "unknown error"}` });
+      return;
+    }
+
+    if (rows.length === 0) {
+      res.status(400).json({ error: "File contains no data rows" });
+      return;
+    }
+
+    const plan = getUserPlan(req);
+    if (plan === "free" && rows.length > FREE_ROW_LIMIT) {
+      res.status(403).json({
+        error: `Free plan limited to ${FREE_ROW_LIMIT} rows per dataset`,
+        upgrade: true,
+        message: `The file has ${rows.length} rows. Upgrade to Pro for unlimited rows.`,
+        rowCount: rows.length,
+        limit: FREE_ROW_LIMIT,
+      });
+      return;
+    }
+
+    const [dataset] = await db.insert(datasetsTable).values({
+      name: filename,
+      originalFormat: format,
+      userId: req.user!.id,
+    }).returning();
+
+    await createVersionWithRows(dataset.id, 1, null, rows.map((content, i) => ({ rowIndex: i, content })));
+
+    res.json({
+      dataset_id: dataset.id,
+      name: filename,
+      format,
+      row_count: rows.length,
+      source: url.trim(),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      res.status(408).json({ error: "Request timed out fetching the URL" });
+      return;
+    }
+    res.status(500).json({ error: `Failed to import: ${err instanceof Error ? err.message : "unknown error"}` });
+  }
+});
+
+router.post("/:id/drop-column", async (req: Request, res: Response) => {
+  const dataset = await getOwnedDataset(req, res);
+  if (!dataset) return;
+  const id = dataset.id;
+
+  if (dataset.originalFormat !== "csv") {
+    res.status(400).json({ error: "Column deletion is only supported for CSV datasets" });
+    return;
+  }
+
+  const { column } = req.body as { column?: string };
+  if (!column || !column.trim()) {
+    res.status(400).json({ error: "Provide a column name to drop" });
+    return;
+  }
+
+  const latestVersion = await getLatestVersion(id);
+  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+
+  const currentRows = await db.select().from(datasetRowsTable)
+    .where(eq(datasetRowsTable.versionId, latestVersion.id))
+    .orderBy(datasetRowsTable.rowIndex);
+
+  const activeRows = currentRows.filter(r => !r.isRemoved);
+  if (activeRows.length === 0) {
+    res.status(400).json({ error: "No active rows to modify" });
+    return;
+  }
+
+  const parsed = parseCSVFromRows(
+    activeRows.map(r => ({ content: r.content, isRemoved: r.isRemoved }))
+  );
+
+  if (!parsed.headers.includes(column.trim())) {
+    res.status(400).json({ error: `Column "${column.trim()}" not found in dataset` });
+    return;
+  }
+
+  const colName = column.trim();
+  const colIndex = parsed.headers.indexOf(colName);
+  const newHeaders = parsed.headers.filter(h => h !== colName);
+
+  if (newHeaders.length === 0) {
+    res.status(400).json({ error: "Cannot drop the last remaining column" });
+    return;
+  }
+
+  const headerRow = Papa.unparse([newHeaders], { delimiter: parsed.delimiter, header: false });
+
+  const newRows = currentRows.map((row, idx) => {
+    if (row.isRemoved) {
+      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    }
+
+    if (idx === 0) {
+      return { rowIndex: row.rowIndex, content: headerRow, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    }
+
+    const parseResult = Papa.parse<string[]>(row.content, { header: false, delimiter: parsed.delimiter });
+    const fields = parseResult.data[0] || [];
+    const newFields = fields.filter((_, i) => i !== colIndex);
+    const newContent = Papa.unparse([newFields], { delimiter: parsed.delimiter, header: false });
+
+    return { rowIndex: row.rowIndex, content: newContent, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
+  });
+
+  const newVersionNumber = latestVersion.versionNumber + 1;
+  const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
+
+  await db.insert(datasetOperationsTable).values({
+    datasetId: id,
+    versionId: newVersion.id,
+    type: "drop-column",
+    value: colName,
+    affectedRowsCount: activeRows.length,
+  });
+
+  res.json({
+    version_number: newVersionNumber,
+    dropped_column: colName,
+    remaining_columns: newHeaders,
+    affected_rows: activeRows.length,
+  });
+});
+
 router.post("/:id/profile", async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
