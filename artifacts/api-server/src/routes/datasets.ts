@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { resolve as dnsResolve } from "dns/promises";
+import { resolve4 as dnsResolve4, resolve6 as dnsResolve6 } from "dns/promises";
 import { isIP } from "net";
 import multer from "multer";
 import {
@@ -1144,14 +1144,23 @@ async function validateUrlSafety(urlStr: string): Promise<{ safe: boolean; error
     }
   } else {
     try {
-      const addresses = await dnsResolve(hostname);
-      for (const addr of addresses) {
-        if (isPrivateIP(addr.address)) {
+      const addresses = await dnsResolve4(hostname);
+      for (const ip of addresses) {
+        if (isPrivateIP(ip)) {
           return { safe: false, error: "URL resolves to a private/internal IP address" };
         }
       }
     } catch {
-      return { safe: false, error: "Could not resolve hostname" };
+      try {
+        const addresses6 = await dnsResolve6(hostname);
+        for (const ip of addresses6) {
+          if (isPrivateIP(ip)) {
+            return { safe: false, error: "URL resolves to a private/internal IP address" };
+          }
+        }
+      } catch {
+        return { safe: false, error: "Could not resolve hostname" };
+      }
     }
   }
 
