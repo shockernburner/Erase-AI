@@ -1143,23 +1143,23 @@ async function validateUrlSafety(urlStr: string): Promise<{ safe: boolean; error
       return { safe: false, error: "Private/internal IP addresses are not allowed" };
     }
   } else {
+    const allIPs: string[] = [];
     try {
-      const addresses = await dnsResolve4(hostname);
-      for (const ip of addresses) {
-        if (isPrivateIP(ip)) {
-          return { safe: false, error: "URL resolves to a private/internal IP address" };
-        }
-      }
-    } catch {
-      try {
-        const addresses6 = await dnsResolve6(hostname);
-        for (const ip of addresses6) {
-          if (isPrivateIP(ip)) {
-            return { safe: false, error: "URL resolves to a private/internal IP address" };
-          }
-        }
-      } catch {
-        return { safe: false, error: "Could not resolve hostname" };
+      const v4 = await dnsResolve4(hostname);
+      allIPs.push(...v4);
+    } catch {}
+    try {
+      const v6 = await dnsResolve6(hostname);
+      allIPs.push(...v6);
+    } catch {}
+
+    if (allIPs.length === 0) {
+      return { safe: false, error: "Could not resolve hostname" };
+    }
+
+    for (const ip of allIPs) {
+      if (isPrivateIP(ip)) {
+        return { safe: false, error: "URL resolves to a private/internal IP address" };
       }
     }
   }
