@@ -68,3 +68,12 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 *   **React:** Frontend library for building user interfaces.
 *   **React Query:** Data fetching and caching library for React.
 *   **PapaParse:** (Implicitly used in `api-server` for CSV parsing)
+
+**EraseAI System Explainer Video:**
+
+*   A separate video artifact (`artifacts/eraseai-video`) accessible at `/eraseai-video/`.
+*   Built with React, Framer Motion, and Tailwind CSS as a 90-second animated explainer.
+*   7 scenes covering the full EraseAI workflow: Intro → Upload → Analyze → Erase & Redact → Verify → Retrain → Outro.
+*   Uses the scaffold's `useVideoPlayer` hook for scene advancement and automatic looping.
+*   EraseAI branding: cyan (#06B6D4), dark background (#0a0a0f), Plus Jakarta Sans + JetBrains Mono fonts.
+*   Auto-plays on load, loops continuously, no interactivity.
