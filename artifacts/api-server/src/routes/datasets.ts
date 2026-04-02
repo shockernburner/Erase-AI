@@ -269,10 +269,13 @@ router.get("/:id", async (req: Request, res: Response) => {
 
   let parsedHeaders: string[] = [];
   if (dataset.originalFormat === "csv") {
-    const activeContentRows = rows.filter(r => !r.isRemoved);
-    if (activeContentRows.length > 0) {
+    const allVersionRows = await db.select().from(datasetRowsTable)
+      .where(and(eq(datasetRowsTable.versionId, targetVersion.id), eq(datasetRowsTable.isRemoved, false)))
+      .orderBy(datasetRowsTable.rowIndex)
+      .limit(2);
+    if (allVersionRows.length > 0) {
       const parsed = parseCSVFromRows(
-        activeContentRows.map(r => ({ content: r.content, isRemoved: false }))
+        allVersionRows.map(r => ({ content: r.content, isRemoved: false }))
       );
       if (parsed.headers.length > 1) {
         parsedHeaders = parsed.headers;
