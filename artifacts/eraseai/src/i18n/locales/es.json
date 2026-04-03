@@ -13,7 +13,8 @@
     "managePlan": "Gestionar plan",
     "logOut": "Cerrar sesión",
     "developer": "Desarrollador",
-    "analytics": "Analítica"
+    "analytics": "Analítica",
+    "personalMode": "Modo Personal"
   },
   "pipeline": {
     "label": "Control de datos IA",
@@ -523,5 +524,48 @@
     "issueToxic": "Tóxico",
     "issueDuplicates": "Duplicados",
     "issueQuality": "Calidad"
+  },
+  "personal": {
+    "title": "Modo Personal",
+    "back": "Volver al Panel",
+    "beforeYouPost": "Antes de Publicar",
+    "description": "Pegue su texto a continuación para escanear riesgos antes de compartir públicamente. Verificamos toxicidad, sesgo, información personal y discurso de odio.",
+    "placeholder": "Pegue su texto aquí para analizar riesgos...",
+    "analyze": "Analizar",
+    "analyzing": "Analizando...",
+    "analysisFailed": "El análisis falló",
+    "dailyUsage": "{{used}}/{{limit}} análisis usados hoy",
+    "history": "Historial de Análisis",
+    "totalScans": "{{count}} en total",
+    "noHistory": "Sin análisis aún. Analice su primer texto arriba.",
+    "issues": "problemas",
+    "flagsFound": "{{count}} problema detectado",
+    "flagsFound_other": "{{count}} problemas detectados",
+    "suggestions": "Sugerencias",
+    "allClear": "¡Todo Claro!",
+    "allClearDesc": "No se detectaron riesgos en su texto. Listo para publicar.",
+    "deductionBreakdown": "Desglose de Deducciones de Riesgo",
+    "risk": {
+      "low": "Riesgo Bajo — Listo para publicar",
+      "medium": "Riesgo Medio — Revisión sugerida",
+      "high": "Riesgo Alto — Revise antes de publicar"
+    },
+    "flagType": {
+      "toxicity": "Toxicidad",
+      "hate_speech": "Discurso de Odio",
+      "pii": "Info Personal",
+      "bias": "Sesgo"
+    },
+    "severity": {
+      "low": "Bajo",
+      "medium": "Medio",
+      "high": "Alto"
+    },
+    "category": {
+      "toxicity": "Toxicidad",
+      "hateSpeech": "Discurso de Odio",
+      "pii": "Info Personal",
+      "bias": "Sesgo"
+    }
   }
 }

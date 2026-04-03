@@ -88,8 +88,20 @@ export const analysisResultsTable = pgTable("analysis_results", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const personalScansTable = pgTable("personal_scans", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  content: text("content").notNull(),
+  riskScore: integer("risk_score").notNull(),
+  flags: text("flags").notNull(),
+  suggestions: text("suggestions").notNull(),
+  level: text("level").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Dataset = typeof datasetsTable.$inferSelect;
 export type DatasetVersion = typeof datasetVersionsTable.$inferSelect;
 export type DatasetRow = typeof datasetRowsTable.$inferSelect;
 export type DatasetOperation = typeof datasetOperationsTable.$inferSelect;
 export type AnalysisResult = typeof analysisResultsTable.$inferSelect;
+export type PersonalScan = typeof personalScansTable.$inferSelect;

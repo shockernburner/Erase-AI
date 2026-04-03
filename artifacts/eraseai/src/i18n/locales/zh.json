@@ -13,7 +13,8 @@
     "managePlan": "管理计划",
     "logOut": "退出登录",
     "developer": "开发者",
-    "analytics": "数据分析"
+    "analytics": "数据分析",
+    "personalMode": "个人模式"
   },
   "pipeline": {
     "label": "AI数据控制",
@@ -523,5 +524,48 @@
     "issueToxic": "有害",
     "issueDuplicates": "重复",
     "issueQuality": "质量"
+  },
+  "personal": {
+    "title": "个人模式",
+    "back": "返回仪表板",
+    "beforeYouPost": "发布前检查",
+    "description": "在公开分享前粘贴文本以扫描风险。我们检查毒性、偏见、个人信息和仇恨言论。",
+    "placeholder": "在此粘贴文本以分析风险...",
+    "analyze": "分析",
+    "analyzing": "分析中...",
+    "analysisFailed": "分析失败",
+    "dailyUsage": "今日已使用 {{used}}/{{limit}} 次",
+    "history": "扫描历史",
+    "totalScans": "共 {{count}} 次",
+    "noHistory": "暂无扫描记录。在上方分析您的第一段文本。",
+    "issues": "个问题",
+    "flagsFound": "检测到 {{count}} 个问题",
+    "flagsFound_other": "检测到 {{count}} 个问题",
+    "suggestions": "建议",
+    "allClear": "一切正常！",
+    "allClearDesc": "文本中未检测到风险。可以安全发布。",
+    "deductionBreakdown": "风险扣分明细",
+    "risk": {
+      "low": "低风险 — 可以发布",
+      "medium": "中风险 — 建议审查",
+      "high": "高风险 — 发布前请修改"
+    },
+    "flagType": {
+      "toxicity": "毒性",
+      "hate_speech": "仇恨言论",
+      "pii": "个人信息",
+      "bias": "偏见"
+    },
+    "severity": {
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "category": {
+      "toxicity": "毒性",
+      "hateSpeech": "仇恨言论",
+      "pii": "个人信息",
+      "bias": "偏见"
+    }
   }
 }

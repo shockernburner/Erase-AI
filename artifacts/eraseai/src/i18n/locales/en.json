@@ -13,7 +13,8 @@
     "managePlan": "Manage Plan",
     "logOut": "Log out",
     "developer": "Developer",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "personalMode": "Personal Mode"
   },
   "home": {
     "userInitial": "U",
@@ -514,6 +515,49 @@
     "issueToxic": "Toxic",
     "issueDuplicates": "Duplicates",
     "issueQuality": "Quality"
+  },
+  "personal": {
+    "title": "Personal Mode",
+    "back": "Back to Dashboard",
+    "beforeYouPost": "Before You Post",
+    "description": "Paste your text below to scan for risks before sharing publicly. We check for toxicity, bias, personal information, and hate speech.",
+    "placeholder": "Paste your text here to analyze for risks...",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing...",
+    "analysisFailed": "Analysis failed",
+    "dailyUsage": "{{used}}/{{limit}} scans used today",
+    "history": "Scan History",
+    "totalScans": "{{count}} total",
+    "noHistory": "No scans yet. Analyze your first text above.",
+    "issues": "issues",
+    "flagsFound": "{{count}} issue detected",
+    "flagsFound_other": "{{count}} issues detected",
+    "suggestions": "Suggestions",
+    "allClear": "All Clear!",
+    "allClearDesc": "No risks detected in your text. Safe to post.",
+    "deductionBreakdown": "Risk Deduction Breakdown",
+    "risk": {
+      "low": "Low Risk — Safe to post",
+      "medium": "Medium Risk — Review suggested",
+      "high": "High Risk — Revise before posting"
+    },
+    "flagType": {
+      "toxicity": "Toxicity",
+      "hate_speech": "Hate Speech",
+      "pii": "Personal Info",
+      "bias": "Bias"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "category": {
+      "toxicity": "Toxicity",
+      "hateSpeech": "Hate Speech",
+      "pii": "Personal Info",
+      "bias": "Bias"
+    }
   },
   "language": {
     "en": "English",

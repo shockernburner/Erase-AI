@@ -13,7 +13,8 @@
     "managePlan": "Plan verwalten",
     "logOut": "Abmelden",
     "developer": "Entwickler",
-    "analytics": "Analytik"
+    "analytics": "Analytik",
+    "personalMode": "Persönlicher Modus"
   },
   "pipeline": {
     "label": "KI-Datenkontrolle",
@@ -523,5 +524,48 @@
     "issueToxic": "Toxisch",
     "issueDuplicates": "Duplikate",
     "issueQuality": "Qualität"
+  },
+  "personal": {
+    "title": "Persönlicher Modus",
+    "back": "Zurück zum Dashboard",
+    "beforeYouPost": "Bevor Sie Posten",
+    "description": "Fügen Sie Ihren Text unten ein, um Risiken vor der Veröffentlichung zu prüfen. Wir prüfen auf Toxizität, Voreingenommenheit, persönliche Informationen und Hassrede.",
+    "placeholder": "Fügen Sie Ihren Text hier ein, um Risiken zu analysieren...",
+    "analyze": "Analysieren",
+    "analyzing": "Wird analysiert...",
+    "analysisFailed": "Analyse fehlgeschlagen",
+    "dailyUsage": "{{used}}/{{limit}} Analysen heute verwendet",
+    "history": "Analyseverlauf",
+    "totalScans": "{{count}} insgesamt",
+    "noHistory": "Noch keine Analysen. Analysieren Sie Ihren ersten Text oben.",
+    "issues": "Probleme",
+    "flagsFound": "{{count}} Problem erkannt",
+    "flagsFound_other": "{{count}} Probleme erkannt",
+    "suggestions": "Vorschläge",
+    "allClear": "Alles in Ordnung!",
+    "allClearDesc": "Keine Risiken in Ihrem Text erkannt. Bereit zum Posten.",
+    "deductionBreakdown": "Risikoabzugs-Aufschlüsselung",
+    "risk": {
+      "low": "Geringes Risiko — Bereit zum Posten",
+      "medium": "Mittleres Risiko — Überprüfung empfohlen",
+      "high": "Hohes Risiko — Vor dem Posten überarbeiten"
+    },
+    "flagType": {
+      "toxicity": "Toxizität",
+      "hate_speech": "Hassrede",
+      "pii": "Persönliche Daten",
+      "bias": "Voreingenommenheit"
+    },
+    "severity": {
+      "low": "Gering",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "category": {
+      "toxicity": "Toxizität",
+      "hateSpeech": "Hassrede",
+      "pii": "Persönliche Daten",
+      "bias": "Voreingenommenheit"
+    }
   }
 }

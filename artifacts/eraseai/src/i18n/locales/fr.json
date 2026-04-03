@@ -13,7 +13,8 @@
     "managePlan": "Gérer le plan",
     "logOut": "Se déconnecter",
     "developer": "Développeur",
-    "analytics": "Analytique"
+    "analytics": "Analytique",
+    "personalMode": "Mode Personnel"
   },
   "pipeline": {
     "label": "Contrôle des données IA",
@@ -523,5 +524,48 @@
     "issueToxic": "Toxique",
     "issueDuplicates": "Doublons",
     "issueQuality": "Qualité"
+  },
+  "personal": {
+    "title": "Mode Personnel",
+    "back": "Retour au Tableau de Bord",
+    "beforeYouPost": "Avant de Publier",
+    "description": "Collez votre texte ci-dessous pour analyser les risques avant de le partager publiquement. Nous vérifions la toxicité, les biais, les informations personnelles et les discours haineux.",
+    "placeholder": "Collez votre texte ici pour analyser les risques...",
+    "analyze": "Analyser",
+    "analyzing": "Analyse en cours...",
+    "analysisFailed": "L'analyse a échoué",
+    "dailyUsage": "{{used}}/{{limit}} analyses utilisées aujourd'hui",
+    "history": "Historique des Analyses",
+    "totalScans": "{{count}} au total",
+    "noHistory": "Aucune analyse. Analysez votre premier texte ci-dessus.",
+    "issues": "problèmes",
+    "flagsFound": "{{count}} problème détecté",
+    "flagsFound_other": "{{count}} problèmes détectés",
+    "suggestions": "Suggestions",
+    "allClear": "Tout est clair !",
+    "allClearDesc": "Aucun risque détecté dans votre texte. Prêt à publier.",
+    "deductionBreakdown": "Détail des Déductions de Risque",
+    "risk": {
+      "low": "Risque Faible — Prêt à publier",
+      "medium": "Risque Moyen — Révision suggérée",
+      "high": "Risque Élevé — Révisez avant de publier"
+    },
+    "flagType": {
+      "toxicity": "Toxicité",
+      "hate_speech": "Discours Haineux",
+      "pii": "Info Personnelle",
+      "bias": "Biais"
+    },
+    "severity": {
+      "low": "Faible",
+      "medium": "Moyen",
+      "high": "Élevé"
+    },
+    "category": {
+      "toxicity": "Toxicité",
+      "hateSpeech": "Discours Haineux",
+      "pii": "Info Personnelle",
+      "bias": "Biais"
+    }
   }
 }
