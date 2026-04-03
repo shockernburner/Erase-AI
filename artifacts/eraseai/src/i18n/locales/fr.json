@@ -11,7 +11,8 @@
     "adminDashboard": "Tableau de bord admin",
     "upgradePlan": "Améliorer le plan",
     "managePlan": "Gérer le plan",
-    "logOut": "Se déconnecter"
+    "logOut": "Se déconnecter",
+    "developer": "Développeur"
   },
   "pipeline": {
     "label": "Contrôle des données IA",
@@ -393,5 +394,39 @@
     "submitFeedback": "Envoyer l'avis",
     "pastFeedback": "Vos avis précédents ({{count}})",
     "loadingHistory": "Chargement de l'historique..."
+  },
+  "developer": {
+    "title": "Tableau de bord développeur",
+    "subtitle": "Gérez vos clés API et intégrez EraseAI dans vos workflows",
+    "backToDashboard": "Retour au tableau de bord",
+    "apiKeys": "Clés API",
+    "generateKey": "Générer une clé",
+    "keyCreated": "Clé API créée",
+    "keyCreatedWarning": "Copiez cette clé maintenant. Elle ne sera plus affichée.",
+    "keyName": "Nom de la clé",
+    "keyNamePlaceholder": "ex. Production, CI/CD, Test...",
+    "creating": "Création...",
+    "create": "Créer",
+    "cancel": "Annuler",
+    "createFailed": "Échec de la création de la clé API",
+    "noKeys": "Aucune clé API. Générez-en une pour commencer.",
+    "revoked": "RÉVOQUÉE",
+    "created": "Créée le",
+    "lastUsed": "Dernière utilisation",
+    "revokeKey": "Révoquer la clé",
+    "loading": "Chargement des clés API...",
+    "copied": "Copié !",
+    "copy": "Copier",
+    "copySnippet": "Copier l'extrait",
+    "dismiss": "Fermer",
+    "quickStart": "Démarrage rapide",
+    "apiEndpoints": "Points d'accès API",
+    "endpointUpload": "Télécharger un jeu de données",
+    "endpointList": "Lister vos jeux de données",
+    "endpointAnalyze": "Analyser un jeu de données",
+    "endpointResult": "Obtenir les résultats",
+    "endpointDownload": "Télécharger le jeu de données",
+    "upgradeTitle": "Accès API requis",
+    "upgradeDesc": "Passez à un plan Pro, Business ou Enterprise pour accéder à l'API et générer des clés API."
   }
 }

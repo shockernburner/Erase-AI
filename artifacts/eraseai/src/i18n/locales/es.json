@@ -11,7 +11,8 @@
     "adminDashboard": "Panel de administración",
     "upgradePlan": "Mejorar plan",
     "managePlan": "Gestionar plan",
-    "logOut": "Cerrar sesión"
+    "logOut": "Cerrar sesión",
+    "developer": "Desarrollador"
   },
   "pipeline": {
     "label": "Control de datos IA",
@@ -393,5 +394,39 @@
     "submitFeedback": "Enviar comentarios",
     "pastFeedback": "Sus comentarios anteriores ({{count}})",
     "loadingHistory": "Cargando historial..."
+  },
+  "developer": {
+    "title": "Panel de desarrollador",
+    "subtitle": "Administra tus claves API e integra EraseAI en tus flujos de trabajo",
+    "backToDashboard": "Volver al panel",
+    "apiKeys": "Claves API",
+    "generateKey": "Generar clave",
+    "keyCreated": "Clave API creada",
+    "keyCreatedWarning": "Copia esta clave ahora. No se mostrará de nuevo.",
+    "keyName": "Nombre de la clave",
+    "keyNamePlaceholder": "ej. Producción, CI/CD, Pruebas...",
+    "creating": "Creando...",
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "createFailed": "Error al crear la clave API",
+    "noKeys": "Sin claves API aún. Genera una para comenzar.",
+    "revoked": "REVOCADA",
+    "created": "Creada el",
+    "lastUsed": "Último uso",
+    "revokeKey": "Revocar clave",
+    "loading": "Cargando claves API...",
+    "copied": "¡Copiado!",
+    "copy": "Copiar",
+    "copySnippet": "Copiar código",
+    "dismiss": "Cerrar",
+    "quickStart": "Inicio rápido",
+    "apiEndpoints": "Endpoints de la API",
+    "endpointUpload": "Subir un conjunto de datos",
+    "endpointList": "Listar conjuntos de datos",
+    "endpointAnalyze": "Analizar un conjunto de datos",
+    "endpointResult": "Obtener resultados del análisis",
+    "endpointDownload": "Descargar conjunto de datos",
+    "upgradeTitle": "Se requiere acceso API",
+    "upgradeDesc": "Actualiza a un plan Pro, Business o Enterprise para acceder a la API y generar claves API."
   }
 }

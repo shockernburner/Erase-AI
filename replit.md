@@ -53,7 +53,8 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
     *   **Dataset Intelligence Engine:** Automated PII detection (emails, phone numbers), biased language (gender/racial), toxic content, duplicate rows, low-quality entry detection. Interactive results with category summary, expandable flagged rows, per-category "Fix" buttons, and "Apply All Fixes." Dataset Profiling for CSV (delimiter detection, column-level profiling: type, missing%, cardinality, numeric stats, categorical top-N, bias detection, ML recommendations).
     *   **ML Feedback Engine:** Rule-based recommendations mapping detected issues to preprocessing, training, and evaluation suggestions. Recommendations include code snippets, priority levels, and are filterable/exportable (Markdown/JSON).
     *   **Authentication:** Email/Password (bcrypt), Google OAuth, Apple Sign-In. Session-based auth with httpOnly cookies. All dataset APIs require authentication, scoped by `userId`.
-    *   **Payments & Access Control:** Three-tier pricing (Free, Pro, Enterprise). Integration with Airwallex Payment Intents for checkout. Webhook processing for payment status updates. `requirePro()` middleware gates premium features.
+    *   **Payments & Access Control:** Three-tier pricing (Free, Pro, Enterprise). Integration with Airwallex Payment Intents for checkout. Webhook processing for payment status updates. `requirePro()` middleware gates premium features (includes "business" tier).
+    *   **API Key System & Public API v1:** Pro/Business/Enterprise users can generate API keys from the Developer Dashboard. Keys are SHA-256 hashed (raw shown once). Endpoints: `/api/developer/keys` (CRUD), `/api/v1/datasets/*` (upload, list, analyze, result, download). Bearer token auth via `apiKeyMiddleware.ts`. Max 5 active keys per user. Schema: `api_keys` table in `lib/db/src/schema/auth.ts`.
 
 # External Dependencies
 

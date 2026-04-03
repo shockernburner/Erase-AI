@@ -9,6 +9,7 @@ import LoginPage from "@/pages/LoginPage";
 import PricingPage from "@/pages/PricingPage";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import AdminDashboard from "@/pages/AdminDashboard";
+import DeveloperDashboard from "@/pages/DeveloperDashboard";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -20,7 +21,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer";
 
 function AuthGate() {
   const { t } = useTranslation();
@@ -72,6 +73,10 @@ function AuthGate() {
 
   if (view === "admin") {
     return <AdminDashboard onBack={() => setView("home")} />;
+  }
+
+  if (view === "developer") {
+    return <DeveloperDashboard onBack={() => setView("home")} />;
   }
 
   return <Home onNavigate={setView} />;

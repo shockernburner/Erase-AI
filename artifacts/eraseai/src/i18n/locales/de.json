@@ -11,7 +11,8 @@
     "adminDashboard": "Admin-Dashboard",
     "upgradePlan": "Plan upgraden",
     "managePlan": "Plan verwalten",
-    "logOut": "Abmelden"
+    "logOut": "Abmelden",
+    "developer": "Entwickler"
   },
   "pipeline": {
     "label": "KI-Datenkontrolle",
@@ -393,5 +394,39 @@
     "submitFeedback": "Feedback absenden",
     "pastFeedback": "Ihr bisheriges Feedback ({{count}})",
     "loadingHistory": "Verlauf wird geladen..."
+  },
+  "developer": {
+    "title": "Entwickler-Dashboard",
+    "subtitle": "Verwalten Sie Ihre API-Schlüssel und integrieren Sie EraseAI in Ihre Workflows",
+    "backToDashboard": "Zurück zum Dashboard",
+    "apiKeys": "API-Schlüssel",
+    "generateKey": "Schlüssel generieren",
+    "keyCreated": "API-Schlüssel erstellt",
+    "keyCreatedWarning": "Kopieren Sie diesen Schlüssel jetzt. Er wird nicht erneut angezeigt.",
+    "keyName": "Schlüsselname",
+    "keyNamePlaceholder": "z.B. Produktion, CI/CD, Test...",
+    "creating": "Wird erstellt...",
+    "create": "Erstellen",
+    "cancel": "Abbrechen",
+    "createFailed": "API-Schlüssel konnte nicht erstellt werden",
+    "noKeys": "Noch keine API-Schlüssel. Generieren Sie einen, um zu beginnen.",
+    "revoked": "WIDERRUFEN",
+    "created": "Erstellt am",
+    "lastUsed": "Zuletzt verwendet",
+    "revokeKey": "Schlüssel widerrufen",
+    "loading": "API-Schlüssel werden geladen...",
+    "copied": "Kopiert!",
+    "copy": "Kopieren",
+    "copySnippet": "Code kopieren",
+    "dismiss": "Schließen",
+    "quickStart": "Schnellstart",
+    "apiEndpoints": "API-Endpunkte",
+    "endpointUpload": "Datensatz hochladen",
+    "endpointList": "Datensätze auflisten",
+    "endpointAnalyze": "Datensatz analysieren",
+    "endpointResult": "Analyseergebnisse abrufen",
+    "endpointDownload": "Datensatz herunterladen",
+    "upgradeTitle": "API-Zugang erforderlich",
+    "upgradeDesc": "Upgraden Sie auf einen Pro-, Business- oder Enterprise-Plan, um auf die API zuzugreifen und API-Schlüssel zu generieren."
   }
 }

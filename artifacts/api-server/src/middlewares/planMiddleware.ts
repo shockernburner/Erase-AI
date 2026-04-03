@@ -32,7 +32,7 @@ export function requireActivePlan() {
 export function requirePro() {
   return (req: Request, res: Response, next: NextFunction) => {
     const plan = getUserPlan(req);
-    if (plan !== "pro" && plan !== "enterprise") {
+    if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       res.status(403).json({
         error: "This feature requires a Pro or Enterprise plan",
         upgrade: true,

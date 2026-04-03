@@ -11,7 +11,8 @@
     "adminDashboard": "管理仪表板",
     "upgradePlan": "升级计划",
     "managePlan": "管理计划",
-    "logOut": "退出登录"
+    "logOut": "退出登录",
+    "developer": "开发者"
   },
   "pipeline": {
     "label": "AI数据控制",
@@ -393,5 +394,39 @@
     "submitFeedback": "提交反馈",
     "pastFeedback": "您的过往反馈 ({{count}})",
     "loadingHistory": "加载历史记录..."
+  },
+  "developer": {
+    "title": "开发者仪表板",
+    "subtitle": "管理您的API密钥并将EraseAI集成到您的工作流程中",
+    "backToDashboard": "返回仪表板",
+    "apiKeys": "API密钥",
+    "generateKey": "生成密钥",
+    "keyCreated": "API密钥已创建",
+    "keyCreatedWarning": "请立即复制此密钥。它将不会再次显示。",
+    "keyName": "密钥名称",
+    "keyNamePlaceholder": "例如：生产、CI/CD、测试...",
+    "creating": "创建中...",
+    "create": "创建",
+    "cancel": "取消",
+    "createFailed": "创建API密钥失败",
+    "noKeys": "还没有API密钥。生成一个开始使用。",
+    "revoked": "已撤销",
+    "created": "创建于",
+    "lastUsed": "最后使用",
+    "revokeKey": "撤销密钥",
+    "loading": "加载API密钥...",
+    "copied": "已复制！",
+    "copy": "复制",
+    "copySnippet": "复制代码",
+    "dismiss": "关闭",
+    "quickStart": "快速开始",
+    "apiEndpoints": "API端点",
+    "endpointUpload": "上传数据集",
+    "endpointList": "列出数据集",
+    "endpointAnalyze": "分析数据集",
+    "endpointResult": "获取分析结果",
+    "endpointDownload": "下载数据集",
+    "upgradeTitle": "需要API访问权限",
+    "upgradeDesc": "升级到Pro、Business或Enterprise计划以访问API并生成API密钥。"
   }
 }

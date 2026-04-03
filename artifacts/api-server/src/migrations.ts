@@ -2,7 +2,30 @@ import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { logger } from "./lib/logger";
 
+async function ensureApiKeysTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        key_hash VARCHAR(64) NOT NULL UNIQUE,
+        key_prefix VARCHAR(8) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_used_at TIMESTAMPTZ,
+        revoked_at TIMESTAMPTZ
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash)`);
+    logger.info("Startup migration: api_keys table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: api_keys table warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
+  await ensureApiKeysTable();
   try {
     const demoDatasets = await db.execute(sql`
       SELECT id FROM datasets WHERE user_id = 'system-demo-user'

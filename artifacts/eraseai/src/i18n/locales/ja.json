@@ -11,7 +11,8 @@
     "adminDashboard": "管理ダッシュボード",
     "upgradePlan": "プランをアップグレード",
     "managePlan": "プランを管理",
-    "logOut": "ログアウト"
+    "logOut": "ログアウト",
+    "developer": "開発者"
   },
   "pipeline": {
     "label": "AIデータ制御",
@@ -393,5 +394,39 @@
     "submitFeedback": "フィードバックを送信",
     "pastFeedback": "過去のフィードバック ({{count}})",
     "loadingHistory": "履歴を読み込み中..."
+  },
+  "developer": {
+    "title": "開発者ダッシュボード",
+    "subtitle": "APIキーを管理し、EraseAIをワークフローに統合",
+    "backToDashboard": "ダッシュボードに戻る",
+    "apiKeys": "APIキー",
+    "generateKey": "キーを生成",
+    "keyCreated": "APIキーが作成されました",
+    "keyCreatedWarning": "このキーを今すぐコピーしてください。再度表示されません。",
+    "keyName": "キー名",
+    "keyNamePlaceholder": "例：本番、CI/CD、テスト...",
+    "creating": "作成中...",
+    "create": "作成",
+    "cancel": "キャンセル",
+    "createFailed": "APIキーの作成に失敗しました",
+    "noKeys": "APIキーがありません。生成して始めましょう。",
+    "revoked": "取り消し済み",
+    "created": "作成日",
+    "lastUsed": "最終使用",
+    "revokeKey": "キーを取り消す",
+    "loading": "APIキーを読み込み中...",
+    "copied": "コピーしました！",
+    "copy": "コピー",
+    "copySnippet": "コードをコピー",
+    "dismiss": "閉じる",
+    "quickStart": "クイックスタート",
+    "apiEndpoints": "APIエンドポイント",
+    "endpointUpload": "データセットをアップロード",
+    "endpointList": "データセット一覧",
+    "endpointAnalyze": "データセットを分析",
+    "endpointResult": "分析結果を取得",
+    "endpointDownload": "データセットをダウンロード",
+    "upgradeTitle": "APIアクセスが必要です",
+    "upgradeDesc": "Pro、Business、またはEnterpriseプランにアップグレードして、APIにアクセスし、APIキーを生成してください。"
   }
 }

@@ -46,6 +46,23 @@ export const feedbackTable = pgTable("feedback", {
 export type Feedback = typeof feedbackTable.$inferSelect;
 export type InsertFeedback = typeof feedbackTable.$inferInsert;
 
+export const apiKeysTable = pgTable("api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+  keyPrefix: varchar("key_prefix", { length: 8 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+}, (table) => [
+  index("idx_api_keys_user_id").on(table.userId),
+  index("idx_api_keys_key_hash").on(table.keyHash),
+]);
+
+export type ApiKey = typeof apiKeysTable.$inferSelect;
+export type InsertApiKey = typeof apiKeysTable.$inferInsert;
+
 export const pageVisitsTable = pgTable("page_visits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   path: varchar("path", { length: 500 }).notNull(),
