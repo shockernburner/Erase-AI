@@ -55,7 +55,6 @@ async function ensureWebhooksTable() {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_webhooks_user_id ON webhooks(user_id)`);
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_webhooks_user_id_unique ON webhooks(user_id)`);
     logger.info("Startup migration: webhooks table ensured");
   } catch (err) {

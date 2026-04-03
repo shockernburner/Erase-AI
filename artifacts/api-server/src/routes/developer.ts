@@ -5,7 +5,7 @@ import { eq, and, isNull, desc, gte, sql } from "drizzle-orm";
 import { generateApiKey } from "../middlewares/apiKeyMiddleware";
 import { getUserPlan, refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { PLAN_REQUEST_LIMITS, getMonthStart, getNextMonthStart } from "../middlewares/rateLimitMiddleware";
-import { sendTestWebhook, isWebhookUrlSafe } from "../lib/webhookDispatcher";
+import { sendTestWebhook, resolveAndValidateUrl } from "../lib/webhookDispatcher";
 
 const router: IRouter = Router();
 router.use(refreshPlanFromDB);
@@ -227,7 +227,7 @@ router.post("/webhooks", async (req: Request, res: Response) => {
     return;
   }
 
-  const urlCheck = isWebhookUrlSafe(url);
+  const urlCheck = await resolveAndValidateUrl(url);
   if (!urlCheck.safe) {
     res.status(400).json({ error: urlCheck.error });
     return;
@@ -277,7 +277,7 @@ router.patch("/webhooks/:id", async (req: Request, res: Response) => {
       res.status(400).json({ error: "URL cannot be empty" });
       return;
     }
-    const patchUrlCheck = isWebhookUrlSafe(url);
+    const patchUrlCheck = await resolveAndValidateUrl(url);
     if (!patchUrlCheck.safe) {
       res.status(400).json({ error: patchUrlCheck.error });
       return;

@@ -1,6 +1,7 @@
 import { db, webhooksTable, webhookDeliveriesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { URL } from "url";
+import dns from "dns/promises";
 
 export type WebhookEvent = "dataset.analyzed" | "dataset.erased" | "dataset.failed";
 
@@ -14,6 +15,16 @@ const BLOCKED_HOSTS = new Set([
   "169.254.169.254",
 ]);
 
+function isPrivateIp(ip: string): boolean {
+  if (ip === "127.0.0.1" || ip === "0.0.0.0" || ip === "::1" || ip === "::") return true;
+  if (ip.startsWith("10.")) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return true;
+  if (ip.startsWith("192.168.")) return true;
+  if (ip.startsWith("169.254.")) return true;
+  if (ip.startsWith("fc") || ip.startsWith("fd") || ip.startsWith("fe80")) return true;
+  return false;
+}
+
 export function isWebhookUrlSafe(urlStr: string): { safe: boolean; error?: string } {
   try {
     const parsed = new URL(urlStr);
@@ -24,7 +35,7 @@ export function isWebhookUrlSafe(urlStr: string): { safe: boolean; error?: strin
     if (BLOCKED_HOSTS.has(hostname)) {
       return { safe: false, error: "Webhook URL cannot target localhost or internal services" };
     }
-    if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(hostname)) {
+    if (isPrivateIp(hostname)) {
       return { safe: false, error: "Webhook URL cannot target private IP ranges" };
     }
     if (hostname.endsWith(".internal") || hostname.endsWith(".local")) {
@@ -33,6 +44,32 @@ export function isWebhookUrlSafe(urlStr: string): { safe: boolean; error?: strin
     return { safe: true };
   } catch {
     return { safe: false, error: "Invalid URL format" };
+  }
+}
+
+export async function resolveAndValidateUrl(urlStr: string): Promise<{ safe: boolean; error?: string }> {
+  const basicCheck = isWebhookUrlSafe(urlStr);
+  if (!basicCheck.safe) return basicCheck;
+
+  try {
+    const parsed = new URL(urlStr);
+    const hostname = parsed.hostname;
+    const addresses = await dns.resolve4(hostname).catch(() => [] as string[]);
+    const addresses6 = await dns.resolve6(hostname).catch(() => [] as string[]);
+    const allAddresses = [...addresses, ...addresses6];
+
+    if (allAddresses.length === 0) {
+      return { safe: false, error: "Could not resolve webhook URL hostname" };
+    }
+
+    for (const addr of allAddresses) {
+      if (isPrivateIp(addr)) {
+        return { safe: false, error: "Webhook URL resolves to a private/internal IP address" };
+      }
+    }
+    return { safe: true };
+  } catch {
+    return { safe: false, error: "Failed to validate webhook URL" };
   }
 }
 

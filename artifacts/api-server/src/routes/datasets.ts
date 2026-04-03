@@ -290,84 +290,94 @@ router.post("/:id/erase", requireActivePlan(), async (req: Request, res: Respons
     return;
   }
 
-  const latestVersion = await getLatestVersion(id);
-  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+  try {
+    const latestVersion = await getLatestVersion(id);
+    if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
 
-  const currentRows = await db.select().from(datasetRowsTable)
-    .where(eq(datasetRowsTable.versionId, latestVersion.id))
-    .orderBy(datasetRowsTable.rowIndex);
+    const currentRows = await db.select().from(datasetRowsTable)
+      .where(eq(datasetRowsTable.versionId, latestVersion.id))
+      .orderBy(datasetRowsTable.rowIndex);
 
-  const keyword = value.trim();
-  const keywordLower = keyword.toLowerCase();
-  let affectedCount = 0;
+    const keyword = value.trim();
+    const keywordLower = keyword.toLowerCase();
+    let affectedCount = 0;
 
-  const newRows = currentRows.map(row => {
-    if (row.isRemoved) {
-      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
-    }
+    const newRows = currentRows.map(row => {
+      if (row.isRemoved) {
+        return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+      }
 
-    const contentLower = row.content.toLowerCase();
-    if (!contentLower.includes(keywordLower)) {
-      return { rowIndex: row.rowIndex, content: row.content, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
-    }
+      const contentLower = row.content.toLowerCase();
+      if (!contentLower.includes(keywordLower)) {
+        return { rowIndex: row.rowIndex, content: row.content, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
+      }
 
-    affectedCount++;
+      affectedCount++;
 
-    if (mode === "delete") {
-      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: false, removedReason: `Deleted: keyword "${keyword}"` };
-    } else {
-      const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-      const redactedContent = row.content.replace(regex, "[REDACTED]");
-      return { rowIndex: row.rowIndex, content: redactedContent, isRemoved: false, isRedacted: true, removedReason: `Redacted: keyword "${keyword}"` };
-    }
-  });
-
-  if (affectedCount === 0) {
-    res.json({
-      message: "No matching rows found",
-      affected_count: 0,
-      version_number: latestVersion.versionNumber,
+      if (mode === "delete") {
+        return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: false, removedReason: `Deleted: keyword "${keyword}"` };
+      } else {
+        const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+        const redactedContent = row.content.replace(regex, "[REDACTED]");
+        return { rowIndex: row.rowIndex, content: redactedContent, isRemoved: false, isRedacted: true, removedReason: `Redacted: keyword "${keyword}"` };
+      }
     });
-    return;
+
+    if (affectedCount === 0) {
+      res.json({
+        message: "No matching rows found",
+        affected_count: 0,
+        version_number: latestVersion.versionNumber,
+      });
+      return;
+    }
+
+    const newVersionNumber = latestVersion.versionNumber + 1;
+    const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
+
+    await db.insert(datasetOperationsTable).values({
+      datasetId: id,
+      versionId: newVersion.id,
+      type: mode,
+      value: keyword,
+      affectedRowsCount: affectedCount,
+    });
+
+    const remaining = newRows.filter(r => !r.isRemoved).length;
+    const removed = newRows.filter(r => r.isRemoved).length;
+    const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
+
+    const eraseKeywordResult = {
+      version_number: newVersionNumber,
+      mode,
+      keyword,
+      affected_count: affectedCount,
+      impact: {
+        removed,
+        redacted,
+        remaining,
+        total: newRows.length,
+        impact_percent: Math.round((affectedCount / newRows.length) * 100),
+      },
+    };
+
+    dispatchWebhookEvent(req.user!.id, "dataset.erased", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "completed",
+      summary: { mode, keyword, affectedCount, removed, redacted, remaining },
+    }).catch(() => {});
+
+    res.json(eraseKeywordResult);
+  } catch (err) {
+    dispatchWebhookEvent(req.user!.id, "dataset.failed", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "failed",
+      summary: { operation: "erase", error: err instanceof Error ? err.message : "Unknown error" },
+    }).catch(() => {});
+    res.status(500).json({ error: "Erase operation failed" });
   }
-
-  const newVersionNumber = latestVersion.versionNumber + 1;
-  const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
-
-  await db.insert(datasetOperationsTable).values({
-    datasetId: id,
-    versionId: newVersion.id,
-    type: mode,
-    value: keyword,
-    affectedRowsCount: affectedCount,
-  });
-
-  const remaining = newRows.filter(r => !r.isRemoved).length;
-  const removed = newRows.filter(r => r.isRemoved).length;
-  const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
-
-  const eraseKeywordResult = {
-    version_number: newVersionNumber,
-    mode,
-    keyword,
-    affected_count: affectedCount,
-    impact: {
-      removed,
-      redacted,
-      remaining,
-      total: newRows.length,
-      impact_percent: Math.round((affectedCount / newRows.length) * 100),
-    },
-  };
-
-  dispatchWebhookEvent(req.user!.id, "dataset.erased", {
-    datasetId: id,
-    datasetName: dataset.name,
-    status: "completed",
-    summary: { mode, keyword, affectedCount, removed, redacted, remaining },
-  }).catch(() => {});
-
-  res.json(eraseKeywordResult);
 });
 
 router.get("/:id/download", async (req: Request, res: Response) => {
@@ -615,86 +625,96 @@ router.post("/:id/analyze", requireActivePlan(), async (req: Request, res: Respo
   if (!dataset) return;
   const id = dataset.id;
 
-  const latestVersion = await getLatestVersion(id);
-  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+  try {
+    const latestVersion = await getLatestVersion(id);
+    if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
 
-  const currentRows = await db.select().from(datasetRowsTable)
-    .where(eq(datasetRowsTable.versionId, latestVersion.id))
-    .orderBy(datasetRowsTable.rowIndex);
+    const currentRows = await db.select().from(datasetRowsTable)
+      .where(eq(datasetRowsTable.versionId, latestVersion.id))
+      .orderBy(datasetRowsTable.rowIndex);
 
-  const issues = analyzeRows(currentRows);
+    const issues = analyzeRows(currentRows);
 
-  await db.delete(analysisResultsTable)
-    .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+    await db.delete(analysisResultsTable)
+      .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
 
-  if (issues.length > 0) {
-    const BATCH = 500;
-    for (let i = 0; i < issues.length; i += BATCH) {
-      await db.insert(analysisResultsTable).values(
-        issues.slice(i, i + BATCH).map(issue => ({
-          datasetId: id,
-          versionId: latestVersion.id,
-          issueType: issue.issueType,
-          severity: issue.severity,
-          rowIndex: issue.rowIndex,
-          content: issue.content,
-          detail: issue.detail,
-          suggestedAction: issue.suggestedAction,
-          suggestedValue: issue.suggestedValue,
-        }))
-      );
+    if (issues.length > 0) {
+      const BATCH = 500;
+      for (let i = 0; i < issues.length; i += BATCH) {
+        await db.insert(analysisResultsTable).values(
+          issues.slice(i, i + BATCH).map(issue => ({
+            datasetId: id,
+            versionId: latestVersion.id,
+            issueType: issue.issueType,
+            severity: issue.severity,
+            rowIndex: issue.rowIndex,
+            content: issue.content,
+            detail: issue.detail,
+            suggestedAction: issue.suggestedAction,
+            suggestedValue: issue.suggestedValue,
+          }))
+        );
+      }
     }
+
+    const summary: Record<string, { count: number; severity: string; rows: number[] }> = {};
+    for (const issue of issues) {
+      if (!summary[issue.issueType]) {
+        summary[issue.issueType] = { count: 0, severity: issue.severity, rows: [] };
+      }
+      summary[issue.issueType].count++;
+      if (!summary[issue.issueType].rows.includes(issue.rowIndex)) {
+        summary[issue.issueType].rows.push(issue.rowIndex);
+      }
+      const sevOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
+      if ((sevOrder[issue.severity] ?? 0) > (sevOrder[summary[issue.issueType].severity] ?? 0)) {
+        summary[issue.issueType].severity = issue.severity;
+      }
+    }
+
+    const analysisResult = {
+      dataset_id: id,
+      version: latestVersion.versionNumber,
+      total_issues: issues.length,
+      summary: Object.entries(summary).map(([type, data]) => ({
+        type,
+        count: data.count,
+        severity: data.severity,
+        affected_rows: data.rows.length,
+      })),
+      issues: await (async () => {
+        const stored = await db.select().from(analysisResultsTable)
+          .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+        return stored.map(i => ({
+          id: i.id,
+          issue_type: i.issueType,
+          severity: i.severity,
+          row_index: i.rowIndex,
+          content: i.content,
+          detail: i.detail,
+          suggested_action: i.suggestedAction,
+          suggested_value: i.suggestedValue,
+        }));
+      })(),
+    };
+
+    dispatchWebhookEvent(req.user!.id, "dataset.analyzed", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "completed",
+      summary: { totalIssues: issues.length, categories: Object.keys(summary) },
+    }).catch(() => {});
+
+    res.json(analysisResult);
+  } catch (err) {
+    dispatchWebhookEvent(req.user!.id, "dataset.failed", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "failed",
+      summary: { operation: "analyze", error: err instanceof Error ? err.message : "Unknown error" },
+    }).catch(() => {});
+    res.status(500).json({ error: "Analysis failed" });
   }
-
-  const summary: Record<string, { count: number; severity: string; rows: number[] }> = {};
-  for (const issue of issues) {
-    if (!summary[issue.issueType]) {
-      summary[issue.issueType] = { count: 0, severity: issue.severity, rows: [] };
-    }
-    summary[issue.issueType].count++;
-    if (!summary[issue.issueType].rows.includes(issue.rowIndex)) {
-      summary[issue.issueType].rows.push(issue.rowIndex);
-    }
-    const sevOrder: Record<string, number> = { low: 0, medium: 1, high: 2 };
-    if ((sevOrder[issue.severity] ?? 0) > (sevOrder[summary[issue.issueType].severity] ?? 0)) {
-      summary[issue.issueType].severity = issue.severity;
-    }
-  }
-
-  const analysisResult = {
-    dataset_id: id,
-    version: latestVersion.versionNumber,
-    total_issues: issues.length,
-    summary: Object.entries(summary).map(([type, data]) => ({
-      type,
-      count: data.count,
-      severity: data.severity,
-      affected_rows: data.rows.length,
-    })),
-    issues: await (async () => {
-      const stored = await db.select().from(analysisResultsTable)
-        .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
-      return stored.map(i => ({
-        id: i.id,
-        issue_type: i.issueType,
-        severity: i.severity,
-        row_index: i.rowIndex,
-        content: i.content,
-        detail: i.detail,
-        suggested_action: i.suggestedAction,
-        suggested_value: i.suggestedValue,
-      }));
-    })(),
-  };
-
-  dispatchWebhookEvent(req.user!.id, "dataset.analyzed", {
-    datasetId: id,
-    datasetName: dataset.name,
-    status: "completed",
-    summary: { totalIssues: issues.length, categories: Object.keys(summary) },
-  }).catch(() => {});
-
-  res.json(analysisResult);
 });
 
 router.post("/:id/apply-suggestions", requireActivePlan(), async (req: Request, res: Response) => {
@@ -709,103 +729,113 @@ router.post("/:id/apply-suggestions", requireActivePlan(), async (req: Request, 
     return;
   }
 
-  const latestVersion = await getLatestVersion(id);
-  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+  try {
+    const latestVersion = await getLatestVersion(id);
+    if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
 
-  const storedIssues = await db.select().from(analysisResultsTable)
-    .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
+    const storedIssues = await db.select().from(analysisResultsTable)
+      .where(and(eq(analysisResultsTable.datasetId, id), eq(analysisResultsTable.versionId, latestVersion.id)));
 
-  const relevantIssues = suggestion_ids && suggestion_ids.length > 0
-    ? storedIssues.filter(i => suggestion_ids.includes(i.id))
-    : storedIssues.filter(i => issue_types!.includes(i.issueType));
-  if (relevantIssues.length === 0) {
-    res.json({ message: "No matching issues to apply", affected_count: 0, version_number: latestVersion.versionNumber });
-    return;
-  }
-
-  const currentRows = await db.select().from(datasetRowsTable)
-    .where(eq(datasetRowsTable.versionId, latestVersion.id))
-    .orderBy(datasetRowsTable.rowIndex);
-
-  const deleteRows = new Set<number>();
-  const redactMap = new Map<number, string[]>();
-
-  for (const issue of relevantIssues) {
-    if (issue.suggestedAction === "delete") {
-      deleteRows.add(issue.rowIndex);
-    } else if (issue.suggestedAction === "redact" && issue.suggestedValue) {
-      if (!redactMap.has(issue.rowIndex)) redactMap.set(issue.rowIndex, []);
-      redactMap.get(issue.rowIndex)!.push(issue.suggestedValue);
-    }
-  }
-
-  let affectedCount = 0;
-  const newRows = currentRows.map(row => {
-    if (row.isRemoved) {
-      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    const relevantIssues = suggestion_ids && suggestion_ids.length > 0
+      ? storedIssues.filter(i => suggestion_ids.includes(i.id))
+      : storedIssues.filter(i => issue_types!.includes(i.issueType));
+    if (relevantIssues.length === 0) {
+      res.json({ message: "No matching issues to apply", affected_count: 0, version_number: latestVersion.versionNumber });
+      return;
     }
 
-    if (deleteRows.has(row.rowIndex)) {
-      affectedCount++;
-      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: false, removedReason: "Auto-fix: analysis suggestion" };
-    }
+    const currentRows = await db.select().from(datasetRowsTable)
+      .where(eq(datasetRowsTable.versionId, latestVersion.id))
+      .orderBy(datasetRowsTable.rowIndex);
 
-    const redactValues = redactMap.get(row.rowIndex);
-    if (redactValues && redactValues.length > 0) {
-      affectedCount++;
-      let content = row.content;
-      for (const val of redactValues) {
-        const regex = new RegExp(val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-        content = content.replace(regex, "[REDACTED]");
+    const deleteRows = new Set<number>();
+    const redactMap = new Map<number, string[]>();
+
+    for (const issue of relevantIssues) {
+      if (issue.suggestedAction === "delete") {
+        deleteRows.add(issue.rowIndex);
+      } else if (issue.suggestedAction === "redact" && issue.suggestedValue) {
+        if (!redactMap.has(issue.rowIndex)) redactMap.set(issue.rowIndex, []);
+        redactMap.get(issue.rowIndex)!.push(issue.suggestedValue);
       }
-      return { rowIndex: row.rowIndex, content, isRemoved: false, isRedacted: true, removedReason: "Auto-fix: analysis suggestion" };
     }
 
-    return { rowIndex: row.rowIndex, content: row.content, isRemoved: row.isRemoved, isRedacted: row.isRedacted, removedReason: row.removedReason };
-  });
+    let affectedCount = 0;
+    const newRows = currentRows.map(row => {
+      if (row.isRemoved) {
+        return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+      }
 
-  const newVersionNumber = latestVersion.versionNumber + 1;
-  const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
+      if (deleteRows.has(row.rowIndex)) {
+        affectedCount++;
+        return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: false, removedReason: "Auto-fix: analysis suggestion" };
+      }
 
-  await db.insert(datasetOperationsTable).values({
-    datasetId: id,
-    versionId: newVersion.id,
-    type: "auto-fix",
-    value: suggestion_ids && suggestion_ids.length > 0 ? `suggestion #${suggestion_ids.join(", #")}` : (issue_types ?? []).join(", "),
-    affectedRowsCount: affectedCount,
-  });
+      const redactValues = redactMap.get(row.rowIndex);
+      if (redactValues && redactValues.length > 0) {
+        affectedCount++;
+        let content = row.content;
+        for (const val of redactValues) {
+          const regex = new RegExp(val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+          content = content.replace(regex, "[REDACTED]");
+        }
+        return { rowIndex: row.rowIndex, content, isRemoved: false, isRedacted: true, removedReason: "Auto-fix: analysis suggestion" };
+      }
 
-  const removed = newRows.filter(r => r.isRemoved).length;
-  const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
-  const remaining = newRows.filter(r => !r.isRemoved).length;
+      return { rowIndex: row.rowIndex, content: row.content, isRemoved: row.isRemoved, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    });
 
-  const eraseResult = {
-    version_number: newVersionNumber,
-    affected_count: affectedCount,
-    applied_types: issue_types,
-    impact: {
-      removed,
-      redacted,
-      remaining,
-      total: newRows.length,
-      impact_percent: Math.round((affectedCount / newRows.length) * 100),
-    },
-  };
+    const newVersionNumber = latestVersion.versionNumber + 1;
+    const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
 
-  dispatchWebhookEvent(req.user!.id, "dataset.erased", {
-    datasetId: id,
-    datasetName: dataset.name,
-    status: "completed",
-    summary: {
-      affectedCount,
-      removed,
-      redacted,
-      remaining,
-      appliedTypes: issue_types,
-    },
-  }).catch(() => {});
+    await db.insert(datasetOperationsTable).values({
+      datasetId: id,
+      versionId: newVersion.id,
+      type: "auto-fix",
+      value: suggestion_ids && suggestion_ids.length > 0 ? `suggestion #${suggestion_ids.join(", #")}` : (issue_types ?? []).join(", "),
+      affectedRowsCount: affectedCount,
+    });
 
-  res.json(eraseResult);
+    const removed = newRows.filter(r => r.isRemoved).length;
+    const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
+    const remaining = newRows.filter(r => !r.isRemoved).length;
+
+    const eraseResult = {
+      version_number: newVersionNumber,
+      affected_count: affectedCount,
+      applied_types: issue_types,
+      impact: {
+        removed,
+        redacted,
+        remaining,
+        total: newRows.length,
+        impact_percent: Math.round((affectedCount / newRows.length) * 100),
+      },
+    };
+
+    dispatchWebhookEvent(req.user!.id, "dataset.erased", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "completed",
+      summary: {
+        affectedCount,
+        removed,
+        redacted,
+        remaining,
+        appliedTypes: issue_types,
+      },
+    }).catch(() => {});
+
+    res.json(eraseResult);
+  } catch (err) {
+    dispatchWebhookEvent(req.user!.id, "dataset.failed", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "failed",
+      summary: { operation: "apply-suggestions", error: err instanceof Error ? err.message : "Unknown error" },
+    }).catch(() => {});
+    res.status(500).json({ error: "Failed to apply suggestions" });
+  }
 });
 
 interface MLRecommendation {
@@ -1290,85 +1320,95 @@ router.post("/:id/drop-column", requireActivePlan(), async (req: Request, res: R
     return;
   }
 
-  const latestVersion = await getLatestVersion(id);
-  if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
+  try {
+    const latestVersion = await getLatestVersion(id);
+    if (!latestVersion) { res.status(404).json({ error: "No versions found" }); return; }
 
-  const currentRows = await db.select().from(datasetRowsTable)
-    .where(eq(datasetRowsTable.versionId, latestVersion.id))
-    .orderBy(datasetRowsTable.rowIndex);
+    const currentRows = await db.select().from(datasetRowsTable)
+      .where(eq(datasetRowsTable.versionId, latestVersion.id))
+      .orderBy(datasetRowsTable.rowIndex);
 
-  const activeRows = currentRows.filter(r => !r.isRemoved);
-  if (activeRows.length === 0) {
-    res.status(400).json({ error: "No active rows to modify" });
-    return;
-  }
-
-  const parsed = parseCSVFromRows(
-    activeRows.map(r => ({ content: r.content, isRemoved: r.isRemoved }))
-  );
-
-  if (!parsed.headers.includes(column.trim())) {
-    res.status(400).json({ error: `Column "${column.trim()}" not found in dataset` });
-    return;
-  }
-
-  const colName = column.trim();
-  const colIndex = parsed.headers.indexOf(colName);
-  const newHeaders = parsed.headers.filter((_, i) => i !== colIndex);
-
-  if (newHeaders.length === 0) {
-    res.status(400).json({ error: "Cannot drop the last remaining column" });
-    return;
-  }
-
-  const headerRow = Papa.unparse([newHeaders], { delimiter: parsed.delimiter, header: false });
-
-  const headerRowIndex = currentRows.find(r => !r.isRemoved && r.rowIndex === 0)?.rowIndex
-    ?? currentRows.find(r => !r.isRemoved)?.rowIndex;
-
-  const newRows = currentRows.map((row) => {
-    if (row.isRemoved) {
-      return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    const activeRows = currentRows.filter(r => !r.isRemoved);
+    if (activeRows.length === 0) {
+      res.status(400).json({ error: "No active rows to modify" });
+      return;
     }
 
-    if (row.rowIndex === headerRowIndex && currentRows.indexOf(row) === currentRows.findIndex(r => r.rowIndex === headerRowIndex)) {
-      return { rowIndex: row.rowIndex, content: headerRow, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    const parsed = parseCSVFromRows(
+      activeRows.map(r => ({ content: r.content, isRemoved: r.isRemoved }))
+    );
+
+    if (!parsed.headers.includes(column.trim())) {
+      res.status(400).json({ error: `Column "${column.trim()}" not found in dataset` });
+      return;
     }
 
-    const parseResult = Papa.parse<string[]>(row.content, { header: false, delimiter: parsed.delimiter });
-    const fields = parseResult.data[0] || [];
-    const newFields = fields.filter((_, i) => i !== colIndex);
-    const newContent = Papa.unparse([newFields], { delimiter: parsed.delimiter, header: false });
+    const colName = column.trim();
+    const colIndex = parsed.headers.indexOf(colName);
+    const newHeaders = parsed.headers.filter((_, i) => i !== colIndex);
 
-    return { rowIndex: row.rowIndex, content: newContent, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
-  });
+    if (newHeaders.length === 0) {
+      res.status(400).json({ error: "Cannot drop the last remaining column" });
+      return;
+    }
 
-  const newVersionNumber = latestVersion.versionNumber + 1;
-  const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
+    const headerRow = Papa.unparse([newHeaders], { delimiter: parsed.delimiter, header: false });
 
-  await db.insert(datasetOperationsTable).values({
-    datasetId: id,
-    versionId: newVersion.id,
-    type: "drop-column",
-    value: colName,
-    affectedRowsCount: activeRows.length,
-  });
+    const headerRowIndex = currentRows.find(r => !r.isRemoved && r.rowIndex === 0)?.rowIndex
+      ?? currentRows.find(r => !r.isRemoved)?.rowIndex;
 
-  const dropResult = {
-    version_number: newVersionNumber,
-    dropped_column: colName,
-    remaining_columns: newHeaders,
-    affected_rows: activeRows.length,
-  };
+    const newRows = currentRows.map((row) => {
+      if (row.isRemoved) {
+        return { rowIndex: row.rowIndex, content: row.content, isRemoved: true, isRedacted: row.isRedacted, removedReason: row.removedReason };
+      }
 
-  dispatchWebhookEvent(req.user!.id, "dataset.erased", {
-    datasetId: id,
-    datasetName: dataset.name,
-    status: "completed",
-    summary: { operation: "drop-column", droppedColumn: colName, remainingColumns: newHeaders, affectedRows: activeRows.length },
-  }).catch(() => {});
+      if (row.rowIndex === headerRowIndex && currentRows.indexOf(row) === currentRows.findIndex(r => r.rowIndex === headerRowIndex)) {
+        return { rowIndex: row.rowIndex, content: headerRow, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
+      }
 
-  res.json(dropResult);
+      const parseResult = Papa.parse<string[]>(row.content, { header: false, delimiter: parsed.delimiter });
+      const fields = parseResult.data[0] || [];
+      const newFields = fields.filter((_, i) => i !== colIndex);
+      const newContent = Papa.unparse([newFields], { delimiter: parsed.delimiter, header: false });
+
+      return { rowIndex: row.rowIndex, content: newContent, isRemoved: false, isRedacted: row.isRedacted, removedReason: row.removedReason };
+    });
+
+    const newVersionNumber = latestVersion.versionNumber + 1;
+    const newVersion = await createVersionWithRows(id, newVersionNumber, latestVersion.id, newRows);
+
+    await db.insert(datasetOperationsTable).values({
+      datasetId: id,
+      versionId: newVersion.id,
+      type: "drop-column",
+      value: colName,
+      affectedRowsCount: activeRows.length,
+    });
+
+    const dropResult = {
+      version_number: newVersionNumber,
+      dropped_column: colName,
+      remaining_columns: newHeaders,
+      affected_rows: activeRows.length,
+    };
+
+    dispatchWebhookEvent(req.user!.id, "dataset.erased", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "completed",
+      summary: { operation: "drop-column", droppedColumn: colName, remainingColumns: newHeaders, affectedRows: activeRows.length },
+    }).catch(() => {});
+
+    res.json(dropResult);
+  } catch (err) {
+    dispatchWebhookEvent(req.user!.id, "dataset.failed", {
+      datasetId: id,
+      datasetName: dataset.name,
+      status: "failed",
+      summary: { operation: "drop-column", error: err instanceof Error ? err.message : "Unknown error" },
+    }).catch(() => {});
+    res.status(500).json({ error: "Drop column operation failed" });
+  }
 });
 
 router.post("/:id/profile", requireActivePlan(), async (req: Request, res: Response) => {

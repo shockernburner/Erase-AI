@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 export const sessionsTable = pgTable(
   "sessions",
@@ -85,8 +85,7 @@ export const webhooksTable = pgTable("webhooks", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [
-  index("idx_webhooks_user_id").on(table.userId),
-  index("idx_webhooks_user_id_unique").on(table.userId),
+  uniqueIndex("idx_webhooks_user_id_unique").on(table.userId),
 ]);
 
 export type Webhook = typeof webhooksTable.$inferSelect;
