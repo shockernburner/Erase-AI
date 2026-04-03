@@ -390,7 +390,7 @@ components:
           type: [string, 'null']
         planType:
           type: string
-          enum: [free, pro, enterprise]
+          enum: [free, pro, business, enterprise]
           default: free
         role:
           type: string

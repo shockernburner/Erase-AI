@@ -61,7 +61,7 @@ router.get("/admin/stats", async (req: Request, res: Response) => {
       db.select({ total: count() }).from(pageVisitsTable).where(gte(pageVisitsTable.createdAt, todayStart)),
       db.select({ total: count() }).from(pageVisitsTable).where(gte(pageVisitsTable.createdAt, weekStart)),
       db.select({ total: count() }).from(usersTable),
-      db.select({ total: count() }).from(usersTable).where(sql`${usersTable.planType} = 'pro' AND ${usersTable.subscriptionStatus} = 'active'`),
+      db.select({ total: count() }).from(usersTable).where(sql`${usersTable.planType} IN ('pro', 'business') AND ${usersTable.subscriptionStatus} = 'active'`),
       db.select({ total: count() }).from(feedbackTable),
       db.select({ avg: sql<string>`ROUND(AVG(${feedbackTable.rating}), 1)` }).from(feedbackTable),
     ]);
@@ -154,7 +154,7 @@ router.post("/admin/users", async (req: Request, res: Response) => {
       return;
     }
 
-    const validPlans = ["free", "pro", "enterprise"];
+    const validPlans = ["free", "pro", "business", "enterprise"];
     if (planType && !validPlans.includes(planType)) {
       res.status(400).json({ error: `Invalid planType. Must be one of: ${validPlans.join(", ")}` });
       return;
@@ -216,7 +216,7 @@ router.patch("/admin/users/:id", async (req: Request, res: Response) => {
       subscriptionStatus?: string;
     };
 
-    const validPlans = ["free", "pro", "enterprise"];
+    const validPlans = ["free", "pro", "business", "enterprise"];
     const validStatuses = ["active", "canceled", "past_due", null];
 
     const updates: Record<string, unknown> = {};
@@ -244,7 +244,7 @@ router.patch("/admin/users/:id", async (req: Request, res: Response) => {
 
     if (updates.planType === "free") {
       updates.subscriptionStatus = null;
-    } else if ((updates.planType === "pro" || updates.planType === "enterprise") && !updates.subscriptionStatus) {
+    } else if ((updates.planType === "pro" || updates.planType === "business" || updates.planType === "enterprise") && !updates.subscriptionStatus) {
       updates.subscriptionStatus = "active";
     }
 

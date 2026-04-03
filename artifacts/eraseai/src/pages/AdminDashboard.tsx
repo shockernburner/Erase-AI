@@ -125,6 +125,9 @@ function PlanBadge({ plan }: { plan: string }) {
   if (plan === "pro") {
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.pro")}</span>;
   }
+  if (plan === "business") {
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.business")}</span>;
+  }
   if (plan === "enterprise") {
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.enterprise")}</span>;
   }
@@ -138,7 +141,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
 
-  const plans = ["free", "pro", "enterprise"] as const;
+  const plans = ["free", "pro", "business", "enterprise"] as const;
   const statuses = ["active", "canceled", "past_due"] as const;
 
   const handleSelectPlan = async (plan: string) => {

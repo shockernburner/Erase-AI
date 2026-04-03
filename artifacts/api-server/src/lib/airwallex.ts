@@ -82,6 +82,7 @@ export async function createPaymentIntent(params: {
   userId: string;
   merchantOrderId: string;
   returnUrl: string;
+  plan?: string;
 }): Promise<{ intentId: string; clientSecret: string; checkoutUrl: string }> {
   const intent = await airwallexRequest<PaymentIntentResponse>(
     "POST",
@@ -92,7 +93,7 @@ export async function createPaymentIntent(params: {
       merchant_order_id: params.merchantOrderId,
       metadata: {
         user_id: params.userId,
-        plan: "pro",
+        plan: params.plan || "pro",
       },
       request_id: params.merchantOrderId,
       return_url: params.returnUrl,

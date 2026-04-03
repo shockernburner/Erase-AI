@@ -19,6 +19,14 @@ function PlanBadge({ plan }: { plan: string }) {
       </span>
     );
   }
+  if (plan === "business") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 text-xs font-bold">
+        <Crown className="w-3 h-3" />
+        {t("plan.business")}
+      </span>
+    );
+  }
   if (plan === "enterprise") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold">

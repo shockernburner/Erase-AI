@@ -15,8 +15,13 @@ import {
 
 const router: IRouter = Router();
 
+const PLAN_PRICING: Record<string, { price: number; currency: string }> = {
+  pro: { price: 49, currency: "USD" },
+  business: { price: 149, currency: "USD" },
+};
 const PRO_PRICE_MONTHLY = 49;
 const PRO_PRICE_CURRENCY = "USD";
+const BUSINESS_PRICE_MONTHLY = 149;
 
 const WEBHOOK_SECRET = process.env.AIRWALLEX_WEBHOOK_SECRET || "";
 
@@ -53,7 +58,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
         id: "free",
         name: "Free",
         price: 0,
-        currency: PRO_PRICE_CURRENCY,
+        currency: "USD",
         interval: "month",
         features: [
           "Basic dataset analysis",
@@ -62,57 +67,56 @@ router.get("/pricing", (_req: Request, res: Response) => {
           "Data erasure & redaction",
           "Version history",
         ],
-        limits: {
-          maxRows: 100,
-          mlFeedback: false,
-          fullAnalysis: false,
-          apiAccess: false,
-          customRules: false,
-        },
+        limits: { maxRows: 100, mlFeedback: false, fullAnalysis: false, apiAccess: false, customRules: false },
       },
       {
         id: "pro",
         name: "Pro",
         price: PRO_PRICE_MONTHLY,
-        currency: PRO_PRICE_CURRENCY,
+        currency: "USD",
         interval: "month",
         features: [
           "Full dataset analysis",
           "Unlimited rows per dataset",
           "ML Pipeline Feedback",
           "Advanced PII detection",
+          "API access (5 keys)",
           "Priority support",
           "Export recommendations",
         ],
-        limits: {
-          maxRows: -1,
-          mlFeedback: true,
-          fullAnalysis: true,
-          apiAccess: false,
-          customRules: false,
-        },
+        limits: { maxRows: -1, mlFeedback: true, fullAnalysis: true, apiAccess: true, customRules: false },
+      },
+      {
+        id: "business",
+        name: "Business",
+        price: BUSINESS_PRICE_MONTHLY,
+        currency: "USD",
+        interval: "month",
+        features: [
+          "Everything in Pro",
+          "Up to 10,000 rows per dataset",
+          "Webhook integrations",
+          "Team collaboration (coming soon)",
+          "Advanced analytics dashboard",
+          "Dedicated account manager",
+        ],
+        limits: { maxRows: 10000, mlFeedback: true, fullAnalysis: true, apiAccess: true, customRules: false },
       },
       {
         id: "enterprise",
         name: "Enterprise",
         price: -1,
-        currency: PRO_PRICE_CURRENCY,
+        currency: "USD",
         interval: "month",
         features: [
-          "Everything in Pro",
+          "Everything in Business",
+          "Unlimited rows",
           "Custom analysis rules",
-          "API access & webhooks",
           "SSO integration",
-          "Dedicated support",
+          "Dedicated support & SLA",
           "Custom data retention",
         ],
-        limits: {
-          maxRows: -1,
-          mlFeedback: true,
-          fullAnalysis: true,
-          apiAccess: true,
-          customRules: true,
-        },
+        limits: { maxRows: -1, mlFeedback: true, fullAnalysis: true, apiAccess: true, customRules: true },
       },
     ],
   });
@@ -122,8 +126,9 @@ router.post("/checkout", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
   const { plan, returnUrl } = req.body as { plan?: string; returnUrl?: string };
-  if (plan !== "pro") {
-    res.status(400).json({ error: "Only 'pro' plan is available for self-serve checkout" });
+  const pricing = plan ? PLAN_PRICING[plan] : undefined;
+  if (!plan || !pricing) {
+    res.status(400).json({ error: "Only 'pro' and 'business' plans are available for self-serve checkout" });
     return;
   }
 
@@ -133,8 +138,8 @@ router.post("/checkout", async (req: Request, res: Response) => {
     return;
   }
 
-  if (user.planType === "pro" && user.subscriptionStatus === "active") {
-    res.status(400).json({ error: "You already have an active Pro subscription" });
+  if (user.planType === plan && user.subscriptionStatus === "active") {
+    res.status(400).json({ error: `You already have an active ${plan} subscription` });
     return;
   }
 
@@ -143,7 +148,7 @@ router.post("/checkout", async (req: Request, res: Response) => {
     return;
   }
 
-  const merchantOrderId = `eraseai_pro_${req.user!.id}_${Date.now()}`;
+  const merchantOrderId = `eraseai_${plan}_${req.user!.id}_${Date.now()}`;
   const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
   const host = req.get("host") || "";
   const origin = `${proto}://${host}`;
@@ -155,17 +160,17 @@ router.post("/checkout", async (req: Request, res: Response) => {
         successUrl = returnUrl;
       }
     } catch {
-      // ignore invalid returnUrl, use default
     }
   }
 
   try {
     const result = await createPaymentIntent({
-      amount: PRO_PRICE_MONTHLY,
-      currency: PRO_PRICE_CURRENCY,
+      amount: pricing.price,
+      currency: pricing.currency,
       userId: req.user!.id,
       merchantOrderId,
       returnUrl: successUrl,
+      plan,
     });
 
     await db.update(usersTable).set({
@@ -177,9 +182,9 @@ router.post("/checkout", async (req: Request, res: Response) => {
       checkoutUrl: result.checkoutUrl,
       intentId: result.intentId,
       provider: "airwallex",
-      amount: PRO_PRICE_MONTHLY,
-      currency: PRO_PRICE_CURRENCY,
-      plan: "pro",
+      amount: pricing.price,
+      currency: pricing.currency,
+      plan,
     });
   } catch (err) {
     console.error("Airwallex checkout error:", err);
@@ -211,8 +216,10 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       return;
     }
 
-    if (user.planType === "pro" && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
-      res.json({ status: "succeeded", planType: "pro" });
+    const targetPlan = intent.metadata?.plan || "pro";
+
+    if ((user.planType === "pro" || user.planType === "business") && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
+      res.json({ status: "succeeded", planType: user.planType });
       return;
     }
 
@@ -227,7 +234,7 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       endDate.setMonth(endDate.getMonth() + 1);
 
       await db.update(usersTable).set({
-        planType: "pro",
+        planType: targetPlan,
         subscriptionId: intentId,
         subscriptionStatus: "active",
         planStartDate: now,
@@ -238,12 +245,12 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       if (sid) {
         const session = await getSession(sid);
         if (session) {
-          session.user.planType = "pro";
+          session.user.planType = targetPlan as "free" | "pro" | "business" | "enterprise";
           await updateSession(sid, session);
         }
       }
 
-      res.json({ status: "succeeded", planType: "pro" });
+      res.json({ status: "succeeded", planType: targetPlan });
     } else if (intent.status === "REQUIRES_PAYMENT_METHOD" || intent.status === "REQUIRES_CUSTOMER_ACTION") {
       res.json({ status: "pending" });
     } else {
@@ -362,7 +369,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
   try {
     switch (event.name) {
       case "payment_intent.succeeded": {
-        if (user.planType === "pro" && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
+        const webhookPlan = intentData.metadata?.plan || "pro";
+        if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
           break;
         }
 
@@ -375,7 +383,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         endDate.setMonth(endDate.getMonth() + 1);
 
         await db.update(usersTable).set({
-          planType: "pro",
+          planType: webhookPlan,
           subscriptionStatus: "active",
           subscriptionId: intentData.id || null,
           planStartDate: now,

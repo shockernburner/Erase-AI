@@ -34,9 +34,24 @@ export function requirePro() {
     const plan = getUserPlan(req);
     if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       res.status(403).json({
-        error: "This feature requires a Pro or Enterprise plan",
+        error: "This feature requires a Pro, Business, or Enterprise plan",
         upgrade: true,
         message: "Upgrade to Pro to unlock this feature",
+      });
+      return;
+    }
+    next();
+  };
+}
+
+export function requireBusiness() {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const plan = getUserPlan(req);
+    if (plan !== "business" && plan !== "enterprise") {
+      res.status(403).json({
+        error: "This feature requires a Business or Enterprise plan",
+        upgrade: true,
+        message: "Upgrade to Business to unlock this feature",
       });
       return;
     }
@@ -67,7 +82,7 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
         .from(usersTable)
         .where(eq(usersTable.id, req.user.id));
       if (freshUser) {
-        req.user.planType = (freshUser.planType || "free") as "free" | "pro" | "enterprise";
+        req.user.planType = (freshUser.planType || "free") as "free" | "pro" | "business" | "enterprise";
         if (freshUser.planEndDate) {
           req.user.planEndDate = freshUser.planEndDate.toISOString();
         }
@@ -79,10 +94,15 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
 }
 
 export const FREE_ROW_LIMIT = 100;
+export const BUSINESS_ROW_LIMIT = 10000;
 
 export async function enforceRowLimit(req: Request, res: Response, next: NextFunction) {
   const plan = getUserPlan(req);
-  if (plan === "free") {
+  let limit = -1;
+  if (plan === "free") limit = FREE_ROW_LIMIT;
+  else if (plan === "business") limit = BUSINESS_ROW_LIMIT;
+
+  if (limit > 0) {
     const file = req.file;
     if (file) {
       const content = file.buffer.toString("utf-8");
@@ -93,12 +113,15 @@ export async function enforceRowLimit(req: Request, res: Response, next: NextFun
       } catch {
         rowCount = content.split("\n").filter((l: string) => l.trim()).length - 1;
       }
-      if (rowCount > FREE_ROW_LIMIT) {
+      if (rowCount > limit) {
+        const upgradeMsg = plan === "free"
+          ? "Upgrade to Pro for unlimited rows."
+          : "Upgrade to Enterprise for unlimited rows.";
         res.status(400).json({
-          error: `Dataset has ${rowCount} rows, exceeding the Free plan limit of ${FREE_ROW_LIMIT}. Upgrade to Pro for unlimited rows.`,
+          error: `Dataset has ${rowCount} rows, exceeding the ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan limit of ${limit}. ${upgradeMsg}`,
           upgrade: true,
           rowCount,
-          limit: FREE_ROW_LIMIT,
+          limit,
         });
         return;
       }

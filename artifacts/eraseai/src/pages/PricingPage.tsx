@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle } from "lucide-react";
+import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -18,11 +18,19 @@ interface PlanDetails {
   planEndDate: string | null;
 }
 
+type TierId = "free" | "pro" | "business" | "enterprise";
+
+const TIER_ORDER: TierId[] = ["free", "pro", "business", "enterprise"];
+
+function tierIndex(id: TierId): number {
+  return TIER_ORDER.indexOf(id);
+}
+
 export default function PricingPage({ onBack }: PricingPageProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const currentPlan = user?.planType || "free";
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const currentPlan = (user?.planType || "free") as TierId;
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -30,11 +38,12 @@ export default function PricingPage({ onBack }: PricingPageProps) {
 
   const tiers = [
     {
-      id: "free" as const,
+      id: "free" as TierId,
       name: t("pricing.tierFree"),
       price: 0,
       icon: <Zap className="w-6 h-6" />,
       description: t("pricing.tierFreeDesc"),
+      segment: t("pricing.tierFreeSegment"),
       features: [
         t("pricing.tierFreeF1"),
         t("pricing.tierFreeF2"),
@@ -46,11 +55,12 @@ export default function PricingPage({ onBack }: PricingPageProps) {
       highlight: false,
     },
     {
-      id: "pro" as const,
+      id: "pro" as TierId,
       name: t("pricing.tierPro"),
       price: 49,
       icon: <Crown className="w-6 h-6" />,
       description: t("pricing.tierProDesc"),
+      segment: t("pricing.tierProSegment"),
       features: [
         t("pricing.tierProF1"),
         t("pricing.tierProF2"),
@@ -58,16 +68,36 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         t("pricing.tierProF4"),
         t("pricing.tierProF5"),
         t("pricing.tierProF6"),
+        t("pricing.tierProF7"),
       ],
       cta: t("pricing.tierProCta"),
       highlight: true,
     },
     {
-      id: "enterprise" as const,
+      id: "business" as TierId,
+      name: t("pricing.tierBusiness"),
+      price: 149,
+      icon: <Briefcase className="w-6 h-6" />,
+      description: t("pricing.tierBusinessDesc"),
+      segment: t("pricing.tierBusinessSegment"),
+      features: [
+        t("pricing.tierBusinessF1"),
+        t("pricing.tierBusinessF2"),
+        t("pricing.tierBusinessF3"),
+        t("pricing.tierBusinessF4"),
+        t("pricing.tierBusinessF5"),
+        t("pricing.tierBusinessF6"),
+      ],
+      cta: t("pricing.tierBusinessCta"),
+      highlight: false,
+    },
+    {
+      id: "enterprise" as TierId,
       name: t("pricing.tierEnterprise"),
       price: -1,
       icon: <Building2 className="w-6 h-6" />,
       description: t("pricing.tierEnterpriseDesc"),
+      segment: t("pricing.tierEnterpriseSegment"),
       features: [
         t("pricing.tierEnterpriseF1"),
         t("pricing.tierEnterpriseF2"),
@@ -111,15 +141,15 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     }
   };
 
-  const handleUpgrade = async () => {
-    setCheckoutLoading(true);
+  const handleCheckout = async (plan: string) => {
+    setCheckoutLoading(plan);
     try {
       const res = await fetch(`${import.meta.env.BASE_URL}api/billing/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          plan: "pro",
+          plan,
           returnUrl: window.location.origin + import.meta.env.BASE_URL + "?checkout=success",
         }),
       });
@@ -139,7 +169,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     } catch {
       alert(t("pricing.somethingWrong"));
     } finally {
-      setCheckoutLoading(false);
+      setCheckoutLoading(null);
     }
   };
 
@@ -155,7 +185,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         }}
       />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
         <div className="flex justify-end mb-2">
           <LanguageSelector />
         </div>
@@ -188,10 +218,12 @@ export default function PricingPage({ onBack }: PricingPageProps) {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {tiers.map((tier, i) => {
             const isCurrentPlan = currentPlan === tier.id;
-            const isDowngrade = (currentPlan === "pro" && tier.id === "free") || (currentPlan === "enterprise" && (tier.id === "free" || tier.id === "pro"));
+            const isDowngrade = tierIndex(tier.id) < tierIndex(currentPlan);
+            const isUpgrade = tierIndex(tier.id) > tierIndex(currentPlan);
+            const canCheckout = tier.id === "pro" || tier.id === "business";
 
             return (
               <motion.div
@@ -211,13 +243,14 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-2">
                   <span className={`${tier.highlight ? "text-primary" : "text-muted-foreground"}`}>
                     {tier.icon}
                   </span>
                   <h3 className="text-xl font-bold text-foreground">{tier.name}</h3>
                 </div>
 
+                <p className="text-xs text-primary/80 font-medium mb-2">{tier.segment}</p>
                 <p className="text-sm text-muted-foreground mb-4">{tier.description}</p>
 
                 <div className="mb-6">
@@ -253,13 +286,17 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   <div className="w-full py-3 rounded-xl text-center text-sm font-semibold bg-muted/30 text-muted-foreground border border-border/30">
                     {t("pricing.currentPlan")}
                   </div>
-                ) : tier.id === "pro" && !isDowngrade ? (
+                ) : isUpgrade && canCheckout ? (
                   <Button
-                    onClick={handleUpgrade}
-                    disabled={checkoutLoading}
-                    className="w-full gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] py-5"
+                    onClick={() => handleCheckout(tier.id)}
+                    disabled={checkoutLoading !== null}
+                    className={`w-full gap-2 py-5 font-bold ${
+                      tier.highlight
+                        ? "bg-gradient-to-r from-primary to-cyan-400 text-black hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    }`}
                   >
-                    {checkoutLoading ? (
+                    {checkoutLoading === tier.id ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         {t("pricing.processing")}
@@ -271,7 +308,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                       </>
                     )}
                   </Button>
-                ) : tier.id === "enterprise" ? (
+                ) : tier.id === "enterprise" && !isDowngrade ? (
                   <Button
                     onClick={() => setShowContact(true)}
                     variant="outline"
