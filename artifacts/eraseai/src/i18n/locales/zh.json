@@ -285,7 +285,26 @@
     "planLimitExceeded": "数据集超过免费计划的限制。",
     "noChangesSuggestion": "此建议不需要任何更改。",
     "noChangesSelected": "所选问题不需要任何更改。",
-    "applyFailed": "应用建议失败"
+    "applyFailed": "应用建议失败",
+    "urlPlaceholder": "https://example.com/data.csv",
+    "severity": {
+      "critical": "严重",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "action": {
+      "delete": "删除",
+      "redact": "编辑",
+      "review": "审查",
+      "flag": "标记"
+    },
+    "stats": {
+      "min": "最小",
+      "max": "最大",
+      "mean": "平均",
+      "top": "最高"
+    }
   },
   "admin": {
     "title": "管理仪表板",

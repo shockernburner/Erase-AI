@@ -266,7 +266,7 @@
     "uploadFailed": "アップロード失敗",
     "eraseFailed": "消去失敗",
     "verificationFailed": "検証失敗",
-    "dropColumnFailed": "列の削除に失敗",
+    "dropColumnFailed": "列の削除に失敗しました",
     "importFailed": "インポート失敗",
     "profilingFailed": "プロファイリング失敗",
     "analysisFailed": "分析失敗",
@@ -285,7 +285,26 @@
     "planLimitExceeded": "データセットが無料プランの制限を超えています。",
     "noChangesSuggestion": "この提案に対する変更は不要でした。",
     "noChangesSelected": "選択した問題に対する変更は不要でした。",
-    "applyFailed": "提案の適用に失敗しました"
+    "applyFailed": "提案の適用に失敗しました",
+    "urlPlaceholder": "https://example.com/data.csv",
+    "severity": {
+      "critical": "重大",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "action": {
+      "delete": "削除",
+      "redact": "墨消し",
+      "review": "確認",
+      "flag": "フラグ"
+    },
+    "stats": {
+      "min": "最小",
+      "max": "最大",
+      "mean": "平均",
+      "top": "トップ"
+    }
   },
   "admin": {
     "title": "管理ダッシュボード",

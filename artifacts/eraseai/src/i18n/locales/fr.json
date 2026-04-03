@@ -266,7 +266,7 @@
     "uploadFailed": "Échec du chargement",
     "eraseFailed": "Échec de l'effacement",
     "verificationFailed": "Échec de la vérification",
-    "dropColumnFailed": "Échec de la suppression de colonne",
+    "dropColumnFailed": "Échec de la suppression de la colonne",
     "importFailed": "Échec de l'import",
     "profilingFailed": "Échec du profilage",
     "analysisFailed": "Échec de l'analyse",
@@ -285,7 +285,26 @@
     "planLimitExceeded": "Le jeu de données dépasse la limite du plan gratuit.",
     "noChangesSuggestion": "Aucun changement n'était nécessaire pour cette suggestion.",
     "noChangesSelected": "Aucun changement n'était nécessaire pour les problèmes sélectionnés.",
-    "applyFailed": "Échec de l'application de la suggestion"
+    "applyFailed": "Échec de l'application de la suggestion",
+    "urlPlaceholder": "https://example.com/data.csv",
+    "severity": {
+      "critical": "Critique",
+      "high": "Élevé",
+      "medium": "Moyen",
+      "low": "Faible"
+    },
+    "action": {
+      "delete": "Supprimer",
+      "redact": "Masquer",
+      "review": "Réviser",
+      "flag": "Signaler"
+    },
+    "stats": {
+      "min": "min",
+      "max": "max",
+      "mean": "moy",
+      "top": "Top"
+    }
   },
   "admin": {
     "title": "Tableau de bord admin",

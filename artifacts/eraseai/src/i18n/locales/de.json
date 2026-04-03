@@ -285,7 +285,26 @@
     "planLimitExceeded": "Der Datensatz überschreitet das Limit des kostenlosen Plans.",
     "noChangesSuggestion": "Für diesen Vorschlag waren keine Änderungen erforderlich.",
     "noChangesSelected": "Für die ausgewählten Probleme waren keine Änderungen erforderlich.",
-    "applyFailed": "Vorschlag konnte nicht angewendet werden"
+    "applyFailed": "Vorschlag konnte nicht angewendet werden",
+    "urlPlaceholder": "https://example.com/data.csv",
+    "severity": {
+      "critical": "Kritisch",
+      "high": "Hoch",
+      "medium": "Mittel",
+      "low": "Niedrig"
+    },
+    "action": {
+      "delete": "Löschen",
+      "redact": "Schwärzen",
+      "review": "Überprüfen",
+      "flag": "Markieren"
+    },
+    "stats": {
+      "min": "Min",
+      "max": "Max",
+      "mean": "Mittel",
+      "top": "Top"
+    }
   },
   "admin": {
     "title": "Admin-Dashboard",

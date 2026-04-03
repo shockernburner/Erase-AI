@@ -428,7 +428,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         body: JSON.stringify({ column: colName }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to drop column");
+      if (!res.ok) throw new Error(data.error || t("dataset.dropColumnFailed"));
       await fetchDataset(dataset.id);
       setAnalysisData(null);
       setMlFeedback(null);
@@ -918,7 +918,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Input
                       value={importUrl}
                       onChange={(e) => setImportUrl(e.target.value)}
-                      placeholder="https://example.com/data.csv"
+                      placeholder={t("dataset.urlPlaceholder")}
                       className="flex-1 text-sm"
                       onKeyDown={(e) => e.key === "Enter" && importFromUrl()}
                       disabled={isImporting}
@@ -1031,7 +1031,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           <span className="text-xs font-semibold text-foreground">{s.count}</span>
                           <span className="text-[10px] text-muted-foreground leading-tight text-center">{meta.label}</span>
                           <span className={`text-[9px] font-mono uppercase tracking-wider ${s.severity === "high" ? "text-red-400" : s.severity === "medium" ? "text-orange-400" : "text-muted-foreground"}`}>
-                            {s.severity}
+                            {t(`dataset.severity.${s.severity}`)}
                           </span>
                         </button>
                       );
@@ -1080,7 +1080,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                   </div>
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <Badge variant={issue.suggested_action === "delete" ? "destructive" : "warning"}>
-                                      {issue.suggested_action}
+                                      {t(`dataset.action.${issue.suggested_action}`)}
                                     </Badge>
                                     <button
                                       onClick={() => applySingleSuggestion(issue.id)}
@@ -1358,11 +1358,11 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
 
                           let statsText = "";
                           if (col.numericStats) {
-                            statsText = `min: ${col.numericStats.min}, max: ${col.numericStats.max}, mean: ${col.numericStats.mean}`;
+                            statsText = `${t("dataset.stats.min")}: ${col.numericStats.min}, ${t("dataset.stats.max")}: ${col.numericStats.max}, ${t("dataset.stats.mean")}: ${col.numericStats.mean}`;
                           } else if (col.categoricalStats?.dominantClass) {
-                            statsText = `Top: "${col.categoricalStats.dominantClass.value}" (${col.categoricalStats.dominantClass.percent}%)`;
+                            statsText = `${t("dataset.stats.top")}: "${col.categoricalStats.dominantClass.value}" (${col.categoricalStats.dominantClass.percent}%)`;
                           } else if (col.categoricalStats?.topValues?.length) {
-                            statsText = `Top: "${col.categoricalStats.topValues[0].value}" (${col.categoricalStats.topValues[0].percent}%)`;
+                            statsText = `${t("dataset.stats.top")}: "${col.categoricalStats.topValues[0].value}" (${col.categoricalStats.topValues[0].percent}%)`;
                           }
 
                           return (

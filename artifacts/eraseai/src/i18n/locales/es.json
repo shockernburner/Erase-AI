@@ -266,7 +266,7 @@
     "uploadFailed": "Error al cargar",
     "eraseFailed": "Error al borrar",
     "verificationFailed": "Error de verificación",
-    "dropColumnFailed": "Error al eliminar columna",
+    "dropColumnFailed": "Error al eliminar la columna",
     "importFailed": "Error al importar",
     "profilingFailed": "Error al perfilar",
     "analysisFailed": "Error de análisis",
@@ -285,7 +285,26 @@
     "planLimitExceeded": "El conjunto de datos excede el límite del plan gratuito.",
     "noChangesSuggestion": "No se necesitaron cambios para esta sugerencia.",
     "noChangesSelected": "No se necesitaron cambios para los problemas seleccionados.",
-    "applyFailed": "Error al aplicar la sugerencia"
+    "applyFailed": "Error al aplicar la sugerencia",
+    "urlPlaceholder": "https://example.com/data.csv",
+    "severity": {
+      "critical": "Crítico",
+      "high": "Alto",
+      "medium": "Medio",
+      "low": "Bajo"
+    },
+    "action": {
+      "delete": "Eliminar",
+      "redact": "Redactar",
+      "review": "Revisar",
+      "flag": "Marcar"
+    },
+    "stats": {
+      "min": "mín",
+      "max": "máx",
+      "mean": "media",
+      "top": "Top"
+    }
   },
   "admin": {
     "title": "Panel de administración",

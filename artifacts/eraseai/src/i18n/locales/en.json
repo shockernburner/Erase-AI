@@ -289,7 +289,27 @@
     "planLimitExceeded": "Dataset exceeds the Free plan limit.",
     "noChangesSuggestion": "No changes were needed for this suggestion.",
     "noChangesSelected": "No changes were needed for the selected issues.",
-    "applyFailed": "Failed to apply suggestion"
+    "applyFailed": "Failed to apply suggestion",
+    "dropColumnFailed": "Failed to drop column",
+    "urlPlaceholder": "https://example.com/data.csv",
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "action": {
+      "delete": "Delete",
+      "redact": "Redact",
+      "review": "Review",
+      "flag": "Flag"
+    },
+    "stats": {
+      "min": "min",
+      "max": "max",
+      "mean": "mean",
+      "top": "Top"
+    }
   },
   "admin": {
     "title": "Admin Dashboard",
