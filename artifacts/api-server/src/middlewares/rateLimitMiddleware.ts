@@ -57,14 +57,12 @@ export function apiRateLimit() {
         );
 
       const used = result?.count ?? 0;
-      const remaining = Math.max(0, limit - used);
       const resetDate = getNextMonthStart();
 
-      res.setHeader("X-RateLimit-Limit", String(limit));
-      res.setHeader("X-RateLimit-Remaining", String(remaining));
-      res.setHeader("X-RateLimit-Reset", resetDate.toISOString());
-
       if (used >= limit) {
+        res.setHeader("X-RateLimit-Limit", String(limit));
+        res.setHeader("X-RateLimit-Remaining", "0");
+        res.setHeader("X-RateLimit-Reset", resetDate.toISOString());
         res.status(429).json({
           error: `Monthly API rate limit exceeded. Your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan allows ${limit.toLocaleString()} requests/month. Limit resets on ${resetDate.toLocaleDateString()}.`,
           limit,
@@ -75,10 +73,15 @@ export function apiRateLimit() {
         return;
       }
 
+      const remaining = Math.max(0, limit - used - 1);
+      res.setHeader("X-RateLimit-Limit", String(limit));
+      res.setHeader("X-RateLimit-Remaining", String(remaining));
+      res.setHeader("X-RateLimit-Reset", resetDate.toISOString());
+
       next();
     } catch (err) {
       console.error("Rate limit check error:", err);
-      next();
+      res.status(503).json({ error: "Unable to verify rate limit. Please try again shortly." });
     }
   };
 }
