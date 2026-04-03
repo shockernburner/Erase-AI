@@ -569,6 +569,7 @@
       "worsening": "Empeorando",
       "scans": "análisis",
       "categoryBreakdown": "Desglose por Categoría (30 días)",
+      "categoryTrend": "Tendencia de Categorías en el Tiempo",
       "dailyAvg": "Puntuación Promedio Diaria"
     },
     "totalScans": "{{count}} en total",

@@ -426,9 +426,18 @@ interface PersonalAlert {
   createdAt: string;
 }
 
+interface CategoryTimePoint {
+  date: string;
+  toxicity: number;
+  hate_speech: number;
+  pii: number;
+  bias: number;
+}
+
 interface TrendsData {
   dailyTrend: { date: string; avgScore: number; count: number }[];
   categoryBreakdown: Record<string, number>;
+  categoryTimeSeries: CategoryTimePoint[];
   comparison: {
     current: { avgScore: number | null; scanCount: number };
     previous: { avgScore: number | null; scanCount: number };
@@ -716,6 +725,52 @@ function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {data.categoryTimeSeries && data.categoryTimeSeries.length >= 2 && (
+        <div className="mb-4">
+          <div className="text-xs text-muted-foreground font-semibold mb-2">{t("personal.trends.categoryTrend")}</div>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.categoryTimeSeries}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: string) => v.slice(5)}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(30,30,40,0.95)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Line type="monotone" dataKey="toxicity" stroke="#f87171" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="hate_speech" stroke="#fb923c" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="pii" stroke="#a78bfa" strokeWidth={2} dot={{ r: 2 }} />
+                <Line type="monotone" dataKey="bias" stroke="#fbbf24" strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center gap-4 mt-2 flex-wrap">
+            {Object.entries(CATEGORY_COLORS).map(([key, color]) => (
+              <div key={key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                {CATEGORY_LABELS[key] || key}
+              </div>
+            ))}
           </div>
         </div>
       )}

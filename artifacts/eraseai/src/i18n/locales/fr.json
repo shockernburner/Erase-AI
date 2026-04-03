@@ -569,6 +569,7 @@
       "worsening": "En détérioration",
       "scans": "analyses",
       "categoryBreakdown": "Répartition par Catégorie (30 jours)",
+      "categoryTrend": "Tendance des Catégories dans le Temps",
       "dailyAvg": "Score Moyen Quotidien"
     },
     "totalScans": "{{count}} au total",

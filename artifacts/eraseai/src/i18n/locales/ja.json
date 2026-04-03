@@ -569,6 +569,7 @@
       "worsening": "悪化中",
       "scans": "スキャン",
       "categoryBreakdown": "カテゴリ別内訳（30日間）",
+      "categoryTrend": "カテゴリトレンドの推移",
       "dailyAvg": "日次平均スコア"
     },
     "totalScans": "合計{{count}}件",

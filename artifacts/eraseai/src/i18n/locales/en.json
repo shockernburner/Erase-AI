@@ -628,6 +628,7 @@
       "worsening": "Worsening",
       "scans": "scans",
       "categoryBreakdown": "Category Breakdown (30 days)",
+      "categoryTrend": "Category Trend Over Time",
       "dailyAvg": "Daily Average Score"
     }
   },

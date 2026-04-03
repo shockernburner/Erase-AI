@@ -569,6 +569,7 @@
       "worsening": "Verschlechterung",
       "scans": "Analysen",
       "categoryBreakdown": "Kategorieaufteilung (30 Tage)",
+      "categoryTrend": "Kategorietrend im Zeitverlauf",
       "dailyAvg": "Täglicher Durchschnittsscore"
     },
     "totalScans": "{{count}} insgesamt",

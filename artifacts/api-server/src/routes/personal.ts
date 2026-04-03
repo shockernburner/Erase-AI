@@ -92,9 +92,10 @@ router.post("/personal/analyze", refreshPlanFromDB, async (req, res) => {
         id: scan.id,
         userId: req.user.id,
         riskScore: risk.score,
-        level: risk.level,
         flags: JSON.stringify(storedFlags),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn("Alert generation failed:", err);
+      });
     }
 
     res.json({
@@ -384,18 +385,33 @@ router.get("/personal/trends", refreshPlanFromDB, requirePro(), async (req, res)
       bias: 0,
     };
 
+    const categoryByDay: Record<string, Record<string, number>> = {};
+
     for (const scan of categoryTrend) {
       try {
         const flags = JSON.parse(scan.flags);
+        const day = new Date(scan.createdAt).toISOString().slice(0, 10);
         const seen = new Set<string>();
         for (const f of flags) {
           if (f.type && !seen.has(f.type)) {
             seen.add(f.type);
             categoryBreakdown[f.type] = (categoryBreakdown[f.type] || 0) + 1;
+            if (!categoryByDay[day]) categoryByDay[day] = {};
+            categoryByDay[day][f.type] = (categoryByDay[day][f.type] || 0) + 1;
           }
         }
       } catch {}
     }
+
+    const categoryTimeSeries = Object.entries(categoryByDay)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, cats]) => ({
+        date,
+        toxicity: cats.toxicity || 0,
+        hate_speech: cats.hate_speech || 0,
+        pii: cats.pii || 0,
+        bias: cats.bias || 0,
+      }));
 
     const [current30] = await db
       .select({
@@ -427,6 +443,7 @@ router.get("/personal/trends", refreshPlanFromDB, requirePro(), async (req, res)
     res.json({
       dailyTrend,
       categoryBreakdown,
+      categoryTimeSeries,
       comparison: {
         current: {
           avgScore: current30?.avg ?? null,

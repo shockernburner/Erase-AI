@@ -569,6 +569,7 @@
       "worsening": "恶化中",
       "scans": "次扫描",
       "categoryBreakdown": "类别分布（30天）",
+      "categoryTrend": "类别趋势变化",
       "dailyAvg": "每日平均分数"
     },
     "totalScans": "共 {{count}} 次",
