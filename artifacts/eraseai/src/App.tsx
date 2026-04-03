@@ -76,7 +76,7 @@ function AuthGate() {
   }
 
   if (view === "developer") {
-    return <DeveloperDashboard onBack={() => setView("home")} />;
+    return <DeveloperDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
   }
 
   return <Home onNavigate={setView} />;

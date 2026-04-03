@@ -11,6 +11,7 @@ import {
 import { sql, eq, and, desc, asc, ilike } from "drizzle-orm";
 import { apiKeyAuth } from "../middlewares/apiKeyMiddleware";
 import { getUserPlan, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
+import { apiRateLimit, trackApiUsage } from "../middlewares/rateLimitMiddleware";
 import Papa from "papaparse";
 import { parseCSVBuffer, parseCSVFromRows } from "../lib/csvParser";
 
@@ -28,6 +29,9 @@ router.use((req: Request, res: Response, next) => {
   }
   next();
 });
+
+router.use(apiRateLimit());
+router.use(trackApiUsage());
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 

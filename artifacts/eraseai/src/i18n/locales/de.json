@@ -444,6 +444,15 @@
     "endpointResult": "Analyseergebnisse abrufen",
     "endpointDownload": "Datensatz herunterladen",
     "upgradeTitle": "API-Zugang erforderlich",
-    "upgradeDesc": "Upgraden Sie auf einen Pro-, Business- oder Enterprise-Plan, um auf die API zuzugreifen und API-Schlüssel zu generieren."
+    "upgradeDesc": "Upgraden Sie auf einen Pro-, Business- oder Enterprise-Plan, um auf die API zuzugreifen und API-Schlüssel zu generieren.",
+    "apiUsage": "API-Nutzung",
+    "loadingUsage": "Nutzungsdaten werden geladen...",
+    "requestsThisMonth": "Anfragen in diesem Monat",
+    "unlimited": "Unbegrenzt",
+    "remaining": "verbleibend",
+    "resetsOn": "Zurücksetzung am",
+    "approachingLimit": "Sie nähern sich Ihrem monatlichen API-Limit.",
+    "upgradePlan": "Plan upgraden",
+    "dailyUsage": "Tägliche Nutzung"
   }
 }

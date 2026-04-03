@@ -14,6 +14,9 @@ import {
   Shield,
   Clock,
   Crown,
+  BarChart3,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`;
@@ -26,6 +29,116 @@ interface ApiKeyInfo {
   lastUsedAt: string | null;
   revokedAt: string | null;
   active: boolean;
+}
+
+interface UsageData {
+  used: number;
+  limit: number | null;
+  unlimited: boolean;
+  remaining: number | null;
+  percentUsed: number;
+  periodStart: string;
+  periodEnd: string;
+  dailyBreakdown: { date: string; requests: number }[];
+}
+
+function UsageMeter({ usage, onUpgrade }: { usage: UsageData | null; onUpgrade?: () => void }) {
+  const { t } = useTranslation();
+
+  if (!usage) {
+    return (
+      <div className="text-center py-8 text-muted-foreground text-sm">{t("developer.loadingUsage")}</div>
+    );
+  }
+
+  const percent = usage.unlimited ? 0 : usage.percentUsed;
+  const barColor = percent >= 90 ? "bg-red-500" : percent >= 75 ? "bg-yellow-500" : "bg-primary";
+  const maxBarValue = Math.max(...(usage.dailyBreakdown.map((d) => d.requests)), 1);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-2xl font-bold text-foreground">
+            <Zap className="w-5 h-5 text-primary" />
+            {usage.used.toLocaleString()}
+            {!usage.unlimited && (
+              <span className="text-base font-normal text-muted-foreground">
+                / {usage.limit?.toLocaleString()}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("developer.requestsThisMonth")}
+          </p>
+        </div>
+        <div className="text-right">
+          {usage.unlimited ? (
+            <span className="text-sm font-medium text-green-400">{t("developer.unlimited")}</span>
+          ) : (
+            <span className={`text-sm font-medium ${percent >= 90 ? "text-red-400" : percent >= 75 ? "text-yellow-400" : "text-primary"}`}>
+              {usage.remaining?.toLocaleString()} {t("developer.remaining")}
+            </span>
+          )}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("developer.resetsOn")} {new Date(usage.periodEnd).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+
+      {!usage.unlimited && (
+        <div className="w-full bg-muted/30 rounded-full h-3 overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${barColor}`}
+            initial={{ width: "0%" }}
+            animate={{ width: `${Math.min(percent, 100)}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
+      )}
+
+      {!usage.unlimited && percent >= 80 && onUpgrade && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-yellow-400 shrink-0" />
+          <span className="text-xs text-yellow-300 flex-1">{t("developer.approachingLimit")}</span>
+          <button
+            onClick={onUpgrade}
+            className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            {t("developer.upgradePlan")}
+          </button>
+        </div>
+      )}
+
+      {usage.dailyBreakdown.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            {t("developer.dailyUsage")}
+          </h4>
+          <div className="flex items-end gap-1 h-24">
+            {usage.dailyBreakdown.map((day) => {
+              const height = Math.max(4, (day.requests / maxBarValue) * 100);
+              return (
+                <div
+                  key={day.date}
+                  className="flex-1 flex flex-col items-center gap-1 group relative"
+                >
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-card border border-border rounded px-2 py-1 text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                    {day.date}: {day.requests}
+                  </div>
+                  <div
+                    className="w-full bg-primary/60 hover:bg-primary rounded-t transition-colors"
+                    style={{ height: `${height}%` }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function CodeSnippet({ apiKey }: { apiKey: string | null }) {
@@ -97,7 +210,7 @@ function EndpointDoc() {
   );
 }
 
-export default function DeveloperDashboard({ onBack }: { onBack: () => void }) {
+export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () => void; onUpgrade?: () => void }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
@@ -108,6 +221,7 @@ export default function DeveloperDashboard({ onBack }: { onBack: () => void }) {
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<UsageData | null>(null);
 
   const plan = user?.planType || "free";
   const hasAccess = plan !== "free";
@@ -120,16 +234,28 @@ export default function DeveloperDashboard({ onBack }: { onBack: () => void }) {
         setKeys(data.keys);
       }
     } catch {
-      // ignore
-    } finally {
-      setLoading(false);
+    }
+  }, []);
+
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/developer/usage`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setUsage(data);
+      }
+    } catch {
     }
   }, []);
 
   useEffect(() => {
-    if (hasAccess) fetchKeys();
-    else setLoading(false);
-  }, [hasAccess, fetchKeys]);
+    if (hasAccess) {
+      fetchKeys().finally(() => setLoading(false));
+      fetchUsage();
+    } else {
+      setLoading(false);
+    }
+  }, [hasAccess, fetchKeys, fetchUsage]);
 
   const createKey = async () => {
     if (!newKeyName.trim()) return;
@@ -368,6 +494,14 @@ export default function DeveloperDashboard({ onBack }: { onBack: () => void }) {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              {t("developer.apiUsage")}
+            </h3>
+            <UsageMeter usage={usage} onUpgrade={onUpgrade} />
           </div>
 
           <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">

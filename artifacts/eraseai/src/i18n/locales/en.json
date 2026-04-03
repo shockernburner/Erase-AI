@@ -435,7 +435,16 @@
     "endpointResult": "Get analysis results",
     "endpointDownload": "Download dataset",
     "upgradeTitle": "API Access Required",
-    "upgradeDesc": "Upgrade to a Pro, Business, or Enterprise plan to access the API and generate API keys."
+    "upgradeDesc": "Upgrade to a Pro, Business, or Enterprise plan to access the API and generate API keys.",
+    "apiUsage": "API Usage",
+    "loadingUsage": "Loading usage data...",
+    "requestsThisMonth": "requests this month",
+    "unlimited": "Unlimited",
+    "remaining": "remaining",
+    "resetsOn": "Resets on",
+    "approachingLimit": "You're approaching your monthly API limit.",
+    "upgradePlan": "Upgrade Plan",
+    "dailyUsage": "Daily Usage"
   },
   "language": {
     "en": "English",

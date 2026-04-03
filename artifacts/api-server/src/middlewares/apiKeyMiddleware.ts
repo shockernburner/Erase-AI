@@ -66,10 +66,12 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
     lastName: user.lastName,
     profileImageUrl: user.profileImageUrl,
     role: user.role as "user" | "admin",
-    planType: (user.planType || "free") as "free" | "pro" | "enterprise",
+    planType: (user.planType || "free") as "free" | "pro" | "business" | "enterprise",
     planStartDate: user.planStartDate?.toISOString() ?? null,
     planEndDate: user.planEndDate?.toISOString() ?? null,
   };
+
+  (req as any).apiKeyId = apiKey.id;
 
   next();
 }

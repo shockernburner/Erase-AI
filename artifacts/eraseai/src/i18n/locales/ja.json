@@ -444,6 +444,15 @@
     "endpointResult": "分析結果を取得",
     "endpointDownload": "データセットをダウンロード",
     "upgradeTitle": "APIアクセスが必要です",
-    "upgradeDesc": "Pro、Business、またはEnterpriseプランにアップグレードして、APIにアクセスし、APIキーを生成してください。"
+    "upgradeDesc": "Pro、Business、またはEnterpriseプランにアップグレードして、APIにアクセスし、APIキーを生成してください。",
+    "apiUsage": "API使用量",
+    "loadingUsage": "使用データを読み込み中...",
+    "requestsThisMonth": "今月のリクエスト",
+    "unlimited": "無制限",
+    "remaining": "残り",
+    "resetsOn": "リセット日",
+    "approachingLimit": "月間API制限に近づいています。",
+    "upgradePlan": "プランをアップグレード",
+    "dailyUsage": "日別使用量"
   }
 }

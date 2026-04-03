@@ -1,8 +1,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, apiKeysTable } from "@workspace/db";
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { db, apiKeysTable, apiUsageTable } from "@workspace/db";
+import { eq, and, isNull, desc, gte, sql } from "drizzle-orm";
 import { generateApiKey } from "../middlewares/apiKeyMiddleware";
 import { getUserPlan, refreshPlanFromDB } from "../middlewares/planMiddleware";
+import { PLAN_REQUEST_LIMITS, getMonthStart, getNextMonthStart } from "../middlewares/rateLimitMiddleware";
 
 const router: IRouter = Router();
 router.use(refreshPlanFromDB);
@@ -128,6 +129,63 @@ router.delete("/keys/:id", async (req: Request, res: Response) => {
     .where(eq(apiKeysTable.id, keyId));
 
   res.json({ message: "API key revoked successfully" });
+});
+
+router.get("/usage", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+
+  const plan = getUserPlan(req);
+  const limit = PLAN_REQUEST_LIMITS[plan] ?? 0;
+  const monthStart = getMonthStart();
+  const resetDate = getNextMonthStart();
+
+  try {
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(apiUsageTable)
+      .innerJoin(apiKeysTable, eq(apiUsageTable.apiKeyId, apiKeysTable.id))
+      .where(
+        and(
+          eq(apiKeysTable.userId, req.user!.id),
+          gte(apiUsageTable.createdAt, monthStart),
+        ),
+      );
+
+    const used = totalResult?.count ?? 0;
+
+    const dailyBreakdown = await db
+      .select({
+        date: sql<string>`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(apiUsageTable)
+      .innerJoin(apiKeysTable, eq(apiUsageTable.apiKeyId, apiKeysTable.id))
+      .where(
+        and(
+          eq(apiKeysTable.userId, req.user!.id),
+          gte(apiUsageTable.createdAt, monthStart),
+        ),
+      )
+      .groupBy(sql`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`);
+
+    res.json({
+      used,
+      limit: limit === -1 ? null : limit,
+      unlimited: limit === -1,
+      remaining: limit === -1 ? null : Math.max(0, limit - used),
+      percentUsed: limit === -1 ? 0 : Math.round((used / limit) * 100),
+      periodStart: monthStart.toISOString(),
+      periodEnd: resetDate.toISOString(),
+      dailyBreakdown: dailyBreakdown.map((d) => ({
+        date: d.date,
+        requests: d.count,
+      })),
+    });
+  } catch (err) {
+    console.error("Usage stats error:", err);
+    res.status(500).json({ error: "Failed to fetch usage stats" });
+  }
 });
 
 export default router;

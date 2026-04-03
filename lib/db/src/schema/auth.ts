@@ -63,6 +63,19 @@ export const apiKeysTable = pgTable("api_keys", {
 export type ApiKey = typeof apiKeysTable.$inferSelect;
 export type InsertApiKey = typeof apiKeysTable.$inferInsert;
 
+export const apiUsageTable = pgTable("api_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  apiKeyId: varchar("api_key_id").notNull().references(() => apiKeysTable.id, { onDelete: "cascade" }),
+  endpoint: varchar("endpoint", { length: 500 }).notNull(),
+  responseStatus: integer("response_status"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_api_usage_key_created").on(table.apiKeyId, table.createdAt),
+]);
+
+export type ApiUsage = typeof apiUsageTable.$inferSelect;
+export type InsertApiUsage = typeof apiUsageTable.$inferInsert;
+
 export const pageVisitsTable = pgTable("page_visits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   path: varchar("path", { length: 500 }).notNull(),

@@ -444,6 +444,15 @@
     "endpointResult": "Obtenir les résultats",
     "endpointDownload": "Télécharger le jeu de données",
     "upgradeTitle": "Accès API requis",
-    "upgradeDesc": "Passez à un plan Pro, Business ou Enterprise pour accéder à l'API et générer des clés API."
+    "upgradeDesc": "Passez à un plan Pro, Business ou Enterprise pour accéder à l'API et générer des clés API.",
+    "apiUsage": "Utilisation de l'API",
+    "loadingUsage": "Chargement des données d'utilisation...",
+    "requestsThisMonth": "requêtes ce mois-ci",
+    "unlimited": "Illimité",
+    "remaining": "restantes",
+    "resetsOn": "Réinitialisation le",
+    "approachingLimit": "Vous approchez de votre limite mensuelle d'API.",
+    "upgradePlan": "Améliorer le plan",
+    "dailyUsage": "Utilisation quotidienne"
   }
 }

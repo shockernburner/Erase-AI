@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, usersTable, feedbackTable, pageVisitsTable } from "@workspace/db";
-import { eq, desc, count, sql, gte } from "drizzle-orm";
+import { db, usersTable, feedbackTable, pageVisitsTable, apiUsageTable, apiKeysTable } from "@workspace/db";
+import { eq, desc, count, sql, gte, and } from "drizzle-orm";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 
@@ -335,6 +335,67 @@ router.get("/admin/visits", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Admin visits error:", err);
     res.status(500).json({ error: "Failed to fetch visit trends" });
+  }
+});
+
+router.get("/admin/api-usage", async (req: Request, res: Response) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - 7);
+
+    const [[totalThisMonth], [totalThisWeek], [totalAllTime]] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(apiUsageTable).where(gte(apiUsageTable.createdAt, monthStart)),
+      db.select({ count: sql<number>`count(*)::int` }).from(apiUsageTable).where(gte(apiUsageTable.createdAt, weekStart)),
+      db.select({ count: sql<number>`count(*)::int` }).from(apiUsageTable),
+    ]);
+
+    const topUsers = await db
+      .select({
+        userId: apiKeysTable.userId,
+        email: usersTable.email,
+        planType: usersTable.planType,
+        requestCount: sql<number>`count(*)::int`,
+      })
+      .from(apiUsageTable)
+      .innerJoin(apiKeysTable, eq(apiUsageTable.apiKeyId, apiKeysTable.id))
+      .innerJoin(usersTable, eq(apiKeysTable.userId, usersTable.id))
+      .where(gte(apiUsageTable.createdAt, monthStart))
+      .groupBy(apiKeysTable.userId, usersTable.email, usersTable.planType)
+      .orderBy(sql`count(*) DESC`)
+      .limit(10);
+
+    const dailyTrend = await db
+      .select({
+        date: sql<string>`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(apiUsageTable)
+      .where(gte(apiUsageTable.createdAt, monthStart))
+      .groupBy(sql`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`);
+
+    res.json({
+      thisMonth: totalThisMonth.count,
+      thisWeek: totalThisWeek.count,
+      allTime: totalAllTime.count,
+      topUsers: topUsers.map((u) => ({
+        userId: u.userId,
+        email: u.email,
+        planType: u.planType,
+        requests: u.requestCount,
+      })),
+      dailyTrend: dailyTrend.map((d) => ({
+        date: d.date,
+        requests: d.count,
+      })),
+    });
+  } catch (err) {
+    console.error("Admin API usage error:", err);
+    res.status(500).json({ error: "Failed to fetch API usage stats" });
   }
 });
 
