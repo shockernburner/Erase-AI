@@ -283,7 +283,11 @@ function WebhookSection() {
         credentials: "include",
       });
       const data = await res.json();
-      setTestResult({ success: data.success, message: data.message });
+      if (!res.ok) {
+        setTestResult({ success: false, message: data.error || t("developer.webhookTestFailed") });
+      } else {
+        setTestResult({ success: data.success, message: data.message });
+      }
       fetchDeliveries(webhook.id);
     } catch {
       setTestResult({ success: false, message: t("developer.webhookTestFailed") });
