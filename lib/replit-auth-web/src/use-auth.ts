@@ -63,7 +63,7 @@ export function useAuth(): AuthState {
         if (!res.ok) {
           return { error: data.error || "Login failed" };
         }
-        setUser(data.user);
+        window.location.reload();
         return {};
       } catch {
         return { error: "Something went wrong. Please try again." };
@@ -90,7 +90,7 @@ export function useAuth(): AuthState {
         if (!res.ok) {
           return { error: result.error || "Signup failed" };
         }
-        setUser(result.user);
+        window.location.reload();
         return {};
       } catch {
         return { error: "Something went wrong. Please try again." };
@@ -107,7 +107,7 @@ export function useAuth(): AuthState {
       });
     } catch {
     }
-    setUser(null);
+    window.location.reload();
   }, []);
 
   return {

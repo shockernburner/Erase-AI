@@ -22,15 +22,11 @@ declare global {
   }
 }
 
-const DEMO_USER: AuthUser = {
-  id: "system-demo-user",
-  email: null,
-  firstName: "Demo",
-  lastName: "User",
-  profileImageUrl: null,
-  planType: "free",
-  role: "user",
-};
+const PUBLIC_PREFIXES = ["/api/auth/", "/api/health"];
+
+function isPublicRoute(path: string): boolean {
+  return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
 
 export async function authMiddleware(
   req: Request,
@@ -43,8 +39,9 @@ export async function authMiddleware(
 
   const sid = getSessionId(req);
   if (!sid) {
-    if (!req.path.startsWith("/api/admin")) {
-      req.user = DEMO_USER;
+    if (!isPublicRoute(req.path)) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
     }
     next();
     return;
@@ -53,8 +50,9 @@ export async function authMiddleware(
   const session = await getSession(sid);
   if (!session?.user?.id) {
     await clearSession(res, sid);
-    if (!req.path.startsWith("/api/admin")) {
-      req.user = DEMO_USER;
+    if (!isPublicRoute(req.path)) {
+      res.status(401).json({ error: "Session expired. Please log in again." });
+      return;
     }
     next();
     return;

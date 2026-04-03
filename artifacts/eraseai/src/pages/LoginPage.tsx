@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Mail, Lock, User, Loader2, Eye, EyeOff, Zap, Database, BrainCircuit } from "lucide-react";
+import { ShieldX, Mail, Lock, User, Loader2, Eye, EyeOff, Zap, Database, BrainCircuit, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
@@ -132,6 +132,19 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {mode === "signup" && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
+            >
+              <Sparkles className="w-4 h-4 text-primary shrink-0" />
+              <p className="text-sm text-primary font-medium">
+                Try free for 7 days — no credit card required
+              </p>
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === "signup" && (
               <div className="grid grid-cols-2 gap-3">
@@ -211,7 +224,7 @@ export default function LoginPage() {
                   {mode === "signup" ? "Creating account..." : "Logging in..."}
                 </>
               ) : (
-                mode === "signup" ? "Create Account" : "Log In"
+                mode === "signup" ? "Start Free Trial" : "Log In"
               )}
             </Button>
           </form>

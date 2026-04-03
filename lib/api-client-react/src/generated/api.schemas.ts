@@ -74,6 +74,13 @@ export const AuthUserPlanType = {
   enterprise: "enterprise",
 } as const;
 
+export type AuthUserRole = (typeof AuthUserRole)[keyof typeof AuthUserRole];
+
+export const AuthUserRole = {
+  user: "user",
+  admin: "admin",
+} as const;
+
 export interface AuthUser {
   id: string;
   /** @nullable */
@@ -85,7 +92,11 @@ export interface AuthUser {
   /** @nullable */
   profileImageUrl: string | null;
   planType: AuthUserPlanType;
-  role?: "user" | "admin";
+  role?: AuthUserRole;
+  /** @nullable */
+  planStartDate?: string | null;
+  /** @nullable */
+  planEndDate?: string | null;
 }
 
 export interface AuthUserEnvelope {

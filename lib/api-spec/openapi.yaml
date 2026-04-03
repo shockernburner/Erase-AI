@@ -392,6 +392,15 @@ components:
           type: string
           enum: [free, pro, enterprise]
           default: free
+        role:
+          type: string
+          enum: [user, admin]
+        planStartDate:
+          type: [string, 'null']
+          format: date-time
+        planEndDate:
+          type: [string, 'null']
+          format: date-time
     AuthUserEnvelope:
       type: object
       required: [user]

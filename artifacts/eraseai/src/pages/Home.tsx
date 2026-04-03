@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X } from "lucide-react";
+import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
@@ -31,6 +31,16 @@ function PlanBadge({ plan }: { plan: string }) {
   );
 }
 
+function getTrialDaysRemaining(user: { planType?: string; planEndDate?: string | Date | null }): number | null {
+  const plan = user.planType || "free";
+  if (plan !== "free") return null;
+  if (!user.planEndDate) return null;
+  const end = new Date(user.planEndDate as string);
+  const now = new Date();
+  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
+
 function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
@@ -38,6 +48,7 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   if (!user) return null;
 
   const plan = user.planType || "free";
+  const trialDays = getTrialDaysRemaining(user as any);
   const initials = [user.firstName, user.lastName]
     .filter(Boolean)
     .map(n => n![0])
@@ -73,6 +84,15 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
                 <PlanBadge plan={plan} />
               </div>
               {user.email && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
+              {trialDays !== null && (
+                <div className={`flex items-center gap-1.5 mt-1.5 text-xs ${trialDays === 0 ? "text-destructive" : trialDays <= 2 ? "text-yellow-400" : "text-primary"}`}>
+                  <Clock className="w-3 h-3" />
+                  {trialDays === 0
+                    ? "Trial expired"
+                    : `${trialDays} day${trialDays !== 1 ? "s" : ""} left in trial`
+                  }
+                </div>
+              )}
             </div>
             {user.role === "admin" && (
               <button

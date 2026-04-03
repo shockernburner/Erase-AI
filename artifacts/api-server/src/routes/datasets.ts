@@ -11,7 +11,7 @@ import {
   analysisResultsTable,
 } from "@workspace/db";
 import { sql, eq, and, ilike, desc, asc } from "drizzle-orm";
-import { getUserPlan, requirePro, refreshPlanFromDB, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
+import { getUserPlan, requirePro, requireActivePlan, refreshPlanFromDB, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
 import Papa from "papaparse";
 import { parseCSVBuffer, parseCSVFromRows } from "../lib/csvParser";
 import { profileDataset } from "../lib/profiler";
@@ -107,7 +107,7 @@ function requireAuth(req: Request, res: Response): boolean {
   return true;
 }
 
-router.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
+router.post("/upload", requireActivePlan(), upload.single("file"), async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
   const file = req.file;
   if (!file) { res.status(400).json({ error: "No file uploaded" }); return; }
@@ -1122,7 +1122,7 @@ async function validateUrlSafety(urlStr: string): Promise<{ safe: boolean; error
   return { safe: true };
 }
 
-router.post("/import-url", async (req: Request, res: Response) => {
+router.post("/import-url", requireActivePlan(), async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
   const { url } = req.body as { url?: string };

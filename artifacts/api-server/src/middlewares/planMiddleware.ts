@@ -6,6 +6,29 @@ export function getUserPlan(req: Request): string {
   return req.user?.planType || "free";
 }
 
+export function isTrialExpired(user: Express.User | undefined): boolean {
+  if (!user) return true;
+  const plan = user.planType || "free";
+  if (plan !== "free") return false;
+  if (user.role === "admin") return false;
+  if (!user.planEndDate) return false;
+  return new Date(user.planEndDate) < new Date();
+}
+
+export function requireActivePlan() {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (isTrialExpired(req.user)) {
+      res.status(403).json({
+        error: "Your 7-day free trial has expired. Upgrade to continue using EraseAI.",
+        trialExpired: true,
+        upgrade: true,
+      });
+      return;
+    }
+    next();
+  };
+}
+
 export function requirePro() {
   return (req: Request, res: Response, next: NextFunction) => {
     const plan = getUserPlan(req);
@@ -40,11 +63,14 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
   if (req.user?.id) {
     try {
       const [freshUser] = await db
-        .select({ planType: usersTable.planType })
+        .select({ planType: usersTable.planType, planEndDate: usersTable.planEndDate })
         .from(usersTable)
         .where(eq(usersTable.id, req.user.id));
       if (freshUser) {
         req.user.planType = (freshUser.planType || "free") as "free" | "pro" | "enterprise";
+        if (freshUser.planEndDate) {
+          (req.user as any).planEndDate = freshUser.planEndDate.toISOString();
+        }
       }
     } catch {
     }

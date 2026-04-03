@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AuthUserPlanType } from "./authUserPlanType";
+import type { AuthUserRole } from "./authUserRole";
 
 export interface AuthUser {
   id: string;
@@ -18,5 +19,9 @@ export interface AuthUser {
   /** @nullable */
   profileImageUrl: string | null;
   planType: AuthUserPlanType;
-  role?: "user" | "admin";
+  role?: AuthUserRole;
+  /** @nullable */
+  planStartDate?: Date | null;
+  /** @nullable */
+  planEndDate?: Date | null;
 }

@@ -275,6 +275,12 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.trialExpired) {
+          setUpgradeNeeded("trial-expired");
+          setError(data.error || "Your free trial has expired. Upgrade to continue.");
+          setPhase("idle");
+          return;
+        }
         if (data.upgrade) {
           setUpgradeNeeded("row-limit");
           setError(data.error || "Dataset exceeds the Free plan limit of 100 rows. Upgrade to Pro for unlimited rows.");
@@ -439,6 +445,11 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.trialExpired) {
+          setUpgradeNeeded("trial-expired");
+          setError(data.error || "Your free trial has expired. Upgrade to continue.");
+          return;
+        }
         if (data.upgrade) {
           setUpgradeNeeded("row-limit");
           setError(data.error || "Dataset exceeds the Free plan limit.");
@@ -658,12 +669,18 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground mb-1">
-              {upgradeNeeded === "ml-feedback" ? "ML Feedback — Pro Feature" : "Row Limit Reached"}
+              {upgradeNeeded === "trial-expired"
+                ? "Free Trial Expired"
+                : upgradeNeeded === "ml-feedback"
+                  ? "ML Feedback — Pro Feature"
+                  : "Row Limit Reached"}
             </p>
             <p className="text-xs text-muted-foreground mb-3">
-              {upgradeNeeded === "ml-feedback"
-                ? "ML Pipeline Feedback requires a Pro plan. Upgrade to get intelligent recommendations for your ML workflows."
-                : "Free plan is limited to 100 rows per dataset. Upgrade to Pro for unlimited rows."}
+              {upgradeNeeded === "trial-expired"
+                ? "Your 7-day free trial has ended. Upgrade to Pro to continue creating and processing datasets."
+                : upgradeNeeded === "ml-feedback"
+                  ? "ML Pipeline Feedback requires a Pro plan. Upgrade to get intelligent recommendations for your ML workflows."
+                  : "Free plan is limited to 100 rows per dataset. Upgrade to Pro for unlimited rows."}
             </p>
             <Button
               onClick={() => onNavigatePricing?.()}

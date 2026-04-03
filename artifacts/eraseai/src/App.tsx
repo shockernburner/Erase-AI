@@ -52,7 +52,11 @@ function AuthGate() {
     );
   }
 
-  if (view === "admin" && (!isAuthenticated || user?.role !== "admin")) {
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  if (view === "admin" && user?.role !== "admin") {
     return <LoginPage />;
   }
 

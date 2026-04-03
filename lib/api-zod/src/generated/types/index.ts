@@ -12,6 +12,7 @@ export * from "./authorizationSessionHeaderParameter";
 export * from "./authUser";
 export * from "./authUserEnvelope";
 export * from "./authUserPlanType";
+export * from "./authUserRole";
 export * from "./beginBrowserLoginParams";
 export * from "./errorEnvelope";
 export * from "./factItem";

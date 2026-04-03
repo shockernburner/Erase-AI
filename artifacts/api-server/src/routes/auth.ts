@@ -54,6 +54,8 @@ function buildSessionUser(dbUser: {
   profileImageUrl: string | null;
   planType: string;
   role: string;
+  planStartDate?: Date | null;
+  planEndDate?: Date | null;
 }) {
   return {
     id: dbUser.id,
@@ -63,6 +65,8 @@ function buildSessionUser(dbUser: {
     profileImageUrl: dbUser.profileImageUrl,
     planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
     role: (dbUser.role as "user" | "admin") || "user",
+    planStartDate: dbUser.planStartDate?.toISOString() ?? null,
+    planEndDate: dbUser.planEndDate?.toISOString() ?? null,
   };
 }
 
@@ -152,6 +156,9 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
     const isAdmin = emailLower === ADMIN_EMAIL;
 
     try {
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
       const [user] = await db
         .insert(usersTable)
         .values({
@@ -163,6 +170,8 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
           role: isAdmin ? "admin" : "user",
           planType: isAdmin ? "enterprise" : "free",
           subscriptionStatus: isAdmin ? "active" : null,
+          planStartDate: now,
+          planEndDate: isAdmin ? null : trialEnd,
         })
         .returning();
 
@@ -355,6 +364,8 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
         .where(eq(usersTable.id, existing.id))
         .returning();
     } else {
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       [dbUser] = await db
         .insert(usersTable)
         .values({
@@ -366,6 +377,8 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
           role: isAdmin ? "admin" : "user",
           planType: isAdmin ? "enterprise" : "free",
           subscriptionStatus: isAdmin ? "active" : null,
+          planStartDate: now,
+          planEndDate: isAdmin ? null : trialEnd,
         })
         .returning();
     }
@@ -505,6 +518,8 @@ router.post("/auth/apple/callback", async (req: Request, res: Response) => {
         .where(eq(usersTable.id, existing.id))
         .returning();
     } else {
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       [dbUser] = await db
         .insert(usersTable)
         .values({
@@ -515,6 +530,8 @@ router.post("/auth/apple/callback", async (req: Request, res: Response) => {
           role: isAdmin ? "admin" : "user",
           planType: isAdmin ? "enterprise" : "free",
           subscriptionStatus: isAdmin ? "active" : null,
+          planStartDate: now,
+          planEndDate: isAdmin ? null : trialEnd,
         })
         .returning();
     }
@@ -532,17 +549,7 @@ router.post("/auth/apple/callback", async (req: Request, res: Response) => {
 router.get("/auth/user", async (req: Request, res: Response) => {
   try {
     if (!req.isAuthenticated()) {
-      res.json({
-        user: {
-          id: "system-demo-user",
-          email: null,
-          firstName: "Demo",
-          lastName: "User",
-          profileImageUrl: null,
-          planType: "free",
-          role: "user",
-        },
-      });
+      res.json({ user: null });
       return;
     }
 
