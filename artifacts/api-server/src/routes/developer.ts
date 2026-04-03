@@ -93,7 +93,7 @@ router.get("/keys", async (req: Request, res: Response) => {
 router.delete("/keys/:id", async (req: Request, res: Response) => {
   if (!requireApiAccess(req, res)) return;
 
-  const keyId = req.params.id;
+  const keyId = req.params.id as string;
 
   const [key] = await db
     .select()

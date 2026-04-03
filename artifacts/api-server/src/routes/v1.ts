@@ -169,7 +169,7 @@ router.get("/datasets", async (req: Request, res: Response) => {
 });
 
 router.post("/datasets/:id/analyze", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
 
   const [dataset] = await db.select().from(datasetsTable).where(
@@ -235,7 +235,7 @@ router.post("/datasets/:id/analyze", async (req: Request, res: Response) => {
 });
 
 router.get("/datasets/:id/result", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
 
   const [dataset] = await db.select().from(datasetsTable).where(
@@ -290,7 +290,7 @@ router.get("/datasets/:id/result", async (req: Request, res: Response) => {
 });
 
 router.get("/datasets/:id/download", async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
 
   const [dataset] = await db.select().from(datasetsTable).where(

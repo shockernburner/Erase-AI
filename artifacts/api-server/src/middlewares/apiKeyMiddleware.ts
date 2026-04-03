@@ -62,7 +62,6 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
   req.user = {
     id: user.id,
     email: user.email,
-    username: user.username,
     firstName: user.firstName,
     lastName: user.lastName,
     profileImageUrl: user.profileImageUrl,
