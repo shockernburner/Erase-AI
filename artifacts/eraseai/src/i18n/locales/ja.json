@@ -587,6 +587,8 @@
       "profileScanDesc": "自己紹介やプロフィールをスキャン",
       "uploadFile": "ファイルアップロード",
       "uploadFileDesc": "TXT、CSV、JSONをスキャン"
-    }
+    },
+    "dailyLimitReached": "日次制限に達しました（{{used}}/{{limit}}回）。無制限スキャンにアップグレードしてください。",
+    "upgradeCta": "アップグレード"
   }
 }

@@ -587,6 +587,8 @@
       "profileScanDesc": "扫描您的简介或资料",
       "uploadFile": "上传文件",
       "uploadFileDesc": "扫描 TXT、CSV 或 JSON"
-    }
+    },
+    "dailyLimitReached": "已达每日限额（{{used}}/{{limit}} 次）。升级获取无限扫描。",
+    "upgradeCta": "升级"
   }
 }

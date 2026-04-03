@@ -587,6 +587,8 @@
       "profileScanDesc": "Escanear su bio o perfil",
       "uploadFile": "Subir Archivo",
       "uploadFileDesc": "Escanear TXT, CSV o JSON"
-    }
+    },
+    "dailyLimitReached": "Límite diario alcanzado ({{used}}/{{limit}} análisis). Actualice para análisis ilimitados.",
+    "upgradeCta": "Actualizar"
   }
 }

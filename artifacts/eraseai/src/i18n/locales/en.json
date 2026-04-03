@@ -528,6 +528,8 @@
     "analyze": "Analyze",
     "analyzing": "Analyzing...",
     "analysisFailed": "Analysis failed",
+    "dailyLimitReached": "Daily limit reached ({{used}}/{{limit}} scans). Upgrade for unlimited scans.",
+    "upgradeCta": "Upgrade",
     "dailyUsage": "{{used}}/{{limit}} scans used today",
     "history": "Scan History",
     "totalScans": "{{count}} total",

@@ -216,8 +216,11 @@ export default function PersonalMode({
   const [scanMode, setScanMode] = useState<ScanMode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [limitError, setLimitError] = useState<{ used: number; limit: number } | null>(null);
+
   const analyzeMutation = useMutation({
     mutationFn: async (inputText: string) => {
+      setLimitError(null);
       const res = await fetch(`${API_BASE}/personal/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -226,6 +229,10 @@ export default function PersonalMode({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (data.limit && data.used) {
+          setLimitError({ used: data.used, limit: data.limit });
+          throw new Error("DAILY_LIMIT");
+        }
         if (data.upgrade) {
           onUpgrade();
           return null;
@@ -515,7 +522,19 @@ export default function PersonalMode({
 
               {analyzeMutation.isError && (
                 <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
-                  {analyzeMutation.error?.message || t("personal.analysisFailed")}
+                  {limitError ? (
+                    <div className="flex items-center justify-between">
+                      <span>{t("personal.dailyLimitReached", { used: limitError.used, limit: limitError.limit })}</span>
+                      <button
+                        onClick={() => onUpgrade()}
+                        className="ml-3 px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        {t("personal.upgradeCta")}
+                      </button>
+                    </div>
+                  ) : (
+                    analyzeMutation.error?.message || t("personal.analysisFailed")
+                  )}
                 </div>
               )}
             </motion.div>
