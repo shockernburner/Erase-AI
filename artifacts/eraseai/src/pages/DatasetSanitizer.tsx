@@ -193,16 +193,23 @@ interface DatasetProfileData {
 type Phase = "idle" | "loading" | "loaded" | "confirm-erase" | "erasing" | "erased";
 type EraseMode = "delete" | "redact";
 
-const ISSUE_META: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
-  pii: { label: "PII / Personal Data", icon: <ShieldAlert className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-  bias: { label: "Biased Language", icon: <MessageSquareWarning className="w-4 h-4" />, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-  toxic: { label: "Toxic Content", icon: <Bug className="w-4 h-4" />, color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
-  duplicate: { label: "Duplicate Rows", icon: <Copy className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-  quality: { label: "Low Quality", icon: <AlertTriangle className="w-4 h-4" />, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
+const ISSUE_ICONS: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  pii: { icon: <ShieldAlert className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+  bias: { icon: <MessageSquareWarning className="w-4 h-4" />, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+  toxic: { icon: <Bug className="w-4 h-4" />, color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20" },
+  duplicate: { icon: <Copy className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  quality: { icon: <AlertTriangle className="w-4 h-4" />, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
 };
 
 export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: () => void }) {
   const { t } = useTranslation();
+  const ISSUE_META: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
+    pii: { label: t("dataset.piiIssue"), ...ISSUE_ICONS.pii },
+    bias: { label: t("dataset.biasIssue"), ...ISSUE_ICONS.bias },
+    toxic: { label: t("dataset.toxicIssue"), ...ISSUE_ICONS.toxic },
+    duplicate: { label: t("dataset.duplicateIssue"), ...ISSUE_ICONS.duplicate },
+    quality: { label: t("dataset.qualityIssue"), ...ISSUE_ICONS.quality },
+  };
   const [phase, setPhase] = useState<Phase>("idle");
   const [dataset, setDataset] = useState<DatasetInfo | null>(null);
   const [rows, setRows] = useState<DatasetRow[]>([]);
@@ -294,7 +301,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       await fetchDataset(data.dataset_id);
       setPhase("loaded");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : t("dataset.uploadFailed"));
       setPhase("idle");
     }
   };
@@ -348,7 +355,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       setKeyword("");
       setPhase("erased");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erase failed");
+      setError(err instanceof Error ? err.message : t("dataset.eraseFailed"));
       setPhase("loaded");
     }
   };
@@ -375,7 +382,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       const data = await res.json();
       setVerifyResult(data);
     } catch {
-      setError("Verification failed");
+      setError(t("dataset.verificationFailed"));
     }
   };
 
@@ -427,7 +434,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       setMlFeedback(null);
       setProfileData(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to drop column");
+      setError(err instanceof Error ? err.message : t("dataset.dropColumnFailed"));
     } finally {
       setIsDroppingColumn(null);
     }
@@ -464,7 +471,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       setShowUrlImport(false);
       setImportUrl("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setError(err instanceof Error ? err.message : t("dataset.importFailed"));
     } finally {
       setIsImporting(false);
     }
@@ -514,7 +521,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       setProfileRecCategory("all");
       setExpandedProfileCode(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Profiling failed");
+      setError(err instanceof Error ? err.message : t("dataset.profilingFailed"));
     } finally {
       setIsProfiling(false);
     }
@@ -537,7 +544,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       }
       fetchMLFeedback(dataset.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed");
+      setError(err instanceof Error ? err.message : t("dataset.analysisFailed"));
     } finally {
       setIsAnalyzing(false);
     }
@@ -591,7 +598,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         setMlFeedback(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to apply suggestion");
+      setError(err instanceof Error ? err.message : t("dataset.applySuggestionFailed"));
     } finally {
       setIsApplying(false);
     }
@@ -628,7 +635,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       setProfileData(null);
       setPhase("erased");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to apply suggestions");
+      setError(err instanceof Error ? err.message : t("dataset.applySuggestionsFailed"));
     } finally {
       setIsApplying(false);
     }
@@ -800,7 +807,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       {phase === "loading" && (
         <Card className="p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-          <p className="text-muted-foreground">Loading dataset...</p>
+          <p className="text-muted-foreground">{t("dataset.loadingDataset")}</p>
         </Card>
       )}
 
@@ -822,8 +829,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                         className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-semibold transition-colors hover:bg-primary/20"
                       >
                         <GitBranch className="w-3 h-3" />
-                        Version {currentVersion}
-                        {currentVersion === latestVersion && " (Latest)"}
+                        {t("dataset.version")} {currentVersion}
+                        {currentVersion === latestVersion && ` (${t("dataset.latest")})`}
                         <ChevronDown className="w-3 h-3" />
                       </button>
                       {showVersionDropdown && (
@@ -836,9 +843,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                 v.version_number === currentVersion ? "bg-primary/10 text-primary font-semibold" : "text-foreground"
                               }`}
                             >
-                              <span>Version {v.version_number}</span>
+                              <span>{t("dataset.version")} {v.version_number}</span>
                               {v.version_number === latestVersion && (
-                                <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">Latest</span>
+                                <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">{t("dataset.latest")}</span>
                               )}
                             </button>
                           ))}
@@ -846,10 +853,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       )}
                     </div>
                     <Badge variant={removedCount > 0 ? "warning" : "success"}>
-                      {allActiveRows.length} active / {rows.length} total
+                      {allActiveRows.length} {t("dataset.active")} / {rows.length} {t("dataset.total")}
                     </Badge>
-                    {removedCount > 0 && <Badge variant="destructive">{removedCount} deleted</Badge>}
-                    {redactedCount > 0 && <Badge variant="warning">{redactedCount} redacted</Badge>}
+                    {removedCount > 0 && <Badge variant="destructive">{removedCount} {t("dataset.deleted")}</Badge>}
+                    {redactedCount > 0 && <Badge variant="warning">{redactedCount} {t("dataset.redactedLabel").toLowerCase()}</Badge>}
                   </div>
                 </div>
               </div>
@@ -876,14 +883,14 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5">
                   <Upload className="w-3.5 h-3.5" />
-                  Upload New
+                  {t("dataset.uploadNew")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowUrlImport(!showUrlImport)} className="gap-1.5">
                   <Link className="w-3.5 h-3.5" />
-                  Import URL
+                  {t("dataset.importUrl")}
                 </Button>
                 <input ref={fileInputRef} type="file" accept=".json,.csv,.txt" onChange={handleFileChange} className="hidden" />
-                <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>
+                <Button variant="ghost" size="sm" onClick={reset}>{t("dataset.reset")}</Button>
               </div>
             </div>
           </Card>
@@ -899,13 +906,13 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 <Card className="p-4 border-primary/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Link className="w-4 h-4 text-primary" />
-                    <h3 className="font-display font-semibold text-foreground text-sm">Import from URL</h3>
+                    <h3 className="font-display font-semibold text-foreground text-sm">{t("dataset.importFromUrlTitle")}</h3>
                     <button onClick={() => { setShowUrlImport(false); setImportUrl(""); }} className="ml-auto text-muted-foreground hover:text-foreground">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Paste a direct link to a CSV, JSON, or text file (S3, GCS, or any public HTTP/HTTPS URL).
+                    {t("dataset.importFromUrlDesc")}
                   </p>
                   <div className="flex gap-2">
                     <Input
@@ -925,12 +932,12 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       {isImporting ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Importing...
+                          {t("dataset.importing")}
                         </>
                       ) : (
                         <>
                           <Download className="w-3.5 h-3.5" />
-                          Import
+                          {t("dataset.import")}
                         </>
                       )}
                     </Button>
@@ -950,27 +957,27 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-3">
                     <BarChart3 className="w-5 h-5 text-primary" />
-                    <h3 className="font-display font-bold text-foreground">Data Impact</h3>
+                    <h3 className="font-display font-bold text-foreground">{t("dataset.dataImpact")}</h3>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <div className="text-2xl font-display font-extrabold text-destructive">{eraseResult.impact.removed}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Removed</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("dataset.removedLabel")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-display font-extrabold text-yellow-500">{eraseResult.impact.redacted}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Redacted</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("dataset.redactedLabel")}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-display font-extrabold text-success">{eraseResult.impact.remaining}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Remaining</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("dataset.remaining")}</div>
                     </div>
                     <div className="h-12 w-px bg-border/50" />
                     <div className="text-center">
                       <div className="text-3xl font-display font-extrabold text-primary">
                         {forgetScore !== null ? forgetScore : 0}%
                       </div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Forget Score</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("dataset.forgetScore")}</div>
                     </div>
                   </div>
                 </div>
@@ -991,9 +998,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <div className="flex items-center gap-3">
                       <ScanSearch className="w-5 h-5 text-primary" />
                       <div>
-                        <h3 className="font-display font-bold text-foreground">Analysis Results</h3>
+                        <h3 className="font-display font-bold text-foreground">{t("dataset.analysisResults")}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {analysisData.total_issues} issue{analysisData.total_issues !== 1 ? "s" : ""} found across {analysisData.summary.reduce((a, s) => a + s.affected_rows, 0)} rows
+                          {t("dataset.issuesAcrossRows", { issues: analysisData.total_issues, rows: analysisData.summary.reduce((a, s) => a + s.affected_rows, 0) })}
                         </p>
                       </div>
                     </div>
@@ -1005,9 +1012,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                         className="gap-1.5 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90"
                       >
                         {isApplying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                        {isApplying ? "Applying..." : "Apply All Fixes"}
+                        {isApplying ? t("dataset.applying") : t("dataset.applyAllFixes")}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setAnalysisData(null)}>Dismiss</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setAnalysisData(null)}>{t("dataset.dismiss")}</Button>
                     </div>
                   </div>
 
@@ -1055,7 +1062,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                               className="text-xs h-7 gap-1"
                             >
                               <Sparkles className="w-3 h-3" />
-                              Fix {ISSUE_META[expandedIssue]?.label || expandedIssue}
+                              {t("dataset.fix")} {ISSUE_META[expandedIssue]?.label || expandedIssue}
                             </Button>
                           </div>
                           <div className="max-h-[200px] overflow-y-auto divide-y divide-border/20">
@@ -1080,7 +1087,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                       disabled={isApplying}
                                       className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
                                     >
-                                      Fix
+                                      {t("dataset.fix")}
                                     </button>
                                   </div>
                                 </div>
@@ -1106,10 +1113,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-success" />
                     <div>
-                      <h3 className="font-display font-bold text-foreground">Dataset is Clean</h3>
-                      <p className="text-xs text-muted-foreground">No PII, bias, toxic content, duplicates, or quality issues detected.</p>
+                      <h3 className="font-display font-bold text-foreground">{t("dataset.datasetIsClean")}</h3>
+                      <p className="text-xs text-muted-foreground">{t("dataset.noIssuesDetected")}</p>
                     </div>
-                    <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setAnalysisData(null)}>Dismiss</Button>
+                    <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setAnalysisData(null)}>{t("dataset.dismiss")}</Button>
                   </div>
                 </Card>
               </motion.div>
@@ -1129,9 +1136,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <div className="flex items-center gap-3">
                       <BrainCircuit className="w-5 h-5 text-violet-400" />
                       <div>
-                        <h3 className="font-display font-bold text-foreground">ML Pipeline Recommendations</h3>
+                        <h3 className="font-display font-bold text-foreground">{t("dataset.mlRecommendations")}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {mlFeedback.ml_recommendations.length} recommendation{mlFeedback.ml_recommendations.length !== 1 ? "s" : ""} based on {mlFeedback.issues_detected.length} detected issue type{mlFeedback.issues_detected.length !== 1 ? "s" : ""}
+                          {t("dataset.recCount", { count: mlFeedback.ml_recommendations.length, issues: mlFeedback.issues_detected.length })}
                         </p>
                       </div>
                     </div>
@@ -1145,7 +1152,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                             onClick={() => window.open(`${BASE}api/datasets/${dataset.id}/ml-feedback/export?format=md`, "_blank")}
                           >
                             <FileDown className="w-3 h-3" />
-                            Markdown
+                            {t("dataset.markdownExport")}
                           </Button>
                           <Button
                             size="sm"
@@ -1154,11 +1161,11 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                             onClick={() => window.open(`${BASE}api/datasets/${dataset.id}/ml-feedback/export?format=json`, "_blank")}
                           >
                             <FileDown className="w-3 h-3" />
-                            JSON
+                            {t("dataset.jsonExport")}
                           </Button>
                         </>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => setMlFeedback(null)}>Dismiss</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setMlFeedback(null)}>{t("dataset.dismiss")}</Button>
                     </div>
                   </div>
 
@@ -1174,7 +1181,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                         training: <GraduationCap className="w-3.5 h-3.5" />,
                         evaluation: <FlaskConical className="w-3.5 h-3.5" />,
                       };
-                      const labels: Record<string, string> = { all: "All", preprocessing: "Preprocessing", training: "Training", evaluation: "Evaluation" };
+                      const labels: Record<string, string> = { all: t("dataset.all"), preprocessing: t("dataset.preprocessing"), training: t("dataset.training"), evaluation: t("dataset.evaluation") };
                       return (
                         <button
                           key={cat}
@@ -1224,7 +1231,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{rec.description}</p>
                                 <div className="flex items-center gap-2 mt-1.5">
                                   <span className="text-[10px] text-muted-foreground/60">
-                                    Triggered by: <span className="text-foreground/60 font-semibold">{rec.triggered_by.toUpperCase()}</span>
+                                    {t("dataset.triggeredBy")} <span className="text-foreground/60 font-semibold">{rec.triggered_by.toUpperCase()}</span>
                                   </span>
                                 </div>
                               </div>
@@ -1233,7 +1240,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                               <div className="mt-2 rounded-lg bg-black/30 border border-border/20 p-3 overflow-x-auto">
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                   <Code2 className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Suggested implementation</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{t("dataset.suggestedImpl")}</span>
                                 </div>
                                 <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap">{rec.code_snippet}</pre>
                               </div>
@@ -1257,7 +1264,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 <Card className="p-5 border-violet-500/20">
                   <div className="flex items-center gap-3">
                     <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Generating ML pipeline recommendations...</span>
+                    <span className="text-sm text-muted-foreground">{t("dataset.generatingML")}</span>
                   </div>
                 </Card>
               </motion.div>
@@ -1274,7 +1281,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 <Card className="p-5 border-cyan-500/20">
                   <div className="flex items-center gap-3">
                     <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Profiling dataset columns...</span>
+                    <span className="text-sm text-muted-foreground">{t("dataset.profilingColumns")}</span>
                   </div>
                 </Card>
               </motion.div>
@@ -1292,10 +1299,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   <div className="flex items-center gap-3">
                     <BarChart3 className="w-5 h-5 text-cyan-400" />
                     <div>
-                      <h3 className="font-display font-bold text-foreground">Dataset Profile</h3>
+                      <h3 className="font-display font-bold text-foreground">{t("dataset.datasetProfile")}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{profileData.message}</p>
                     </div>
-                    <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setProfileData(null)}>Dismiss</Button>
+                    <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setProfileData(null)}>{t("dataset.dismiss")}</Button>
                   </div>
                 </Card>
               </motion.div>
@@ -1316,25 +1323,25 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <div className="flex items-center gap-3">
                       <BarChart3 className="w-5 h-5 text-cyan-400" />
                       <div>
-                        <h3 className="font-display font-bold text-foreground">Dataset Profile</h3>
+                        <h3 className="font-display font-bold text-foreground">{t("dataset.datasetProfile")}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {profileData.profile.totalColumns} columns &middot; {profileData.profile.totalRows} rows &middot; {profileData.profile.completeness}% complete
-                          {profileData.delimiter && <span> &middot; Delimiter: <span className="font-mono text-cyan-400">{profileData.delimiter === "\t" ? "TAB" : `"${profileData.delimiter}"`}</span></span>}
+                          {profileData.profile.totalColumns} {t("dataset.columns")} &middot; {profileData.profile.totalRows} {t("dataset.rows")} &middot; {profileData.profile.completeness}% {t("dataset.complete")}
+                          {profileData.delimiter && <span> &middot; {t("dataset.delimiter")}: <span className="font-mono text-cyan-400">{profileData.delimiter === "\t" ? "TAB" : `"${profileData.delimiter}"`}</span></span>}
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => setProfileData(null)}>Dismiss</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setProfileData(null)}>{t("dataset.dismiss")}</Button>
                   </div>
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-border/30">
-                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">Column</th>
-                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">Type</th>
-                          <th className="text-right py-2 px-3 text-muted-foreground font-semibold">Missing</th>
-                          <th className="text-right py-2 px-3 text-muted-foreground font-semibold">Unique</th>
-                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">Key Stats</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">{t("dataset.columnName")}</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">{t("dataset.type")}</th>
+                          <th className="text-right py-2 px-3 text-muted-foreground font-semibold">{t("dataset.missing")}</th>
+                          <th className="text-right py-2 px-3 text-muted-foreground font-semibold">{t("dataset.unique")}</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-semibold">{t("dataset.keyStats")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1386,9 +1393,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <div className="flex items-center gap-3">
                       <ShieldAlert className="w-5 h-5 text-orange-400" />
                       <div>
-                        <h3 className="font-display font-bold text-foreground">Bias & Fairness Findings</h3>
+                        <h3 className="font-display font-bold text-foreground">{t("dataset.biasFairness")}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {profileData.biasIssues.length} potential bias issue{profileData.biasIssues.length !== 1 ? "s" : ""} detected
+                          {t("dataset.biasIssueCount", { count: profileData.biasIssues.length })}
                         </p>
                       </div>
                     </div>
@@ -1400,10 +1407,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           low: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20",
                         };
                         const issueTypeLabels: Record<string, string> = {
-                          proxy_bias: "Proxy Bias",
-                          class_imbalance: "Class Imbalance",
-                          skewed_distribution: "Skewed Distribution",
-                          underrepresented_group: "Underrepresented Group",
+                          proxy_bias: t("dataset.proxyBias"),
+                          class_imbalance: t("dataset.classImbalance"),
+                          skewed_distribution: t("dataset.skewedDistribution"),
+                          underrepresented_group: t("dataset.underrepresentedGroup"),
                         };
                         return (
                           <motion.div
@@ -1440,8 +1447,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <div className="flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-success" />
                       <div>
-                        <h3 className="font-display font-bold text-foreground">No Bias Issues Detected</h3>
-                        <p className="text-xs text-muted-foreground">No proxy bias, class imbalance, or underrepresented groups found in this dataset.</p>
+                        <h3 className="font-display font-bold text-foreground">{t("dataset.noBiasIssues")}</h3>
+                        <p className="text-xs text-muted-foreground">{t("dataset.noBiasDesc")}</p>
                       </div>
                     </div>
                   </Card>
@@ -1453,9 +1460,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       <div className="flex items-center gap-3">
                         <BrainCircuit className="w-5 h-5 text-cyan-400" />
                         <div>
-                          <h3 className="font-display font-bold text-foreground">Profile Recommendations</h3>
+                          <h3 className="font-display font-bold text-foreground">{t("dataset.profileRecommendations")}</h3>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {profileData.recommendations.length} recommendation{profileData.recommendations.length !== 1 ? "s" : ""} based on column analysis
+                            {t("dataset.profileRecCount", { count: profileData.recommendations.length })}
                           </p>
                         </div>
                       </div>
@@ -1473,7 +1480,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           training: <GraduationCap className="w-3.5 h-3.5" />,
                           evaluation: <FlaskConical className="w-3.5 h-3.5" />,
                         };
-                        const labels: Record<string, string> = { all: "All", preprocessing: "Preprocessing", training: "Training", evaluation: "Evaluation" };
+                        const labels: Record<string, string> = { all: t("dataset.all"), preprocessing: t("dataset.preprocessing"), training: t("dataset.training"), evaluation: t("dataset.evaluation") };
                         return (
                           <button
                             key={cat}
@@ -1524,7 +1531,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{rec.description}</p>
                                   <div className="flex items-center gap-2 mt-1.5">
                                     <span className="text-[10px] text-muted-foreground/60">
-                                      Triggered by: <span className="text-foreground/60 font-semibold">{rec.triggeredBy}</span>
+                                      {t("dataset.triggeredBy")} <span className="text-foreground/60 font-semibold">{rec.triggeredBy}</span>
                                     </span>
                                   </div>
                                 </div>
@@ -1536,7 +1543,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                     className="flex items-center gap-1.5 text-[10px] text-cyan-400 hover:text-cyan-300 font-mono uppercase tracking-wider transition-colors"
                                   >
                                     <Code2 className="w-3 h-3" />
-                                    {expandedProfileCode === recKey ? "Hide code" : "Show code"}
+                                    {expandedProfileCode === recKey ? t("dataset.hideCode") : t("dataset.showCode")}
                                     <ChevronDown className={`w-3 h-3 transition-transform ${expandedProfileCode === recKey ? "rotate-180" : ""}`} />
                                   </button>
                                   <AnimatePresence>
@@ -1576,7 +1583,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
               <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm rounded-2xl flex items-center justify-center pointer-events-none">
                 <div className="text-primary font-bold text-lg flex items-center gap-2">
                   <Upload className="w-6 h-6" />
-                  Drop file to upload
+                  {t("dataset.dropFileToUpload")}
                 </div>
               </div>
             )}
@@ -1587,7 +1594,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   <div className="p-4 border-b border-border/50 flex items-center justify-between flex-wrap gap-3">
                     <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                       <FileText className="w-4 h-4 text-primary" />
-                      Data Rows
+                      {t("dataset.dataRows")}
                     </h3>
                     <div className="flex items-center gap-2">
                       <div className="flex rounded-lg overflow-hidden border border-border/50">
@@ -1600,7 +1607,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           }`}
                         >
                           <Trash2 className="w-3 h-3 inline mr-1" />
-                          Delete
+                          {t("dataset.delete")}
                         </button>
                         <button
                           onClick={() => setEraseMode("redact")}
@@ -1611,7 +1618,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           }`}
                         >
                           <Shield className="w-3 h-3 inline mr-1" />
-                          Redact
+                          {t("dataset.redact")}
                         </button>
                       </div>
                     </div>
@@ -1619,12 +1626,12 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
 
                   <div className="p-4 border-b border-border/30 flex items-center gap-2">
                     {currentVersion !== latestVersion && (
-                      <span className="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded">Viewing v{currentVersion} (read-only)</span>
+                      <span className="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded">{t("dataset.viewingReadOnly", { version: currentVersion })}</span>
                     )}
                     <Input
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
-                      placeholder={eraseMode === "delete" ? "Keyword to delete rows containing..." : "Keyword to redact with [REDACTED]..."}
+                      placeholder={eraseMode === "delete" ? t("dataset.keywordToDelete") : t("dataset.keywordToRedact")}
                       className="flex-1 py-1.5 text-xs"
                       onKeyDown={(e) => e.key === "Enter" && confirmErase()}
                     />
@@ -1636,7 +1643,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       className="gap-1.5"
                     >
                       {eraseMode === "delete" ? <Trash2 className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
-                      {eraseMode === "delete" ? "Delete" : "Redact"}
+                      {eraseMode === "delete" ? t("dataset.delete") : t("dataset.redact")}
                     </Button>
                   </div>
 
@@ -1644,7 +1651,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <div className="px-4 py-3 border-b border-border/30 bg-muted/10">
                       <div className="flex items-center gap-2 mb-2">
                         <Columns3 className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Columns ({columnHeaders.length})</span>
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("dataset.columnName")} ({columnHeaders.length})</span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {columnHeaders.map((col) => (
@@ -1669,14 +1676,14 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                   className="text-destructive hover:text-destructive/80 font-bold text-[10px] px-1"
                                   disabled={!!isDroppingColumn}
                                 >
-                                  Yes
+                                  {t("dataset.yes")}
                                 </button>
                                 <span className="text-muted-foreground/40">|</span>
                                 <button
                                   onClick={() => setConfirmDropColumn(null)}
                                   className="text-muted-foreground hover:text-foreground font-bold text-[10px] px-1"
                                 >
-                                  No
+                                  {t("dataset.no")}
                                 </button>
                               </div>
                             ) : (
@@ -1698,7 +1705,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
 
                   <div className="divide-y divide-border/30 max-h-[400px] overflow-y-auto">
                     {rows.length === 0 && (
-                      <div className="p-6 text-center text-muted-foreground text-sm">No rows</div>
+                      <div className="p-6 text-center text-muted-foreground text-sm">{t("dataset.noRows")}</div>
                     )}
                     <AnimatePresence>
                       {rows.map((row) => (
@@ -1734,8 +1741,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           }`}>
                             {row.is_redacted ? highlightRedacted(row.content) : row.content}
                           </span>
-                          {row.is_removed && <Badge variant="destructive">deleted</Badge>}
-                          {row.is_redacted && !row.is_removed && <Badge variant="warning">redacted</Badge>}
+                          {row.is_removed && <Badge variant="destructive">{t("dataset.deleted")}</Badge>}
+                          {row.is_redacted && !row.is_removed && <Badge variant="warning">{t("dataset.redactedLabel").toLowerCase()}</Badge>}
                         </motion.div>
                       ))}
                     </AnimatePresence>
@@ -1754,22 +1761,20 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                         <div className="flex items-center gap-2 text-destructive">
                           <AlertTriangle className="w-5 h-5" />
                           <h4 className="font-display font-bold">
-                            Confirm {eraseMode === "delete" ? "Deletion" : "Redaction"}
+                            {eraseMode === "delete" ? t("dataset.confirmDeletion") : t("dataset.confirmRedaction")}
                           </h4>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {eraseMode === "delete" ? (
-                            <>You are about to <strong className="text-destructive">delete all rows</strong> containing "<strong>{keyword}</strong>". A new version will be created.</>
-                          ) : (
-                            <>You are about to <strong className="text-yellow-500">redact all occurrences</strong> of "<strong>{keyword}</strong>" with [REDACTED]. A new version will be created.</>
-                          )}
+                          {eraseMode === "delete"
+                            ? t("dataset.deleteConfirmMsg", { keyword })
+                            : t("dataset.redactConfirmMsg", { keyword })}
                         </p>
                         <div className="flex gap-3">
                           <Button variant="destructive" onClick={executeErase} className="gap-2">
                             {eraseMode === "delete" ? <Trash2 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-                            Confirm {eraseMode === "delete" ? "Delete" : "Redact"}
+                            {eraseMode === "delete" ? t("dataset.confirmDelete") : t("dataset.confirmRedact")}
                           </Button>
-                          <Button variant="secondary" onClick={cancelErase}>Cancel</Button>
+                          <Button variant="secondary" onClick={cancelErase}>{t("dataset.cancel")}</Button>
                         </div>
                       </Card>
                     </motion.div>
@@ -1785,7 +1790,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Card className="p-6 text-center">
                       <Loader2 className="w-6 h-6 animate-spin text-destructive mx-auto mb-2" />
                       <p className="text-muted-foreground text-sm">
-                        {eraseMode === "delete" ? "Deleting" : "Redacting"} matching data...
+                        {eraseMode === "delete" ? t("dataset.deletingData") : t("dataset.redactingData")}
                       </p>
                     </Card>
                   </motion.div>
@@ -1800,7 +1805,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <Zap className="w-4 h-4 text-primary" />
-                        Before vs After
+                        {t("dataset.beforeVsAfter")}
                         <span className="text-xs text-muted-foreground ml-auto">
                           v{eraseResult.version_number - 1} → v{eraseResult.version_number}
                         </span>
@@ -1808,7 +1813,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
                         <div>
                           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 px-2">
-                            Before (v{eraseResult.version_number - 1})
+                            {t("dataset.before")} (v{eraseResult.version_number - 1})
                           </div>
                           <div className="space-y-1">
                             {prevVersionRows.map((row) => {
@@ -1837,7 +1842,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                         </div>
                         <div>
                           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2 px-2">
-                            After (v{eraseResult.version_number})
+                            {t("dataset.after")} (v{eraseResult.version_number})
                           </div>
                           <div className="space-y-1">
                             {rows.map((row) => {
@@ -1880,7 +1885,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <History className="w-4 h-4 text-primary" />
-                        Operation Log
+                        {t("dataset.operationLog")}
                       </h3>
                       <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                         {operations.map((op) => (
@@ -1894,15 +1899,14 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                             <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                             <div className="flex-1">
                               <span className={op.type === "delete" ? "text-destructive" : op.type === "auto-fix" ? "text-primary" : op.type === "drop-column" ? "text-cyan-400" : "text-yellow-500"}>
-                                {op.type === "delete" ? "Deleted" : op.type === "auto-fix" ? "Auto-fixed" : op.type === "drop-column" ? "Dropped column" : "Redacted"}
+                                {op.type === "delete" ? t("dataset.opDeleted") : op.type === "auto-fix" ? t("dataset.opAutoFixed") : op.type === "drop-column" ? t("dataset.opDroppedColumn") : t("dataset.opRedacted")}
                               </span>
                               {" '"}
                               <span className="font-semibold text-foreground">{op.value}</span>
                               {"' → "}
-                              <span className="text-foreground font-medium">{op.affected_rows_count} row{op.affected_rows_count !== 1 ? "s" : ""}</span>
-                              {" affected"}
+                              <span className="text-foreground font-medium">{t("dataset.rowsAffected", { count: op.affected_rows_count })}</span>
                               <div className="text-muted-foreground/60 mt-0.5">
-                                Version {versions.find(v => v.id === op.version_id)?.version_number ?? "?"}
+                                {t("dataset.version")} {versions.find(v => v.id === op.version_id)?.version_number ?? "?"}
                               </div>
                             </div>
                           </motion.div>
@@ -1921,20 +1925,20 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <Search className="w-4 h-4 text-primary" />
-                        Verify Erasure
+                        {t("dataset.verifyErasureTitle")}
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Search to confirm the keyword is gone from the cleaned dataset.
+                        {t("dataset.verifyErasureDesc")}
                       </p>
                       <div className="flex gap-2">
                         <Input
                           value={verifyQuery}
                           onChange={(e) => setVerifyQuery(e.target.value)}
-                          placeholder='Try "Firdous"...'
+                          placeholder={t("dataset.verifyPlaceholderExample")}
                           className="text-sm py-2"
                           onKeyDown={(e) => e.key === "Enter" && verifyErasure()}
                         />
-                        <Button size="sm" onClick={verifyErasure} disabled={!verifyQuery.trim()}>Verify</Button>
+                        <Button size="sm" onClick={verifyErasure} disabled={!verifyQuery.trim()}>{t("dataset.verify")}</Button>
                       </div>
                       <AnimatePresence>
                         {verifyResult && (
@@ -1958,20 +1962,20 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                               )}
                               <span className="font-semibold">
                                 {verifyResult.status === "success"
-                                  ? "Erasure Verified!"
+                                  ? t("dataset.erasureVerified")
                                   : verifyResult.status === "partial"
-                                    ? "Partial Erasure"
-                                    : "No Change"}
+                                    ? t("dataset.partialErasure")
+                                    : t("dataset.noChange")}
                               </span>
                             </div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div className="bg-black/20 rounded px-2 py-1">
                                 <span className="text-muted-foreground">v{verifyResult.version_before}: </span>
-                                <span className="font-bold">{verifyResult.matches_before} match{verifyResult.matches_before !== 1 ? "es" : ""}</span>
+                                <span className="font-bold">{t("dataset.matches", { count: verifyResult.matches_before })}</span>
                               </div>
                               <div className="bg-black/20 rounded px-2 py-1">
                                 <span className="text-muted-foreground">v{verifyResult.version_after}: </span>
-                                <span className="font-bold">{verifyResult.matches_after} match{verifyResult.matches_after !== 1 ? "es" : ""}</span>
+                                <span className="font-bold">{t("dataset.matches", { count: verifyResult.matches_after })}</span>
                               </div>
                             </div>
                           </motion.div>
@@ -1990,23 +1994,23 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Card className="p-5 space-y-3">
                       <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                         <Download className="w-4 h-4 text-primary" />
-                        Download Dataset
+                        {t("dataset.downloadDataset")}
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Use this cleaned dataset to retrain your model.
+                        {t("dataset.downloadRetrain")}
                       </p>
                       <div className="space-y-2">
                         <Button variant="outline" onClick={() => downloadDataset("clean")} className="w-full gap-2 justify-start text-xs">
                           <Eye className="w-3.5 h-3.5" />
-                          Clean — untouched rows only
+                          {t("dataset.downloadCleanDesc")}
                         </Button>
                         <Button variant="outline" onClick={() => downloadDataset("redacted")} className="w-full gap-2 justify-start text-xs">
                           <Shield className="w-3.5 h-3.5" />
-                          Sanitized — includes redacted text
+                          {t("dataset.downloadSanitized")}
                         </Button>
                         <Button variant="outline" onClick={() => downloadDataset("full")} className="w-full gap-2 justify-start text-xs">
                           <Database className="w-3.5 h-3.5" />
-                          Full — all rows + metadata
+                          {t("dataset.downloadFullDesc")}
                         </Button>
                       </div>
                     </Card>

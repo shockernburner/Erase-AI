@@ -25,8 +25,9 @@ i18n
     interpolation: {
       escapeValue: false,
     },
+    lng: localStorage.getItem("eraseai-lang") || "en",
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["localStorage"],
       caches: ["localStorage"],
       lookupLocalStorage: "eraseai-lang",
     },

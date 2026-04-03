@@ -617,12 +617,12 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/30 text-left text-muted-foreground/70">
-                      <th className="pb-3 font-medium">User</th>
-                      <th className="pb-3 font-medium">Email</th>
-                      <th className="pb-3 font-medium">Provider</th>
-                      <th className="pb-3 font-medium">Plan</th>
-                      <th className="pb-3 font-medium">Status</th>
-                      <th className="pb-3 font-medium">Signed Up</th>
+                      <th className="pb-3 font-medium">{t("admin.user")}</th>
+                      <th className="pb-3 font-medium">{t("admin.email")}</th>
+                      <th className="pb-3 font-medium">{t("admin.provider")}</th>
+                      <th className="pb-3 font-medium">{t("admin.plan")}</th>
+                      <th className="pb-3 font-medium">{t("admin.status")}</th>
+                      <th className="pb-3 font-medium">{t("admin.signedUp")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -633,7 +633,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                             {[u.firstName, u.lastName].filter(Boolean).join(" ") || "—"}
                           </span>
                           {u.role === "admin" && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-bold">ADMIN</span>
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-bold">{t("admin.adminBadge")}</span>
                           )}
                         </td>
                         <td className="py-3 text-muted-foreground">{u.email || "—"}</td>
@@ -692,7 +692,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                             ))}
                           </div>
                           <span className="text-sm text-foreground font-medium">
-                            {[f.userFirstName, f.userLastName].filter(Boolean).join(" ") || "Unknown"}
+                            {[f.userFirstName, f.userLastName].filter(Boolean).join(" ") || t("admin.unknown")}
                           </span>
                           {f.userEmail && (
                             <span className="text-xs text-muted-foreground/60 ml-1">({f.userEmail})</span>
