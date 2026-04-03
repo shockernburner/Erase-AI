@@ -343,7 +343,12 @@
     "signedUp": "注册日期",
     "adminBadge": "ADMIN",
     "unknown": "未知",
-    "updateFailed": "更新用户失败"
+    "updateFailed": "更新用户失败",
+    "subscriptionStatus": {
+      "active": "活跃",
+      "canceled": "已取消",
+      "past_due": "逾期"
+    }
   },
   "language": {
     "en": "English",

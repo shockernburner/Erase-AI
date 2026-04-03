@@ -343,7 +343,12 @@
     "signedUp": "Registriert",
     "adminBadge": "ADMIN",
     "unknown": "Unbekannt",
-    "updateFailed": "Benutzer konnte nicht aktualisiert werden"
+    "updateFailed": "Benutzer konnte nicht aktualisiert werden",
+    "subscriptionStatus": {
+      "active": "Aktiv",
+      "canceled": "Gekündigt",
+      "past_due": "Überfällig"
+    }
   },
   "language": {
     "en": "English",

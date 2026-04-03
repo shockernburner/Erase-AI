@@ -270,7 +270,6 @@
     "uploadFailed": "Upload failed",
     "eraseFailed": "Erase failed",
     "verificationFailed": "Verification failed",
-    "dropColumnFailed": "Failed to drop column",
     "importFailed": "Import failed",
     "profilingFailed": "Profiling failed",
     "analysisFailed": "Analysis failed",
@@ -348,7 +347,12 @@
     "signedUp": "Signed Up",
     "adminBadge": "ADMIN",
     "unknown": "Unknown",
-    "updateFailed": "Failed to update user"
+    "updateFailed": "Failed to update user",
+    "subscriptionStatus": {
+      "active": "Active",
+      "canceled": "Canceled",
+      "past_due": "Past Due"
+    }
   },
   "checkout": {
     "confirming": "Confirming Your Payment",

@@ -231,7 +231,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
                     <span className={`inline-block w-2 h-2 rounded-full ${
                       s === "active" ? "bg-green-400" : s === "canceled" ? "bg-muted-foreground" : "bg-yellow-400"
                     }`} />
-                    <span className="capitalize">{s.replace("_", " ")}</span>
+                    <span className="capitalize">{t(`admin.subscriptionStatus.${s}`)}</span>
                     {s === user.subscriptionStatus && <Check className="w-3 h-3 text-primary ml-auto" />}
                   </button>
                 ))}
@@ -647,7 +647,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                                 ? "bg-muted/30 text-muted-foreground"
                                 : "text-muted-foreground/40"
                           }`}>
-                            {u.subscriptionStatus || "—"}
+                            {u.subscriptionStatus ? t(`admin.subscriptionStatus.${u.subscriptionStatus}`) : "—"}
                           </span>
                         </td>
                         <td className="py-3 text-muted-foreground/60 text-xs">

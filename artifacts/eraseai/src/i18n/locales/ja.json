@@ -343,7 +343,12 @@
     "signedUp": "登録日",
     "adminBadge": "ADMIN",
     "unknown": "不明",
-    "updateFailed": "ユーザーの更新に失敗しました"
+    "updateFailed": "ユーザーの更新に失敗しました",
+    "subscriptionStatus": {
+      "active": "アクティブ",
+      "canceled": "キャンセル済み",
+      "past_due": "期限超過"
+    }
   },
   "language": {
     "en": "English",
