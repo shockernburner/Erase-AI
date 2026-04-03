@@ -80,11 +80,13 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 *   **Language Selector:** `artifacts/eraseai/src/components/LanguageSelector.tsx` — globe icon dropdown in top-right corner, visible on both login page and main app header.
 *   **Coverage:** LoginPage, Home (header/nav/pipeline/footer), PricingPage (all tiers/features/modals), AdminDashboard (header/stats/sections), DatasetSanitizer (upload area, key buttons, upgrade prompts).
 
-**EraseAI System Explainer Video:**
+**EraseAI "How It Works" Tier Demo Video:**
 
 *   A separate video artifact (`artifacts/eraseai-video`) accessible at `/eraseai-video/`.
-*   Built with React, Framer Motion, and Tailwind CSS as a 90-second animated explainer.
-*   7 scenes covering the full EraseAI workflow: Intro → Upload → Analyze → Erase & Redact → Verify → Retrain → Outro.
+*   Built with React, Framer Motion, and Tailwind CSS as a ~50-second animated tier progression demo.
+*   6 scenes: Intro → Free ($0) → Pro ($49) → Business ($149) → Enterprise/Government (Custom, "We build new APIs for your needs") → Outro.
+*   Each tier scene has distinct color theming: Free=green, Pro=cyan, Business=orange/amber, Enterprise=gold.
 *   Uses the scaffold's `useVideoPlayer` hook for scene advancement and automatic looping.
-*   EraseAI branding: cyan (#06B6D4), dark background (#0a0a0f), Plus Jakarta Sans + JetBrains Mono fonts.
+*   EraseAI branding: cyan (#06B6D4), dark background (#0a0a0f/#050508), Plus Jakarta Sans + JetBrains Mono fonts.
 *   Auto-plays on load, loops continuously, no interactivity.
+*   Scene files: `artifacts/eraseai-video/src/components/scenes/Scene{1-6}_*.tsx`.
