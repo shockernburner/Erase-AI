@@ -48,10 +48,12 @@ export async function generateAlerts(scan: ScanData): Promise<void> {
   }
 
   try {
-    const currentFlags = JSON.parse(scan.flags);
-    const currentTypes = new Set(currentFlags.map((f: { type: string }) => f.type));
+    const currentFlags = JSON.parse(scan.flags) as { type: string; severity: string }[];
+    const highSeverityTypes = new Set(
+      currentFlags.filter((f) => f.severity === "high").map((f) => f.type)
+    );
 
-    if (currentTypes.size > 0) {
+    if (highSeverityTypes.size > 0) {
       const previousScans = await db
         .select({ flags: personalScansTable.flags })
         .from(personalScansTable)
@@ -76,7 +78,7 @@ export async function generateAlerts(scan: ScanData): Promise<void> {
       }
 
       if (previousScans.length > 0) {
-        for (const type of currentTypes) {
+        for (const type of highSeverityTypes) {
           if (!previousTypes.has(type)) {
             const typeLabels: Record<string, string> = {
               toxicity: "Toxicity",

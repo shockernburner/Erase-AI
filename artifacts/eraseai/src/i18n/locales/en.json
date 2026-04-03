@@ -629,7 +629,8 @@
       "scans": "scans",
       "categoryBreakdown": "Category Breakdown (30 days)",
       "categoryTrend": "Category Trend Over Time",
-      "dailyAvg": "Daily Average Score"
+      "dailyAvg": "Daily Average Score",
+      "rollingAvg": "Rolling Average Score"
     }
   },
   "language": {

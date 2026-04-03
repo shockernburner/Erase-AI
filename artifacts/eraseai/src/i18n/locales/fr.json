@@ -570,7 +570,8 @@
       "scans": "analyses",
       "categoryBreakdown": "Répartition par Catégorie (30 jours)",
       "categoryTrend": "Tendance des Catégories dans le Temps",
-      "dailyAvg": "Score Moyen Quotidien"
+      "dailyAvg": "Score Moyen Quotidien",
+      "rollingAvg": "Score Moyen Glissant"
     },
     "totalScans": "{{count}} au total",
     "noHistory": "Aucune analyse. Utilisez les actions rapides ci-dessus pour commencer.",

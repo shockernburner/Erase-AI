@@ -570,7 +570,8 @@
       "scans": "次扫描",
       "categoryBreakdown": "类别分布（30天）",
       "categoryTrend": "类别趋势变化",
-      "dailyAvg": "每日平均分数"
+      "dailyAvg": "每日平均分数",
+      "rollingAvg": "滚动平均分数"
     },
     "totalScans": "共 {{count}} 次",
     "noHistory": "暂无扫描记录。使用上方的快捷操作开始。",

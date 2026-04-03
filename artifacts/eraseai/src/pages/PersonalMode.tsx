@@ -436,6 +436,7 @@ interface CategoryTimePoint {
 
 interface TrendsData {
   dailyTrend: { date: string; avgScore: number; count: number }[];
+  rollingAvgSeries: { date: string; rollingAvg: number }[];
   categoryBreakdown: Record<string, number>;
   categoryTimeSeries: CategoryTimePoint[];
   comparison: {
@@ -775,12 +776,12 @@ function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
         </div>
       )}
 
-      {hasData && data.dailyTrend.length >= 2 && (
+      {data.rollingAvgSeries && data.rollingAvgSeries.length >= 2 && (
         <div>
-          <div className="text-xs text-muted-foreground font-semibold mb-2">{t("personal.trends.dailyAvg")}</div>
+          <div className="text-xs text-muted-foreground font-semibold mb-2">{t("personal.trends.rollingAvg")}</div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.dailyTrend}>
+              <LineChart data={data.rollingAvgSeries}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis
                   dataKey="date"
@@ -807,7 +808,7 @@ function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
                 <ReferenceLine y={40} stroke="rgba(251,191,36,0.3)" strokeDasharray="3 3" />
                 <Line
                   type="monotone"
-                  dataKey="avgScore"
+                  dataKey="rollingAvg"
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={{ r: 3, fill: "hsl(var(--primary))" }}

@@ -363,6 +363,20 @@ router.get("/personal/trends", refreshPlanFromDB, requirePro(), async (req, res)
       .groupBy(sql`to_char(${personalScansTable.createdAt}, 'YYYY-MM-DD')`)
       .orderBy(sql`to_char(${personalScansTable.createdAt}, 'YYYY-MM-DD')`);
 
+    const rollingAvgSeries: { date: string; rollingAvg: number }[] = [];
+    if (dailyTrend.length > 0) {
+      let runningSum = 0;
+      let runningCount = 0;
+      for (const point of dailyTrend) {
+        runningSum += point.avgScore * point.count;
+        runningCount += point.count;
+        rollingAvgSeries.push({
+          date: point.date,
+          rollingAvg: Math.round(runningSum / runningCount),
+        });
+      }
+    }
+
     const categoryTrend = await db
       .select({
         flags: personalScansTable.flags,
@@ -442,6 +456,7 @@ router.get("/personal/trends", refreshPlanFromDB, requirePro(), async (req, res)
 
     res.json({
       dailyTrend,
+      rollingAvgSeries,
       categoryBreakdown,
       categoryTimeSeries,
       comparison: {

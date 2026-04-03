@@ -570,7 +570,8 @@
       "scans": "análisis",
       "categoryBreakdown": "Desglose por Categoría (30 días)",
       "categoryTrend": "Tendencia de Categorías en el Tiempo",
-      "dailyAvg": "Puntuación Promedio Diaria"
+      "dailyAvg": "Puntuación Promedio Diaria",
+      "rollingAvg": "Puntuación Promedio Móvil"
     },
     "totalScans": "{{count}} en total",
     "noHistory": "Sin análisis aún. Use las acciones rápidas arriba para comenzar.",

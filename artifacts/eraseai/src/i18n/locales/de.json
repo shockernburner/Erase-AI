@@ -570,7 +570,8 @@
       "scans": "Analysen",
       "categoryBreakdown": "Kategorieaufteilung (30 Tage)",
       "categoryTrend": "Kategorietrend im Zeitverlauf",
-      "dailyAvg": "Täglicher Durchschnittsscore"
+      "dailyAvg": "Täglicher Durchschnittsscore",
+      "rollingAvg": "Gleitender Durchschnittsscore"
     },
     "totalScans": "{{count}} insgesamt",
     "noHistory": "Noch keine Analysen. Verwenden Sie die Schnellaktionen oben.",
