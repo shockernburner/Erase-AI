@@ -516,7 +516,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Profiling failed");
+      if (!res.ok) throw new Error(data.error || t("dataset.profilingFailed"));
       setProfileData(data);
       setProfileRecCategory("all");
       setExpandedProfileCode(null);
@@ -537,7 +537,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Analysis failed");
+      if (!res.ok) throw new Error(data.error || t("dataset.analysisFailed"));
       setAnalysisData(data);
       if (data.summary.length > 0) {
         setExpandedIssue(data.summary[0].type);

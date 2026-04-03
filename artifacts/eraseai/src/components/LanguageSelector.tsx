@@ -21,7 +21,7 @@ export function LanguageSelector() {
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border/50 bg-card/50 backdrop-blur-md hover:bg-muted/40 transition-all text-sm"
-        aria-label="Select language"
+        aria-label={t("language.selectLanguage")}
       >
         <Globe className="w-3.5 h-3.5 text-primary" />
         <span className="text-xs font-medium text-foreground hidden sm:inline">

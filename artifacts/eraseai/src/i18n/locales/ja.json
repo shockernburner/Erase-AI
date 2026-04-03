@@ -323,7 +323,8 @@
     "provider": "プロバイダー",
     "signedUp": "登録日",
     "adminBadge": "ADMIN",
-    "unknown": "不明"
+    "unknown": "不明",
+    "updateFailed": "ユーザーの更新に失敗しました"
   },
   "language": {
     "en": "English",
@@ -331,7 +332,8 @@
     "de": "Deutsch",
     "es": "Español",
     "ja": "日本語",
-    "zh": "中文"
+    "zh": "中文",
+    "selectLanguage": "言語を選択"
   },
   "checkout": {
     "confirming": "お支払いを確認中",
@@ -343,5 +345,28 @@
     "paymentStillProcessing": "お支払いはまだ処理中です。しばらくお待ちいただくか、問題が続く場合はサポートにお問い合わせください。",
     "goToDashboard": "ダッシュボードへ",
     "checkAgain": "再確認"
+  },
+  "home": {
+    "userInitial": "U",
+    "userFallback": "ユーザー"
+  },
+  "feedback": {
+    "feedback": "フィードバック",
+    "sendFeedback": "フィードバックを送信",
+    "selectRating": "評価を選択してください",
+    "enterMessage": "メッセージを入力してください",
+    "submitFailed": "フィードバックの送信に失敗しました",
+    "somethingWrong": "問題が発生しました。もう一度お試しください。",
+    "thankYou": "ありがとうございます！",
+    "helpsImprove": "お客様のフィードバックはEraseAIの改善に役立ちます。",
+    "sendAnother": "もう一つ送信",
+    "done": "完了",
+    "rateExperience": "体験をどう評価しますか？",
+    "tellMore": "詳しく教えてください",
+    "placeholder": "何が良かったですか？何を改善できますか？機能リクエストはありますか？",
+    "submitting": "送信中...",
+    "submitFeedback": "フィードバックを送信",
+    "pastFeedback": "過去のフィードバック ({{count}})",
+    "loadingHistory": "履歴を読み込み中..."
   }
 }

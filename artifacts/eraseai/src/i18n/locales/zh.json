@@ -323,7 +323,8 @@
     "provider": "提供者",
     "signedUp": "注册日期",
     "adminBadge": "ADMIN",
-    "unknown": "未知"
+    "unknown": "未知",
+    "updateFailed": "更新用户失败"
   },
   "language": {
     "en": "English",
@@ -331,7 +332,8 @@
     "de": "Deutsch",
     "es": "Español",
     "ja": "日本語",
-    "zh": "中文"
+    "zh": "中文",
+    "selectLanguage": "选择语言"
   },
   "checkout": {
     "confirming": "确认您的付款",
@@ -343,5 +345,28 @@
     "paymentStillProcessing": "您的付款仍在处理中。这可能需要一些时间。请稍后再试或联系支持。",
     "goToDashboard": "前往仪表板",
     "checkAgain": "再次检查"
+  },
+  "home": {
+    "userInitial": "U",
+    "userFallback": "用户"
+  },
+  "feedback": {
+    "feedback": "反馈",
+    "sendFeedback": "发送反馈",
+    "selectRating": "请选择评分",
+    "enterMessage": "请输入消息",
+    "submitFailed": "提交反馈失败",
+    "somethingWrong": "出了点问题。请重试。",
+    "thankYou": "谢谢！",
+    "helpsImprove": "您的反馈帮助我们改进EraseAI。",
+    "sendAnother": "再发一条",
+    "done": "完成",
+    "rateExperience": "您如何评价您的体验？",
+    "tellMore": "告诉我们更多",
+    "placeholder": "您喜欢什么？什么可以改进？有功能请求吗？",
+    "submitting": "提交中...",
+    "submitFeedback": "提交反馈",
+    "pastFeedback": "您的过往反馈 ({{count}})",
+    "loadingHistory": "加载历史记录..."
   }
 }

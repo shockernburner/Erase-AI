@@ -57,9 +57,9 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
     .filter(Boolean)
     .map(n => n![0])
     .join("")
-    .toUpperCase() || "U";
+    .toUpperCase() || t("home.userInitial");
 
-  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "User";
+  const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || t("home.userFallback");
 
   return (
     <div className="relative">

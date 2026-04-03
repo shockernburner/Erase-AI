@@ -323,7 +323,8 @@
     "provider": "Fournisseur",
     "signedUp": "Inscrit le",
     "adminBadge": "ADMIN",
-    "unknown": "Inconnu"
+    "unknown": "Inconnu",
+    "updateFailed": "Échec de la mise à jour de l'utilisateur"
   },
   "language": {
     "en": "English",
@@ -331,7 +332,8 @@
     "de": "Deutsch",
     "es": "Español",
     "ja": "日本語",
-    "zh": "中文"
+    "zh": "中文",
+    "selectLanguage": "Sélectionner la langue"
   },
   "checkout": {
     "confirming": "Confirmation de votre paiement",
@@ -343,5 +345,28 @@
     "paymentStillProcessing": "Votre paiement est encore en cours de traitement. Cela peut prendre quelques instants. Veuillez vérifier plus tard ou contacter le support si le problème persiste.",
     "goToDashboard": "Aller au tableau de bord",
     "checkAgain": "Vérifier à nouveau"
+  },
+  "home": {
+    "userInitial": "U",
+    "userFallback": "Utilisateur"
+  },
+  "feedback": {
+    "feedback": "Avis",
+    "sendFeedback": "Envoyer un avis",
+    "selectRating": "Veuillez sélectionner une note",
+    "enterMessage": "Veuillez entrer un message",
+    "submitFailed": "Échec de l'envoi de l'avis",
+    "somethingWrong": "Une erreur s'est produite. Veuillez réessayer.",
+    "thankYou": "Merci !",
+    "helpsImprove": "Vos commentaires nous aident à améliorer EraseAI.",
+    "sendAnother": "Envoyer un autre",
+    "done": "Terminé",
+    "rateExperience": "Comment évaluez-vous votre expérience ?",
+    "tellMore": "Dites-nous en plus",
+    "placeholder": "Qu'avez-vous aimé ? Que pourrait-on améliorer ? Des demandes de fonctionnalités ?",
+    "submitting": "Envoi en cours...",
+    "submitFeedback": "Envoyer l'avis",
+    "pastFeedback": "Vos avis précédents ({{count}})",
+    "loadingHistory": "Chargement de l'historique..."
   }
 }

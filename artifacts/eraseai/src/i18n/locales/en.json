@@ -13,6 +13,10 @@
     "managePlan": "Manage Plan",
     "logOut": "Log out"
   },
+  "home": {
+    "userInitial": "U",
+    "userFallback": "User"
+  },
   "pipeline": {
     "label": "AI Data Control",
     "upload": "Upload",
@@ -323,7 +327,8 @@
     "provider": "Provider",
     "signedUp": "Signed Up",
     "adminBadge": "ADMIN",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "updateFailed": "Failed to update user"
   },
   "checkout": {
     "confirming": "Confirming Your Payment",
@@ -336,12 +341,32 @@
     "goToDashboard": "Go to Dashboard",
     "checkAgain": "Check Again"
   },
+  "feedback": {
+    "feedback": "Feedback",
+    "sendFeedback": "Send Feedback",
+    "selectRating": "Please select a rating",
+    "enterMessage": "Please enter a message",
+    "submitFailed": "Failed to submit feedback",
+    "somethingWrong": "Something went wrong. Please try again.",
+    "thankYou": "Thank you!",
+    "helpsImprove": "Your feedback helps us improve EraseAI.",
+    "sendAnother": "Send Another",
+    "done": "Done",
+    "rateExperience": "How would you rate your experience?",
+    "tellMore": "Tell us more",
+    "placeholder": "What did you like? What could be better? Any feature requests?",
+    "submitting": "Submitting...",
+    "submitFeedback": "Submit Feedback",
+    "pastFeedback": "Your past feedback ({{count}})",
+    "loadingHistory": "Loading history..."
+  },
   "language": {
     "en": "English",
     "fr": "Fran\u00e7ais",
     "de": "Deutsch",
     "es": "Espa\u00f1ol",
     "ja": "\u65e5\u672c\u8a9e",
-    "zh": "\u4e2d\u6587"
+    "zh": "\u4e2d\u6587",
+    "selectLanguage": "Select language"
   }
 }

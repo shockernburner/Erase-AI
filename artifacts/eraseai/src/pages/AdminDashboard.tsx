@@ -461,7 +461,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     });
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Failed to update user");
+      throw new Error(data.error || t("admin.updateFailed"));
     }
     const { user: updated } = await res.json();
     setUsers((prev) =>

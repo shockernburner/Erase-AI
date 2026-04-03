@@ -323,7 +323,8 @@
     "provider": "Anbieter",
     "signedUp": "Registriert",
     "adminBadge": "ADMIN",
-    "unknown": "Unbekannt"
+    "unknown": "Unbekannt",
+    "updateFailed": "Benutzer konnte nicht aktualisiert werden"
   },
   "language": {
     "en": "English",
@@ -331,7 +332,8 @@
     "de": "Deutsch",
     "es": "Español",
     "ja": "日本語",
-    "zh": "中文"
+    "zh": "中文",
+    "selectLanguage": "Sprache auswählen"
   },
   "checkout": {
     "confirming": "Zahlung wird bestätigt",
@@ -343,5 +345,28 @@
     "paymentStillProcessing": "Ihre Zahlung wird noch verarbeitet. Dies kann einige Momente dauern. Bitte überprüfen Sie später erneut oder kontaktieren Sie den Support.",
     "goToDashboard": "Zum Dashboard",
     "checkAgain": "Erneut prüfen"
+  },
+  "home": {
+    "userInitial": "B",
+    "userFallback": "Benutzer"
+  },
+  "feedback": {
+    "feedback": "Feedback",
+    "sendFeedback": "Feedback senden",
+    "selectRating": "Bitte wählen Sie eine Bewertung",
+    "enterMessage": "Bitte geben Sie eine Nachricht ein",
+    "submitFailed": "Feedback konnte nicht gesendet werden",
+    "somethingWrong": "Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.",
+    "thankYou": "Vielen Dank!",
+    "helpsImprove": "Ihr Feedback hilft uns, EraseAI zu verbessern.",
+    "sendAnother": "Weiteres senden",
+    "done": "Fertig",
+    "rateExperience": "Wie bewerten Sie Ihre Erfahrung?",
+    "tellMore": "Erzählen Sie uns mehr",
+    "placeholder": "Was hat Ihnen gefallen? Was könnte besser sein? Funktionswünsche?",
+    "submitting": "Wird gesendet...",
+    "submitFeedback": "Feedback absenden",
+    "pastFeedback": "Ihr bisheriges Feedback ({{count}})",
+    "loadingHistory": "Verlauf wird geladen..."
   }
 }

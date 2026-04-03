@@ -323,7 +323,8 @@
     "provider": "Proveedor",
     "signedUp": "Registrado",
     "adminBadge": "ADMIN",
-    "unknown": "Desconocido"
+    "unknown": "Desconocido",
+    "updateFailed": "Error al actualizar el usuario"
   },
   "language": {
     "en": "English",
@@ -331,7 +332,8 @@
     "de": "Deutsch",
     "es": "Español",
     "ja": "日本語",
-    "zh": "中文"
+    "zh": "中文",
+    "selectLanguage": "Seleccionar idioma"
   },
   "checkout": {
     "confirming": "Confirmando su pago",
@@ -343,5 +345,28 @@
     "paymentStillProcessing": "Su pago aún se está procesando. Esto puede tardar unos momentos. Por favor, vuelva a intentarlo más tarde o contacte con soporte si el problema persiste.",
     "goToDashboard": "Ir al panel",
     "checkAgain": "Verificar de nuevo"
+  },
+  "home": {
+    "userInitial": "U",
+    "userFallback": "Usuario"
+  },
+  "feedback": {
+    "feedback": "Comentarios",
+    "sendFeedback": "Enviar comentarios",
+    "selectRating": "Por favor seleccione una calificación",
+    "enterMessage": "Por favor ingrese un mensaje",
+    "submitFailed": "Error al enviar los comentarios",
+    "somethingWrong": "Algo salió mal. Por favor, inténtelo de nuevo.",
+    "thankYou": "¡Gracias!",
+    "helpsImprove": "Sus comentarios nos ayudan a mejorar EraseAI.",
+    "sendAnother": "Enviar otro",
+    "done": "Listo",
+    "rateExperience": "¿Cómo calificaría su experiencia?",
+    "tellMore": "Cuéntenos más",
+    "placeholder": "¿Qué le gustó? ¿Qué podría mejorar? ¿Solicitudes de funciones?",
+    "submitting": "Enviando...",
+    "submitFeedback": "Enviar comentarios",
+    "pastFeedback": "Sus comentarios anteriores ({{count}})",
+    "loadingHistory": "Cargando historial..."
   }
 }
