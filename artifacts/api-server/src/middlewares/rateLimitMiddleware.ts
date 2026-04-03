@@ -20,7 +20,7 @@ function getNextMonthStart(): Date {
 
 export function apiRateLimit() {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const apiKeyId = (req as any).apiKeyId as string | undefined;
+    const apiKeyId = req.apiKeyId;
     if (!apiKeyId) {
       next();
       return;
@@ -85,7 +85,7 @@ export function apiRateLimit() {
 
 export function trackApiUsage() {
   return (req: Request, res: Response, next: NextFunction) => {
-    const apiKeyId = (req as any).apiKeyId as string | undefined;
+    const apiKeyId = req.apiKeyId;
     if (!apiKeyId) {
       next();
       return;

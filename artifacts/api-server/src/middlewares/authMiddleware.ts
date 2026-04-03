@@ -17,6 +17,7 @@ declare global {
       isAuthenticated(): this is AuthedRequest;
 
       user?: User | undefined;
+      apiKeyId?: string;
     }
 
     export interface AuthedRequest {

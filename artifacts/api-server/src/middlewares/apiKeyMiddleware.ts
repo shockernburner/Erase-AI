@@ -71,7 +71,7 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
     planEndDate: user.planEndDate?.toISOString() ?? null,
   };
 
-  (req as any).apiKeyId = apiKey.id;
+  req.apiKeyId = apiKey.id;
 
   next();
 }
