@@ -31,11 +31,11 @@ function PlanBadge({ plan }: { plan: string }) {
   );
 }
 
-function getTrialDaysRemaining(user: { planType?: string; planEndDate?: string | Date | null }): number | null {
-  const plan = user.planType || "free";
+function getTrialDaysRemaining(planType: string | undefined, planEndDate: string | Date | null | undefined): number | null {
+  const plan = planType || "free";
   if (plan !== "free") return null;
-  if (!user.planEndDate) return null;
-  const end = new Date(user.planEndDate as string);
+  if (!planEndDate) return null;
+  const end = new Date(String(planEndDate));
   const now = new Date();
   const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   return Math.max(0, diff);
@@ -48,7 +48,7 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   if (!user) return null;
 
   const plan = user.planType || "free";
-  const trialDays = getTrialDaysRemaining(user as any);
+  const trialDays = getTrialDaysRemaining(user.planType, user.planEndDate);
   const initials = [user.firstName, user.lastName]
     .filter(Boolean)
     .map(n => n![0])

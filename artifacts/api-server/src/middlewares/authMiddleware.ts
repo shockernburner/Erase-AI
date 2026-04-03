@@ -8,7 +8,10 @@ import {
 
 declare global {
   namespace Express {
-    interface User extends AuthUser {}
+    interface User extends AuthUser {
+      planStartDate?: string | null;
+      planEndDate?: string | null;
+    }
 
     interface Request {
       isAuthenticated(): this is AuthedRequest;
@@ -22,7 +25,7 @@ declare global {
   }
 }
 
-const PUBLIC_PREFIXES = ["/api/auth/", "/api/health"];
+const PUBLIC_PREFIXES = ["/api/auth/", "/api/healthz"];
 
 function isPublicRoute(path: string): boolean {
   return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));

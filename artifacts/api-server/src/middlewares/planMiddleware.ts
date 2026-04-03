@@ -69,7 +69,7 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
       if (freshUser) {
         req.user.planType = (freshUser.planType || "free") as "free" | "pro" | "enterprise";
         if (freshUser.planEndDate) {
-          (req.user as any).planEndDate = freshUser.planEndDate.toISOString();
+          req.user.planEndDate = freshUser.planEndDate.toISOString();
         }
       }
     } catch {

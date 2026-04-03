@@ -274,7 +274,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/:id/erase", async (req: Request, res: Response) => {
+router.post("/:id/erase", requireActivePlan(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -424,7 +424,7 @@ router.get("/:id/download", async (req: Request, res: Response) => {
   res.send(content);
 });
 
-router.post("/:id/verify", async (req: Request, res: Response) => {
+router.post("/:id/verify", requireActivePlan(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -600,7 +600,7 @@ function analyzeRows(rows: { rowIndex: number; content: string; isRemoved: boole
   return issues;
 }
 
-router.post("/:id/analyze", async (req: Request, res: Response) => {
+router.post("/:id/analyze", requireActivePlan(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -678,7 +678,7 @@ router.post("/:id/analyze", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/:id/apply-suggestions", async (req: Request, res: Response) => {
+router.post("/:id/apply-suggestions", requireActivePlan(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -1240,7 +1240,7 @@ router.post("/import-url", requireActivePlan(), async (req: Request, res: Respon
   }
 });
 
-router.post("/:id/drop-column", async (req: Request, res: Response) => {
+router.post("/:id/drop-column", requireActivePlan(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
@@ -1328,7 +1328,7 @@ router.post("/:id/drop-column", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/:id/profile", async (req: Request, res: Response) => {
+router.post("/:id/profile", requireActivePlan(), async (req: Request, res: Response) => {
   const dataset = await getOwnedDataset(req, res);
   if (!dataset) return;
   const id = dataset.id;
