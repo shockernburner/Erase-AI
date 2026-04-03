@@ -7,6 +7,16 @@ import { getUserPlan, refreshPlanFromDB } from "../middlewares/planMiddleware";
 const router: IRouter = Router();
 router.use(refreshPlanFromDB);
 
+const API_KEY_LIMITS: Record<string, number> = {
+  pro: 5,
+  business: 20,
+  enterprise: 100,
+};
+
+function getApiKeyLimit(plan: string): number {
+  return API_KEY_LIMITS[plan] ?? 0;
+}
+
 function requireApiAccess(req: Request, res: Response): boolean {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Authentication required" });
@@ -37,8 +47,10 @@ router.post("/keys", async (req: Request, res: Response) => {
     .from(apiKeysTable)
     .where(and(eq(apiKeysTable.userId, req.user!.id), isNull(apiKeysTable.revokedAt)));
 
-  if (existingKeys.length >= 5) {
-    res.status(400).json({ error: "Maximum of 5 active API keys allowed. Revoke an existing key first." });
+  const plan = getUserPlan(req);
+  const keyLimit = getApiKeyLimit(plan);
+  if (existingKeys.length >= keyLimit) {
+    res.status(400).json({ error: `Maximum of ${keyLimit} active API keys allowed on the ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan. Revoke an existing key or upgrade for more.` });
     return;
   }
 

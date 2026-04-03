@@ -95,8 +95,8 @@ router.get("/pricing", (_req: Request, res: Response) => {
         features: [
           "Everything in Pro",
           "Up to 10,000 rows per dataset",
+          "API access (20 keys)",
           "Webhook integrations",
-          "Team collaboration (coming soon)",
           "Advanced analytics dashboard",
           "Dedicated account manager",
         ],
@@ -110,7 +110,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
         interval: "month",
         features: [
           "Everything in Business",
-          "Unlimited rows",
+          "Unlimited rows & API keys",
           "Custom analysis rules",
           "SSO integration",
           "Dedicated support & SLA",
