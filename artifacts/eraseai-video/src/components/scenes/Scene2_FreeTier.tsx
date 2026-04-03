@@ -13,14 +13,14 @@ export function Scene2_FreeTier() {
       setTimeout(() => setPhase(3), 1600),
       setTimeout(() => setPhase(4), 2200),
       setTimeout(() => setPhase(5), 2800),
-      setTimeout(() => setPhase(6), 6500), // exit
+      setTimeout(() => setPhase(6), 8500), // exit
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   const features = [
     { icon: Database, text: "Up to 100 rows per dataset" },
-    { icon: Search, text: "PII & bias detection" },
+    { icon: Search, text: "Basic analysis — PII & bias detection" },
     { icon: Eraser, text: "Data erasure & redaction" },
     { icon: History, text: "Version history" }
   ];

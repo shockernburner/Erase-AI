@@ -14,8 +14,8 @@ export function Scene5_EnterpriseTier() {
       setTimeout(() => setPhase(4), 1800),
       setTimeout(() => setPhase(5), 2300),
       setTimeout(() => setPhase(6), 2800),
-      setTimeout(() => setPhase(7), 5000), // Key message reveal
-      setTimeout(() => setPhase(8), 10500), // exit
+      setTimeout(() => setPhase(7), 6000), // Key message reveal
+      setTimeout(() => setPhase(8), 13500), // exit
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);

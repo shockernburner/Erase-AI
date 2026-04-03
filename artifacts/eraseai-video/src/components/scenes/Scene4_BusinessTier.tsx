@@ -14,7 +14,7 @@ export function Scene4_BusinessTier() {
       setTimeout(() => setPhase(4), 1500),
       setTimeout(() => setPhase(5), 1900),
       setTimeout(() => setPhase(6), 2300),
-      setTimeout(() => setPhase(7), 8500), // exit
+      setTimeout(() => setPhase(7), 10500), // exit
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);

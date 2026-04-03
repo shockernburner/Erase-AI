@@ -8,12 +8,12 @@ import { Scene5_EnterpriseTier } from '@/components/scenes/Scene5_EnterpriseTier
 import { Scene6_Outro } from '@/components/scenes/Scene6_Outro';
 
 const SCENE_DURATIONS = {
-  intro: 5000,
-  free: 8000,
-  pro: 10000,
-  business: 10000,
-  enterprise: 12000,
-  outro: 5000,
+  intro: 7000,
+  free: 10000,
+  pro: 12000,
+  business: 12000,
+  enterprise: 15000,
+  outro: 9000,
 };
 
 const TOTAL_MS = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0);

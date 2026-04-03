@@ -83,7 +83,7 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 **EraseAI "How It Works" Tier Demo Video:**
 
 *   A separate video artifact (`artifacts/eraseai-video`) accessible at `/eraseai-video/`.
-*   Built with React, Framer Motion, and Tailwind CSS as a ~50-second animated tier progression demo.
+*   Built with React, Framer Motion, and Tailwind CSS as a ~65-second animated tier progression demo.
 *   6 scenes: Intro → Free ($0) → Pro ($49) → Business ($149) → Enterprise/Government (Custom, "We build new APIs for your needs") → Outro.
 *   Each tier scene has distinct color theming: Free=green, Pro=cyan, Business=orange/amber, Enterprise=gold.
 *   Uses the scaffold's `useVideoPlayer` hook for scene advancement and automatic looping.

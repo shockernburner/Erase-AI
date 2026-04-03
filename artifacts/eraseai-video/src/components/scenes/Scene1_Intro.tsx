@@ -11,7 +11,7 @@ export function Scene1_Intro() {
       setTimeout(() => setPhase(1), 500),
       setTimeout(() => setPhase(2), 1200),
       setTimeout(() => setPhase(3), 2000),
-      setTimeout(() => setPhase(4), 3800), // Start exit
+      setTimeout(() => setPhase(4), 5500), // Start exit
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
