@@ -12,7 +12,8 @@
     "upgradePlan": "Plan upgraden",
     "managePlan": "Plan verwalten",
     "logOut": "Abmelden",
-    "developer": "Entwickler"
+    "developer": "Entwickler",
+    "analytics": "Analytik"
   },
   "pipeline": {
     "label": "KI-Datenkontrolle",
@@ -479,5 +480,40 @@
     "save": "Speichern",
     "update": "Aktualisieren",
     "delete": "Löschen"
+  },
+  "analytics": {
+    "title": "Erweiterte Analytik",
+    "subtitle": "Dataset-Verarbeitungsstatistiken und API-Nutzungsmetriken",
+    "loading": "Analytik wird geladen...",
+    "loadFailed": "Analytik konnte nicht geladen werden",
+    "back": "Zurück zum Dashboard",
+    "upgradeTitle": "Erweiterte Analytik",
+    "upgradeDesc": "Upgrade auf Business oder Enterprise für Zugang zum erweiterten Analytik-Dashboard.",
+    "upgradeCta": "Auf Business upgraden",
+    "totalDatasets": "Datasets gesamt",
+    "versions": "Versionen",
+    "totalRows": "Zeilen gesamt",
+    "datasetsAnalyzed": "Analysierte Datasets",
+    "issuesDetected": "Erkannte Probleme",
+    "processingActivity": "Verarbeitungsaktivität (30 Tage)",
+    "last30Days": "Letzte 30 Tage",
+    "issueBreakdown": "Aufschlüsselung nach Typ",
+    "erasureMetrics": "Löschmetriken",
+    "totalOperations": "Operationen gesamt",
+    "rowsAffected": "Betroffene Zeilen",
+    "removed": "Entfernt",
+    "redacted": "Geschwärzt",
+    "severityBreakdown": "Probleme nach Schweregrad",
+    "operationsByType": "Operationen nach Typ",
+    "apiUsage": "API-Nutzung (30 Tage)",
+    "totalRequests": "Anfragen gesamt",
+    "errorRate": "Fehlerrate",
+    "topEndpoints": "Top-Endpunkte",
+    "noData": "Noch keine Daten",
+    "issuePii": "PII",
+    "issueBias": "Voreingenommenheit",
+    "issueToxic": "Toxisch",
+    "issueDuplicates": "Duplikate",
+    "issueQuality": "Qualität"
   }
 }

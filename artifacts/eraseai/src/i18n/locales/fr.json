@@ -12,7 +12,8 @@
     "upgradePlan": "Améliorer le plan",
     "managePlan": "Gérer le plan",
     "logOut": "Se déconnecter",
-    "developer": "Développeur"
+    "developer": "Développeur",
+    "analytics": "Analytique"
   },
   "pipeline": {
     "label": "Contrôle des données IA",
@@ -479,5 +480,40 @@
     "save": "Enregistrer",
     "update": "Mettre à jour",
     "delete": "Supprimer"
+  },
+  "analytics": {
+    "title": "Analytique avancée",
+    "subtitle": "Statistiques de traitement des datasets et métriques d'utilisation de l'API",
+    "loading": "Chargement des analytiques...",
+    "loadFailed": "Échec du chargement des analytiques",
+    "back": "Retour au tableau de bord",
+    "upgradeTitle": "Analytique avancée",
+    "upgradeDesc": "Passez au plan Business ou Enterprise pour accéder au tableau de bord analytique avancé.",
+    "upgradeCta": "Passer au Business",
+    "totalDatasets": "Datasets totaux",
+    "versions": "versions",
+    "totalRows": "Lignes totales",
+    "datasetsAnalyzed": "Datasets analysés",
+    "issuesDetected": "Problèmes détectés",
+    "processingActivity": "Activité de traitement (30 jours)",
+    "last30Days": "30 derniers jours",
+    "issueBreakdown": "Répartition par type",
+    "erasureMetrics": "Métriques d'effacement",
+    "totalOperations": "Opérations totales",
+    "rowsAffected": "Lignes affectées",
+    "removed": "Supprimées",
+    "redacted": "Expurgées",
+    "severityBreakdown": "Problèmes par gravité",
+    "operationsByType": "Opérations par type",
+    "apiUsage": "Utilisation de l'API (30 jours)",
+    "totalRequests": "Requêtes totales",
+    "errorRate": "Taux d'erreur",
+    "topEndpoints": "Points d'accès principaux",
+    "noData": "Aucune donnée",
+    "issuePii": "DPI",
+    "issueBias": "Biais",
+    "issueToxic": "Toxique",
+    "issueDuplicates": "Doublons",
+    "issueQuality": "Qualité"
   }
 }

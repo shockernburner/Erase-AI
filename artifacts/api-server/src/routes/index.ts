@@ -8,6 +8,7 @@ import feedbackRouter from "./feedback";
 import adminRouter from "./admin";
 import developerRouter from "./developer";
 import v1Router from "./v1";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(feedbackRouter);
 router.use(adminRouter);
 router.use("/developer", developerRouter);
 router.use("/v1", v1Router);
+router.use(analyticsRouter);
 
 export default router;

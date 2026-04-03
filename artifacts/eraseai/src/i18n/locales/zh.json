@@ -12,7 +12,8 @@
     "upgradePlan": "升级计划",
     "managePlan": "管理计划",
     "logOut": "退出登录",
-    "developer": "开发者"
+    "developer": "开发者",
+    "analytics": "数据分析"
   },
   "pipeline": {
     "label": "AI数据控制",
@@ -479,5 +480,40 @@
     "save": "保存",
     "update": "更新",
     "delete": "删除"
+  },
+  "analytics": {
+    "title": "高级分析",
+    "subtitle": "数据集处理统计和API使用指标",
+    "loading": "正在加载分析...",
+    "loadFailed": "加载分析失败",
+    "back": "返回仪表板",
+    "upgradeTitle": "高级分析",
+    "upgradeDesc": "升级到Business或Enterprise以访问高级分析仪表板。",
+    "upgradeCta": "升级到Business",
+    "totalDatasets": "数据集总数",
+    "versions": "版本",
+    "totalRows": "总行数",
+    "datasetsAnalyzed": "已分析数据集",
+    "issuesDetected": "检测到的问题",
+    "processingActivity": "处理活动（30天）",
+    "last30Days": "过去30天",
+    "issueBreakdown": "按类型分布",
+    "erasureMetrics": "擦除指标",
+    "totalOperations": "总操作数",
+    "rowsAffected": "受影响的行",
+    "removed": "已删除",
+    "redacted": "已编辑",
+    "severityBreakdown": "按严重程度分布",
+    "operationsByType": "按类型分布",
+    "apiUsage": "API使用情况（30天）",
+    "totalRequests": "总请求数",
+    "errorRate": "错误率",
+    "topEndpoints": "热门端点",
+    "noData": "暂无数据",
+    "issuePii": "个人信息",
+    "issueBias": "偏见",
+    "issueToxic": "有害",
+    "issueDuplicates": "重复",
+    "issueQuality": "质量"
   }
 }

@@ -12,7 +12,8 @@
     "upgradePlan": "Mejorar plan",
     "managePlan": "Gestionar plan",
     "logOut": "Cerrar sesión",
-    "developer": "Desarrollador"
+    "developer": "Desarrollador",
+    "analytics": "Analítica"
   },
   "pipeline": {
     "label": "Control de datos IA",
@@ -479,5 +480,40 @@
     "save": "Guardar",
     "update": "Actualizar",
     "delete": "Eliminar"
+  },
+  "analytics": {
+    "title": "Analítica avanzada",
+    "subtitle": "Estadísticas de procesamiento de datasets y métricas de uso de API",
+    "loading": "Cargando analítica...",
+    "loadFailed": "Error al cargar la analítica",
+    "back": "Volver al panel",
+    "upgradeTitle": "Analítica avanzada",
+    "upgradeDesc": "Mejora a Business o Enterprise para acceder al panel de analítica avanzada.",
+    "upgradeCta": "Mejorar a Business",
+    "totalDatasets": "Datasets totales",
+    "versions": "versiones",
+    "totalRows": "Filas totales",
+    "datasetsAnalyzed": "Datasets analizados",
+    "issuesDetected": "Problemas detectados",
+    "processingActivity": "Actividad de procesamiento (30 días)",
+    "last30Days": "Últimos 30 días",
+    "issueBreakdown": "Desglose por tipo",
+    "erasureMetrics": "Métricas de borrado",
+    "totalOperations": "Operaciones totales",
+    "rowsAffected": "Filas afectadas",
+    "removed": "Eliminadas",
+    "redacted": "Redactadas",
+    "severityBreakdown": "Problemas por gravedad",
+    "operationsByType": "Operaciones por tipo",
+    "apiUsage": "Uso de API (30 días)",
+    "totalRequests": "Solicitudes totales",
+    "errorRate": "Tasa de error",
+    "topEndpoints": "Endpoints principales",
+    "noData": "Sin datos aún",
+    "issuePii": "DPI",
+    "issueBias": "Sesgo",
+    "issueToxic": "Tóxico",
+    "issueDuplicates": "Duplicados",
+    "issueQuality": "Calidad"
   }
 }

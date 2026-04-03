@@ -12,7 +12,8 @@
     "upgradePlan": "プランをアップグレード",
     "managePlan": "プランを管理",
     "logOut": "ログアウト",
-    "developer": "開発者"
+    "developer": "開発者",
+    "analytics": "分析ダッシュボード"
   },
   "pipeline": {
     "label": "AIデータ制御",
@@ -479,5 +480,40 @@
     "save": "保存",
     "update": "更新",
     "delete": "削除"
+  },
+  "analytics": {
+    "title": "高度な分析",
+    "subtitle": "データセット処理の統計とAPI使用状況メトリクス",
+    "loading": "分析を読み込み中...",
+    "loadFailed": "分析の読み込みに失敗しました",
+    "back": "ダッシュボードに戻る",
+    "upgradeTitle": "高度な分析",
+    "upgradeDesc": "Businessまたはエンタープライズにアップグレードして、高度な分析ダッシュボードにアクセスしましょう。",
+    "upgradeCta": "Businessにアップグレード",
+    "totalDatasets": "データセット合計",
+    "versions": "バージョン",
+    "totalRows": "行数合計",
+    "datasetsAnalyzed": "分析済みデータセット",
+    "issuesDetected": "検出された問題",
+    "processingActivity": "処理アクティビティ（30日間）",
+    "last30Days": "過去30日間",
+    "issueBreakdown": "タイプ別内訳",
+    "erasureMetrics": "消去メトリクス",
+    "totalOperations": "操作合計",
+    "rowsAffected": "影響を受けた行",
+    "removed": "削除済み",
+    "redacted": "墨消し済み",
+    "severityBreakdown": "重大度別の問題",
+    "operationsByType": "タイプ別操作",
+    "apiUsage": "API使用状況（30日間）",
+    "totalRequests": "リクエスト合計",
+    "errorRate": "エラー率",
+    "topEndpoints": "トップエンドポイント",
+    "noData": "データなし",
+    "issuePii": "個人情報",
+    "issueBias": "バイアス",
+    "issueToxic": "有害",
+    "issueDuplicates": "重複",
+    "issueQuality": "品質"
   }
 }
