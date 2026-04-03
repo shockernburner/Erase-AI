@@ -171,21 +171,57 @@ router.get("/analytics", requireBusiness(), async (req: Request, res: Response) 
     const em = erasureMetrics[0];
     const ae = apiErrorRate[0];
 
-    const versionCounts = await db
-      .select({
-        total: sql<number>`count(*)::int`,
-      })
-      .from(datasetVersionsTable)
-      .innerJoin(datasetsTable, eq(datasetVersionsTable.datasetId, datasetsTable.id))
-      .where(eq(datasetsTable.userId, userId));
+    const [versionCounts, totalAnalyzed, datasetStatusBreakdown, dailyByType] = await Promise.all([
+      db
+        .select({
+          total: sql<number>`count(*)::int`,
+        })
+        .from(datasetVersionsTable)
+        .innerJoin(datasetsTable, eq(datasetVersionsTable.datasetId, datasetsTable.id))
+        .where(eq(datasetsTable.userId, userId)),
 
-    const totalAnalyzed = await db
-      .select({
-        count: sql<number>`count(distinct ${analysisResultsTable.datasetId})::int`,
-      })
-      .from(analysisResultsTable)
-      .innerJoin(datasetsTable, eq(analysisResultsTable.datasetId, datasetsTable.id))
-      .where(eq(datasetsTable.userId, userId));
+      db
+        .select({
+          count: sql<number>`count(distinct ${analysisResultsTable.datasetId})::int`,
+        })
+        .from(analysisResultsTable)
+        .innerJoin(datasetsTable, eq(analysisResultsTable.datasetId, datasetsTable.id))
+        .where(eq(datasetsTable.userId, userId)),
+
+      db
+        .select({
+          hasErasure: sql<boolean>`bool_or(${datasetOperationsTable.type} in ('delete', 'redact', 'auto-fix', 'drop-column'))`,
+          count: sql<number>`1`,
+        })
+        .from(datasetsTable)
+        .leftJoin(datasetOperationsTable, eq(datasetsTable.id, datasetOperationsTable.datasetId))
+        .where(eq(datasetsTable.userId, userId))
+        .groupBy(datasetsTable.id),
+
+      db
+        .select({
+          date: sql<string>`to_char(${datasetOperationsTable.createdAt}, 'YYYY-MM-DD')`,
+          type: datasetOperationsTable.type,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(datasetOperationsTable)
+        .innerJoin(datasetsTable, eq(datasetOperationsTable.datasetId, datasetsTable.id))
+        .where(
+          and(
+            eq(datasetsTable.userId, userId),
+            gte(datasetOperationsTable.createdAt, thirtyDaysAgo),
+          ),
+        )
+        .groupBy(sql`to_char(${datasetOperationsTable.createdAt}, 'YYYY-MM-DD')`, datasetOperationsTable.type)
+        .orderBy(sql`to_char(${datasetOperationsTable.createdAt}, 'YYYY-MM-DD')`),
+    ]);
+
+    const activeDatasets = datasetStatusBreakdown.filter((d) => !d.hasErasure).length;
+    const erasedDatasets = datasetStatusBreakdown.filter((d) => d.hasErasure).length;
+
+    const totalRowsVal = rs?.totalRows ?? 0;
+    const affectedRowsVal = (rs?.removedRows ?? 0) + (rs?.redactedRows ?? 0);
+    const forgetScore = totalRowsVal > 0 ? Math.round((affectedRowsVal / totalRowsVal) * 10000) / 100 : 0;
 
     res.json({
       overview: {
@@ -193,6 +229,8 @@ router.get("/analytics", requireBusiness(), async (req: Request, res: Response) 
         totalVersions: versionCounts[0]?.total ?? 0,
         totalRows: rs?.totalRows ?? 0,
         datasetsAnalyzed: totalAnalyzed[0]?.count ?? 0,
+        activeDatasets,
+        erasedDatasets,
       },
       processingActivity: {
         operationsByType: operationsByType.map((o) => ({
@@ -203,6 +241,11 @@ router.get("/analytics", requireBusiness(), async (req: Request, res: Response) 
         dailyActivity: dailyActivity.map((d) => ({
           date: d.date,
           operations: d.count,
+        })),
+        dailyByType: dailyByType.map((d) => ({
+          date: d.date,
+          type: d.type,
+          count: d.count,
         })),
       },
       qualityInsights: {
@@ -221,6 +264,7 @@ router.get("/analytics", requireBusiness(), async (req: Request, res: Response) 
         totalAffectedRows: em?.totalAffected ?? 0,
         removedRows: rs?.removedRows ?? 0,
         redactedRows: rs?.redactedRows ?? 0,
+        forgetScore,
       },
       apiUsage: {
         byEndpoint: apiByEndpoint.map((e) => ({

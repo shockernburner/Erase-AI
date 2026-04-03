@@ -27,10 +27,13 @@ interface AnalyticsData {
     totalVersions: number;
     totalRows: number;
     datasetsAnalyzed: number;
+    activeDatasets: number;
+    erasedDatasets: number;
   };
   processingActivity: {
     operationsByType: { type: string; count: number; totalAffected: number }[];
     dailyActivity: { date: string; operations: number }[];
+    dailyByType: { date: string; type: string; count: number }[];
   };
   qualityInsights: {
     issuesByType: { type: string; count: number }[];
@@ -42,6 +45,7 @@ interface AnalyticsData {
     totalAffectedRows: number;
     removedRows: number;
     redactedRows: number;
+    forgetScore: number;
   };
   apiUsage: {
     byEndpoint: { endpoint: string; requests: number }[];
@@ -385,11 +389,74 @@ export default function AnalyticsDashboard({ onBack, onUpgrade }: { onBack: () =
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="bg-card/60 backdrop-blur-md border border-border/50 rounded-xl p-6"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+              <Database className="w-4 h-4 text-primary" />
+              {t("analytics.datasetStatus")}
+            </h3>
+            <DonutChart
+              segments={[
+                { label: t("analytics.active"), value: data.overview.activeDatasets, color: "#10B981" },
+                { label: t("analytics.erased"), value: data.overview.erasedDatasets, color: "#EF4444" },
+              ]}
+              emptyText={t("analytics.noData")}
+            />
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="bg-card/60 backdrop-blur-md border border-border/50 rounded-xl p-6"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+              <Shield className="w-4 h-4 text-cyan-400" />
+              {t("analytics.forgetScore")}
+            </h3>
+            <div className="flex items-center justify-center py-4">
+              <div className="relative w-28 h-28">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/30" />
+                  <circle
+                    cx="50" cy="50" r="40" fill="none" stroke="#06B6D4" strokeWidth="8"
+                    strokeDasharray={`${(data.erasureMetrics.forgetScore / 100) * 251.3} 251.3`}
+                    strokeLinecap="round"
+                    className="transition-all duration-700"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-foreground">{data.erasureMetrics.forgetScore}%</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">{t("analytics.forgetScoreDesc")}</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="bg-card/60 backdrop-blur-md border border-border/50 rounded-xl p-6"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
+              <PieChart className="w-4 h-4 text-cyan-400" />
+              {t("analytics.issueBreakdown")}
+            </h3>
+            <DonutChart segments={issueSegments} emptyText={t("analytics.noData")} />
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.14 }}
             className="bg-card/60 backdrop-blur-md border border-border/50 rounded-xl p-6"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
@@ -403,14 +470,20 @@ export default function AnalyticsDashboard({ onBack, onUpgrade }: { onBack: () =
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: 0.16 }}
             className="bg-card/60 backdrop-blur-md border border-border/50 rounded-xl p-6"
           >
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-              <PieChart className="w-4 h-4 text-cyan-400" />
-              {t("analytics.issueBreakdown")}
+              <Zap className="w-4 h-4 text-green-400" />
+              {t("analytics.apiSuccessError")}
             </h3>
-            <DonutChart segments={issueSegments} emptyText={t("analytics.noData")} />
+            <DonutChart
+              segments={[
+                { label: t("analytics.successRate"), value: data.apiUsage.totalRequests - data.apiUsage.totalErrors, color: "#10B981" },
+                { label: t("analytics.errors"), value: data.apiUsage.totalErrors, color: "#EF4444" },
+              ]}
+              emptyText={t("analytics.noData")}
+            />
           </motion.div>
         </div>
 
