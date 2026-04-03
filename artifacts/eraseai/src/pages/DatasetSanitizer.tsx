@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, type DragEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Button, Input, Card, Badge } from "@/components/ui-elements";
 import {
   Upload,
@@ -201,6 +202,7 @@ const ISSUE_META: Record<string, { label: string; icon: React.ReactNode; color: 
 };
 
 export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: () => void }) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const [dataset, setDataset] = useState<DatasetInfo | null>(null);
   const [rows, setRows] = useState<DatasetRow[]>([]);
@@ -670,17 +672,17 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground mb-1">
               {upgradeNeeded === "trial-expired"
-                ? "Free Trial Expired"
+                ? t("dataset.trialExpiredMsg")
                 : upgradeNeeded === "ml-feedback"
-                  ? "ML Feedback — Pro Feature"
-                  : "Row Limit Reached"}
+                  ? t("dataset.mlFeedback")
+                  : t("dataset.upgradeRequired")}
             </p>
             <p className="text-xs text-muted-foreground mb-3">
               {upgradeNeeded === "trial-expired"
-                ? "Your 7-day free trial has ended. Upgrade to Pro to continue creating and processing datasets."
+                ? t("dataset.trialExpiredMsg")
                 : upgradeNeeded === "ml-feedback"
-                  ? "ML Pipeline Feedback requires a Pro plan. Upgrade to get intelligent recommendations for your ML workflows."
-                  : "Free plan is limited to 100 rows per dataset. Upgrade to Pro for unlimited rows."}
+                  ? t("dataset.mlFeedback")
+                  : t("dataset.upgradeRequired")}
             </p>
             <Button
               onClick={() => onNavigatePricing?.()}
@@ -688,7 +690,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
               className="gap-1.5 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
             >
               <Crown className="w-3.5 h-3.5" />
-              Upgrade to Pro
+              {t("dataset.upgradeToPro")}
             </Button>
           </div>
         </div>
@@ -718,16 +720,16 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 </div>
                 <div>
                   <h3 className="text-xl font-display font-bold text-foreground mb-2">
-                    Upload Your Dataset
+                    {t("dataset.dragDrop")}
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    Drag and drop a file here, or click to browse. Supports JSON, CSV, and TXT formats.
+                    {t("dataset.supportedFormats")}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   <Button className="gap-2">
                     <Upload className="w-4 h-4" />
-                    Choose File
+                    {t("dataset.orChooseFile")}
                   </Button>
                   <Button
                     variant="outline"
@@ -735,7 +737,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     className="gap-2"
                   >
                     <Link className="w-4 h-4" />
-                    Import from URL
+                    {t("dataset.importFromUrl")}
                   </Button>
                 </div>
                 <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground/60">
@@ -769,7 +771,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                 <Card className="p-4 border-primary/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Link className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-semibold text-foreground">Import from URL</span>
+                    <span className="text-sm font-semibold text-foreground">{t("dataset.importFromUrl")}</span>
                     <button onClick={() => { setShowUrlImport(false); setImportUrl(""); }} className="ml-auto text-muted-foreground hover:text-foreground">
                       <X className="w-4 h-4" />
                     </button>
@@ -778,16 +780,16 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Input
                       value={importUrl}
                       onChange={(e) => setImportUrl(e.target.value)}
-                      placeholder="https://example.com/data.csv"
+                      placeholder={t("dataset.importUrlPlaceholder")}
                       className="flex-1 text-sm"
                       onKeyDown={(e) => e.key === "Enter" && importFromUrl()}
                     />
                     <Button size="sm" onClick={importFromUrl} disabled={!importUrl.trim() || isImporting} className="gap-1.5">
                       {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                      {isImporting ? "Importing..." : "Import"}
+                      {isImporting ? t("dataset.importing") : t("dataset.import")}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Supports HTTP/HTTPS URLs pointing to CSV, JSON, or TXT files.</p>
+                  <p className="text-xs text-muted-foreground mt-2">{t("dataset.supportedFormats")}</p>
                 </Card>
               </motion.div>
             )}
@@ -860,7 +862,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
                 >
                   {isAnalyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanSearch className="w-3.5 h-3.5" />}
-                  {isAnalyzing ? "Analyzing..." : "Analyze"}
+                  {isAnalyzing ? t("dataset.analyzing") : t("dataset.analyze")}
                 </Button>
                 <Button
                   variant="outline"
@@ -870,7 +872,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   className="gap-1.5 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
                 >
                   {isProfiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BarChart3 className="w-3.5 h-3.5" />}
-                  {isProfiling ? "Profiling..." : "Profile"}
+                  {isProfiling ? t("dataset.profiling") : t("dataset.profile")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5">
                   <Upload className="w-3.5 h-3.5" />

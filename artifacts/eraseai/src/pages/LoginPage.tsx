@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useTranslation } from "react-i18next";
 import { ShieldX, Mail, Lock, User, Loader2, Eye, EyeOff, Zap, Database, BrainCircuit, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const { login, signup } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -24,9 +27,9 @@ export default function LoginPage() {
   }, []);
 
   const features = [
-    { icon: <Database className="w-5 h-5" />, title: "Dataset Intelligence", desc: "Detect PII, bias, toxic content, duplicates, and quality issues" },
-    { icon: <Zap className="w-5 h-5" />, title: "AI Unlearning Engine", desc: "Version-controlled data erasure with before/after verification" },
-    { icon: <BrainCircuit className="w-5 h-5" />, title: "ML Pipeline Feedback", desc: "Actionable recommendations for preprocessing, training & evaluation" },
+    { icon: <Database className="w-5 h-5" />, title: t("login.featureDataset"), desc: t("login.featureDatasetDesc") },
+    { icon: <Zap className="w-5 h-5" />, title: t("login.featureUnlearning"), desc: t("login.featureUnlearningDesc") },
+    { icon: <BrainCircuit className="w-5 h-5" />, title: t("login.featurePipeline"), desc: t("login.featurePipelineDesc") },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +49,7 @@ export default function LoginPage() {
         setError(result.error);
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("login.genericError"));
     } finally {
       setLoading(false);
     }
@@ -72,6 +75,10 @@ export default function LoginPage() {
         }}
       />
 
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSelector />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -83,10 +90,10 @@ export default function LoginPage() {
             <ShieldX className="w-10 h-10" />
           </div>
           <h1 className="text-4xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-            EraseAI
+            {t("app.name")}
           </h1>
           <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-2">
-            Make AI forget what it should never learn
+            {t("login.subtitle")}
           </p>
         </div>
 
@@ -118,7 +125,7 @@ export default function LoginPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Log In
+              {t("login.logIn")}
             </button>
             <button
               onClick={() => { setMode("signup"); setError(null); }}
@@ -128,7 +135,7 @@ export default function LoginPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Sign Up
+              {t("login.signUp")}
             </button>
           </div>
 
@@ -140,7 +147,7 @@ export default function LoginPage() {
             >
               <Sparkles className="w-4 h-4 text-primary shrink-0" />
               <p className="text-sm text-primary font-medium">
-                Try free for 7 days — no credit card required
+                {t("login.trialBanner")}
               </p>
             </motion.div>
           )}
@@ -152,7 +159,7 @@ export default function LoginPage() {
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="First name"
+                    placeholder={t("login.firstName")}
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
@@ -162,7 +169,7 @@ export default function LoginPage() {
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Last name"
+                    placeholder={t("login.lastName")}
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
@@ -175,7 +182,7 @@ export default function LoginPage() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder={t("login.email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -187,7 +194,7 @@ export default function LoginPage() {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Password"
+                placeholder={t("login.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -221,10 +228,10 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {mode === "signup" ? "Creating account..." : "Logging in..."}
+                  {mode === "signup" ? t("login.creatingAccount") : t("login.loggingIn")}
                 </>
               ) : (
-                mode === "signup" ? "Start Free Trial" : "Log In"
+                mode === "signup" ? t("login.startTrial") : t("login.logIn")
               )}
             </Button>
           </form>
@@ -236,7 +243,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-border/30" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card/50 px-3 text-muted-foreground/60">or continue with</span>
+                  <span className="bg-card/50 px-3 text-muted-foreground/60">{t("login.orContinue")}</span>
                 </div>
               </div>
 
@@ -272,7 +279,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground/50 mt-6 font-mono">
-          &copy; 2026 EraseAI.ai &mdash; AI Data Governance Layer
+          {t("app.copyright")}
         </p>
       </motion.div>
     </div>

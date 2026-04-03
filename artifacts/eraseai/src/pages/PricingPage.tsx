@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useTranslation } from "react-i18next";
 import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
@@ -7,59 +8,6 @@ import { Button } from "@/components/ui-elements";
 interface PricingPageProps {
   onBack: () => void;
 }
-
-const tiers = [
-  {
-    id: "free" as const,
-    name: "Free",
-    price: 0,
-    icon: <Zap className="w-6 h-6" />,
-    description: "Get started with basic dataset tools",
-    features: [
-      "Basic dataset analysis",
-      "Up to 100 rows per dataset",
-      "PII & bias detection",
-      "Data erasure & redaction",
-      "Version history",
-    ],
-    cta: "Current Plan",
-    highlight: false,
-  },
-  {
-    id: "pro" as const,
-    name: "Pro",
-    price: 49,
-    icon: <Crown className="w-6 h-6" />,
-    description: "Full power for production data teams",
-    features: [
-      "Full dataset analysis",
-      "Unlimited rows per dataset",
-      "ML Pipeline Feedback",
-      "Advanced PII detection",
-      "Priority support",
-      "Export recommendations",
-    ],
-    cta: "Upgrade to Pro",
-    highlight: true,
-  },
-  {
-    id: "enterprise" as const,
-    name: "Enterprise",
-    price: -1,
-    icon: <Building2 className="w-6 h-6" />,
-    description: "Custom solutions for large organizations",
-    features: [
-      "Everything in Pro",
-      "Custom analysis rules",
-      "API access & webhooks",
-      "SSO integration",
-      "Dedicated support",
-      "Custom data retention",
-    ],
-    cta: "Contact Us",
-    highlight: false,
-  },
-];
 
 interface PlanDetails {
   planType: string;
@@ -70,6 +18,7 @@ interface PlanDetails {
 }
 
 export default function PricingPage({ onBack }: PricingPageProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const currentPlan = user?.planType || "free";
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -77,6 +26,59 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const [showContact, setShowContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
+
+  const tiers = [
+    {
+      id: "free" as const,
+      name: t("pricing.tierFree"),
+      price: 0,
+      icon: <Zap className="w-6 h-6" />,
+      description: t("pricing.tierFreeDesc"),
+      features: [
+        t("pricing.tierFreeF1"),
+        t("pricing.tierFreeF2"),
+        t("pricing.tierFreeF3"),
+        t("pricing.tierFreeF4"),
+        t("pricing.tierFreeF5"),
+      ],
+      cta: t("pricing.tierFreeCta"),
+      highlight: false,
+    },
+    {
+      id: "pro" as const,
+      name: t("pricing.tierPro"),
+      price: 49,
+      icon: <Crown className="w-6 h-6" />,
+      description: t("pricing.tierProDesc"),
+      features: [
+        t("pricing.tierProF1"),
+        t("pricing.tierProF2"),
+        t("pricing.tierProF3"),
+        t("pricing.tierProF4"),
+        t("pricing.tierProF5"),
+        t("pricing.tierProF6"),
+      ],
+      cta: t("pricing.tierProCta"),
+      highlight: true,
+    },
+    {
+      id: "enterprise" as const,
+      name: t("pricing.tierEnterprise"),
+      price: -1,
+      icon: <Building2 className="w-6 h-6" />,
+      description: t("pricing.tierEnterpriseDesc"),
+      features: [
+        t("pricing.tierEnterpriseF1"),
+        t("pricing.tierEnterpriseF2"),
+        t("pricing.tierEnterpriseF3"),
+        t("pricing.tierEnterpriseF4"),
+        t("pricing.tierEnterpriseF5"),
+        t("pricing.tierEnterpriseF6"),
+      ],
+      cta: t("pricing.tierEnterpriseCta"),
+      highlight: false,
+    },
+  ];
 
   useEffect(() => {
     if (currentPlan !== "free") {
@@ -163,7 +165,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+            {t("pricing.backToDashboard")}
           </button>
 
           <div className="text-center mb-12">
@@ -172,12 +174,12 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 <ShieldX className="w-7 h-7" />
               </div>
               <h1 className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-                EraseAI
+                {t("app.name")}
               </h1>
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Choose Your Plan</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">{t("pricing.chooseYourPlan")}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Scale your AI data governance with the right tier for your team
+              {t("pricing.scaleGovernance")}
             </p>
           </div>
         </motion.div>
@@ -201,7 +203,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
               >
                 {tier.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-cyan-400 text-black text-xs font-bold px-4 py-1 rounded-full">
-                    Most Popular
+                    {t("pricing.mostPopular")}
                   </div>
                 )}
 
@@ -218,18 +220,18 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   {tier.price === 0 && (
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-extrabold text-foreground">$0</span>
-                      <span className="text-muted-foreground text-sm">/month</span>
+                      <span className="text-muted-foreground text-sm">{t("pricing.month")}</span>
                     </div>
                   )}
                   {tier.price > 0 && (
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-extrabold text-foreground">${tier.price}</span>
-                      <span className="text-muted-foreground text-sm">/month</span>
+                      <span className="text-muted-foreground text-sm">{t("pricing.month")}</span>
                     </div>
                   )}
                   {tier.price < 0 && (
                     <div className="flex items-baseline">
-                      <span className="text-2xl font-bold text-foreground">Custom Pricing</span>
+                      <span className="text-2xl font-bold text-foreground">{t("pricing.customPricing")}</span>
                     </div>
                   )}
                 </div>
@@ -245,7 +247,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
 
                 {isCurrentPlan ? (
                   <div className="w-full py-3 rounded-xl text-center text-sm font-semibold bg-muted/30 text-muted-foreground border border-border/30">
-                    Current Plan
+                    {t("pricing.currentPlan")}
                   </div>
                 ) : tier.id === "pro" && !isDowngrade ? (
                   <Button
@@ -256,7 +258,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                     {checkoutLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
+                        {t("pricing.processing")}
                       </>
                     ) : (
                       <>
@@ -276,7 +278,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   </Button>
                 ) : (
                   <div className="w-full py-3 rounded-xl text-center text-sm text-muted-foreground">
-                    {isDowngrade ? "Included in your plan" : ""}
+                    {isDowngrade ? t("pricing.includedInPlan") : ""}
                   </div>
                 )}
               </motion.div>
@@ -293,23 +295,23 @@ export default function PricingPage({ onBack }: PricingPageProps) {
           >
             <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
-              Subscription Management
+              {t("pricing.subscriptionManagement")}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
-                <p className="text-xs text-muted-foreground mb-1">Status</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("pricing.status")}</p>
                 <p className="text-sm font-semibold text-foreground capitalize">{planDetails.subscriptionStatus || "Active"}</p>
               </div>
               <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
-                <p className="text-xs text-muted-foreground mb-1">Started</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("pricing.started")}</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {planDetails.planStartDate ? new Date(planDetails.planStartDate).toLocaleDateString() : "—"}
+                  {planDetails.planStartDate ? new Date(planDetails.planStartDate).toLocaleDateString() : "\u2014"}
                 </p>
               </div>
               <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
-                <p className="text-xs text-muted-foreground mb-1">Renews</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("pricing.renews")}</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {planDetails.planEndDate ? new Date(planDetails.planEndDate).toLocaleDateString() : "—"}
+                  {planDetails.planEndDate ? new Date(planDetails.planEndDate).toLocaleDateString() : "\u2014"}
                 </p>
               </div>
             </div>
@@ -319,7 +321,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
               className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
             >
               <AlertTriangle className="w-4 h-4" />
-              Cancel Subscription
+              {t("pricing.cancelSubscription")}
             </Button>
           </motion.div>
         )}
@@ -339,23 +341,23 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             >
               <div className="flex items-center gap-3 mb-4">
                 <AlertTriangle className="w-6 h-6 text-destructive" />
-                <h3 className="text-xl font-bold text-foreground">Cancel Subscription</h3>
+                <h3 className="text-xl font-bold text-foreground">{t("pricing.cancelConfirmTitle")}</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                Are you sure you want to cancel your Pro subscription? You will lose access to:
+                {t("pricing.cancelConfirmText")}
               </p>
               <ul className="space-y-2 mb-6">
                 <li className="text-sm text-muted-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                  Unlimited rows per dataset
+                  {t("pricing.cancelFeature1")}
                 </li>
                 <li className="text-sm text-muted-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                  ML Pipeline Feedback
+                  {t("pricing.cancelFeature2")}
                 </li>
                 <li className="text-sm text-muted-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                  Advanced PII detection
+                  {t("pricing.cancelFeature3")}
                 </li>
               </ul>
               <div className="flex gap-3">
@@ -364,7 +366,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   variant="outline"
                   className="flex-1"
                 >
-                  Keep Subscription
+                  {t("pricing.keepSubscription")}
                 </Button>
                 <Button
                   onClick={handleCancel}
@@ -374,10 +376,10 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   {cancelLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Cancelling...
+                      {t("pricing.cancelling")}
                     </>
                   ) : (
-                    "Yes, Cancel"
+                    t("pricing.yesCancel")
                   )}
                 </Button>
               </div>
@@ -400,10 +402,10 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             >
               <div className="flex items-center gap-3 mb-4">
                 <Building2 className="w-6 h-6 text-primary" />
-                <h3 className="text-xl font-bold text-foreground">Enterprise Inquiry</h3>
+                <h3 className="text-xl font-bold text-foreground">{t("pricing.enterpriseInquiry")}</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                For enterprise pricing and custom solutions, please reach out to our team.
+                {t("pricing.enterpriseText")}
               </p>
               <div className="space-y-3 mb-6">
                 <a
@@ -412,7 +414,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 >
                   <Mail className="w-5 h-5 text-primary shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Email</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">{t("admin.email")}</p>
                     <p className="text-sm font-mono text-foreground">director@futureonward.com</p>
                   </div>
                 </a>
@@ -434,7 +436,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 variant="outline"
                 className="w-full"
               >
-                Close
+                {t("pricing.close")}
               </Button>
             </motion.div>
           </motion.div>

@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useTranslation } from "react-i18next";
 import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin";
 
 function PlanBadge({ plan }: { plan: string }) {
+  const { t } = useTranslation();
   if (plan === "pro") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold">
         <Crown className="w-3 h-3" />
-        PRO
+        {t("plan.pro")}
       </span>
     );
   }
@@ -20,13 +23,13 @@ function PlanBadge({ plan }: { plan: string }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold">
         <Crown className="w-3 h-3" />
-        ENTERPRISE
+        {t("plan.enterprise")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs font-medium">
-      FREE
+      {t("plan.free")}
     </span>
   );
 }
@@ -42,6 +45,7 @@ function getTrialDaysRemaining(planType: string | undefined, planEndDate: string
 }
 
 function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -88,8 +92,8 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
                 <div className={`flex items-center gap-1.5 mt-1.5 text-xs ${trialDays === 0 ? "text-destructive" : trialDays <= 2 ? "text-yellow-400" : "text-primary"}`}>
                   <Clock className="w-3 h-3" />
                   {trialDays === 0
-                    ? "Trial expired"
-                    : `${trialDays} day${trialDays !== 1 ? "s" : ""} left in trial`
+                    ? t("trial.expired")
+                    : t("trial.daysLeft", { count: trialDays })
                   }
                 </div>
               )}
@@ -100,7 +104,7 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                Admin Dashboard
+                {t("nav.adminDashboard")}
               </button>
             )}
             <button
@@ -108,14 +112,14 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
             >
               <Crown className="w-4 h-4" />
-              {plan === "free" ? "Upgrade Plan" : "Manage Plan"}
+              {plan === "free" ? t("nav.upgradePlan") : t("nav.managePlan")}
             </button>
             <button
               onClick={() => { setOpen(false); logout(); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
             >
               <LogOut className="w-4 h-4" />
-              Log out
+              {t("nav.logOut")}
             </button>
           </div>
         </>
@@ -159,6 +163,7 @@ function VideoModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function Home({ onNavigate }: { onNavigate: (view: AppView) => void }) {
+  const { t } = useTranslation();
   const [showVideo, setShowVideo] = useState(false);
 
   return (
@@ -186,10 +191,10 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
             </div>
             <div>
               <h1 className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-                EraseAI
+                {t("app.name")}
               </h1>
               <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-1">
-                AI Data Governance Layer
+                {t("app.tagline")}
               </p>
             </div>
           </div>
@@ -200,15 +205,16 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
             >
               <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
-              See how it works
+              {t("nav.seeHow")}
             </button>
 
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
               <Globe className="w-3.5 h-3.5 text-primary" />
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              eraseai.ai LIVE
+              {t("nav.live")}
             </div>
 
+            <LanguageSelector />
             <FeedbackButton />
             <UserMenu onNavigate={onNavigate} />
           </div>
@@ -220,16 +226,16 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           transition={{ duration: 0.4, delay: 0.15 }}
           className="flex items-center gap-3 mb-8 text-xs font-mono text-muted-foreground"
         >
-          <span className="uppercase tracking-wider text-primary/70 font-semibold">AI Data Control</span>
+          <span className="uppercase tracking-wider text-primary/70 font-semibold">{t("pipeline.label")}</span>
           <span className="flex items-center gap-1.5">
-            Upload <ArrowRight className="w-3 h-3" />
-            Analyze <ArrowRight className="w-3 h-3" />
-            Fix <ArrowRight className="w-3 h-3" />
-            Verify <ArrowRight className="w-3 h-3" />
-            Retrain
+            {t("pipeline.upload")} <ArrowRight className="w-3 h-3" />
+            {t("pipeline.analyze")} <ArrowRight className="w-3 h-3" />
+            {t("pipeline.fix")} <ArrowRight className="w-3 h-3" />
+            {t("pipeline.verify")} <ArrowRight className="w-3 h-3" />
+            {t("pipeline.retrain")}
           </span>
           <span className="hidden sm:inline text-muted-foreground/50">|</span>
-          <span className="hidden sm:inline text-muted-foreground/60">Detect risk. Clean data. Fix your model.</span>
+          <span className="hidden sm:inline text-muted-foreground/60">{t("pipeline.subtitle")}</span>
         </motion.div>
 
         <motion.div
@@ -243,7 +249,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
 
       <footer className="relative z-10 border-t border-border/30 mt-16 py-6 text-center">
         <p className="text-xs font-mono text-muted-foreground/60">
-          &copy; 2026 EraseAI.ai &mdash; AI Data Governance Layer
+          {t("app.copyright")}
         </p>
       </footer>
 

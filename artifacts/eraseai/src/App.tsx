@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useTranslation } from "react-i18next";
 import Home from "@/pages/Home";
 import LoginPage from "@/pages/LoginPage";
 import PricingPage from "@/pages/PricingPage";
@@ -22,6 +23,7 @@ const queryClient = new QueryClient({
 type AppView = "home" | "pricing" | "checkout-success" | "admin";
 
 function AuthGate() {
+  const { t } = useTranslation();
   const { isLoading, isAuthenticated, user } = useAuth();
   const [view, setView] = useState<AppView>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -46,7 +48,7 @@ function AuthGate() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-sm text-muted-foreground font-mono">Loading EraseAI...</p>
+          <p className="text-sm text-muted-foreground font-mono">{t("app.loading")}</p>
         </div>
       </div>
     );

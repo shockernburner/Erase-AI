@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useTranslation } from "react-i18next";
 import {
   ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
   Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
@@ -394,6 +395,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
 }
 
 export default function AdminDashboard({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -482,7 +484,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   if (user?.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-destructive">Access denied</p>
+        <p className="text-destructive">{t("admin.accessDenied")}</p>
       </div>
     );
   }
@@ -511,7 +513,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               className="gap-2 text-sm border-border/50"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t("admin.backToDashboard")}
             </Button>
             <div className="flex items-center gap-2">
               <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
@@ -519,10 +521,10 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               </div>
               <div>
                 <h1 className="text-2xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-                  Admin Dashboard
+                  {t("admin.title")}
                 </h1>
                 <p className="text-xs font-mono text-primary/80 uppercase tracking-widest">
-                  EraseAI Management Console
+                  {t("app.tagline")}
                 </p>
               </div>
             </div>
@@ -535,7 +537,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             className="gap-2 text-sm border-border/50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
+            {refreshing ? t("admin.refreshing") : t("admin.refresh")}
           </Button>
         </motion.header>
 
@@ -548,25 +550,25 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <StatCard
                 icon={<Eye className="w-5 h-5" />}
-                label="Page Views"
+                label={t("admin.totalVisits")}
                 value={stats?.visits.allTime ?? 0}
-                sub={`Today: ${stats?.visits.today ?? 0} · This week: ${stats?.visits.week ?? 0}`}
+                sub={`${t("admin.todayWeek")}: ${stats?.visits.today ?? 0} / ${stats?.visits.week ?? 0}`}
               />
               <StatCard
                 icon={<Users className="w-5 h-5" />}
-                label="Total Users"
+                label={t("admin.totalUsers")}
                 value={stats?.totalUsers ?? 0}
               />
               <StatCard
                 icon={<Crown className="w-5 h-5" />}
-                label="Pro Subscriptions"
+                label={t("admin.proSubscriptions")}
                 value={stats?.proSubscriptions ?? 0}
               />
               <StatCard
                 icon={<MessageSquare className="w-5 h-5" />}
-                label="Feedback"
+                label={t("admin.feedbackRating")}
                 value={stats?.feedback.total ?? 0}
-                sub={stats?.feedback.averageRating ? `Avg rating: ${stats.feedback.averageRating}/5` : undefined}
+                sub={stats?.feedback.averageRating ? `${t("admin.avgRating")}: ${stats.feedback.averageRating}/5` : undefined}
               />
             </div>
 
@@ -578,7 +580,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             >
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Visit Trends (14 days)</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("admin.visitTrends")}</h2>
               </div>
               <MiniBarChart data={trends} />
             </motion.div>
@@ -591,14 +593,14 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             >
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Users</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("admin.users")}</h2>
                 <span className="text-xs text-muted-foreground/50 ml-auto mr-3">{stats?.totalUsers ?? 0} total</span>
                 <Button
                   onClick={() => setShowCreateUser(true)}
                   className="gap-1.5 text-xs h-8 px-3 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
-                  Create User
+                  {t("admin.createUser")}
                 </Button>
               </div>
 
@@ -658,7 +660,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             >
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Feedback</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("admin.feedbackTitle")}</h2>
                 <span className="text-xs text-muted-foreground/50 ml-auto">{stats?.feedback.total ?? 0} total</span>
               </div>
 

@@ -69,6 +69,14 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 *   **React Query:** Data fetching and caching library for React.
 *   **PapaParse:** (Implicitly used in `api-server` for CSV parsing)
 
+**Internationalization (i18n):**
+*   **Framework:** react-i18next with i18next and i18next-browser-languagedetector.
+*   **Supported Languages:** English (en), French (fr), German (de), Spanish (es), Japanese (ja), Chinese (zh).
+*   **Translation Files:** Located in `artifacts/eraseai/src/i18n/locales/{lang}.json`.
+*   **Configuration:** `artifacts/eraseai/src/i18n/index.ts` — auto-detects browser language, stores preference in localStorage under key `eraseai-lang`.
+*   **Language Selector:** `artifacts/eraseai/src/components/LanguageSelector.tsx` — globe icon dropdown in top-right corner, visible on both login page and main app header.
+*   **Coverage:** LoginPage, Home (header/nav/pipeline/footer), PricingPage (all tiers/features/modals), AdminDashboard (header/stats/sections), DatasetSanitizer (upload area, key buttons, upgrade prompts).
+
 **EraseAI System Explainer Video:**
 
 *   A separate video artifact (`artifacts/eraseai-video`) accessible at `/eraseai-video/`.
