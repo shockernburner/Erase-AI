@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import { sql, eq, and, ilike, desc, asc } from "drizzle-orm";
 import { getUserPlan, requirePro, requireActivePlan, refreshPlanFromDB, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
+import { dispatchWebhookEvent } from "../lib/webhookDispatcher";
 import Papa from "papaparse";
 import { parseCSVBuffer, parseCSVFromRows } from "../lib/csvParser";
 import { profileDataset } from "../lib/profiler";
@@ -345,7 +346,7 @@ router.post("/:id/erase", requireActivePlan(), async (req: Request, res: Respons
   const removed = newRows.filter(r => r.isRemoved).length;
   const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
 
-  res.json({
+  const eraseKeywordResult = {
     version_number: newVersionNumber,
     mode,
     keyword,
@@ -357,7 +358,16 @@ router.post("/:id/erase", requireActivePlan(), async (req: Request, res: Respons
       total: newRows.length,
       impact_percent: Math.round((affectedCount / newRows.length) * 100),
     },
-  });
+  };
+
+  dispatchWebhookEvent(req.user!.id, "dataset.erased", {
+    datasetId: id,
+    datasetName: dataset.name,
+    status: "completed",
+    summary: { mode, keyword, affectedCount, removed, redacted, remaining },
+  }).catch(() => {});
+
+  res.json(eraseKeywordResult);
 });
 
 router.get("/:id/download", async (req: Request, res: Response) => {
@@ -651,7 +661,7 @@ router.post("/:id/analyze", requireActivePlan(), async (req: Request, res: Respo
     }
   }
 
-  res.json({
+  const analysisResult = {
     dataset_id: id,
     version: latestVersion.versionNumber,
     total_issues: issues.length,
@@ -675,7 +685,16 @@ router.post("/:id/analyze", requireActivePlan(), async (req: Request, res: Respo
         suggested_value: i.suggestedValue,
       }));
     })(),
-  });
+  };
+
+  dispatchWebhookEvent(req.user!.id, "dataset.analyzed", {
+    datasetId: id,
+    datasetName: dataset.name,
+    status: "completed",
+    summary: { totalIssues: issues.length, categories: Object.keys(summary) },
+  }).catch(() => {});
+
+  res.json(analysisResult);
 });
 
 router.post("/:id/apply-suggestions", requireActivePlan(), async (req: Request, res: Response) => {
@@ -760,7 +779,7 @@ router.post("/:id/apply-suggestions", requireActivePlan(), async (req: Request, 
   const redacted = newRows.filter(r => r.isRedacted && !r.isRemoved).length;
   const remaining = newRows.filter(r => !r.isRemoved).length;
 
-  res.json({
+  const eraseResult = {
     version_number: newVersionNumber,
     affected_count: affectedCount,
     applied_types: issue_types,
@@ -771,7 +790,22 @@ router.post("/:id/apply-suggestions", requireActivePlan(), async (req: Request, 
       total: newRows.length,
       impact_percent: Math.round((affectedCount / newRows.length) * 100),
     },
-  });
+  };
+
+  dispatchWebhookEvent(req.user!.id, "dataset.erased", {
+    datasetId: id,
+    datasetName: dataset.name,
+    status: "completed",
+    summary: {
+      affectedCount,
+      removed,
+      redacted,
+      remaining,
+      appliedTypes: issue_types,
+    },
+  }).catch(() => {});
+
+  res.json(eraseResult);
 });
 
 interface MLRecommendation {
@@ -1320,12 +1354,21 @@ router.post("/:id/drop-column", requireActivePlan(), async (req: Request, res: R
     affectedRowsCount: activeRows.length,
   });
 
-  res.json({
+  const dropResult = {
     version_number: newVersionNumber,
     dropped_column: colName,
     remaining_columns: newHeaders,
     affected_rows: activeRows.length,
-  });
+  };
+
+  dispatchWebhookEvent(req.user!.id, "dataset.erased", {
+    datasetId: id,
+    datasetName: dataset.name,
+    status: "completed",
+    summary: { operation: "drop-column", droppedColumn: colName, remainingColumns: newHeaders, affectedRows: activeRows.length },
+  }).catch(() => {});
+
+  res.json(dropResult);
 });
 
 router.post("/:id/profile", requireActivePlan(), async (req: Request, res: Response) => {

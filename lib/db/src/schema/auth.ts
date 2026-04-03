@@ -76,6 +76,40 @@ export const apiUsageTable = pgTable("api_usage", {
 export type ApiUsage = typeof apiUsageTable.$inferSelect;
 export type InsertApiUsage = typeof apiUsageTable.$inferInsert;
 
+export const webhooksTable = pgTable("webhooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  url: varchar("url", { length: 2000 }).notNull(),
+  secret: varchar("secret", { length: 64 }).notNull(),
+  isActive: integer("is_active").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("idx_webhooks_user_id").on(table.userId),
+  index("idx_webhooks_user_id_unique").on(table.userId),
+]);
+
+export type Webhook = typeof webhooksTable.$inferSelect;
+export type InsertWebhook = typeof webhooksTable.$inferInsert;
+
+export const webhookDeliveriesTable = pgTable("webhook_deliveries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  webhookId: varchar("webhook_id").notNull().references(() => webhooksTable.id, { onDelete: "cascade" }),
+  event: varchar("event", { length: 100 }).notNull(),
+  payload: jsonb("payload").notNull(),
+  responseStatus: integer("response_status"),
+  responseBody: text("response_body"),
+  attempt: integer("attempt").notNull().default(1),
+  success: integer("success").notNull().default(0),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_webhook_deliveries_webhook_id").on(table.webhookId),
+  index("idx_webhook_deliveries_delivered_at").on(table.deliveredAt),
+]);
+
+export type WebhookDelivery = typeof webhookDeliveriesTable.$inferSelect;
+export type InsertWebhookDelivery = typeof webhookDeliveriesTable.$inferInsert;
+
 export const pageVisitsTable = pgTable("page_visits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   path: varchar("path", { length: 500 }).notNull(),

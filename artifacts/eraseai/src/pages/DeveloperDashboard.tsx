@@ -17,6 +17,13 @@ import {
   BarChart3,
   TrendingUp,
   Zap,
+  Webhook,
+  Send,
+  ToggleLeft,
+  ToggleRight,
+  Loader2,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`;
@@ -137,6 +144,265 @@ function UsageMeter({ usage, onUpgrade }: { usage: UsageData | null; onUpgrade?:
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface WebhookInfo {
+  id: string;
+  url: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface WebhookDelivery {
+  id: string;
+  event: string;
+  responseStatus: number | null;
+  attempt: number;
+  success: boolean;
+  deliveredAt: string;
+}
+
+function WebhookSection() {
+  const { t } = useTranslation();
+  const [webhook, setWebhook] = useState<WebhookInfo | null>(null);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchWebhook = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/developer/webhooks`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setWebhook(data.webhook);
+        if (data.webhook) {
+          setWebhookUrl(data.webhook.url);
+          fetchDeliveries(data.webhook.id);
+        }
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchDeliveries = async (webhookId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/developer/webhooks/${webhookId}/deliveries`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setDeliveries(data.deliveries);
+      }
+    } catch {}
+  };
+
+  useEffect(() => { fetchWebhook(); }, [fetchWebhook]);
+
+  const saveWebhook = async () => {
+    if (!webhookUrl.trim()) return;
+    setSaving(true);
+    setError(null);
+    setTestResult(null);
+    try {
+      if (webhook) {
+        const res = await fetch(`${API_BASE}/developer/webhooks/${webhook.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ url: webhookUrl.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error); return; }
+        setWebhook(data.webhook);
+      } else {
+        const res = await fetch(`${API_BASE}/developer/webhooks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ url: webhookUrl.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error); return; }
+        setWebhook(data.webhook);
+      }
+    } catch {
+      setError(t("developer.webhookSaveFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActive = async () => {
+    if (!webhook) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/developer/webhooks/${webhook.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isActive: !webhook.isActive }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWebhook(data.webhook);
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteWebhook = async () => {
+    if (!webhook) return;
+    try {
+      const res = await fetch(`${API_BASE}/developer/webhooks/${webhook.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        setWebhook(null);
+        setWebhookUrl("");
+        setDeliveries([]);
+        setTestResult(null);
+      }
+    } catch {}
+  };
+
+  const sendTest = async () => {
+    if (!webhook) return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/developer/webhooks/${webhook.id}/test`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      setTestResult({ success: data.success, message: data.message });
+      fetchDeliveries(webhook.id);
+    } catch {
+      setTestResult({ success: false, message: t("developer.webhookTestFailed") });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8 text-muted-foreground text-sm">{t("developer.loading")}</div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-foreground">{t("developer.webhookUrl")}</label>
+        <div className="flex gap-2">
+          <input
+            value={webhookUrl}
+            onChange={(e) => setWebhookUrl(e.target.value)}
+            placeholder="https://your-server.com/webhook"
+            className="flex-1 bg-background/50 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            onKeyDown={(e) => e.key === "Enter" && saveWebhook()}
+          />
+          <button
+            onClick={saveWebhook}
+            disabled={saving || !webhookUrl.trim()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {saving ? t("developer.saving") : webhook ? t("developer.update") : t("developer.save")}
+          </button>
+        </div>
+        {error && (
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <AlertCircle className="w-3 h-3" />
+            {error}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">{t("developer.webhookDesc")}</p>
+      </div>
+
+      {webhook && (
+        <>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={toggleActive}
+              disabled={saving}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-border/30 hover:bg-muted/20 transition-colors"
+            >
+              {webhook.isActive ? (
+                <><ToggleRight className="w-5 h-5 text-green-400" /><span className="text-green-400">{t("developer.webhookActive")}</span></>
+              ) : (
+                <><ToggleLeft className="w-5 h-5 text-muted-foreground" /><span className="text-muted-foreground">{t("developer.webhookPaused")}</span></>
+              )}
+            </button>
+            <button
+              onClick={sendTest}
+              disabled={testing}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-border/30 hover:bg-muted/20 transition-colors text-foreground"
+            >
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {t("developer.sendTest")}
+            </button>
+            <button
+              onClick={deleteWebhook}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-destructive/30 hover:bg-destructive/10 transition-colors text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t("developer.delete")}
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {testResult && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border ${
+                  testResult.success
+                    ? "bg-green-500/10 border-green-500/30 text-green-400"
+                    : "bg-red-500/10 border-red-500/30 text-red-400"
+                }`}
+              >
+                {testResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+                {testResult.message}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {deliveries.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">{t("developer.deliveryHistory")}</h4>
+              <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                {deliveries.map((d) => (
+                  <div key={d.id} className="flex items-center gap-3 px-3 py-2 bg-muted/10 rounded-lg border border-border/20 text-xs">
+                    {d.success ? <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />}
+                    <span className="font-mono text-foreground/80">{d.event}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                      d.responseStatus && d.responseStatus < 300 ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                    }`}>
+                      {d.responseStatus || "ERR"}
+                    </span>
+                    <span className="text-muted-foreground">#{d.attempt}</span>
+                    <span className="text-muted-foreground ml-auto">{new Date(d.deliveredAt).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/20">
+        <p className="font-medium text-foreground/80">{t("developer.webhookEvents")}</p>
+        <p><code className="text-primary/70">dataset.analyzed</code> — {t("developer.eventAnalyzed")}</p>
+        <p><code className="text-primary/70">dataset.erased</code> — {t("developer.eventErased")}</p>
+        <p><code className="text-primary/70">dataset.failed</code> — {t("developer.eventFailed")}</p>
+      </div>
     </div>
   );
 }
@@ -502,6 +768,14 @@ export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () =
               {t("developer.apiUsage")}
             </h3>
             <UsageMeter usage={usage} onUpgrade={onUpgrade} />
+          </div>
+
+          <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+              <Webhook className="w-5 h-5 text-primary" />
+              {t("developer.webhooks")}
+            </h3>
+            <WebhookSection />
           </div>
 
           <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">

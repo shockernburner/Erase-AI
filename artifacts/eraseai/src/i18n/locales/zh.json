@@ -461,6 +461,23 @@
     "resetsOn": "重置日期",
     "approachingLimit": "您即将达到每月API限制。",
     "upgradePlan": "升级计划",
-    "dailyUsage": "每日使用量"
+    "dailyUsage": "每日使用量",
+    "webhooks": "Webhooks",
+    "webhookUrl": "Webhook端点URL",
+    "webhookDesc": "当数据集事件发生时（分析完成、数据擦除、失败），我们将向此URL发送POST请求。",
+    "webhookSaveFailed": "保存Webhook失败",
+    "webhookActive": "活跃",
+    "webhookPaused": "已暂停",
+    "sendTest": "发送测试",
+    "webhookTestFailed": "测试投递失败",
+    "deliveryHistory": "最近投递",
+    "webhookEvents": "支持的事件：",
+    "eventAnalyzed": "数据集分析完成",
+    "eventErased": "数据擦除已应用于数据集",
+    "eventFailed": "数据集操作失败",
+    "saving": "保存中...",
+    "save": "保存",
+    "update": "更新",
+    "delete": "删除"
   }
 }

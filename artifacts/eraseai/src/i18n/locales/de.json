@@ -461,6 +461,23 @@
     "resetsOn": "Zurücksetzung am",
     "approachingLimit": "Sie nähern sich Ihrem monatlichen API-Limit.",
     "upgradePlan": "Plan upgraden",
-    "dailyUsage": "Tägliche Nutzung"
+    "dailyUsage": "Tägliche Nutzung",
+    "webhooks": "Webhooks",
+    "webhookUrl": "Webhook-Endpunkt-URL",
+    "webhookDesc": "Wir senden POST-Anfragen an diese URL, wenn Dataset-Ereignisse auftreten (Analyse abgeschlossen, Daten gelöscht, Fehler).",
+    "webhookSaveFailed": "Webhook konnte nicht gespeichert werden",
+    "webhookActive": "Aktiv",
+    "webhookPaused": "Pausiert",
+    "sendTest": "Test senden",
+    "webhookTestFailed": "Testzustellung fehlgeschlagen",
+    "deliveryHistory": "Letzte Zustellungen",
+    "webhookEvents": "Unterstützte Ereignisse:",
+    "eventAnalyzed": "Analyse eines Datasets abgeschlossen",
+    "eventErased": "Datenlöschung auf ein Dataset angewendet",
+    "eventFailed": "Eine Dataset-Operation ist fehlgeschlagen",
+    "saving": "Speichern...",
+    "save": "Speichern",
+    "update": "Aktualisieren",
+    "delete": "Löschen"
   }
 }

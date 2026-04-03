@@ -461,6 +461,23 @@
     "resetsOn": "Se reinicia el",
     "approachingLimit": "Te estás acercando a tu límite mensual de API.",
     "upgradePlan": "Mejorar plan",
-    "dailyUsage": "Uso diario"
+    "dailyUsage": "Uso diario",
+    "webhooks": "Webhooks",
+    "webhookUrl": "URL del endpoint del webhook",
+    "webhookDesc": "Enviaremos solicitudes POST a esta URL cuando ocurran eventos de dataset (análisis completado, datos borrados, fallos).",
+    "webhookSaveFailed": "Error al guardar el webhook",
+    "webhookActive": "Activo",
+    "webhookPaused": "Pausado",
+    "sendTest": "Enviar prueba",
+    "webhookTestFailed": "Error en la entrega de prueba",
+    "deliveryHistory": "Entregas recientes",
+    "webhookEvents": "Eventos compatibles:",
+    "eventAnalyzed": "Análisis completado en un dataset",
+    "eventErased": "Borrado de datos aplicado a un dataset",
+    "eventFailed": "Una operación de dataset falló",
+    "saving": "Guardando...",
+    "save": "Guardar",
+    "update": "Actualizar",
+    "delete": "Eliminar"
   }
 }

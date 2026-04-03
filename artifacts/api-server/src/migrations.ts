@@ -42,9 +42,55 @@ async function ensureApiUsageTable() {
   }
 }
 
+async function ensureWebhooksTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS webhooks (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        url VARCHAR(2000) NOT NULL,
+        secret VARCHAR(64) NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_webhooks_user_id ON webhooks(user_id)`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_webhooks_user_id_unique ON webhooks(user_id)`);
+    logger.info("Startup migration: webhooks table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: webhooks table warning (non-fatal)");
+  }
+}
+
+async function ensureWebhookDeliveriesTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS webhook_deliveries (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        webhook_id VARCHAR NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+        event VARCHAR(100) NOT NULL,
+        payload JSONB NOT NULL,
+        response_status INTEGER,
+        response_body TEXT,
+        attempt INTEGER NOT NULL DEFAULT 1,
+        success INTEGER NOT NULL DEFAULT 0,
+        delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook_id ON webhook_deliveries(webhook_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_delivered_at ON webhook_deliveries(delivered_at)`);
+    logger.info("Startup migration: webhook_deliveries table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: webhook_deliveries table warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
+  await ensureWebhooksTable();
+  await ensureWebhookDeliveriesTable();
   try {
     const demoDatasets = await db.execute(sql`
       SELECT id FROM datasets WHERE user_id = 'system-demo-user'

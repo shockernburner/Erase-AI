@@ -1,9 +1,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, apiKeysTable, apiUsageTable } from "@workspace/db";
+import { randomBytes } from "crypto";
+import { db, apiKeysTable, apiUsageTable, webhooksTable, webhookDeliveriesTable } from "@workspace/db";
 import { eq, and, isNull, desc, gte, sql } from "drizzle-orm";
 import { generateApiKey } from "../middlewares/apiKeyMiddleware";
 import { getUserPlan, refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { PLAN_REQUEST_LIMITS, getMonthStart, getNextMonthStart } from "../middlewares/rateLimitMiddleware";
+import { sendTestWebhook, isWebhookUrlSafe } from "../lib/webhookDispatcher";
 
 const router: IRouter = Router();
 router.use(refreshPlanFromDB);
@@ -185,6 +187,242 @@ router.get("/usage", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Usage stats error:", err);
     res.status(500).json({ error: "Failed to fetch usage stats" });
+  }
+});
+
+router.get("/webhooks", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+  try {
+    const [webhook] = await db
+      .select()
+      .from(webhooksTable)
+      .where(eq(webhooksTable.userId, req.user!.id))
+      .limit(1);
+
+    if (!webhook) {
+      res.json({ webhook: null });
+      return;
+    }
+
+    res.json({
+      webhook: {
+        id: webhook.id,
+        url: webhook.url,
+        isActive: webhook.isActive === 1,
+        createdAt: webhook.createdAt.toISOString(),
+        updatedAt: webhook.updatedAt.toISOString(),
+      },
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch webhook" });
+  }
+});
+
+router.post("/webhooks", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+
+  const { url } = req.body as { url?: string };
+  if (!url || !url.trim()) {
+    res.status(400).json({ error: "Webhook URL is required" });
+    return;
+  }
+
+  const urlCheck = isWebhookUrlSafe(url);
+  if (!urlCheck.safe) {
+    res.status(400).json({ error: urlCheck.error });
+    return;
+  }
+
+  try {
+    const existing = await db
+      .select()
+      .from(webhooksTable)
+      .where(eq(webhooksTable.userId, req.user!.id))
+      .limit(1);
+
+    if (existing.length > 0) {
+      res.status(400).json({ error: "You already have a webhook registered. Update or delete it first." });
+      return;
+    }
+
+    const secret = randomBytes(32).toString("hex");
+
+    const [webhook] = await db.insert(webhooksTable).values({
+      userId: req.user!.id,
+      url: url.trim(),
+      secret,
+    }).returning();
+
+    res.status(201).json({
+      webhook: {
+        id: webhook.id,
+        url: webhook.url,
+        isActive: webhook.isActive === 1,
+        createdAt: webhook.createdAt.toISOString(),
+      },
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to create webhook" });
+  }
+});
+
+router.patch("/webhooks/:id", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+
+  const webhookId = req.params.id as string;
+  const { url, isActive } = req.body as { url?: string; isActive?: boolean };
+
+  if (url !== undefined) {
+    if (!url.trim()) {
+      res.status(400).json({ error: "URL cannot be empty" });
+      return;
+    }
+    const patchUrlCheck = isWebhookUrlSafe(url);
+    if (!patchUrlCheck.safe) {
+      res.status(400).json({ error: patchUrlCheck.error });
+      return;
+    }
+  }
+
+  try {
+    const [webhook] = await db
+      .select()
+      .from(webhooksTable)
+      .where(and(eq(webhooksTable.id, webhookId), eq(webhooksTable.userId, req.user!.id)));
+
+    if (!webhook) {
+      res.status(404).json({ error: "Webhook not found" });
+      return;
+    }
+
+    const updates: Record<string, unknown> = {};
+
+    if (url !== undefined) {
+      updates.url = url.trim();
+    }
+
+    if (isActive !== undefined) {
+      updates.isActive = isActive ? 1 : 0;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ error: "No updates provided" });
+      return;
+    }
+
+    updates.updatedAt = new Date();
+
+    await db.update(webhooksTable).set(updates).where(eq(webhooksTable.id, webhookId));
+
+    const [updated] = await db
+      .select()
+      .from(webhooksTable)
+      .where(eq(webhooksTable.id, webhookId));
+
+    res.json({
+      webhook: {
+        id: updated.id,
+        url: updated.url,
+        isActive: updated.isActive === 1,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      },
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to update webhook" });
+  }
+});
+
+router.delete("/webhooks/:id", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+
+  const webhookId = req.params.id as string;
+
+  try {
+    const [webhook] = await db
+      .select()
+      .from(webhooksTable)
+      .where(and(eq(webhooksTable.id, webhookId), eq(webhooksTable.userId, req.user!.id)));
+
+    if (!webhook) {
+      res.status(404).json({ error: "Webhook not found" });
+      return;
+    }
+
+    await db.delete(webhookDeliveriesTable).where(eq(webhookDeliveriesTable.webhookId, webhookId));
+    await db.delete(webhooksTable).where(eq(webhooksTable.id, webhookId));
+
+    res.json({ message: "Webhook deleted successfully" });
+  } catch {
+    res.status(500).json({ error: "Failed to delete webhook" });
+  }
+});
+
+router.post("/webhooks/:id/test", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+
+  const webhookId = req.params.id as string;
+
+  try {
+    const [webhook] = await db
+      .select()
+      .from(webhooksTable)
+      .where(and(eq(webhooksTable.id, webhookId), eq(webhooksTable.userId, req.user!.id)));
+
+    if (!webhook) {
+      res.status(404).json({ error: "Webhook not found" });
+      return;
+    }
+
+    const result = await sendTestWebhook(webhook.id, webhook.url);
+
+    res.json({
+      success: result.success,
+      status: result.status,
+      message: result.success
+        ? "Test webhook delivered successfully"
+        : `Webhook delivery failed: ${result.body || "No response"}`,
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to send test webhook" });
+  }
+});
+
+router.get("/webhooks/:id/deliveries", async (req: Request, res: Response) => {
+  if (!requireApiAccess(req, res)) return;
+
+  const webhookId = req.params.id as string;
+
+  try {
+    const [webhook] = await db
+      .select()
+      .from(webhooksTable)
+      .where(and(eq(webhooksTable.id, webhookId), eq(webhooksTable.userId, req.user!.id)));
+
+    if (!webhook) {
+      res.status(404).json({ error: "Webhook not found" });
+      return;
+    }
+
+    const deliveries = await db
+      .select()
+      .from(webhookDeliveriesTable)
+      .where(eq(webhookDeliveriesTable.webhookId, webhookId))
+      .orderBy(desc(webhookDeliveriesTable.deliveredAt))
+      .limit(20);
+
+    res.json({
+      deliveries: deliveries.map((d) => ({
+        id: d.id,
+        event: d.event,
+        responseStatus: d.responseStatus,
+        attempt: d.attempt,
+        success: d.success === 1,
+        deliveredAt: d.deliveredAt.toISOString(),
+      })),
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch delivery history" });
   }
 });
 

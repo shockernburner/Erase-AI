@@ -461,6 +461,23 @@
     "resetsOn": "リセット日",
     "approachingLimit": "月間API制限に近づいています。",
     "upgradePlan": "プランをアップグレード",
-    "dailyUsage": "日別使用量"
+    "dailyUsage": "日別使用量",
+    "webhooks": "Webhook",
+    "webhookUrl": "WebhookエンドポイントURL",
+    "webhookDesc": "データセットイベント（分析完了、データ消去、失敗）が発生した際に、このURLにPOSTリクエストを送信します。",
+    "webhookSaveFailed": "Webhookの保存に失敗しました",
+    "webhookActive": "有効",
+    "webhookPaused": "一時停止",
+    "sendTest": "テスト送信",
+    "webhookTestFailed": "テスト配信に失敗しました",
+    "deliveryHistory": "最近の配信",
+    "webhookEvents": "対応イベント：",
+    "eventAnalyzed": "データセットの分析が完了",
+    "eventErased": "データセットにデータ消去を適用",
+    "eventFailed": "データセット操作が失敗",
+    "saving": "保存中...",
+    "save": "保存",
+    "update": "更新",
+    "delete": "削除"
   }
 }
