@@ -535,7 +535,14 @@
     "analyzing": "Analizando...",
     "analysisFailed": "El análisis falló",
     "dailyUsage": "{{used}}/{{limit}} análisis usados hoy",
-    "history": "Historial de Análisis",
+    "history": {
+      "trendTitle": "Tendencia de Puntuación de Riesgo (30 días)",
+      "avgScore": "Puntuación promedio",
+      "filterAll": "Todos",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "pageOf": "Página {{page}} de {{total}}"
+    },
     "totalScans": "{{count}} en total",
     "noHistory": "Sin análisis aún. Use las acciones rápidas arriba para comenzar.",
     "issues": "problemas",
@@ -589,6 +596,20 @@
       "uploadFileDesc": "Escanear TXT, CSV o JSON"
     },
     "dailyLimitReached": "Límite diario alcanzado ({{used}}/{{limit}} análisis). Actualice para análisis ilimitados.",
-    "upgradeCta": "Actualizar"
+    "upgradeCta": "Actualizar",
+    "rewrite": {
+      "title": "Asistente de Reescritura",
+      "description": "Genera una versión más segura de tu texto preservando el significado. Requiere plan Pro.",
+      "rewriteBtn": "Reescribir",
+      "rewriting": "Reescribiendo...",
+      "original": "Original",
+      "safer": "Versión más segura",
+      "copy": "Copiar texto reescrito",
+      "copied": "¡Copiado!",
+      "tryAgain": "Reescribir de nuevo",
+      "failed": "La reescritura falló. Inténtalo de nuevo.",
+      "proRequired": "La reescritura de contenido requiere un plan Pro, Business o Enterprise."
+    },
+    "historyTitle": "Historial de Análisis"
   }
 }

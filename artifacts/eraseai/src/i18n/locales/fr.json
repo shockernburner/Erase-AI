@@ -535,7 +535,14 @@
     "analyzing": "Analyse en cours...",
     "analysisFailed": "L'analyse a échoué",
     "dailyUsage": "{{used}}/{{limit}} analyses utilisées aujourd'hui",
-    "history": "Historique des Analyses",
+    "history": {
+      "trendTitle": "Tendance du Score de Risque (30 jours)",
+      "avgScore": "Score moyen",
+      "filterAll": "Tous",
+      "prev": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {{page}} sur {{total}}"
+    },
     "totalScans": "{{count}} au total",
     "noHistory": "Aucune analyse. Utilisez les actions rapides ci-dessus pour commencer.",
     "issues": "problèmes",
@@ -589,6 +596,20 @@
       "uploadFileDesc": "Scanner TXT, CSV ou JSON"
     },
     "dailyLimitReached": "Limite quotidienne atteinte ({{used}}/{{limit}} analyses). Passez à la version supérieure pour des analyses illimitées.",
-    "upgradeCta": "Mettre à niveau"
+    "upgradeCta": "Mettre à niveau",
+    "rewrite": {
+      "title": "Assistant de Réécriture",
+      "description": "Générez une version plus sûre de votre texte tout en préservant le sens. Nécessite le plan Pro.",
+      "rewriteBtn": "Réécrire",
+      "rewriting": "Réécriture...",
+      "original": "Original",
+      "safer": "Version plus sûre",
+      "copy": "Copier le texte réécrit",
+      "copied": "Copié !",
+      "tryAgain": "Réécrire à nouveau",
+      "failed": "La réécriture a échoué. Veuillez réessayer.",
+      "proRequired": "La réécriture de contenu nécessite un plan Pro, Business ou Enterprise."
+    },
+    "historyTitle": "Historique des Analyses"
   }
 }

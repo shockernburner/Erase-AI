@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db, personalScansTable } from "@workspace/db";
-import { eq, desc, sql, and, gte } from "drizzle-orm";
+import { eq, desc, sql, and, gte, inArray } from "drizzle-orm";
 import { analyzeText } from "../lib/personalAnalyzer";
 import { calculateRiskScore } from "../lib/riskScorer";
-import { refreshPlanFromDB } from "../middlewares/planMiddleware";
+import { rewriteContent } from "../lib/contentRewriter";
+import { refreshPlanFromDB, requirePro } from "../middlewares/planMiddleware";
 
 const router = Router();
 
@@ -109,11 +110,26 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
 
     const limit = Math.max(1, Math.min(parseInt(req.query.limit as string) || 20, 100));
     const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+    const levelFilter = req.query.level as string | undefined;
+    const validLevels = ["low", "medium", "high"];
+
+    const conditions = [eq(personalScansTable.userId, req.user.id)];
+
+    if (levelFilter && validLevels.includes(levelFilter)) {
+      conditions.push(eq(personalScansTable.level, levelFilter));
+    } else if (levelFilter && levelFilter.includes(",")) {
+      const levels = levelFilter.split(",").filter((l) => validLevels.includes(l));
+      if (levels.length > 0) {
+        conditions.push(inArray(personalScansTable.level, levels));
+      }
+    }
+
+    const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
 
     const scans = await db
       .select()
       .from(personalScansTable)
-      .where(eq(personalScansTable.userId, req.user.id))
+      .where(whereClause)
       .orderBy(desc(personalScansTable.createdAt))
       .limit(limit)
       .offset(offset);
@@ -121,7 +137,7 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
     const [countResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(personalScansTable)
-      .where(eq(personalScansTable.userId, req.user.id));
+      .where(whereClause);
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -134,6 +150,22 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
           gte(personalScansTable.createdAt, todayStart)
         )
       );
+
+    const trendScans = await db
+      .select({
+        date: sql<string>`to_char(${personalScansTable.createdAt}, 'YYYY-MM-DD')`,
+        avgScore: sql<number>`round(avg(${personalScansTable.riskScore}))::int`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(personalScansTable)
+      .where(
+        and(
+          eq(personalScansTable.userId, req.user.id),
+          gte(personalScansTable.createdAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+        )
+      )
+      .groupBy(sql`to_char(${personalScansTable.createdAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(${personalScansTable.createdAt}, 'YYYY-MM-DD')`);
 
     const plan = req.user.planType || "free";
 
@@ -150,10 +182,37 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
       total: countResult?.count ?? 0,
       todayUsed: todayCount?.count ?? 0,
       dailyLimit: plan === "free" ? FREE_DAILY_LIMIT : null,
+      trend: trendScans,
     });
   } catch (err) {
     console.error("Personal history error:", err);
     res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+router.post("/personal/rewrite", refreshPlanFromDB, requirePro(), async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+
+    const { text, flags } = req.body;
+    if (!text || typeof text !== "string") {
+      res.status(400).json({ error: "Text is required" });
+      return;
+    }
+    if (!flags || !Array.isArray(flags) || flags.length === 0) {
+      res.status(400).json({ error: "Flags array is required and must not be empty" });
+      return;
+    }
+
+    const rewritten = rewriteContent(text, flags);
+
+    res.json({ rewritten });
+  } catch (err) {
+    console.error("Personal rewrite error:", err);
+    res.status(500).json({ error: "Rewrite failed" });
   }
 });
 

@@ -531,7 +531,7 @@
     "dailyLimitReached": "Daily limit reached ({{used}}/{{limit}} scans). Upgrade for unlimited scans.",
     "upgradeCta": "Upgrade",
     "dailyUsage": "{{used}}/{{limit}} scans used today",
-    "history": "Scan History",
+    "historyTitle": "Scan History",
     "totalScans": "{{count}} total",
     "noHistory": "No scans yet. Use the quick actions above to get started.",
     "issues": "issues",
@@ -580,6 +580,27 @@
       "hateSpeech": "Hate Speech",
       "pii": "Personal Info",
       "bias": "Bias"
+    },
+    "rewrite": {
+      "title": "Content Rewrite Assistant",
+      "description": "Generate a safer version of your text that preserves meaning while removing flagged issues. Requires Pro plan.",
+      "rewriteBtn": "Rewrite",
+      "rewriting": "Rewriting...",
+      "original": "Original",
+      "safer": "Safer Version",
+      "copy": "Copy Rewritten Text",
+      "copied": "Copied!",
+      "tryAgain": "Rewrite Again",
+      "failed": "Rewrite failed. Please try again.",
+      "proRequired": "Content Rewrite requires a Pro, Business, or Enterprise plan."
+    },
+    "history": {
+      "trendTitle": "Risk Score Trend (30 days)",
+      "avgScore": "Avg Score",
+      "filterAll": "All",
+      "prev": "Previous",
+      "next": "Next",
+      "pageOf": "Page {{page}} of {{total}}"
     }
   },
   "language": {

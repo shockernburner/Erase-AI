@@ -535,7 +535,14 @@
     "analyzing": "分析中...",
     "analysisFailed": "分析に失敗しました",
     "dailyUsage": "本日{{used}}/{{limit}}回使用済み",
-    "history": "スキャン履歴",
+    "history": {
+      "trendTitle": "リスクスコアトレンド（30日間）",
+      "avgScore": "平均スコア",
+      "filterAll": "すべて",
+      "prev": "前へ",
+      "next": "次へ",
+      "pageOf": "ページ {{page}} / {{total}}"
+    },
     "totalScans": "合計{{count}}件",
     "noHistory": "まだスキャンがありません。上のクイックアクションから始めましょう。",
     "issues": "件の問題",
@@ -589,6 +596,20 @@
       "uploadFileDesc": "TXT、CSV、JSONをスキャン"
     },
     "dailyLimitReached": "日次制限に達しました（{{used}}/{{limit}}回）。無制限スキャンにアップグレードしてください。",
-    "upgradeCta": "アップグレード"
+    "upgradeCta": "アップグレード",
+    "rewrite": {
+      "title": "コンテンツ書き換えアシスタント",
+      "description": "意味を保ちながら、安全なバージョンのテキストを生成します。Proプランが必要です。",
+      "rewriteBtn": "書き換え",
+      "rewriting": "書き換え中...",
+      "original": "オリジナル",
+      "safer": "安全なバージョン",
+      "copy": "書き換えテキストをコピー",
+      "copied": "コピーしました！",
+      "tryAgain": "再度書き換え",
+      "failed": "書き換えに失敗しました。もう一度お試しください。",
+      "proRequired": "コンテンツ書き換えにはPro、Business、またはEnterpriseプランが必要です。"
+    },
+    "historyTitle": "スキャン履歴"
   }
 }

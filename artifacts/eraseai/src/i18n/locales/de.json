@@ -535,7 +535,14 @@
     "analyzing": "Wird analysiert...",
     "analysisFailed": "Analyse fehlgeschlagen",
     "dailyUsage": "{{used}}/{{limit}} Analysen heute verwendet",
-    "history": "Analyseverlauf",
+    "history": {
+      "trendTitle": "Risikoscore-Trend (30 Tage)",
+      "avgScore": "Durchschnittsscore",
+      "filterAll": "Alle",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "pageOf": "Seite {{page}} von {{total}}"
+    },
     "totalScans": "{{count}} insgesamt",
     "noHistory": "Noch keine Analysen. Verwenden Sie die Schnellaktionen oben.",
     "issues": "Probleme",
@@ -589,6 +596,20 @@
       "uploadFileDesc": "TXT, CSV oder JSON scannen"
     },
     "dailyLimitReached": "Tageslimit erreicht ({{used}}/{{limit}} Analysen). Upgraden Sie für unbegrenzte Analysen.",
-    "upgradeCta": "Upgraden"
+    "upgradeCta": "Upgraden",
+    "rewrite": {
+      "title": "Inhalts-Umschreibassistent",
+      "description": "Erstellen Sie eine sicherere Version Ihres Textes, die die Bedeutung beibehält. Erfordert Pro-Plan.",
+      "rewriteBtn": "Umschreiben",
+      "rewriting": "Wird umgeschrieben...",
+      "original": "Original",
+      "safer": "Sicherere Version",
+      "copy": "Umgeschriebenen Text kopieren",
+      "copied": "Kopiert!",
+      "tryAgain": "Erneut umschreiben",
+      "failed": "Umschreiben fehlgeschlagen. Bitte erneut versuchen.",
+      "proRequired": "Inhalts-Umschreiben erfordert einen Pro-, Business- oder Enterprise-Plan."
+    },
+    "historyTitle": "Scanverlauf"
   }
 }

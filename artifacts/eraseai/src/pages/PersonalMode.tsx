@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,11 +15,29 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   FileText,
   Upload,
   Zap,
   UserCheck,
+  RefreshCw,
+  Copy,
+  Check,
+  Filter,
+  TrendingUp,
+  Lock,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  ReferenceLine,
+} from "recharts";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -56,6 +74,12 @@ interface HistoryScan {
   flags: AnalysisFlag[];
   suggestions: AnalysisSuggestion[];
   createdAt: string;
+}
+
+interface TrendPoint {
+  date: string;
+  avgScore: number;
+  count: number;
 }
 
 type ScanMode = "post" | "profile";
@@ -146,11 +170,214 @@ function BreakdownChart({ breakdown }: { breakdown: ScanResult["breakdown"] }) {
   );
 }
 
+function RewritePanel({
+  text,
+  flags,
+  onUpgrade,
+}: {
+  text: string;
+  flags: AnalysisFlag[];
+  onUpgrade: () => void;
+}) {
+  const { t } = useTranslation();
+  const [rewritten, setRewritten] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const rewriteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE}/personal/rewrite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text, flags }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.upgrade) {
+          onUpgrade();
+          throw new Error("UPGRADE_REQUIRED");
+        }
+        throw new Error(data.error || "Rewrite failed");
+      }
+      return res.json() as Promise<{ rewritten: string }>;
+    },
+    onSuccess: (data) => {
+      setRewritten(data.rewritten);
+    },
+  });
+
+  const handleCopy = () => {
+    if (rewritten) {
+      navigator.clipboard.writeText(rewritten);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="bg-card/50 border border-primary/20 rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <RefreshCw className="w-4 h-4 text-primary" />
+          {t("personal.rewrite.title")}
+        </h3>
+        {!rewritten && (
+          <button
+            onClick={() => rewriteMutation.mutate()}
+            disabled={rewriteMutation.isPending}
+            className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition-all"
+          >
+            {rewriteMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+            {rewriteMutation.isPending ? t("personal.rewrite.rewriting") : t("personal.rewrite.rewriteBtn")}
+          </button>
+        )}
+      </div>
+
+      <p className="text-xs text-muted-foreground">{t("personal.rewrite.description")}</p>
+
+      {rewriteMutation.isError && rewriteMutation.error?.message === "UPGRADE_REQUIRED" && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+          <Lock className="w-4 h-4 text-primary flex-shrink-0" />
+          <span className="text-muted-foreground">{t("personal.rewrite.proRequired")}</span>
+          <button
+            onClick={onUpgrade}
+            className="ml-auto px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            {t("personal.upgradeCta")}
+          </button>
+        </div>
+      )}
+
+      {rewriteMutation.isError && rewriteMutation.error?.message !== "UPGRADE_REQUIRED" && (
+        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+          {t("personal.rewrite.failed")}
+        </div>
+      )}
+
+      {rewritten && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-red-400 uppercase">{t("personal.rewrite.original")}</span>
+              <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                {text}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-emerald-400 uppercase">{t("personal.rewrite.safer")}</span>
+              <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                {rewritten}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? t("personal.rewrite.copied") : t("personal.rewrite.copy")}
+            </button>
+            <button
+              onClick={() => {
+                setRewritten(null);
+                rewriteMutation.reset();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/20 text-muted-foreground text-xs font-medium hover:bg-muted/30 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              {t("personal.rewrite.tryAgain")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RiskTrendChart({ trend }: { trend: TrendPoint[] }) {
+  const { t } = useTranslation();
+
+  const chartData = useMemo(() => {
+    return trend.map((p) => ({
+      ...p,
+      label: new Date(p.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    }));
+  }, [trend]);
+
+  if (chartData.length < 2) return null;
+
+  return (
+    <div className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md">
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="w-4 h-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">{t("personal.history.trendTitle")}</h3>
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tick={{ fontSize: 11, fill: "rgba(255,255,255,0.4)" }}
+            axisLine={false}
+            tickLine={false}
+            width={30}
+          />
+          <Tooltip
+            contentStyle={{
+              background: "rgba(0,0,0,0.85)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "8px",
+              fontSize: "12px",
+            }}
+            formatter={(value: number) => [`${value}/100`, t("personal.history.avgScore")]}
+            labelFormatter={(label: string) => label}
+          />
+          <ReferenceLine y={70} stroke="rgba(52,211,153,0.3)" strokeDasharray="5 5" />
+          <ReferenceLine y={40} stroke="rgba(250,204,21,0.3)" strokeDasharray="5 5" />
+          <Line
+            type="monotone"
+            dataKey="avgScore"
+            stroke="hsl(var(--primary))"
+            strokeWidth={2}
+            dot={{ r: 3, fill: "hsl(var(--primary))" }}
+            activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground justify-center">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-0.5 bg-emerald-400 inline-block" /> {t("personal.risk.low")} (70+)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-0.5 bg-yellow-400 inline-block" /> {t("personal.risk.medium")} (40-69)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-0.5 bg-red-400 inline-block" /> {t("personal.risk.high")} (&lt;40)
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function HistoryItem({ scan }: { scan: HistoryScan }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const color =
     scan.level === "low" ? "text-emerald-400" : scan.level === "medium" ? "text-yellow-400" : "text-red-400";
+  const levelBg =
+    scan.level === "low" ? "bg-emerald-400/10" : scan.level === "medium" ? "bg-yellow-400/10" : "bg-red-400/10";
 
   return (
     <div className="border border-border/30 rounded-lg overflow-hidden">
@@ -159,6 +386,9 @@ function HistoryItem({ scan }: { scan: HistoryScan }) {
         className="w-full flex items-center gap-3 p-3 hover:bg-muted/10 transition-colors text-left"
       >
         <div className={`text-lg font-bold ${color} w-12`}>{scan.riskScore}</div>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${levelBg} ${color}`}>
+          {t(`personal.risk.${scan.level}`)}
+        </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground truncate">{scan.content}</p>
           <p className="text-xs text-muted-foreground">
@@ -201,6 +431,8 @@ function extractTextFromFile(file: File): Promise<string> {
   });
 }
 
+const HISTORY_PAGE_SIZE = 10;
+
 export default function PersonalMode({
   onBack,
   onUpgrade,
@@ -214,8 +446,10 @@ export default function PersonalMode({
   const [result, setResult] = useState<ScanResult | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [limitError, setLimitError] = useState<{ used: number; limit: number } | null>(null);
+  const [historyPage, setHistoryPage] = useState(0);
+  const [levelFilter, setLevelFilter] = useState<string>("");
+  const [analysisText, setAnalysisText] = useState<string>("");
 
   const analyzeMutation = useMutation({
     mutationFn: async (inputText: string) => {
@@ -243,15 +477,21 @@ export default function PersonalMode({
     onSuccess: (data) => {
       if (data) {
         setResult(data);
+        setAnalysisText(text);
         queryClient.invalidateQueries({ queryKey: ["personal-history"] });
       }
     },
   });
 
   const historyQuery = useQuery({
-    queryKey: ["personal-history"],
+    queryKey: ["personal-history", historyPage, levelFilter],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/personal/history?limit=20`, {
+      const params = new URLSearchParams({
+        limit: String(HISTORY_PAGE_SIZE),
+        offset: String(historyPage * HISTORY_PAGE_SIZE),
+      });
+      if (levelFilter) params.set("level", levelFilter);
+      const res = await fetch(`${API_BASE}/personal/history?${params}`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch history");
@@ -260,6 +500,7 @@ export default function PersonalMode({
         total: number;
         todayUsed: number;
         dailyLimit: number | null;
+        trend: TrendPoint[];
       }>;
     },
   });
@@ -292,6 +533,8 @@ export default function PersonalMode({
     ? Math.round(historyQuery.data.scans.reduce((s, scan) => s + scan.riskScore, 0) / historyQuery.data.scans.length)
     : null;
   const avgLevel = avgScore !== null ? (avgScore >= 70 ? "low" : avgScore >= 40 ? "medium" : "high") : null;
+
+  const totalPages = historyQuery.data ? Math.max(1, Math.ceil(historyQuery.data.total / HISTORY_PAGE_SIZE)) : 1;
 
   return (
     <div className="min-h-screen w-full pb-20 relative">
@@ -564,6 +807,10 @@ export default function PersonalMode({
                 </div>
               )}
 
+              {result.flags.length > 0 && (
+                <RewritePanel text={analysisText} flags={result.flags} onUpgrade={onUpgrade} />
+              )}
+
               {result.suggestions.length > 0 && (
                 <div className="bg-card/50 border border-border/30 rounded-xl p-4 space-y-3">
                   <h3 className="text-sm font-semibold text-muted-foreground">{t("personal.suggestions")}</h3>
@@ -589,20 +836,48 @@ export default function PersonalMode({
           )}
         </AnimatePresence>
 
+        {historyQuery.data?.trend && historyQuery.data.trend.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-6"
+          >
+            <RiskTrendChart trend={historyQuery.data.trend} />
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="bg-card/50 border border-border/30 rounded-2xl p-6 backdrop-blur-md"
         >
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
             <Clock className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">{t("personal.history")}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t("personal.historyTitle")}</h2>
             {historyQuery.data && (
               <span className="text-xs text-muted-foreground ml-auto">
                 {t("personal.totalScans", { count: historyQuery.data.total })}
               </span>
             )}
+          </div>
+
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            {["", "low", "medium", "high"].map((level) => (
+              <button
+                key={level}
+                onClick={() => { setLevelFilter(level); setHistoryPage(0); }}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  levelFilter === level
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/20 text-muted-foreground hover:bg-muted/30"
+                }`}
+              >
+                {level === "" ? t("personal.history.filterAll") : t(`personal.risk.${level}`)}
+              </button>
+            ))}
           </div>
 
           {historyQuery.isLoading && (
@@ -620,6 +895,30 @@ export default function PersonalMode({
               {historyQuery.data.scans.map((scan) => (
                 <HistoryItem key={scan.id} scan={scan} />
               ))}
+            </div>
+          )}
+
+          {historyQuery.data && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-border/20">
+              <button
+                onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+                disabled={historyPage === 0}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/20 text-muted-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                {t("personal.history.prev")}
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {t("personal.history.pageOf", { page: historyPage + 1, total: totalPages })}
+              </span>
+              <button
+                onClick={() => setHistoryPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={historyPage >= totalPages - 1}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/20 text-muted-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                {t("personal.history.next")}
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
         </motion.div>
