@@ -537,7 +537,7 @@
     "dailyUsage": "{{used}}/{{limit}} analyses utilisées aujourd'hui",
     "history": "Historique des Analyses",
     "totalScans": "{{count}} au total",
-    "noHistory": "Aucune analyse. Analysez votre premier texte ci-dessus.",
+    "noHistory": "Aucune analyse. Utilisez les actions rapides ci-dessus pour commencer.",
     "issues": "problèmes",
     "flagsFound": "{{count}} problème détecté",
     "flagsFound_other": "{{count}} problèmes détectés",
@@ -566,6 +566,26 @@
       "hateSpeech": "Discours Haineux",
       "pii": "Info Personnelle",
       "bias": "Biais"
+    },
+    "profileRiskScan": "Analyse de Risque du Profil",
+    "profileDescription": "Collez votre bio, section à propos, ou téléchargez un fichier pour une évaluation complète des risques.",
+    "profilePlaceholder": "Collez votre texte de profil, bio ou section à propos ici...",
+    "dashboard": {
+      "lastScore": "Dernier Score de Risque",
+      "noScansYet": "Aucune analyse",
+      "recentAlerts": "Alertes Récentes",
+      "alertsDesc": "Analyses à risque moyen/élevé",
+      "scansToday": "Analyses Aujourd'hui",
+      "freeLimit": "Limite quotidienne gratuite",
+      "unlimited": "Analyses illimitées"
+    },
+    "action": {
+      "analyzePost": "Analyser un Post",
+      "analyzePostDesc": "Vérifier le texte avant le partage",
+      "profileScan": "Analyse de Profil",
+      "profileScanDesc": "Scanner votre bio ou profil",
+      "uploadFile": "Télécharger un Fichier",
+      "uploadFileDesc": "Scanner TXT, CSV ou JSON"
     }
   }
 }

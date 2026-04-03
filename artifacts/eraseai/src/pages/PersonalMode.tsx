@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +16,10 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  FileText,
+  Upload,
+  Zap,
+  UserCheck,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
@@ -55,40 +59,28 @@ interface HistoryScan {
   createdAt: string;
 }
 
+type ScanMode = "post" | "profile";
+
 function RiskGauge({ score, level }: { score: number; level: string }) {
   const { t } = useTranslation();
   const color =
-    level === "low"
-      ? "text-emerald-400"
-      : level === "medium"
-        ? "text-yellow-400"
-        : "text-red-400";
+    level === "low" ? "text-emerald-400" : level === "medium" ? "text-yellow-400" : "text-red-400";
   const bgColor =
-    level === "low"
-      ? "bg-emerald-400/20"
-      : level === "medium"
-        ? "bg-yellow-400/20"
-        : "bg-red-400/20";
+    level === "low" ? "bg-emerald-400/20" : level === "medium" ? "bg-yellow-400/20" : "bg-red-400/20";
   const borderColor =
-    level === "low"
-      ? "border-emerald-400/30"
-      : level === "medium"
-        ? "border-yellow-400/30"
-        : "border-red-400/30";
+    level === "low" ? "border-emerald-400/30" : level === "medium" ? "border-yellow-400/30" : "border-red-400/30";
 
   const Icon = level === "low" ? ShieldCheck : level === "medium" ? ShieldAlert : ShieldX;
 
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border ${borderColor} ${bgColor}`}>
-      <Icon className={`w-10 h-10 ${color}`} />
+    <div className={`flex items-center gap-4 p-5 rounded-xl border ${borderColor} ${bgColor}`}>
+      <Icon className={`w-12 h-12 ${color}`} />
       <div>
-        <div className={`text-3xl font-bold ${color}`}>{score}/100</div>
-        <div className="text-sm text-muted-foreground">
-          {t(`personal.risk.${level}`)}
-        </div>
+        <div className={`text-4xl font-bold ${color}`}>{score}/100</div>
+        <div className="text-sm text-muted-foreground">{t(`personal.risk.${level}`)}</div>
       </div>
-      <div className="ml-auto">
-        <div className="w-32 h-2 bg-muted/30 rounded-full overflow-hidden">
+      <div className="ml-auto flex-shrink-0">
+        <div className="w-36 h-3 bg-muted/30 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${score}%` }}
@@ -159,11 +151,7 @@ function HistoryItem({ scan }: { scan: HistoryScan }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const color =
-    scan.level === "low"
-      ? "text-emerald-400"
-      : scan.level === "medium"
-        ? "text-yellow-400"
-        : "text-red-400";
+    scan.level === "low" ? "text-emerald-400" : scan.level === "medium" ? "text-yellow-400" : "text-red-400";
 
   return (
     <div className="border border-border/30 rounded-lg overflow-hidden">
@@ -191,6 +179,29 @@ function HistoryItem({ scan }: { scan: HistoryScan }) {
   );
 }
 
+function extractTextFromFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = reader.result as string;
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          resolve(parsed.map((item) => (typeof item === "string" ? item : JSON.stringify(item))).join("\n"));
+        } else if (typeof parsed === "object") {
+          resolve(Object.values(parsed).map((v) => String(v)).join("\n"));
+        } else {
+          resolve(String(parsed));
+        }
+      } catch {
+        resolve(raw);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsText(file);
+  });
+}
+
 export default function PersonalMode({
   onBack,
   onUpgrade,
@@ -202,14 +213,16 @@ export default function PersonalMode({
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [scanMode, setScanMode] = useState<ScanMode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const analyzeMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (inputText: string) => {
       const res = await fetch(`${API_BASE}/personal/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ text: inputText }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -251,6 +264,25 @@ export default function PersonalMode({
     analyzeMutation.mutate(text.trim());
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const content = await extractTextFromFile(file);
+      const truncated = content.substring(0, 5000);
+      setText(truncated);
+      setScanMode("profile");
+      setResult(null);
+      analyzeMutation.mutate(truncated);
+    } catch {
+      setText("");
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const lastScore = historyQuery.data?.scans?.[0];
+  const recentAlerts = historyQuery.data?.scans?.filter((s) => s.level !== "low").slice(0, 3) ?? [];
+
   return (
     <div className="min-h-screen w-full pb-20 relative">
       <div
@@ -282,64 +314,172 @@ export default function PersonalMode({
           </div>
         </motion.header>
 
-        {historyQuery.data?.dailyLimit !== null && historyQuery.data?.dailyLimit !== undefined && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-4 flex items-center gap-2 text-xs text-muted-foreground bg-card/50 border border-border/30 rounded-lg px-3 py-2"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            {t("personal.dailyUsage", {
-              used: historyQuery.data?.todayUsed ?? 0,
-              limit: historyQuery.data?.dailyLimit,
-            })}
-          </motion.div>
-        )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+        >
+          <div className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className={`w-5 h-5 ${lastScore ? (lastScore.level === "low" ? "text-emerald-400" : lastScore.level === "medium" ? "text-yellow-400" : "text-red-400") : "text-muted-foreground"}`} />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">{t("personal.dashboard.lastScore")}</span>
+            </div>
+            <div className={`text-3xl font-bold ${lastScore ? (lastScore.level === "low" ? "text-emerald-400" : lastScore.level === "medium" ? "text-yellow-400" : "text-red-400") : "text-muted-foreground/40"}`}>
+              {lastScore ? `${lastScore.riskScore}/100` : "—"}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {lastScore ? t(`personal.risk.${lastScore.level}`) : t("personal.dashboard.noScansYet")}
+            </div>
+          </div>
+
+          <div className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className={`w-5 h-5 ${recentAlerts.length > 0 ? "text-yellow-400" : "text-muted-foreground"}`} />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">{t("personal.dashboard.recentAlerts")}</span>
+            </div>
+            <div className={`text-3xl font-bold ${recentAlerts.length > 0 ? "text-yellow-400" : "text-muted-foreground/40"}`}>
+              {recentAlerts.length}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {t("personal.dashboard.alertsDesc")}
+            </div>
+          </div>
+
+          <div className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md">
+            <div className="flex items-center gap-2 mb-2">
+              <Eye className="w-5 h-5 text-primary" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">{t("personal.dashboard.scansToday")}</span>
+            </div>
+            <div className="text-3xl font-bold text-primary">
+              {historyQuery.data?.todayUsed ?? 0}
+              {historyQuery.data?.dailyLimit != null && (
+                <span className="text-lg text-muted-foreground font-normal">/{historyQuery.data.dailyLimit}</span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {historyQuery.data?.dailyLimit != null ? t("personal.dashboard.freeLimit") : t("personal.dashboard.unlimited")}
+            </div>
+          </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card/50 border border-border/30 rounded-2xl p-6 backdrop-blur-md mb-6"
+          transition={{ delay: 0.05 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">{t("personal.beforeYouPost")}</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">{t("personal.description")}</p>
-
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t("personal.placeholder")}
-            className="w-full h-32 bg-background/50 border border-border/30 rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
-            maxLength={5000}
-          />
-
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-muted-foreground">
-              {text.length}/5000
-            </span>
-            <button
-              onClick={handleAnalyze}
-              disabled={!text.trim() || analyzeMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              {analyzeMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-              {analyzeMutation.isPending ? t("personal.analyzing") : t("personal.analyze")}
-            </button>
-          </div>
-
-          {analyzeMutation.isError && (
-            <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
-              {analyzeMutation.error?.message || t("personal.analysisFailed")}
+          <button
+            onClick={() => { setScanMode("post"); setResult(null); }}
+            className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${scanMode === "post" ? "border-primary bg-primary/10 text-primary" : "border-border/30 bg-card/50 text-muted-foreground hover:border-primary/50 hover:text-primary"}`}
+          >
+            <MessageSquare className="w-5 h-5" />
+            <div className="text-left">
+              <div className="text-sm font-semibold">{t("personal.action.analyzePost")}</div>
+              <div className="text-xs opacity-70">{t("personal.action.analyzePostDesc")}</div>
             </div>
-          )}
+          </button>
+
+          <button
+            onClick={() => { setScanMode("profile"); setResult(null); }}
+            className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${scanMode === "profile" ? "border-primary bg-primary/10 text-primary" : "border-border/30 bg-card/50 text-muted-foreground hover:border-primary/50 hover:text-primary"}`}
+          >
+            <UserCheck className="w-5 h-5" />
+            <div className="text-left">
+              <div className="text-sm font-semibold">{t("personal.action.profileScan")}</div>
+              <div className="text-xs opacity-70">{t("personal.action.profileScanDesc")}</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              setScanMode("profile");
+              setResult(null);
+              fileInputRef.current?.click();
+            }}
+            className="flex items-center gap-3 p-4 rounded-xl border border-border/30 bg-card/50 text-muted-foreground hover:border-primary/50 hover:text-primary transition-all"
+          >
+            <Upload className="w-5 h-5" />
+            <div className="text-left">
+              <div className="text-sm font-semibold">{t("personal.action.uploadFile")}</div>
+              <div className="text-xs opacity-70">{t("personal.action.uploadFileDesc")}</div>
+            </div>
+          </button>
         </motion.div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.csv,.json,.jsonl"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        <AnimatePresence mode="wait">
+          {scanMode && (
+            <motion.div
+              key={scanMode}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-card/50 border border-border/30 rounded-2xl p-6 backdrop-blur-md mb-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                {scanMode === "post" ? (
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                ) : (
+                  <UserCheck className="w-5 h-5 text-primary" />
+                )}
+                <h2 className="text-lg font-semibold text-foreground">
+                  {scanMode === "post" ? t("personal.beforeYouPost") : t("personal.profileRiskScan")}
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                {scanMode === "post" ? t("personal.description") : t("personal.profileDescription")}
+              </p>
+
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={scanMode === "post" ? t("personal.placeholder") : t("personal.profilePlaceholder")}
+                className="w-full h-32 bg-background/50 border border-border/30 rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+                maxLength={5000}
+              />
+
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">{text.length}/5000</span>
+                  {scanMode === "profile" && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      {t("personal.action.uploadFile")}
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!text.trim() || analyzeMutation.isPending}
+                  className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {analyzeMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                  {analyzeMutation.isPending ? t("personal.analyzing") : t("personal.analyze")}
+                </button>
+              </div>
+
+              {analyzeMutation.isError && (
+                <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                  {analyzeMutation.error?.message || t("personal.analysisFailed")}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait">
           {result && (
@@ -351,7 +491,6 @@ export default function PersonalMode({
               className="space-y-4 mb-8"
             >
               <RiskGauge score={result.riskScore} level={result.level} />
-
               <BreakdownChart breakdown={result.breakdown} />
 
               {result.flags.length > 0 && (

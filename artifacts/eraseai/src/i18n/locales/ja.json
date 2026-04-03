@@ -537,7 +537,7 @@
     "dailyUsage": "本日{{used}}/{{limit}}回使用済み",
     "history": "スキャン履歴",
     "totalScans": "合計{{count}}件",
-    "noHistory": "まだスキャンがありません。上のテキストを分析してください。",
+    "noHistory": "まだスキャンがありません。上のクイックアクションから始めましょう。",
     "issues": "件の問題",
     "flagsFound": "{{count}}件の問題を検出",
     "flagsFound_other": "{{count}}件の問題を検出",
@@ -566,6 +566,26 @@
       "hateSpeech": "ヘイトスピーチ",
       "pii": "個人情報",
       "bias": "偏見"
+    },
+    "profileRiskScan": "プロフィールリスクスキャン",
+    "profileDescription": "プロフィールの自己紹介やファイルをアップロードして、全カテゴリのリスク評価を受けましょう。",
+    "profilePlaceholder": "プロフィールテキスト、自己紹介をここに貼り付けてください...",
+    "dashboard": {
+      "lastScore": "最新リスクスコア",
+      "noScansYet": "まだスキャンなし",
+      "recentAlerts": "最近のアラート",
+      "alertsDesc": "中/高リスクスキャン",
+      "scansToday": "今日のスキャン",
+      "freeLimit": "無料プランの日次制限",
+      "unlimited": "無制限スキャン"
+    },
+    "action": {
+      "analyzePost": "投稿を分析",
+      "analyzePostDesc": "共有前にテキストを確認",
+      "profileScan": "プロフィールスキャン",
+      "profileScanDesc": "自己紹介やプロフィールをスキャン",
+      "uploadFile": "ファイルアップロード",
+      "uploadFileDesc": "TXT、CSV、JSONをスキャン"
     }
   }
 }

@@ -21,14 +21,14 @@ router.post("/personal/analyze", refreshPlanFromDB, async (req, res) => {
       return;
     }
 
-    const { content } = req.body;
+    const content = req.body.text || req.body.content;
     if (!content || typeof content !== "string") {
-      res.status(400).json({ error: "Content is required and must be a string" });
+      res.status(400).json({ error: "Text is required and must be a string" });
       return;
     }
 
     if (content.length > 5000) {
-      res.status(400).json({ error: "Content must be 5000 characters or fewer" });
+      res.status(400).json({ error: "Text must be 5000 characters or fewer" });
       return;
     }
 

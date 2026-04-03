@@ -537,7 +537,7 @@
     "dailyUsage": "{{used}}/{{limit}} análisis usados hoy",
     "history": "Historial de Análisis",
     "totalScans": "{{count}} en total",
-    "noHistory": "Sin análisis aún. Analice su primer texto arriba.",
+    "noHistory": "Sin análisis aún. Use las acciones rápidas arriba para comenzar.",
     "issues": "problemas",
     "flagsFound": "{{count}} problema detectado",
     "flagsFound_other": "{{count}} problemas detectados",
@@ -566,6 +566,26 @@
       "hateSpeech": "Discurso de Odio",
       "pii": "Info Personal",
       "bias": "Sesgo"
+    },
+    "profileRiskScan": "Escaneo de Riesgo de Perfil",
+    "profileDescription": "Pegue su bio, sección sobre usted, o suba un archivo para una evaluación completa de riesgos.",
+    "profilePlaceholder": "Pegue su texto de perfil, bio o sección sobre usted aquí...",
+    "dashboard": {
+      "lastScore": "Última Puntuación de Riesgo",
+      "noScansYet": "Sin análisis aún",
+      "recentAlerts": "Alertas Recientes",
+      "alertsDesc": "Análisis de riesgo medio/alto",
+      "scansToday": "Análisis Hoy",
+      "freeLimit": "Límite diario gratuito",
+      "unlimited": "Análisis ilimitados"
+    },
+    "action": {
+      "analyzePost": "Analizar Publicación",
+      "analyzePostDesc": "Verificar texto antes de compartir",
+      "profileScan": "Escaneo de Perfil",
+      "profileScanDesc": "Escanear su bio o perfil",
+      "uploadFile": "Subir Archivo",
+      "uploadFileDesc": "Escanear TXT, CSV o JSON"
     }
   }
 }
