@@ -48,10 +48,9 @@ export function apiRateLimit() {
       const [result] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(apiUsageTable)
-        .innerJoin(apiKeysTable, eq(apiUsageTable.apiKeyId, apiKeysTable.id))
         .where(
           and(
-            eq(apiKeysTable.userId, req.user!.id),
+            eq(apiUsageTable.apiKeyId, apiKeyId),
             gte(apiUsageTable.createdAt, monthStart),
           ),
         );
