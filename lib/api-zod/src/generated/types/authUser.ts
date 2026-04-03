@@ -21,7 +21,7 @@ export interface AuthUser {
   planType: AuthUserPlanType;
   role?: AuthUserRole;
   /** @nullable */
-  planStartDate?: Date | null;
+  planStartDate?: string | null;
   /** @nullable */
-  planEndDate?: Date | null;
+  planEndDate?: string | null;
 }

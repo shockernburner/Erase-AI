@@ -111,8 +111,8 @@ export const GetCurrentAuthUserResponse = zod.object({
         .enum(["free", "pro", "enterprise"])
         .default(getCurrentAuthUserResponseUserOnePlanTypeDefault),
       role: zod.enum(["user", "admin"]).optional(),
-      planStartDate: zod.date().nullish(),
-      planEndDate: zod.date().nullish(),
+      planStartDate: zod.string().nullish(),
+      planEndDate: zod.string().nullish(),
     }),
     zod.null(),
   ]),

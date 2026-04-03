@@ -31,11 +31,11 @@ function PlanBadge({ plan }: { plan: string }) {
   );
 }
 
-function getTrialDaysRemaining(planType: string | undefined, planEndDate: string | Date | null | undefined): number | null {
+function getTrialDaysRemaining(planType: string | undefined, planEndDate: string | null | undefined): number | null {
   const plan = planType || "free";
   if (plan !== "free") return null;
   if (!planEndDate) return null;
-  const end = new Date(String(planEndDate));
+  const end = new Date(planEndDate);
   const now = new Date();
   const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   return Math.max(0, diff);
