@@ -4,7 +4,7 @@ import { Globe } from "lucide-react";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 export function LanguageSelector() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const currentLang = SUPPORTED_LANGUAGES.find(
