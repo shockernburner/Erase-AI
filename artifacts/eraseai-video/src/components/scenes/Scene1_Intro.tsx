@@ -40,7 +40,7 @@ export function Scene1_Intro() {
         <motion.div className="overflow-hidden">
           <motion.h1
             {...elementAnimations.fadeUp}
-            className="text-[6vw] font-display font-black tracking-tighter text-gradient-cyan leading-none text-center"
+            className="text-[6vw] font-display font-black tracking-tighter text-gradient text-gradient-cyan leading-none text-center"
           >
             EraseAI
           </motion.h1>
@@ -55,7 +55,7 @@ export function Scene1_Intro() {
             transition={{ duration: 0.8, ease: easings.easeOut.ease }}
             className="text-[2vw] font-mono text-primary/80 uppercase tracking-[0.2em] text-center"
           >
-            AI Data Governance Layer
+            How It Works
           </motion.h2>
         </motion.div>
       )}
