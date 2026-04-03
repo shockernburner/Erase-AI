@@ -99,9 +99,21 @@ export const personalScansTable = pgTable("personal_scans", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const personalAlertsTable = pgTable("personal_alerts", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  alertType: text("alert_type").notNull(),
+  message: text("message").notNull(),
+  severity: text("severity").notNull(),
+  relatedScanId: integer("related_scan_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Dataset = typeof datasetsTable.$inferSelect;
 export type DatasetVersion = typeof datasetVersionsTable.$inferSelect;
 export type DatasetRow = typeof datasetRowsTable.$inferSelect;
 export type DatasetOperation = typeof datasetOperationsTable.$inferSelect;
 export type AnalysisResult = typeof analysisResultsTable.$inferSelect;
 export type PersonalScan = typeof personalScansTable.$inferSelect;
+export type PersonalAlert = typeof personalAlertsTable.$inferSelect;

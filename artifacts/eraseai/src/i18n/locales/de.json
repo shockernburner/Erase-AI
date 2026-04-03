@@ -543,6 +543,34 @@
       "next": "Weiter",
       "pageOf": "Seite {{page}} von {{total}}"
     },
+    "alerts": {
+      "title": "Überwachungsalarme",
+      "proRequired": "Überwachungsalarme erfordern einen Pro+ Plan.",
+      "markRead": "Als gelesen markieren",
+      "markAllRead": "Alle als gelesen markieren",
+      "type": {
+        "risk_spike": "Risikospitze",
+        "new_category": "Neue Kategorie",
+        "trending_up": "Aufwärtstrend"
+      },
+      "severity": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      }
+    },
+    "trends": {
+      "title": "Trendanalysen",
+      "proRequired": "Trendanalysen erfordern einen Pro+ Plan.",
+      "avg30": "30-Tage-Durchschnitt",
+      "prev30": "Vorherige 30 Tage",
+      "change": "Änderung",
+      "improving": "Verbesserung",
+      "worsening": "Verschlechterung",
+      "scans": "Analysen",
+      "categoryBreakdown": "Kategorieaufteilung (30 Tage)",
+      "dailyAvg": "Täglicher Durchschnittsscore"
+    },
     "totalScans": "{{count}} insgesamt",
     "noHistory": "Noch keine Analysen. Verwenden Sie die Schnellaktionen oben.",
     "issues": "Probleme",

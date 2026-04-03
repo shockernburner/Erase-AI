@@ -543,6 +543,34 @@
       "next": "次へ",
       "pageOf": "ページ {{page}} / {{total}}"
     },
+    "alerts": {
+      "title": "モニタリングアラート",
+      "proRequired": "モニタリングアラートにはPro+プランが必要です。",
+      "markRead": "既読にする",
+      "markAllRead": "すべて既読にする",
+      "type": {
+        "risk_spike": "リスク急上昇",
+        "new_category": "新しいカテゴリ",
+        "trending_up": "上昇傾向"
+      },
+      "severity": {
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      }
+    },
+    "trends": {
+      "title": "トレンド分析",
+      "proRequired": "トレンド分析にはPro+プランが必要です。",
+      "avg30": "30日間平均",
+      "prev30": "前の30日間",
+      "change": "変化",
+      "improving": "改善中",
+      "worsening": "悪化中",
+      "scans": "スキャン",
+      "categoryBreakdown": "カテゴリ別内訳（30日間）",
+      "dailyAvg": "日次平均スコア"
+    },
     "totalScans": "合計{{count}}件",
     "noHistory": "まだスキャンがありません。上のクイックアクションから始めましょう。",
     "issues": "件の問題",

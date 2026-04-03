@@ -543,6 +543,34 @@
       "next": "Siguiente",
       "pageOf": "Página {{page}} de {{total}}"
     },
+    "alerts": {
+      "title": "Alertas de Monitoreo",
+      "proRequired": "Las alertas de monitoreo requieren un plan Pro+.",
+      "markRead": "Marcar como leído",
+      "markAllRead": "Marcar todo como leído",
+      "type": {
+        "risk_spike": "Pico de Riesgo",
+        "new_category": "Nueva Categoría",
+        "trending_up": "Tendencia al Alza"
+      },
+      "severity": {
+        "low": "Bajo",
+        "medium": "Medio",
+        "high": "Alto"
+      }
+    },
+    "trends": {
+      "title": "Análisis de Tendencias",
+      "proRequired": "El análisis de tendencias requiere un plan Pro+.",
+      "avg30": "Promedio 30 Días",
+      "prev30": "30 Días Anteriores",
+      "change": "Cambio",
+      "improving": "Mejorando",
+      "worsening": "Empeorando",
+      "scans": "análisis",
+      "categoryBreakdown": "Desglose por Categoría (30 días)",
+      "dailyAvg": "Puntuación Promedio Diaria"
+    },
     "totalScans": "{{count}} en total",
     "noHistory": "Sin análisis aún. Use las acciones rápidas arriba para comenzar.",
     "issues": "problemas",

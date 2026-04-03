@@ -601,6 +601,34 @@
       "prev": "Previous",
       "next": "Next",
       "pageOf": "Page {{page}} of {{total}}"
+    },
+    "alerts": {
+      "title": "Monitoring Alerts",
+      "proRequired": "Monitoring alerts require a Pro+ plan.",
+      "markRead": "Mark read",
+      "markAllRead": "Mark all read",
+      "type": {
+        "risk_spike": "Risk Spike",
+        "new_category": "New Category",
+        "trending_up": "Trending Up"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
+    },
+    "trends": {
+      "title": "Trend Analytics",
+      "proRequired": "Trend analytics require a Pro+ plan.",
+      "avg30": "30-Day Average",
+      "prev30": "Previous 30 Days",
+      "change": "Change",
+      "improving": "Improving",
+      "worsening": "Worsening",
+      "scans": "scans",
+      "categoryBreakdown": "Category Breakdown (30 days)",
+      "dailyAvg": "Daily Average Score"
     }
   },
   "language": {

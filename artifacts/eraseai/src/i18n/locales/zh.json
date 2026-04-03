@@ -543,6 +543,34 @@
       "next": "下一页",
       "pageOf": "第 {{page}} 页，共 {{total}} 页"
     },
+    "alerts": {
+      "title": "监控警报",
+      "proRequired": "监控警报需要Pro+计划。",
+      "markRead": "标记已读",
+      "markAllRead": "全部标记已读",
+      "type": {
+        "risk_spike": "风险飙升",
+        "new_category": "新类别",
+        "trending_up": "上升趋势"
+      },
+      "severity": {
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      }
+    },
+    "trends": {
+      "title": "趋势分析",
+      "proRequired": "趋势分析需要Pro+计划。",
+      "avg30": "30天平均",
+      "prev30": "前30天",
+      "change": "变化",
+      "improving": "改善中",
+      "worsening": "恶化中",
+      "scans": "次扫描",
+      "categoryBreakdown": "类别分布（30天）",
+      "dailyAvg": "每日平均分数"
+    },
     "totalScans": "共 {{count}} 次",
     "noHistory": "暂无扫描记录。使用上方的快捷操作开始。",
     "issues": "个问题",

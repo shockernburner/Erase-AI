@@ -543,6 +543,34 @@
       "next": "Suivant",
       "pageOf": "Page {{page}} sur {{total}}"
     },
+    "alerts": {
+      "title": "Alertes de Surveillance",
+      "proRequired": "Les alertes de surveillance nécessitent un plan Pro+.",
+      "markRead": "Marquer comme lu",
+      "markAllRead": "Tout marquer comme lu",
+      "type": {
+        "risk_spike": "Pic de Risque",
+        "new_category": "Nouvelle Catégorie",
+        "trending_up": "Tendance à la Hausse"
+      },
+      "severity": {
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      }
+    },
+    "trends": {
+      "title": "Analyses de Tendances",
+      "proRequired": "Les analyses de tendances nécessitent un plan Pro+.",
+      "avg30": "Moyenne 30 Jours",
+      "prev30": "30 Jours Précédents",
+      "change": "Évolution",
+      "improving": "En amélioration",
+      "worsening": "En détérioration",
+      "scans": "analyses",
+      "categoryBreakdown": "Répartition par Catégorie (30 jours)",
+      "dailyAvg": "Score Moyen Quotidien"
+    },
     "totalScans": "{{count}} au total",
     "noHistory": "Aucune analyse. Utilisez les actions rapides ci-dessus pour commencer.",
     "issues": "problèmes",

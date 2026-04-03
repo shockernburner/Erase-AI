@@ -27,6 +27,11 @@ import {
   Filter,
   TrendingUp,
   Lock,
+  Bell,
+  BellOff,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
 } from "lucide-react";
 import {
   LineChart,
@@ -37,6 +42,9 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
+  BarChart,
+  Bar,
+  Cell,
 } from "recharts";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
@@ -408,6 +416,357 @@ function HistoryItem({ scan }: { scan: HistoryScan }) {
   );
 }
 
+interface PersonalAlert {
+  id: number;
+  alertType: string;
+  message: string;
+  severity: string;
+  relatedScanId: number | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+interface TrendsData {
+  dailyTrend: { date: string; avgScore: number; count: number }[];
+  categoryBreakdown: Record<string, number>;
+  comparison: {
+    current: { avgScore: number | null; scanCount: number };
+    previous: { avgScore: number | null; scanCount: number };
+  };
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  toxicity: "#f87171",
+  hate_speech: "#fb923c",
+  pii: "#a78bfa",
+  bias: "#fbbf24",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  toxicity: "Toxicity",
+  hate_speech: "Hate Speech",
+  pii: "PII",
+  bias: "Bias",
+};
+
+function AlertsPanel({ onUpgrade }: { onUpgrade: () => void }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const alertsQuery = useQuery({
+    queryKey: ["personal-alerts"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/personal/alerts?limit=20`, { credentials: "include" });
+      if (res.status === 403) return null;
+      if (!res.ok) throw new Error("Failed to fetch alerts");
+      return res.json() as Promise<{ alerts: PersonalAlert[]; unreadCount: number }>;
+    },
+    staleTime: 30_000,
+  });
+
+  const markRead = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${API_BASE}/personal/alerts/${id}/read`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["personal-alerts"] }),
+  });
+
+  const markAllRead = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE}/personal/alerts/read-all`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["personal-alerts"] }),
+  });
+
+  if (alertsQuery.data === null) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md mb-6"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <Bell className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-muted-foreground">{t("personal.alerts.title")}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Lock className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">{t("personal.alerts.proRequired")}</span>
+          <button
+            onClick={onUpgrade}
+            className="ml-auto px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            {t("personal.upgradeCta")}
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (!alertsQuery.data || alertsQuery.data.alerts.length === 0) return null;
+
+  const data = alertsQuery.data;
+
+  const alertIcon = (type: string) => {
+    switch (type) {
+      case "risk_spike": return <ShieldAlert className="w-4 h-4 text-red-400" />;
+      case "new_category": return <AlertTriangle className="w-4 h-4 text-orange-400" />;
+      case "trending_up": return <TrendingUp className="w-4 h-4 text-yellow-400" />;
+      default: return <Bell className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const severityColor = (severity: string) =>
+    severity === "high" ? "border-red-400/30 bg-red-400/5" :
+    severity === "medium" ? "border-yellow-400/30 bg-yellow-400/5" :
+    "border-border/30 bg-card/50";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md mb-6"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <Bell className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">{t("personal.alerts.title")}</span>
+        {data.unreadCount > 0 && (
+          <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold min-w-[18px] text-center">
+            {data.unreadCount}
+          </span>
+        )}
+        {data.unreadCount > 0 && (
+          <button
+            onClick={() => markAllRead.mutate()}
+            className="ml-auto text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+          >
+            <BellOff className="w-3 h-3" />
+            {t("personal.alerts.markAllRead")}
+          </button>
+        )}
+      </div>
+      <div className="space-y-2 max-h-60 overflow-y-auto">
+        {data.alerts.slice(0, 10).map((alert) => (
+          <div
+            key={alert.id}
+            className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+              alert.isRead ? "border-border/20 bg-card/30 opacity-60" : severityColor(alert.severity)
+            }`}
+          >
+            <div className="mt-0.5">{alertIcon(alert.alertType)}</div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">
+                  {t(`personal.alerts.type.${alert.alertType}`)}
+                </span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                  alert.severity === "high" ? "bg-red-400/20 text-red-400" :
+                  alert.severity === "medium" ? "bg-yellow-400/20 text-yellow-400" :
+                  "bg-muted/30 text-muted-foreground"
+                }`}>
+                  {t(`personal.alerts.severity.${alert.severity}`)}
+                </span>
+              </div>
+              <p className="text-sm text-foreground mt-1">{alert.message}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {new Date(alert.createdAt).toLocaleString()}
+              </p>
+            </div>
+            {!alert.isRead && (
+              <button
+                onClick={() => markRead.mutate(alert.id)}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors flex-shrink-0"
+                title={t("personal.alerts.markRead")}
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
+  const { t } = useTranslation();
+
+  const trendsQuery = useQuery({
+    queryKey: ["personal-trends"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/personal/trends`, { credentials: "include" });
+      if (res.status === 403) return null;
+      if (!res.ok) throw new Error("Failed to fetch trends");
+      return res.json() as Promise<TrendsData>;
+    },
+    staleTime: 60_000,
+  });
+
+  if (trendsQuery.data === null) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md mb-6"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <BarChart3 className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-muted-foreground">{t("personal.trends.title")}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Lock className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">{t("personal.trends.proRequired")}</span>
+          <button
+            onClick={onUpgrade}
+            className="ml-auto px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            {t("personal.upgradeCta")}
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (!trendsQuery.data) return null;
+
+  const data = trendsQuery.data;
+  const hasData = data.dailyTrend.length > 0;
+  const scoreDelta = data.comparison.current.avgScore !== null && data.comparison.previous.avgScore !== null
+    ? data.comparison.current.avgScore - data.comparison.previous.avgScore
+    : null;
+
+  const categoryData = Object.entries(data.categoryBreakdown)
+    .filter(([, count]) => count > 0)
+    .map(([key, count]) => ({
+      name: CATEGORY_LABELS[key] || key,
+      count,
+      fill: CATEGORY_COLORS[key] || "#94a3b8",
+    }));
+
+  if (!hasData && categoryData.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md mb-6"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart3 className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">{t("personal.trends.title")}</span>
+      </div>
+
+      {data.comparison.current.avgScore !== null && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+          <div className="bg-background/30 rounded-lg p-3 border border-border/20">
+            <div className="text-xs text-muted-foreground mb-1">{t("personal.trends.avg30")}</div>
+            <div className="text-2xl font-bold text-foreground">{data.comparison.current.avgScore}</div>
+            <div className="text-xs text-muted-foreground">{data.comparison.current.scanCount} {t("personal.trends.scans")}</div>
+          </div>
+          {data.comparison.previous.avgScore !== null && (
+            <div className="bg-background/30 rounded-lg p-3 border border-border/20">
+              <div className="text-xs text-muted-foreground mb-1">{t("personal.trends.prev30")}</div>
+              <div className="text-2xl font-bold text-foreground">{data.comparison.previous.avgScore}</div>
+              <div className="text-xs text-muted-foreground">{data.comparison.previous.scanCount} {t("personal.trends.scans")}</div>
+            </div>
+          )}
+          {scoreDelta !== null && (
+            <div className="bg-background/30 rounded-lg p-3 border border-border/20">
+              <div className="text-xs text-muted-foreground mb-1">{t("personal.trends.change")}</div>
+              <div className={`text-2xl font-bold flex items-center gap-1 ${scoreDelta >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {scoreDelta >= 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                {scoreDelta > 0 ? "+" : ""}{scoreDelta}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {scoreDelta >= 0 ? t("personal.trends.improving") : t("personal.trends.worsening")}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {categoryData.length > 0 && (
+        <div className="mb-4">
+          <div className="text-xs text-muted-foreground font-semibold mb-2">{t("personal.trends.categoryBreakdown")}</div>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={categoryData} barCategoryGap="20%">
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(30,30,40,0.95)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {categoryData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {hasData && data.dailyTrend.length >= 2 && (
+        <div>
+          <div className="text-xs text-muted-foreground font-semibold mb-2">{t("personal.trends.dailyAvg")}</div>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.dailyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: string) => v.slice(5)}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(30,30,40,0.95)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <ReferenceLine y={70} stroke="rgba(52,211,153,0.3)" strokeDasharray="3 3" />
+                <ReferenceLine y={40} stroke="rgba(251,191,36,0.3)" strokeDasharray="3 3" />
+                <Line
+                  type="monotone"
+                  dataKey="avgScore"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 function extractTextFromFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -480,6 +839,8 @@ export default function PersonalMode({
         setResult(data.result);
         setAnalysisText(data.sourceText);
         queryClient.invalidateQueries({ queryKey: ["personal-history"] });
+        queryClient.invalidateQueries({ queryKey: ["personal-alerts"] });
+        queryClient.invalidateQueries({ queryKey: ["personal-trends"] });
       }
     },
   });
@@ -626,32 +987,7 @@ export default function PersonalMode({
           </div>
         </motion.div>
 
-        {recentAlerts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="bg-card/50 border border-yellow-400/20 rounded-xl p-4 backdrop-blur-md mb-6"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold text-yellow-400">{t("personal.dashboard.recentAlertsList")}</span>
-            </div>
-            <div className="space-y-2">
-              {recentAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-center gap-3 text-sm">
-                  <span className={`font-bold w-10 ${alert.level === "medium" ? "text-yellow-400" : "text-red-400"}`}>
-                    {alert.riskScore}
-                  </span>
-                  <span className="text-foreground truncate flex-1">{alert.content}</span>
-                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                    {new Date(alert.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        <AlertsPanel onUpgrade={onUpgrade} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -836,6 +1172,8 @@ export default function PersonalMode({
             </motion.div>
           )}
         </AnimatePresence>
+
+        <TrendsPanel onUpgrade={onUpgrade} />
 
         {historyQuery.data?.trend && historyQuery.data.trend.length >= 2 && (
           <motion.div
