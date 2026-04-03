@@ -81,17 +81,26 @@ function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }: {
   );
 }
 
-function BarChart({ data, labelKey, valueKey, color = "bg-primary/60", hoverColor = "bg-primary", maxBars = 30, emptyText = "" }: {
-  data: Record<string, any>[];
+interface ChartDataPoint {
+  [key: string]: string | number;
+}
+
+const BAR_HOVER_MAP: Record<string, string> = {
+  "bg-primary/60": "hover:bg-primary",
+  "bg-cyan-500/60": "hover:bg-cyan-500",
+};
+
+function BarChart({ data, labelKey, valueKey, color = "bg-primary/60", maxBars = 30, emptyText = "" }: {
+  data: ChartDataPoint[];
   labelKey: string;
   valueKey: string;
   color?: string;
-  hoverColor?: string;
   maxBars?: number;
   emptyText?: string;
 }) {
   const sliced = data.slice(-maxBars);
-  const maxVal = Math.max(...sliced.map((d) => d[valueKey] as number), 1);
+  const maxVal = Math.max(...sliced.map((d) => Number(d[valueKey])), 1);
+  const hoverClass = BAR_HOVER_MAP[color] || "hover:bg-primary";
 
   if (sliced.length === 0) {
     return <div className="text-sm text-muted-foreground text-center py-8">{emptyText}</div>;
@@ -100,14 +109,15 @@ function BarChart({ data, labelKey, valueKey, color = "bg-primary/60", hoverColo
   return (
     <div className="flex items-end gap-1 h-32">
       {sliced.map((item, i) => {
-        const height = Math.max(4, ((item[valueKey] as number) / maxVal) * 100);
+        const val = Number(item[valueKey]);
+        const height = Math.max(4, (val / maxVal) * 100);
         return (
           <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-card border border-border rounded px-2 py-1 text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-              {item[labelKey]}: {(item[valueKey] as number).toLocaleString()}
+              {item[labelKey]}: {val.toLocaleString()}
             </div>
             <div
-              className={`w-full ${color} hover:${hoverColor} rounded-t transition-colors`}
+              className={`w-full ${color} ${hoverClass} rounded-t transition-colors`}
               style={{ height: `${height}%` }}
             />
           </div>
@@ -249,8 +259,8 @@ export default function AnalyticsDashboard({ onBack, onUpgrade }: { onBack: () =
         }
         const json = await res.json();
         setData(json);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : t("analytics.loadFailed"));
       } finally {
         setLoading(false);
       }
