@@ -25,7 +25,7 @@ declare global {
   }
 }
 
-const PUBLIC_PREFIXES = ["/api/auth/", "/api/healthz"];
+const PUBLIC_PREFIXES = ["/api/auth/", "/api/healthz", "/api/billing/webhook"];
 
 function isPublicRoute(path: string): boolean {
   return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
