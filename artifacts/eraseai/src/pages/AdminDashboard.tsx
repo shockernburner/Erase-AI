@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 interface Stats {
   visits: { today: number; week: number; allTime: number };
@@ -62,6 +63,7 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
 }
 
 function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
   return (
     <div className="flex items-center gap-2 justify-center mt-4">
@@ -73,7 +75,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
         <ChevronLeft className="w-4 h-4" />
       </button>
       <span className="text-sm text-muted-foreground">
-        Page {page} of {totalPages}
+        {t("admin.pageOf", { page, total: totalPages })}
       </span>
       <button
         onClick={() => onPage(page + 1)}
@@ -87,7 +89,8 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 }
 
 function MiniBarChart({ data }: { data: VisitTrend[] }) {
-  if (!data.length) return <p className="text-sm text-muted-foreground/50 py-8 text-center">No visit data yet</p>;
+  const { t } = useTranslation();
+  if (!data.length) return <p className="text-sm text-muted-foreground/50 py-8 text-center">{t("admin.noVisitData")}</p>;
 
   const max = Math.max(...data.map((d) => d.visits), 1);
 
@@ -99,7 +102,7 @@ function MiniBarChart({ data }: { data: VisitTrend[] }) {
           <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group relative">
             <div className="absolute -top-8 hidden group-hover:flex flex-col items-center">
               <div className="bg-card border border-border px-2 py-1 rounded text-xs text-foreground whitespace-nowrap shadow-lg">
-                {d.visits} visits
+                {d.visits} {t("admin.visits")}
                 <div className="text-muted-foreground/50">{new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</div>
               </div>
             </div>
@@ -118,16 +121,18 @@ function MiniBarChart({ data }: { data: VisitTrend[] }) {
 }
 
 function PlanBadge({ plan }: { plan: string }) {
+  const { t } = useTranslation();
   if (plan === "pro") {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold"><Crown className="w-3 h-3" />PRO</span>;
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.pro")}</span>;
   }
   if (plan === "enterprise") {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold"><Crown className="w-3 h-3" />ENTERPRISE</span>;
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.enterprise")}</span>;
   }
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs">Free</span>;
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground text-xs">{t("plan.free")}</span>;
 }
 
 function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string, updates: { planType?: string; subscriptionStatus?: string | null }) => Promise<void> }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -189,7 +194,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
         ) : saved ? (
           <Check className="w-3 h-3 text-green-400" />
         ) : error ? (
-          <span className="text-[10px] text-destructive font-medium">Failed</span>
+          <span className="text-[10px] text-destructive font-medium">{t("admin.failed")}</span>
         ) : (
           <ChevronDown className="w-3 h-3 text-muted-foreground/50 group-hover:text-foreground transition-colors" />
         )}
@@ -198,7 +203,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full mt-1 z-50 bg-card border border-border/50 rounded-xl shadow-xl py-1 min-w-[180px]">
-            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">Plan</div>
+            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">{t("admin.plan")}</div>
             {plans.map((p) => (
               <button
                 key={p}
@@ -214,7 +219,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
             {user.planType !== "free" && (
               <>
                 <div className="border-t border-border/20 my-1" />
-                <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">Status</div>
+                <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">{t("admin.status")}</div>
                 {statuses.map((s) => (
                   <button
                     key={s}
@@ -240,6 +245,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
 }
 
 function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -262,13 +268,13 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to create user");
+        setError(data.error || t("admin.failedToCreate"));
         return;
       }
       onCreated();
       onClose();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("admin.somethingWrong"));
     } finally {
       setSaving(false);
     }
@@ -285,7 +291,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
         <div className="flex items-center justify-between p-5 border-b border-border/30">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">Create User</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("admin.createUser")}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-4 h-4" />
@@ -298,7 +304,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="First name"
+                placeholder={t("admin.firstName")}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -308,7 +314,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Last name"
+                placeholder={t("admin.lastName")}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -320,7 +326,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="email"
-              placeholder="Email address"
+              placeholder={t("admin.emailAddress")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -332,7 +338,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="password"
-              placeholder="Password (min 8 characters)"
+              placeholder={t("admin.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -342,7 +348,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           </div>
 
           <div>
-            <label className="block text-xs text-muted-foreground mb-1.5 font-medium">Plan</label>
+            <label className="block text-xs text-muted-foreground mb-1.5 font-medium">{t("admin.plan")}</label>
             <div className="flex gap-2">
               {(["free", "pro", "enterprise"] as const).map((p) => (
                 <button
@@ -379,12 +385,12 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             {saving ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Creating...
+                {t("admin.creating")}
               </>
             ) : (
               <>
                 <UserPlus className="w-5 h-5" />
-                Create User
+                {t("admin.createUser")}
               </>
             )}
           </Button>
@@ -530,15 +536,18 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          <Button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            variant="outline"
-            className="gap-2 text-sm border-border/50"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? t("admin.refreshing") : t("admin.refresh")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+            <Button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              variant="outline"
+              className="gap-2 text-sm border-border/50"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? t("admin.refreshing") : t("admin.refresh")}
+            </Button>
+          </div>
         </motion.header>
 
         {loading ? (
@@ -594,7 +603,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">{t("admin.users")}</h2>
-                <span className="text-xs text-muted-foreground/50 ml-auto mr-3">{stats?.totalUsers ?? 0} total</span>
+                <span className="text-xs text-muted-foreground/50 ml-auto mr-3">{stats?.totalUsers ?? 0} {t("admin.total")}</span>
                 <Button
                   onClick={() => setShowCreateUser(true)}
                   className="gap-1.5 text-xs h-8 px-3 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
@@ -661,11 +670,11 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">{t("admin.feedbackTitle")}</h2>
-                <span className="text-xs text-muted-foreground/50 ml-auto">{stats?.feedback.total ?? 0} total</span>
+                <span className="text-xs text-muted-foreground/50 ml-auto">{stats?.feedback.total ?? 0} {t("admin.total")}</span>
               </div>
 
               {feedback.length === 0 ? (
-                <p className="text-sm text-muted-foreground/50 py-6 text-center">No feedback yet</p>
+                <p className="text-sm text-muted-foreground/50 py-6 text-center">{t("admin.noFeedback")}</p>
               ) : (
                 <div className="space-y-3">
                   {feedback.map((f) => (

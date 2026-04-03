@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 interface PricingPageProps {
   onBack: () => void;
@@ -100,10 +101,10 @@ export default function PricingPage({ onBack }: PricingPageProps) {
       if (res.ok && data.success) {
         window.location.reload();
       } else {
-        alert(data.error || "Failed to cancel subscription");
+        alert(data.error || t("pricing.failedCancel"));
       }
     } catch {
-      alert("Something went wrong. Please try again.");
+      alert(t("pricing.somethingWrong"));
     } finally {
       setCancelLoading(false);
       setShowCancelConfirm(false);
@@ -124,7 +125,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || "Failed to start checkout");
+        alert(data.error || t("pricing.failedCheckout"));
         return;
       }
 
@@ -134,9 +135,9 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         return;
       }
 
-      alert("Failed to create checkout session");
+      alert(t("pricing.failedCheckoutSession"));
     } catch {
-      alert("Something went wrong. Please try again.");
+      alert(t("pricing.somethingWrong"));
     } finally {
       setCheckoutLoading(false);
     }
@@ -155,6 +156,9 @@ export default function PricingPage({ onBack }: PricingPageProps) {
       />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
+        <div className="flex justify-end mb-2">
+          <LanguageSelector />
+        </div>
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -300,7 +304,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
                 <p className="text-xs text-muted-foreground mb-1">{t("pricing.status")}</p>
-                <p className="text-sm font-semibold text-foreground capitalize">{planDetails.subscriptionStatus || "Active"}</p>
+                <p className="text-sm font-semibold text-foreground capitalize">{planDetails.subscriptionStatus || t("pricing.active")}</p>
               </div>
               <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
                 <p className="text-xs text-muted-foreground mb-1">{t("pricing.started")}</p>
@@ -426,7 +430,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 >
                   <MessageCircle className="w-5 h-5 text-green-500 shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">WhatsApp</p>
+                    <p className="text-xs text-muted-foreground mb-0.5">{t("pricing.whatsapp")}</p>
                     <p className="text-sm font-mono text-foreground">+852 9057 6851</p>
                   </div>
                 </a>
