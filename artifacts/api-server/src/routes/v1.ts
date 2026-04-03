@@ -30,8 +30,8 @@ router.use((req: Request, res: Response, next) => {
   next();
 });
 
-router.use(apiRateLimit());
 router.use(trackApiUsage());
+router.use(apiRateLimit());
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 

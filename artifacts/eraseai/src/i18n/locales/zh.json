@@ -364,7 +364,15 @@
       "active": "活跃",
       "canceled": "已取消",
       "past_due": "逾期"
-    }
+    },
+    "apiUsageTitle": "API使用情况",
+    "apiRequestsThisMonth": "本月",
+    "apiRequestsThisWeek": "本周",
+    "apiRequestsAllTime": "总计",
+    "apiTopUsers": "API顶级用户",
+    "apiDailyTrend": "API每日趋势",
+    "apiRequests": "请求",
+    "noApiUsage": "暂无API使用数据"
   },
   "language": {
     "en": "English",

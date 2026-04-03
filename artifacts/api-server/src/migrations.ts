@@ -24,8 +24,27 @@ async function ensureApiKeysTable() {
   }
 }
 
+async function ensureApiUsageTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS api_usage (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        api_key_id VARCHAR NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+        endpoint VARCHAR(500) NOT NULL,
+        response_status INTEGER,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_api_usage_key_created ON api_usage(api_key_id, created_at)`);
+    logger.info("Startup migration: api_usage table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: api_usage table warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
+  await ensureApiUsageTable();
   try {
     const demoDatasets = await db.execute(sql`
       SELECT id FROM datasets WHERE user_id = 'system-demo-user'

@@ -364,7 +364,15 @@
       "active": "アクティブ",
       "canceled": "キャンセル済み",
       "past_due": "期限超過"
-    }
+    },
+    "apiUsageTitle": "API使用状況",
+    "apiRequestsThisMonth": "今月",
+    "apiRequestsThisWeek": "今週",
+    "apiRequestsAllTime": "全期間",
+    "apiTopUsers": "APIトップユーザー",
+    "apiDailyTrend": "API日次トレンド",
+    "apiRequests": "リクエスト",
+    "noApiUsage": "API使用データがありません"
   },
   "language": {
     "en": "English",

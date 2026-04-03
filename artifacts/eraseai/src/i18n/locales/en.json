@@ -369,7 +369,15 @@
       "active": "Active",
       "canceled": "Canceled",
       "past_due": "Past Due"
-    }
+    },
+    "apiUsageTitle": "API Usage",
+    "apiRequestsThisMonth": "This Month",
+    "apiRequestsThisWeek": "This Week",
+    "apiRequestsAllTime": "All Time",
+    "apiTopUsers": "Top API Users",
+    "apiDailyTrend": "API Daily Trend",
+    "apiRequests": "requests",
+    "noApiUsage": "No API usage data yet"
   },
   "checkout": {
     "confirming": "Confirming Your Payment",

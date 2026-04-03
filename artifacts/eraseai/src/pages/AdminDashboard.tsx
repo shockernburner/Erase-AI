@@ -5,7 +5,7 @@ import {
   ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
   Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
   BarChart3, RefreshCw, Check, ChevronDown, UserPlus, X,
-  Mail, Lock, User as UserIcon,
+  Mail, Lock, User as UserIcon, Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
@@ -43,6 +43,14 @@ interface FeedbackRow {
 interface VisitTrend {
   date: string;
   visits: number;
+}
+
+interface ApiUsageData {
+  thisMonth: number;
+  thisWeek: number;
+  allTime: number;
+  topUsers: { userId: string; email: string | null; planType: string; requests: number }[];
+  dailyTrend: { date: string; requests: number }[];
 }
 
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string | number; sub?: string }) {
@@ -414,24 +422,27 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
   const [fbPage, setFbPage] = useState(1);
   const [fbTotalPages, setFbTotalPages] = useState(1);
   const [trends, setTrends] = useState<VisitTrend[]>([]);
+  const [apiUsage, setApiUsage] = useState<ApiUsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
 
   const fetchAll = async (uPage = 1, fPage = 1) => {
     try {
-      const [statsRes, usersRes, fbRes, trendsRes] = await Promise.all([
+      const [statsRes, usersRes, fbRes, trendsRes, apiUsageRes] = await Promise.all([
         fetch("/api/admin/stats", { credentials: "include" }),
         fetch(`/api/admin/users?page=${uPage}&limit=10`, { credentials: "include" }),
         fetch(`/api/admin/feedback?page=${fPage}&limit=10`, { credentials: "include" }),
         fetch("/api/admin/visits?days=14", { credentials: "include" }),
+        fetch("/api/admin/api-usage", { credentials: "include" }),
       ]);
 
-      const [statsData, usersData, fbData, trendsData] = await Promise.all([
+      const [statsData, usersData, fbData, trendsData, apiUsageData] = await Promise.all([
         statsRes.json(),
         usersRes.json(),
         fbRes.json(),
         trendsRes.json(),
+        apiUsageRes.ok ? apiUsageRes.json() : null,
       ]);
 
       setStats(statsData);
@@ -440,6 +451,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
       setFeedback(fbData.feedback || []);
       setFbTotalPages(fbData.totalPages || 1);
       setTrends(trendsData.trends || []);
+      if (apiUsageData) setApiUsage(apiUsageData);
     } catch (err) {
       console.error("Admin fetch error:", err);
     } finally {
@@ -595,6 +607,85 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 <h2 className="text-lg font-semibold text-foreground">{t("admin.visitTrends")}</h2>
               </div>
               <MiniBarChart data={trends} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-card/50 border border-border/50 rounded-2xl p-5 backdrop-blur-md mb-8"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">{t("admin.apiUsageTitle")}</h2>
+              </div>
+
+              {apiUsage ? (
+                <>
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-muted/10 border border-border/20 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-bold text-foreground">{apiUsage.thisMonth.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("admin.apiRequestsThisMonth")}</p>
+                    </div>
+                    <div className="bg-muted/10 border border-border/20 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-bold text-foreground">{apiUsage.thisWeek.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("admin.apiRequestsThisWeek")}</p>
+                    </div>
+                    <div className="bg-muted/10 border border-border/20 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-bold text-foreground">{apiUsage.allTime.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("admin.apiRequestsAllTime")}</p>
+                    </div>
+                  </div>
+
+                  {apiUsage.dailyTrend.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3">{t("admin.apiDailyTrend")}</h3>
+                      <div className="flex items-end gap-1 h-24 px-2">
+                        {apiUsage.dailyTrend.map((d) => {
+                          const max = Math.max(...apiUsage.dailyTrend.map((x) => x.requests), 1);
+                          const height = Math.max(4, (d.requests / max) * 100);
+                          return (
+                            <div key={d.date} className="flex-1 flex flex-col items-center gap-1 group relative">
+                              <div className="absolute -top-8 hidden group-hover:flex flex-col items-center">
+                                <div className="bg-card border border-border px-2 py-1 rounded text-xs text-foreground whitespace-nowrap shadow-lg">
+                                  {d.requests} {t("admin.apiRequests")}
+                                  <div className="text-muted-foreground/50">{new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}</div>
+                                </div>
+                              </div>
+                              <div
+                                className="w-full bg-gradient-to-t from-violet-500/60 to-violet-400 rounded-t transition-all hover:from-violet-500/80 hover:to-violet-300"
+                                style={{ height: `${height}%` }}
+                              />
+                              <span className="text-[9px] text-muted-foreground/40 truncate w-full text-center">
+                                {new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { day: "numeric" })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {apiUsage.topUsers.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3">{t("admin.apiTopUsers")}</h3>
+                      <div className="space-y-2">
+                        {apiUsage.topUsers.map((u, i) => (
+                          <div key={u.userId} className="flex items-center gap-3 p-3 bg-muted/10 border border-border/20 rounded-xl">
+                            <span className="text-xs font-bold text-muted-foreground/50 w-6 text-center">#{i + 1}</span>
+                            <span className="text-sm text-foreground font-medium flex-1 truncate">{u.email || u.userId}</span>
+                            <PlanBadge plan={u.planType} />
+                            <span className="text-sm font-bold text-primary">{u.requests.toLocaleString()}</span>
+                            <span className="text-xs text-muted-foreground">{t("admin.apiRequests")}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground/50 py-6 text-center">{t("admin.noApiUsage")}</p>
+              )}
             </motion.div>
 
             <motion.div

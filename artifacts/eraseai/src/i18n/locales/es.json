@@ -364,7 +364,15 @@
       "active": "Activo",
       "canceled": "Cancelado",
       "past_due": "Vencido"
-    }
+    },
+    "apiUsageTitle": "Uso de API",
+    "apiRequestsThisMonth": "Este mes",
+    "apiRequestsThisWeek": "Esta semana",
+    "apiRequestsAllTime": "Total",
+    "apiTopUsers": "Principales usuarios de API",
+    "apiDailyTrend": "Tendencia diaria de API",
+    "apiRequests": "solicitudes",
+    "noApiUsage": "Sin datos de uso de API"
   },
   "language": {
     "en": "English",
