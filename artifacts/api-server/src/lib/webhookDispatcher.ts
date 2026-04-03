@@ -97,6 +97,15 @@ async function deliverWebhook(
   let success = false;
 
   try {
+    const urlCheck = await resolveAndValidateUrl(webhookUrl);
+    if (!urlCheck.safe) {
+      responseBody = `SSRF blocked: ${urlCheck.error}`;
+      await db.insert(webhookDeliveriesTable).values({
+        webhookId, event, payload, responseStatus: null, responseBody, attempt, success: 0,
+      }).catch(() => {});
+      return false;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -108,6 +117,7 @@ async function deliverWebhook(
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
+      redirect: "error",
     });
 
     clearTimeout(timeout);
@@ -206,6 +216,15 @@ export async function sendTestWebhook(
   let success = false;
 
   try {
+    const urlCheck = await resolveAndValidateUrl(webhookUrl);
+    if (!urlCheck.safe) {
+      responseBody = `SSRF blocked: ${urlCheck.error}`;
+      await db.insert(webhookDeliveriesTable).values({
+        webhookId, event: "dataset.analyzed", payload: testPayload, responseStatus: null, responseBody, attempt: 1, success: 0,
+      }).catch(() => {});
+      return { success: false, status: null, body: responseBody };
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -217,6 +236,7 @@ export async function sendTestWebhook(
       },
       body: JSON.stringify(testPayload),
       signal: controller.signal,
+      redirect: "error",
     });
 
     clearTimeout(timeout);
