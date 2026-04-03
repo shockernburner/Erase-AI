@@ -18,7 +18,6 @@ import {
   History,
   BarChart3,
   Eye,
-  Play,
   Zap,
   ScanSearch,
   ChevronRight,
@@ -40,10 +39,6 @@ import {
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
-
-function delay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
 
 interface DatasetRow {
   id: number;
@@ -224,8 +219,6 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
   const [isDragging, setIsDragging] = useState(false);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
   const [prevVersionRows, setPrevVersionRows] = useState<DatasetRow[]>([]);
-  const [isRunningDemo, setIsRunningDemo] = useState(false);
-  const [demoStep, setDemoStep] = useState("");
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
@@ -266,144 +259,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     return data;
   }, []);
 
-  useEffect(() => {
-    if (phase === "idle") {
-      loadDemo();
-    }
-  }, []);
 
-  const loadDemo = async () => {
-    setPhase("loading");
-    setError("");
-    try {
-      const res = await fetch(`${BASE}api/datasets/demo`);
-      const data = await res.json();
-      await fetchDataset(data.dataset_id);
-      setPhase("loaded");
-      return data.dataset_id;
-    } catch {
-      setError("Failed to load demo dataset");
-      setPhase("idle");
-      return null;
-    }
-  };
-
-  const runFullDemo = async () => {
-    if (isRunningDemo) return;
-    setIsRunningDemo(true);
-    setError("");
-    setEraseResult(null);
-    setVerifyResult(null);
-    setPrevVersionRows([]);
-
-    try {
-      setDemoStep("Loading demo dataset...");
-      setPhase("loading");
-      const demoRes = await fetch(`${BASE}api/datasets/demo`);
-      if (!demoRes.ok) throw new Error("Failed to load demo dataset");
-      const demoData = await demoRes.json();
-      const dsId = demoData.dataset_id;
-      const snapshot = await fetchDataset(dsId);
-      setPhase("loaded");
-      await delay(500);
-
-      setDemoStep("Analyzing dataset for issues...");
-      const analyzeRes = await fetch(`${BASE}api/datasets/${dsId}/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!analyzeRes.ok) throw new Error("Analysis failed");
-      const analyzeData = await analyzeRes.json();
-      setAnalysisData(analyzeData);
-      if (analyzeData.summary.length > 0) {
-        setExpandedIssue(analyzeData.summary[0].type);
-      }
-      await delay(800);
-
-      setDemoStep("Generating ML pipeline recommendations...");
-      const mlRes = await fetch(`${BASE}api/datasets/${dsId}/ml-feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (mlRes.status === 403) {
-        const mlErr = await mlRes.json();
-        if (mlErr.upgrade) {
-          setUpgradeNeeded("ml-feedback");
-        }
-      } else if (mlRes.ok) {
-        const mlData = await mlRes.json();
-        if (mlData.ml_recommendations?.length > 0) {
-          setMlFeedback(mlData);
-          setMlCategory("all");
-        }
-      }
-      await delay(600);
-
-      if (analyzeData.total_issues > 0) {
-        setDemoStep("Applying suggested fixes...");
-        const applyRes = await fetch(`${BASE}api/datasets/${dsId}/apply-suggestions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ issue_types: analyzeData.summary.map((s: AnalysisIssueSummary) => s.type) }),
-        });
-        if (!applyRes.ok) throw new Error("Failed to apply fixes");
-        const applyData = await applyRes.json();
-        const fixSnapshot = await fetchDataset(dsId);
-        setPrevVersionRows(snapshot.rows);
-        setEraseResult({
-          version_number: applyData.version_number,
-          mode: "auto-fix",
-          keyword: "all issues",
-          affected_count: applyData.affected_count,
-          impact: applyData.impact,
-        });
-        setAnalysisData(null);
-        setPhase("erased");
-        await delay(800);
-
-        setDemoStep("Erasing 'Firdous' from dataset...");
-        setKeyword("Firdous");
-        setEraseMode("delete");
-        setPrevVersionRows(fixSnapshot.rows);
-        setPhase("erasing");
-        await delay(300);
-
-        const eraseRes = await fetch(`${BASE}api/datasets/${dsId}/erase`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: "delete", value: "Firdous" }),
-        });
-        if (!eraseRes.ok) throw new Error("Erase operation failed");
-        const eraseData = await eraseRes.json();
-        setEraseResult(eraseData);
-        await fetchDataset(dsId);
-        setKeyword("");
-        setPhase("erased");
-        await delay(600);
-      }
-
-      setDemoStep("Verifying erasure...");
-      const verifyAfterRes = await fetch(`${BASE}api/datasets/${dsId}/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: "Firdous" }),
-      });
-      if (!verifyAfterRes.ok) throw new Error("Verification failed");
-      const verifyAfter = await verifyAfterRes.json();
-      setVerifyQuery("Firdous");
-      setVerifyResult(verifyAfter);
-      await delay(400);
-
-      setDemoStep("Demo complete!");
-      await delay(500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Demo failed. Please try again.");
-      setPhase("loaded");
-    } finally {
-      setDemoStep("");
-      setIsRunningDemo(false);
-    }
-  };
 
   const uploadFile = async (file: File) => {
     setPhase("loading");
@@ -543,7 +399,6 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     setIsDroppingColumn(null);
     setShowUrlImport(false);
     setImportUrl("");
-    loadDemo();
   };
 
   const dropColumn = async (colName: string) => {
@@ -774,32 +629,6 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
   return (
     <div className="space-y-6">
       <AnimatePresence mode="wait">
-        {isRunningDemo && demoStep && (
-          <motion.div
-            key="demo-step"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-center gap-3 p-4 rounded-xl bg-primary/10 border border-primary/30 text-primary"
-          >
-            <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-            <span className="font-semibold text-sm">{demoStep}</span>
-            <div className="ml-auto flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-primary"
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -848,14 +677,115 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         </div>
       )}
 
-      {phase === "loading" && !isRunningDemo && (
+      {phase === "idle" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="p-0 overflow-hidden">
+            <div
+              className={`relative border-2 border-dashed rounded-xl p-12 transition-all cursor-pointer ${
+                isDragging
+                  ? "border-primary bg-primary/10"
+                  : "border-border/50 hover:border-primary/50 hover:bg-primary/5"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="flex flex-col items-center justify-center gap-4 text-center">
+                <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20">
+                  <Upload className="w-10 h-10 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-display font-bold text-foreground mb-2">
+                    Upload Your Dataset
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Drag and drop a file here, or click to browse. Supports JSON, CSV, and TXT formats.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <Button className="gap-2">
+                    <Upload className="w-4 h-4" />
+                    Choose File
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={(e) => { e.stopPropagation(); setShowUrlImport(true); }}
+                    className="gap-2"
+                  >
+                    <Link className="w-4 h-4" />
+                    Import from URL
+                  </Button>
+                </div>
+                <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground/60">
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    JSON
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    CSV
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    TXT
+                  </span>
+                </div>
+              </div>
+              <input ref={fileInputRef} type="file" accept=".json,.csv,.txt" onChange={handleFileChange} className="hidden" />
+            </div>
+          </Card>
+
+          <AnimatePresence>
+            {showUrlImport && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4"
+              >
+                <Card className="p-4 border-primary/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Link className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Import from URL</span>
+                    <button onClick={() => { setShowUrlImport(false); setImportUrl(""); }} className="ml-auto text-muted-foreground hover:text-foreground">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      placeholder="https://example.com/data.csv"
+                      className="flex-1 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && importFromUrl()}
+                    />
+                    <Button size="sm" onClick={importFromUrl} disabled={!importUrl.trim() || isImporting} className="gap-1.5">
+                      {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                      {isImporting ? "Importing..." : "Import"}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Supports HTTP/HTTPS URLs pointing to CSV, JSON, or TXT files.</p>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      {phase === "loading" && (
         <Card className="p-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-muted-foreground">Loading dataset...</p>
         </Card>
       )}
 
-      {(phase === "loaded" || phase === "confirm-erase" || phase === "erasing" || phase === "erased" || (phase === "loading" && isRunningDemo)) && dataset && (
+      {(phase === "loaded" || phase === "confirm-erase" || phase === "erasing" || phase === "erased") && dataset && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-6">
           <Card className="p-5">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -869,8 +799,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                     <Badge>{dataset.format.toUpperCase()}</Badge>
                     <div className="relative">
                       <button
-                        onClick={() => !isRunningDemo && setShowVersionDropdown(!showVersionDropdown)}
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-semibold transition-colors ${isRunningDemo ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/20"}`}
+                        onClick={() => setShowVersionDropdown(!showVersionDropdown)}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-semibold transition-colors hover:bg-primary/20"
                       >
                         <GitBranch className="w-3 h-3" />
                         Version {currentVersion}
@@ -906,28 +836,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={runFullDemo}
-                  disabled={isRunningDemo}
-                  className="gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] px-4"
-                  size="sm"
-                >
-                  {isRunningDemo ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Running...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      Run Full Demo
-                    </>
-                  )}
-                </Button>
-                <Button
                   variant="outline"
                   size="sm"
                   onClick={analyzeDataset}
-                  disabled={isRunningDemo || isAnalyzing}
+                  disabled={isAnalyzing}
                   className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
                 >
                   {isAnalyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanSearch className="w-3.5 h-3.5" />}
@@ -937,22 +849,22 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                   variant="outline"
                   size="sm"
                   onClick={fetchProfile}
-                  disabled={isRunningDemo || isProfiling}
+                  disabled={isProfiling}
                   className="gap-1.5 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
                 >
                   {isProfiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BarChart3 className="w-3.5 h-3.5" />}
                   {isProfiling ? "Profiling..." : "Profile"}
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5" disabled={isRunningDemo}>
+                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-1.5">
                   <Upload className="w-3.5 h-3.5" />
                   Upload New
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowUrlImport(!showUrlImport)} className="gap-1.5" disabled={isRunningDemo}>
+                <Button variant="outline" size="sm" onClick={() => setShowUrlImport(!showUrlImport)} className="gap-1.5">
                   <Link className="w-3.5 h-3.5" />
                   Import URL
                 </Button>
                 <input ref={fileInputRef} type="file" accept=".json,.csv,.txt" onChange={handleFileChange} className="hidden" />
-                <Button variant="ghost" size="sm" onClick={reset} disabled={isRunningDemo}>Reset</Button>
+                <Button variant="ghost" size="sm" onClick={reset}>Reset</Button>
               </div>
             </div>
           </Card>
@@ -1070,7 +982,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       <Button
                         size="sm"
                         onClick={() => applySuggestions(analysisData.summary.map(s => s.type))}
-                        disabled={isApplying || isRunningDemo}
+                        disabled={isApplying}
                         className="gap-1.5 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90"
                       >
                         {isApplying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -1120,7 +1032,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                               size="sm"
                               variant="outline"
                               onClick={() => applySuggestions([expandedIssue])}
-                              disabled={isApplying || isRunningDemo}
+                              disabled={isApplying}
                               className="text-xs h-7 gap-1"
                             >
                               <Sparkles className="w-3 h-3" />
@@ -1696,13 +1608,12 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                       placeholder={eraseMode === "delete" ? "Keyword to delete rows containing..." : "Keyword to redact with [REDACTED]..."}
                       className="flex-1 py-1.5 text-xs"
                       onKeyDown={(e) => e.key === "Enter" && confirmErase()}
-                      disabled={isRunningDemo}
                     />
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={confirmErase}
-                      disabled={!keyword.trim() || phase === "erasing" || phase === "confirm-erase" || currentVersion !== latestVersion || isRunningDemo}
+                      disabled={!keyword.trim() || phase === "erasing" || phase === "confirm-erase" || currentVersion !== latestVersion}
                       className="gap-1.5"
                     >
                       {eraseMode === "delete" ? <Trash2 className="w-3.5 h-3.5" /> : <Shield className="w-3.5 h-3.5" />}
@@ -1750,7 +1661,7 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                                 </button>
                               </div>
                             ) : (
-                              currentVersion === latestVersion && !isRunningDemo && columnHeaders.length > 1 && (
+                              currentVersion === latestVersion && columnHeaders.length > 1 && (
                                 <button
                                   onClick={() => setConfirmDropColumn(col)}
                                   className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive ml-0.5"
@@ -2003,9 +1914,8 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
                           placeholder='Try "Firdous"...'
                           className="text-sm py-2"
                           onKeyDown={(e) => e.key === "Enter" && verifyErasure()}
-                          disabled={isRunningDemo}
                         />
-                        <Button size="sm" onClick={verifyErasure} disabled={!verifyQuery.trim() || isRunningDemo}>Verify</Button>
+                        <Button size="sm" onClick={verifyErasure} disabled={!verifyQuery.trim()}>Verify</Button>
                       </div>
                       <AnimatePresence>
                         {verifyResult && (

@@ -60,17 +60,6 @@ function detectFormat(filename: string): string {
   return "txt";
 }
 
-const DEMO_ROWS = [
-  "Firdous is CEO of X company",
-  "Firdous lives in Dhaka",
-  "Company X is in Bangladesh",
-  "Contact firdous@xcompany.com for details",
-  "He is the best leader in the industry",
-  "The idiot competitor failed again",
-  "Firdous lives in Dhaka",
-  "Call +880-171-555-0199 for support",
-];
-
 async function createVersionWithRows(
   datasetId: number,
   versionNumber: number,
@@ -117,43 +106,6 @@ function requireAuth(req: Request, res: Response): boolean {
   }
   return true;
 }
-
-router.get("/demo", async (req: Request, res: Response) => {
-  if (!requireAuth(req, res)) return;
-  const userId = req.user!.id;
-
-  const existing = await db.select().from(datasetsTable)
-    .where(and(eq(datasetsTable.name, "Demo Dataset"), eq(datasetsTable.userId, userId)))
-    .limit(1);
-
-  if (existing.length > 0) {
-    const dsId = existing[0].id;
-    const allVersions = await db.select().from(datasetVersionsTable)
-      .where(eq(datasetVersionsTable.datasetId, dsId));
-    if (allVersions.length > 0) {
-      const versionIds = allVersions.map(v => v.id);
-      for (const vid of versionIds) {
-        await db.delete(datasetRowsTable).where(eq(datasetRowsTable.versionId, vid));
-      }
-      await db.delete(datasetVersionsTable).where(eq(datasetVersionsTable.datasetId, dsId));
-    }
-    await db.delete(datasetOperationsTable).where(eq(datasetOperationsTable.datasetId, dsId));
-    await db.delete(analysisResultsTable).where(eq(analysisResultsTable.datasetId, dsId));
-
-    await createVersionWithRows(dsId, 1, null, DEMO_ROWS.map((content, i) => ({ rowIndex: i, content })));
-    res.json({ created: false, dataset_id: dsId });
-    return;
-  }
-
-  const [dataset] = await db.insert(datasetsTable).values({
-    name: "Demo Dataset",
-    originalFormat: "json",
-    userId,
-  }).returning();
-
-  await createVersionWithRows(dataset.id, 1, null, DEMO_ROWS.map((content, i) => ({ rowIndex: i, content })));
-  res.json({ created: true, dataset_id: dataset.id });
-});
 
 router.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;

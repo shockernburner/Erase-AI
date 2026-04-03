@@ -1,29 +1,11 @@
-import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { TeachSection } from "@/components/TeachSection";
-import { AskSection } from "@/components/AskSection";
-import { UnlearnSection } from "@/components/UnlearnSection";
-import { VerifySection } from "@/components/VerifySection";
-import { AuditLogSection } from "@/components/AuditLogSection";
-import { DemoProvider, useDemoContext } from "@/context/DemoContext";
-import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
-import { getListFactsQueryKey } from "@workspace/api-client-react";
+import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { ShieldX, Play, Loader2, Zap, Database, Globe, ArrowRight, LogOut, Crown, LayoutDashboard } from "lucide-react";
+import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui-elements";
+import { motion, AnimatePresence } from "framer-motion";
+import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin";
-
-const DEMO_FACT = "Firdous is the CEO of X company";
-const DEMO_QUESTION = "Who is Firdous?";
-
-type Tab = "live-demo" | "dataset-sanitizer";
-
-function delay(ms: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
 
 function PlanBadge({ plan }: { plan: string }) {
   if (plan === "pro") {
@@ -55,7 +37,6 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
 
   if (!user) return null;
 
-  const isDemo = user.id === "system-demo-user";
   const plan = user.planType || "free";
   const initials = [user.firstName, user.lastName]
     .filter(Boolean)
@@ -109,15 +90,13 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               <Crown className="w-4 h-4" />
               {plan === "free" ? "Upgrade Plan" : "Manage Plan"}
             </button>
-            {!isDemo && (
-              <button
-                onClick={() => { setOpen(false); logout(); }}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-                Log out
-              </button>
-            )}
+            <button
+              onClick={() => { setOpen(false); logout(); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </button>
           </div>
         </>
       )}
@@ -125,61 +104,42 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   );
 }
 
-function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
-  const demoCtx = useDemoContext();
-  const queryClient = useQueryClient();
-  const [isRunningDemo, setIsRunningDemo] = useState(false);
-  const [demoLabel, setDemoLabel] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("live-demo");
+function VideoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border border-primary/30 shadow-[0_0_60px_rgba(6,182,212,0.2)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <iframe
+          src={`${import.meta.env.BASE_URL}../eraseai-video/`}
+          className="w-full h-full border-0"
+          allow="autoplay"
+          title="EraseAI System Explainer"
+        />
+      </motion.div>
+    </motion.div>
+  );
+}
 
-  useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}api/seed`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.seeded) {
-          queryClient.invalidateQueries({ queryKey: getListFactsQueryKey() });
-        }
-      })
-      .catch(() => {});
-
-    fetch("/api/track-visit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ path: window.location.pathname }),
-    }).catch(() => {});
-  }, []);
-
-  const runDemo = async () => {
-    if (isRunningDemo) return;
-    setIsRunningDemo(true);
-
-    try {
-      setDemoLabel("Re-seeding demo fact...");
-      await fetch(`${import.meta.env.BASE_URL}api/seed`);
-      queryClient.invalidateQueries({ queryKey: getListFactsQueryKey() });
-      await delay(600);
-
-      setDemoLabel("Asking question...");
-      demoCtx.sendMessageRef.current?.(DEMO_QUESTION);
-      await delay(1500);
-
-      setDemoLabel("Erasing memory...");
-      await demoCtx.unlearnFactRef.current?.(DEMO_FACT);
-      await delay(1000);
-
-      setDemoLabel("Verifying erasure...");
-      await delay(400);
-    } finally {
-      setDemoLabel("");
-      setIsRunningDemo(false);
-    }
-  };
-
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "live-demo", label: "Live Demo", icon: <Zap className="w-4 h-4" /> },
-    { id: "dataset-sanitizer", label: "AI Dataset Unlearning Engine", icon: <Database className="w-4 h-4" /> },
-  ];
+export default function Home({ onNavigate }: { onNavigate: (view: AppView) => void }) {
+  const [showVideo, setShowVideo] = useState(false);
 
   return (
     <div className="min-h-screen w-full pb-20 relative">
@@ -209,31 +169,19 @@ function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
                 EraseAI
               </h1>
               <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-1">
-                Make AI forget what it should never learn
+                AI Data Governance Layer
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {activeTab === "live-demo" && (
-              <Button
-                onClick={runDemo}
-                disabled={isRunningDemo}
-                className="gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] px-5"
-              >
-                {isRunningDemo ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {demoLabel || "Running..."}
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-current" />
-                    Run Demo
-                  </>
-                )}
-              </Button>
-            )}
+            <button
+              onClick={() => setShowVideo(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
+            >
+              <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
+              See how it works
+            </button>
 
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
               <Globe className="w-3.5 h-3.5 text-primary" />
@@ -250,7 +198,7 @@ function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="flex items-center gap-3 mb-6 text-xs font-mono text-muted-foreground"
+          className="flex items-center gap-3 mb-8 text-xs font-mono text-muted-foreground"
         >
           <span className="uppercase tracking-wider text-primary/70 font-semibold">AI Data Control</span>
           <span className="flex items-center gap-1.5">
@@ -264,74 +212,13 @@ function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
           <span className="hidden sm:inline text-muted-foreground/60">Detect risk. Clean data. Fix your model.</span>
         </motion.div>
 
-        <div className="flex items-center gap-1 mb-8 bg-card/50 p-1 rounded-xl border border-border/50 backdrop-blur-md w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === tab.id
-                  ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === "live-demo" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="lg:col-span-4"
-            >
-              <TeachSection />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="lg:col-span-8"
-            >
-              <AskSection defaultQuestion={DEMO_QUESTION} />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="lg:col-span-4"
-            >
-              <UnlearnSection />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="lg:col-span-8"
-            >
-              <VerifySection />
-            </motion.div>
-
-            <AuditLogSection />
-          </div>
-        )}
-
-        {activeTab === "dataset-sanitizer" && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />
-          </motion.div>
-        )}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />
+        </motion.div>
       </div>
 
       <footer className="relative z-10 border-t border-border/30 mt-16 py-6 text-center">
@@ -339,14 +226,10 @@ function HomeContent({ onNavigate }: { onNavigate: (view: AppView) => void }) {
           &copy; 2026 EraseAI.ai &mdash; AI Data Governance Layer
         </p>
       </footer>
-    </div>
-  );
-}
 
-export default function Home({ onNavigate }: { onNavigate: (view: AppView) => void }) {
-  return (
-    <DemoProvider>
-      <HomeContent onNavigate={onNavigate} />
-    </DemoProvider>
+      <AnimatePresence>
+        {showVideo && <VideoModal onClose={() => setShowVideo(false)} />}
+      </AnimatePresence>
+    </div>
   );
 }
