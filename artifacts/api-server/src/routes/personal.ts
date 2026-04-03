@@ -107,8 +107,8 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
       return;
     }
 
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-    const offset = parseInt(req.query.offset as string) || 0;
+    const limit = Math.max(1, Math.min(parseInt(req.query.limit as string) || 20, 100));
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
     const scans = await db
       .select()
