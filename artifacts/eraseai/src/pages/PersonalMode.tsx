@@ -472,12 +472,13 @@ export default function PersonalMode({
         }
         throw new Error(data.error || "Analysis failed");
       }
-      return res.json() as Promise<ScanResult>;
+      const result = await res.json() as ScanResult;
+      return { result, sourceText: inputText };
     },
     onSuccess: (data) => {
       if (data) {
-        setResult(data);
-        setAnalysisText(text);
+        setResult(data.result);
+        setAnalysisText(data.sourceText);
         queryClient.invalidateQueries({ queryKey: ["personal-history"] });
       }
     },
