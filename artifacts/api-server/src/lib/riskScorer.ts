@@ -18,34 +18,26 @@ const DEDUCTIONS: Record<AnalysisFlag["type"], number> = {
   bias: 15,
 };
 
+const BREAKDOWN_KEY: Record<AnalysisFlag["type"], keyof RiskResult["breakdown"]> = {
+  toxicity: "toxicity",
+  hate_speech: "hateSpeech",
+  pii: "pii",
+  bias: "bias",
+};
+
 export function calculateRiskScore(flags: AnalysisFlag[]): RiskResult {
   let score = 100;
   const breakdown = { toxicity: 0, hateSpeech: 0, pii: 0, bias: 0 };
 
-  const seenTexts = new Set<string>();
+  const seenCategories = new Set<AnalysisFlag["type"]>();
 
   for (const flag of flags) {
-    const key = `${flag.type}:${flag.matchedText.toLowerCase()}`;
-    if (seenTexts.has(key)) continue;
-    seenTexts.add(key);
+    if (seenCategories.has(flag.type)) continue;
+    seenCategories.add(flag.type);
 
     const deduction = DEDUCTIONS[flag.type];
     score -= deduction;
-
-    switch (flag.type) {
-      case "toxicity":
-        breakdown.toxicity += deduction;
-        break;
-      case "hate_speech":
-        breakdown.hateSpeech += deduction;
-        break;
-      case "pii":
-        breakdown.pii += deduction;
-        break;
-      case "bias":
-        breakdown.bias += deduction;
-        break;
-    }
+    breakdown[BREAKDOWN_KEY[flag.type]] = deduction;
   }
 
   score = Math.max(0, Math.min(100, score));
