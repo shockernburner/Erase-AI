@@ -11,6 +11,7 @@ interface CheckoutSuccessProps {
 export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<"checking" | "success" | "failed">("checking");
+  const [activatedPlan, setActivatedPlan] = useState<string>("pro");
   const [attempts, setAttempts] = useState(0);
   const [pollKey, setPollKey] = useState(0);
 
@@ -27,6 +28,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
           const statusData = await statusRes.json();
           if (statusData.status === "succeeded") {
             sessionStorage.removeItem("eraseai_checkout_intent");
+            setActivatedPlan(statusData.planType || "pro");
             setStatus("success");
             return true;
           }
@@ -38,8 +40,9 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
       });
       if (!res.ok) return false;
       const data = await res.json();
-      if (data.planType === "pro" && data.subscriptionStatus === "active") {
+      if ((data.planType === "pro" || data.planType === "business") && data.subscriptionStatus === "active") {
         sessionStorage.removeItem("eraseai_checkout_intent");
+        setActivatedPlan(data.planType);
         setStatus("success");
         return true;
       }
@@ -135,9 +138,11 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
               >
                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-2">{t("checkout.welcomePro")}</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">
+                {t(`checkout.welcome${activatedPlan.charAt(0).toUpperCase() + activatedPlan.slice(1)}`)}
+              </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                {t("checkout.proActive")}
+                {t(`checkout.${activatedPlan}Active`)}
               </p>
               <Button
                 onClick={handleContinue}
