@@ -452,11 +452,11 @@ const CATEGORY_COLORS: Record<string, string> = {
   bias: "#fbbf24",
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  toxicity: "Toxicity",
-  hate_speech: "Hate Speech",
-  pii: "PII",
-  bias: "Bias",
+const CATEGORY_I18N_KEYS: Record<string, string> = {
+  toxicity: "personal.flagType.toxicity",
+  hate_speech: "personal.flagType.hate_speech",
+  pii: "personal.flagType.pii",
+  bias: "personal.flagType.bias",
 };
 
 function AlertsPanel({ onUpgrade }: { onUpgrade: () => void }) {
@@ -656,7 +656,7 @@ function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
   const categoryData = Object.entries(data.categoryBreakdown)
     .filter(([, count]) => count > 0)
     .map(([key, count]) => ({
-      name: CATEGORY_LABELS[key] || key,
+      name: CATEGORY_I18N_KEYS[key] ? t(CATEGORY_I18N_KEYS[key]) : key,
       count,
       fill: CATEGORY_COLORS[key] || "#94a3b8",
     }));
@@ -769,7 +769,7 @@ function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
             {Object.entries(CATEGORY_COLORS).map(([key, color]) => (
               <div key={key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                {CATEGORY_LABELS[key] || key}
+                {CATEGORY_I18N_KEYS[key] ? t(CATEGORY_I18N_KEYS[key]) : key}
               </div>
             ))}
           </div>
