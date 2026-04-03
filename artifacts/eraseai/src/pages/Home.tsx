@@ -128,7 +128,7 @@ function VideoModal({ onClose }: { onClose: () => void }) {
           <X className="w-5 h-5" />
         </button>
         <iframe
-          src={`${import.meta.env.BASE_URL}../eraseai-video/`}
+          src="/eraseai-video/"
           className="w-full h-full border-0"
           allow="autoplay"
           title="EraseAI System Explainer"
