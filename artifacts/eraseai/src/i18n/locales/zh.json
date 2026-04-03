@@ -95,7 +95,7 @@
     "tierProDesc": "为生产数据团队提供全部功能",
     "tierProSegment": "适合开发者和数据工程师",
     "tierProF1": "完整数据集分析",
-    "tierProF2": "无限行数",
+    "tierProF2": "每个数据集最多1,000行",
     "tierProF3": "ML管道反馈",
     "tierProF4": "高级PII检测",
     "tierProF5": "API访问（5个密钥）",

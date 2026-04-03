@@ -77,14 +77,14 @@ router.get("/pricing", (_req: Request, res: Response) => {
         interval: "month",
         features: [
           "Full dataset analysis",
-          "Unlimited rows per dataset",
+          "Up to 1,000 rows per dataset",
           "ML Pipeline Feedback",
           "Advanced PII detection",
           "API access (5 keys)",
           "Priority support",
           "Export recommendations",
         ],
-        limits: { maxRows: -1, mlFeedback: true, fullAnalysis: true, apiAccess: true, customRules: false },
+        limits: { maxRows: 1000, mlFeedback: true, fullAnalysis: true, apiAccess: true, customRules: false },
       },
       {
         id: "business",

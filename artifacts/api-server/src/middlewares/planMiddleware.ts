@@ -94,13 +94,18 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
 }
 
 export const FREE_ROW_LIMIT = 100;
+export const PRO_ROW_LIMIT = 1000;
 export const BUSINESS_ROW_LIMIT = 10000;
+
+const PLAN_ROW_LIMITS: Record<string, number> = {
+  free: FREE_ROW_LIMIT,
+  pro: PRO_ROW_LIMIT,
+  business: BUSINESS_ROW_LIMIT,
+};
 
 export async function enforceRowLimit(req: Request, res: Response, next: NextFunction) {
   const plan = getUserPlan(req);
-  let limit = -1;
-  if (plan === "free") limit = FREE_ROW_LIMIT;
-  else if (plan === "business") limit = BUSINESS_ROW_LIMIT;
+  const limit = PLAN_ROW_LIMITS[plan] ?? -1;
 
   if (limit > 0) {
     const file = req.file;
@@ -114,11 +119,9 @@ export async function enforceRowLimit(req: Request, res: Response, next: NextFun
         rowCount = content.split("\n").filter((l: string) => l.trim()).length - 1;
       }
       if (rowCount > limit) {
-        const upgradeMsg = plan === "free"
-          ? "Upgrade to Pro for unlimited rows."
-          : "Upgrade to Enterprise for unlimited rows.";
+        const nextTier = plan === "free" ? "Pro" : plan === "pro" ? "Business" : "Enterprise";
         res.status(400).json({
-          error: `Dataset has ${rowCount} rows, exceeding the ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan limit of ${limit}. ${upgradeMsg}`,
+          error: `Dataset has ${rowCount} rows, exceeding the ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan limit of ${limit.toLocaleString()}. Upgrade to ${nextTier} for higher limits.`,
           upgrade: true,
           rowCount,
           limit,

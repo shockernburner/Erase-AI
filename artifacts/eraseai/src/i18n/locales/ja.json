@@ -95,7 +95,7 @@
     "tierProDesc": "本番データチームのためのフルパワー",
     "tierProSegment": "開発者とデータエンジニア向け",
     "tierProF1": "完全なデータセット分析",
-    "tierProF2": "無制限の行数",
+    "tierProF2": "データセットあたり最大1,000行",
     "tierProF3": "MLパイプラインフィードバック",
     "tierProF4": "高度なPII検出",
     "tierProF5": "APIアクセス（5キー）",

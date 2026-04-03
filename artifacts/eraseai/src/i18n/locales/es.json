@@ -95,7 +95,7 @@
     "tierProDesc": "Toda la potencia para equipos de producción",
     "tierProSegment": "Para desarrolladores e ingenieros de datos",
     "tierProF1": "Análisis completo de datos",
-    "tierProF2": "Filas ilimitadas por dataset",
+    "tierProF2": "Hasta 1,000 filas por dataset",
     "tierProF3": "Retroalimentación de pipeline ML",
     "tierProF4": "Detección avanzada de PII",
     "tierProF5": "Acceso API (5 claves)",
