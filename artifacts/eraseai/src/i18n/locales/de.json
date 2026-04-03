@@ -577,7 +577,8 @@
       "alertsDesc": "Mittlere/hohe Risikoanalysen",
       "scansToday": "Analysen Heute",
       "freeLimit": "Kostenloses Tageslimit",
-      "unlimited": "Unbegrenzte Analysen"
+      "unlimited": "Unbegrenzte Analysen",
+      "recentAlertsList": "Aktuelle Risikowarnungen"
     },
     "action": {
       "analyzePost": "Beitrag Analysieren",

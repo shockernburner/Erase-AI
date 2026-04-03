@@ -577,7 +577,8 @@
       "alertsDesc": "中/高リスクスキャン",
       "scansToday": "今日のスキャン",
       "freeLimit": "無料プランの日次制限",
-      "unlimited": "無制限スキャン"
+      "unlimited": "無制限スキャン",
+      "recentAlertsList": "最近のリスクアラート"
     },
     "action": {
       "analyzePost": "投稿を分析",

@@ -577,7 +577,8 @@
       "alertsDesc": "中/高风险扫描",
       "scansToday": "今日扫描",
       "freeLimit": "免费计划每日限额",
-      "unlimited": "无限扫描"
+      "unlimited": "无限扫描",
+      "recentAlertsList": "近期风险警报"
     },
     "action": {
       "analyzePost": "分析帖子",

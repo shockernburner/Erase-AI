@@ -577,7 +577,8 @@
       "alertsDesc": "Análisis de riesgo medio/alto",
       "scansToday": "Análisis Hoy",
       "freeLimit": "Límite diario gratuito",
-      "unlimited": "Análisis ilimitados"
+      "unlimited": "Análisis ilimitados",
+      "recentAlertsList": "Alertas de Riesgo Recientes"
     },
     "action": {
       "analyzePost": "Analizar Publicación",

@@ -546,7 +546,8 @@
       "alertsDesc": "Medium/high risk scans",
       "scansToday": "Scans Today",
       "freeLimit": "Free plan daily limit",
-      "unlimited": "Unlimited scans"
+      "unlimited": "Unlimited scans",
+      "recentAlertsList": "Recent Risk Alerts"
     },
     "action": {
       "analyzePost": "Analyze Post",

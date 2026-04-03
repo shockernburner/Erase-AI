@@ -282,6 +282,10 @@ export default function PersonalMode({
 
   const lastScore = historyQuery.data?.scans?.[0];
   const recentAlerts = historyQuery.data?.scans?.filter((s) => s.level !== "low").slice(0, 3) ?? [];
+  const avgScore = historyQuery.data?.scans?.length
+    ? Math.round(historyQuery.data.scans.reduce((s, scan) => s + scan.riskScore, 0) / historyQuery.data.scans.length)
+    : null;
+  const avgLevel = avgScore !== null ? (avgScore >= 70 ? "low" : avgScore >= 40 ? "medium" : "high") : null;
 
   return (
     <div className="min-h-screen w-full pb-20 relative">
@@ -314,6 +318,16 @@ export default function PersonalMode({
           </div>
         </motion.header>
 
+        {lastScore && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6"
+          >
+            <RiskGauge score={lastScore.riskScore} level={lastScore.level} />
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -321,7 +335,7 @@ export default function PersonalMode({
         >
           <div className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md">
             <div className="flex items-center gap-2 mb-2">
-              <Shield className={`w-5 h-5 ${lastScore ? (lastScore.level === "low" ? "text-emerald-400" : lastScore.level === "medium" ? "text-yellow-400" : "text-red-400") : "text-muted-foreground"}`} />
+              <Shield className={`w-5 h-5 ${avgLevel === "low" ? "text-emerald-400" : avgLevel === "medium" ? "text-yellow-400" : avgLevel === "high" ? "text-red-400" : "text-muted-foreground"}`} />
               <span className="text-xs font-semibold text-muted-foreground uppercase">{t("personal.dashboard.lastScore")}</span>
             </div>
             <div className={`text-3xl font-bold ${lastScore ? (lastScore.level === "low" ? "text-emerald-400" : lastScore.level === "medium" ? "text-yellow-400" : "text-red-400") : "text-muted-foreground/40"}`}>
@@ -361,6 +375,33 @@ export default function PersonalMode({
             </div>
           </div>
         </motion.div>
+
+        {recentAlerts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-card/50 border border-yellow-400/20 rounded-xl p-4 backdrop-blur-md mb-6"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-semibold text-yellow-400">{t("personal.dashboard.recentAlertsList")}</span>
+            </div>
+            <div className="space-y-2">
+              {recentAlerts.map((alert) => (
+                <div key={alert.id} className="flex items-center gap-3 text-sm">
+                  <span className={`font-bold w-10 ${alert.level === "medium" ? "text-yellow-400" : "text-red-400"}`}>
+                    {alert.riskScore}
+                  </span>
+                  <span className="text-foreground truncate flex-1">{alert.content}</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                    {new Date(alert.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
