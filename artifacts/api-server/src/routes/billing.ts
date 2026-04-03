@@ -216,7 +216,9 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       return;
     }
 
-    const targetPlan = intent.metadata?.plan || "pro";
+    const VALID_CHECKOUT_PLANS = ["pro", "business"];
+    const rawPlan = intent.metadata?.plan || "pro";
+    const targetPlan = VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro";
 
     if ((user.planType === "pro" || user.planType === "business") && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
       res.json({ status: "succeeded", planType: user.planType });
@@ -369,7 +371,9 @@ router.post("/webhook", async (req: Request, res: Response) => {
   try {
     switch (event.name) {
       case "payment_intent.succeeded": {
-        const webhookPlan = intentData.metadata?.plan || "pro";
+        const VALID_PLANS = ["pro", "business"];
+        const rawWebhookPlan = intentData.metadata?.plan || "pro";
+        const webhookPlan = VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro";
         if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
           break;
         }
