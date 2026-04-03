@@ -372,7 +372,8 @@
   },
   "home": {
     "userInitial": "U",
-    "userFallback": "用户"
+    "userFallback": "用户",
+    "systemExplainer": "EraseAI系统说明"
   },
   "feedback": {
     "feedback": "反馈",

@@ -372,7 +372,8 @@
   },
   "home": {
     "userInitial": "U",
-    "userFallback": "Usuario"
+    "userFallback": "Usuario",
+    "systemExplainer": "Explicación del sistema EraseAI"
   },
   "feedback": {
     "feedback": "Comentarios",

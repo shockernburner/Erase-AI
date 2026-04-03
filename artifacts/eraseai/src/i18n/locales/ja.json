@@ -372,7 +372,8 @@
   },
   "home": {
     "userInitial": "U",
-    "userFallback": "ユーザー"
+    "userFallback": "ユーザー",
+    "systemExplainer": "EraseAIシステム解説"
   },
   "feedback": {
     "feedback": "フィードバック",

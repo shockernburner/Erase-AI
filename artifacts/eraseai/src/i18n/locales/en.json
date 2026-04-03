@@ -3,7 +3,7 @@
     "name": "EraseAI",
     "tagline": "AI Data Governance Layer",
     "loading": "Loading EraseAI...",
-    "copyright": "\u00a9 2026 EraseAI.ai \u2014 AI Data Governance Layer"
+    "copyright": "© 2026 EraseAI.ai — AI Data Governance Layer"
   },
   "nav": {
     "seeHow": "See how it works",
@@ -15,7 +15,8 @@
   },
   "home": {
     "userInitial": "U",
-    "userFallback": "User"
+    "userFallback": "User",
+    "systemExplainer": "EraseAI System Explainer"
   },
   "pipeline": {
     "label": "AI Data Control",
@@ -40,7 +41,7 @@
     "subtitle": "Make AI forget what it should never learn",
     "logIn": "Log In",
     "signUp": "Sign Up",
-    "trialBanner": "Try free for 7 days \u2014 no credit card required",
+    "trialBanner": "Try free for 7 days — no credit card required",
     "firstName": "First name",
     "lastName": "Last name",
     "email": "Email address",
@@ -169,7 +170,7 @@
     "eraseConfirmMsg": "This will {{mode}} all rows containing \"{{keyword}}\" in version {{version}}.",
     "eraseResultMsg": "{{count}} row affected in version {{version}}.",
     "eraseResultMsg_other": "{{count}} rows affected in version {{version}}.",
-    "verifyClean": "Clean \u2014 no matches found",
+    "verifyClean": "Clean — no matches found",
     "verifyFound": "{{count}} match found",
     "verifyFound_other": "{{count}} matches found",
     "loadingDataset": "Loading dataset...",
@@ -264,9 +265,9 @@
     "matches_other": "{{count}} matches",
     "downloadDataset": "Download Dataset",
     "downloadRetrain": "Use this cleaned dataset to retrain your model.",
-    "downloadCleanDesc": "Clean \u2014 untouched rows only",
-    "downloadSanitized": "Sanitized \u2014 includes redacted text",
-    "downloadFullDesc": "Full \u2014 all rows + metadata",
+    "downloadCleanDesc": "Clean — untouched rows only",
+    "downloadSanitized": "Sanitized — includes redacted text",
+    "downloadFullDesc": "Full — all rows + metadata",
     "uploadFailed": "Upload failed",
     "eraseFailed": "Erase failed",
     "verificationFailed": "Verification failed",
@@ -386,11 +387,11 @@
   },
   "language": {
     "en": "English",
-    "fr": "Fran\u00e7ais",
+    "fr": "Français",
     "de": "Deutsch",
-    "es": "Espa\u00f1ol",
-    "ja": "\u65e5\u672c\u8a9e",
-    "zh": "\u4e2d\u6587",
+    "es": "Español",
+    "ja": "日本語",
+    "zh": "中文",
     "selectLanguage": "Select language"
   }
 }

@@ -129,6 +129,7 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
 }
 
 function VideoModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -155,7 +156,7 @@ function VideoModal({ onClose }: { onClose: () => void }) {
           src="/eraseai-video/"
           className="w-full h-full border-0"
           allow="autoplay"
-          title="EraseAI System Explainer"
+          title={t("home.systemExplainer")}
         />
       </motion.div>
     </motion.div>
