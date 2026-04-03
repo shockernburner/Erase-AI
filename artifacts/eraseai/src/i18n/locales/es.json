@@ -278,7 +278,14 @@
     "duplicateIssue": "Duplicados",
     "qualityIssue": "Baja calidad",
     "markdownExport": "Markdown",
-    "jsonExport": "JSON"
+    "jsonExport": "JSON",
+    "trialExpiredUpgrade": "Su prueba gratuita ha expirado. Actualice para continuar.",
+    "rowLimitExceeded": "El conjunto de datos excede el límite de 100 filas del plan gratuito. Actualice a Pro para filas ilimitadas.",
+    "noMatchingRows": "No se encontraron filas coincidentes para esa palabra clave.",
+    "planLimitExceeded": "El conjunto de datos excede el límite del plan gratuito.",
+    "noChangesSuggestion": "No se necesitaron cambios para esta sugerencia.",
+    "noChangesSelected": "No se necesitaron cambios para los problemas seleccionados.",
+    "applyFailed": "Error al aplicar la sugerencia"
   },
   "admin": {
     "title": "Panel de administración",
@@ -325,5 +332,16 @@
     "es": "Español",
     "ja": "日本語",
     "zh": "中文"
+  },
+  "checkout": {
+    "confirming": "Confirmando su pago",
+    "pleaseWait": "Por favor espere mientras verificamos su pago...",
+    "welcomePro": "¡Bienvenido a Pro!",
+    "proActive": "Su plan Pro está ahora activo. Disfrute de filas ilimitadas, comentarios de ML Pipeline y todas las funciones Pro.",
+    "continueDashboard": "Continuar al panel",
+    "paymentProcessing": "Procesando pago",
+    "paymentStillProcessing": "Su pago aún se está procesando. Esto puede tardar unos momentos. Por favor, vuelva a intentarlo más tarde o contacte con soporte si el problema persiste.",
+    "goToDashboard": "Ir al panel",
+    "checkAgain": "Verificar de nuevo"
   }
 }

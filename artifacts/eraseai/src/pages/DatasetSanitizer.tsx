@@ -286,17 +286,17 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       if (!res.ok) {
         if (data.trialExpired) {
           setUpgradeNeeded("trial-expired");
-          setError(data.error || "Your free trial has expired. Upgrade to continue.");
+          setError(data.error || t("dataset.trialExpiredUpgrade"));
           setPhase("idle");
           return;
         }
         if (data.upgrade) {
           setUpgradeNeeded("row-limit");
-          setError(data.error || "Dataset exceeds the Free plan limit of 100 rows. Upgrade to Pro for unlimited rows.");
+          setError(data.error || t("dataset.rowLimitExceeded"));
           setPhase("idle");
           return;
         }
-        throw new Error(data.error || "Upload failed");
+        throw new Error(data.error || t("dataset.uploadFailed"));
       }
       await fetchDataset(data.dataset_id);
       setPhase("loaded");
@@ -341,10 +341,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         body: JSON.stringify({ mode: eraseMode, value: keyword }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erase failed");
+      if (!res.ok) throw new Error(data.error || t("dataset.eraseFailed"));
 
       if (data.affected_count === 0) {
-        setError("No matching rows found for that keyword.");
+        setError(t("dataset.noMatchingRows"));
         setPhase("loaded");
         return;
       }
@@ -456,15 +456,15 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
       if (!res.ok) {
         if (data.trialExpired) {
           setUpgradeNeeded("trial-expired");
-          setError(data.error || "Your free trial has expired. Upgrade to continue.");
+          setError(data.error || t("dataset.trialExpiredUpgrade"));
           return;
         }
         if (data.upgrade) {
           setUpgradeNeeded("row-limit");
-          setError(data.error || "Dataset exceeds the Free plan limit.");
+          setError(data.error || t("dataset.planLimitExceeded"));
           return;
         }
-        throw new Error(data.error || "Import failed");
+        throw new Error(data.error || t("dataset.importFailed"));
       }
       await fetchDataset(data.dataset_id);
       setPhase("loaded");
@@ -562,9 +562,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         body: JSON.stringify({ suggestion_ids: [suggestionId] }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to apply suggestion");
+      if (!res.ok) throw new Error(data.error || t("dataset.applyFailed"));
       if (data.affected_count === 0) {
-        setError("No changes were needed for this suggestion.");
+        setError(t("dataset.noChangesSuggestion"));
         return;
       }
       setPrevVersionRows(beforeRows);
@@ -616,9 +616,9 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
         body: JSON.stringify({ issue_types: issueTypes }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to apply suggestions");
+      if (!res.ok) throw new Error(data.error || t("dataset.applyFailed"));
       if (data.affected_count === 0) {
-        setError("No changes were needed for the selected issues.");
+        setError(t("dataset.noChangesSelected"));
         return;
       }
       setPrevVersionRows(beforeRows);

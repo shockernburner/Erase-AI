@@ -278,7 +278,14 @@
     "duplicateIssue": "Duplikate",
     "qualityIssue": "Niedrige Qualität",
     "markdownExport": "Markdown",
-    "jsonExport": "JSON"
+    "jsonExport": "JSON",
+    "trialExpiredUpgrade": "Ihre kostenlose Testversion ist abgelaufen. Upgraden Sie, um fortzufahren.",
+    "rowLimitExceeded": "Der Datensatz überschreitet das Limit von 100 Zeilen des kostenlosen Plans. Upgraden Sie auf Pro für unbegrenzte Zeilen.",
+    "noMatchingRows": "Keine übereinstimmenden Zeilen für dieses Stichwort gefunden.",
+    "planLimitExceeded": "Der Datensatz überschreitet das Limit des kostenlosen Plans.",
+    "noChangesSuggestion": "Für diesen Vorschlag waren keine Änderungen erforderlich.",
+    "noChangesSelected": "Für die ausgewählten Probleme waren keine Änderungen erforderlich.",
+    "applyFailed": "Vorschlag konnte nicht angewendet werden"
   },
   "admin": {
     "title": "Admin-Dashboard",
@@ -325,5 +332,16 @@
     "es": "Español",
     "ja": "日本語",
     "zh": "中文"
+  },
+  "checkout": {
+    "confirming": "Zahlung wird bestätigt",
+    "pleaseWait": "Bitte warten Sie, während wir Ihre Zahlung überprüfen...",
+    "welcomePro": "Willkommen bei Pro!",
+    "proActive": "Ihr Pro-Plan ist jetzt aktiv. Genießen Sie unbegrenzte Zeilen, ML-Pipeline-Feedback und alle Pro-Funktionen.",
+    "continueDashboard": "Weiter zum Dashboard",
+    "paymentProcessing": "Zahlungsverarbeitung",
+    "paymentStillProcessing": "Ihre Zahlung wird noch verarbeitet. Dies kann einige Momente dauern. Bitte überprüfen Sie später erneut oder kontaktieren Sie den Support.",
+    "goToDashboard": "Zum Dashboard",
+    "checkAgain": "Erneut prüfen"
   }
 }

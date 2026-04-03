@@ -278,7 +278,14 @@
     "duplicateIssue": "重复",
     "qualityIssue": "低质量",
     "markdownExport": "Markdown",
-    "jsonExport": "JSON"
+    "jsonExport": "JSON",
+    "trialExpiredUpgrade": "您的免费试用已过期。请升级以继续。",
+    "rowLimitExceeded": "数据集超过免费计划的100行限制。升级到Pro以获得无限行数。",
+    "noMatchingRows": "未找到与该关键词匹配的行。",
+    "planLimitExceeded": "数据集超过免费计划的限制。",
+    "noChangesSuggestion": "此建议不需要任何更改。",
+    "noChangesSelected": "所选问题不需要任何更改。",
+    "applyFailed": "应用建议失败"
   },
   "admin": {
     "title": "管理仪表板",
@@ -325,5 +332,16 @@
     "es": "Español",
     "ja": "日本語",
     "zh": "中文"
+  },
+  "checkout": {
+    "confirming": "确认您的付款",
+    "pleaseWait": "请稍候，我们正在验证您的付款...",
+    "welcomePro": "欢迎使用Pro！",
+    "proActive": "您的Pro计划现已激活。享受无限行数、ML管道反馈和所有Pro功能。",
+    "continueDashboard": "继续到仪表板",
+    "paymentProcessing": "支付处理中",
+    "paymentStillProcessing": "您的付款仍在处理中。这可能需要一些时间。请稍后再试或联系支持。",
+    "goToDashboard": "前往仪表板",
+    "checkAgain": "再次检查"
   }
 }

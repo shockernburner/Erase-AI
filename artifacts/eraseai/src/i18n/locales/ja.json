@@ -278,7 +278,14 @@
     "duplicateIssue": "重複",
     "qualityIssue": "低品質",
     "markdownExport": "Markdown",
-    "jsonExport": "JSON"
+    "jsonExport": "JSON",
+    "trialExpiredUpgrade": "無料トライアルが期限切れです。続行するにはアップグレードしてください。",
+    "rowLimitExceeded": "データセットが無料プランの100行制限を超えています。Proにアップグレードして無制限の行数をご利用ください。",
+    "noMatchingRows": "そのキーワードに一致する行が見つかりませんでした。",
+    "planLimitExceeded": "データセットが無料プランの制限を超えています。",
+    "noChangesSuggestion": "この提案に対する変更は不要でした。",
+    "noChangesSelected": "選択した問題に対する変更は不要でした。",
+    "applyFailed": "提案の適用に失敗しました"
   },
   "admin": {
     "title": "管理ダッシュボード",
@@ -325,5 +332,16 @@
     "es": "Español",
     "ja": "日本語",
     "zh": "中文"
+  },
+  "checkout": {
+    "confirming": "お支払いを確認中",
+    "pleaseWait": "お支払いの確認中です。しばらくお待ちください...",
+    "welcomePro": "Proへようこそ！",
+    "proActive": "Proプランが有効になりました。無制限の行数、MLパイプラインフィードバック、すべてのPro機能をお楽しみください。",
+    "continueDashboard": "ダッシュボードへ進む",
+    "paymentProcessing": "支払い処理中",
+    "paymentStillProcessing": "お支払いはまだ処理中です。しばらくお待ちいただくか、問題が続く場合はサポートにお問い合わせください。",
+    "goToDashboard": "ダッシュボードへ",
+    "checkAgain": "再確認"
   }
 }

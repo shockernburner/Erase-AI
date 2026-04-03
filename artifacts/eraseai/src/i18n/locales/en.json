@@ -278,7 +278,14 @@
     "duplicateIssue": "Duplicates",
     "qualityIssue": "Low Quality",
     "markdownExport": "Markdown",
-    "jsonExport": "JSON"
+    "jsonExport": "JSON",
+    "trialExpiredUpgrade": "Your free trial has expired. Upgrade to continue.",
+    "rowLimitExceeded": "Dataset exceeds the Free plan limit of 100 rows. Upgrade to Pro for unlimited rows.",
+    "noMatchingRows": "No matching rows found for that keyword.",
+    "planLimitExceeded": "Dataset exceeds the Free plan limit.",
+    "noChangesSuggestion": "No changes were needed for this suggestion.",
+    "noChangesSelected": "No changes were needed for the selected issues.",
+    "applyFailed": "Failed to apply suggestion"
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -317,6 +324,17 @@
     "signedUp": "Signed Up",
     "adminBadge": "ADMIN",
     "unknown": "Unknown"
+  },
+  "checkout": {
+    "confirming": "Confirming Your Payment",
+    "pleaseWait": "Please wait while we verify your payment...",
+    "welcomePro": "Welcome to Pro!",
+    "proActive": "Your Pro plan is now active. Enjoy unlimited rows, ML Pipeline Feedback, and all Pro features.",
+    "continueDashboard": "Continue to Dashboard",
+    "paymentProcessing": "Payment Processing",
+    "paymentStillProcessing": "Your payment is still being processed. This may take a few moments. Please check back shortly or contact support if the issue persists.",
+    "goToDashboard": "Go to Dashboard",
+    "checkAgain": "Check Again"
   },
   "language": {
     "en": "English",

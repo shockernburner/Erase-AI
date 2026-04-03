@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle2, XCircle, ShieldX } from "lucide-react";
 import { Button } from "@/components/ui-elements";
 
@@ -8,6 +9,7 @@ interface CheckoutSuccessProps {
 }
 
 export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<"checking" | "success" | "failed">("checking");
   const [attempts, setAttempts] = useState(0);
   const [pollKey, setPollKey] = useState(0);
@@ -109,9 +111,9 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
           {status === "checking" && (
             <>
               <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-foreground mb-2">Confirming Your Payment</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">{t("checkout.confirming")}</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Please wait while we verify your payment...
+                {t("checkout.pleaseWait")}
               </p>
               <div className="w-full bg-muted/30 rounded-full h-1.5 overflow-hidden">
                 <motion.div
@@ -133,15 +135,15 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
               >
                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
               </motion.div>
-              <h2 className="text-xl font-bold text-foreground mb-2">Welcome to Pro!</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">{t("checkout.welcomePro")}</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Your Pro plan is now active. Enjoy unlimited rows, ML Pipeline Feedback, and all Pro features.
+                {t("checkout.proActive")}
               </p>
               <Button
                 onClick={handleContinue}
                 className="w-full gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] py-5"
               >
-                Continue to Dashboard
+                {t("checkout.continueDashboard")}
               </Button>
             </>
           )}
@@ -149,9 +151,9 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
           {status === "failed" && (
             <>
               <XCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-foreground mb-2">Payment Processing</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">{t("checkout.paymentProcessing")}</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Your payment is still being processed. This may take a few moments. Please check back shortly or contact support if the issue persists.
+                {t("checkout.paymentStillProcessing")}
               </p>
               <div className="flex gap-3">
                 <Button
@@ -159,7 +161,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
                   variant="outline"
                   className="flex-1"
                 >
-                  Go to Dashboard
+                  {t("checkout.goToDashboard")}
                 </Button>
                 <Button
                   onClick={() => {
@@ -169,7 +171,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
                   }}
                   className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  Check Again
+                  {t("checkout.checkAgain")}
                 </Button>
               </div>
             </>
