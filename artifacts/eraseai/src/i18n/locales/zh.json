@@ -802,11 +802,11 @@
   "homepage": {
     "whatWeDo": "我们的服务",
     "card1Title": "个人模式",
-    "card1Desc": "扫描您的社交媒体帖子、电子邮件和简介，检测AI训练风险。一键改写标记内容 — 每月10美元，无限次分析。",
-    "card2Title": "企业API",
-    "card2Desc": "上传数据集，检测PII和偏见，擦除有害数据，重新训练更干净的模型 — 全部通过REST API实现，支持Webhook通知。",
+    "card1Desc": "AI驱动的个人内容安全。在发布前扫描社交帖子、电子邮件和消息中的PII、毒性和偏见。获取风险评分和AI改写的安全替代方案。10次免费分析，之后每月10美元无限使用。",
+    "card2Title": "企业 / 开发者API",
+    "card2Desc": "通过REST API将EraseAI直接集成到您的应用中。数据集清洗、ML管道反馈和大规模遗忘。为团队和企业提供API密钥、Webhook和使用分析。",
     "card3Title": "开发者模式",
-    "card3Desc": "衡量您的AI模型对特定个人、主题或受版权保护内容的暴露程度 — 并选择性地遗忘它们。",
+    "card3Desc": "代码与AI系统之间的防火墙。在发送到ChatGPT、Claude、Replit或任何AI工具之前扫描提示词和代码。检测密钥、PII和专有逻辑泄露。浏览器扩展和IDE插件即将推出。",
     "comingSoon": "即将推出"
   }
 }

@@ -802,11 +802,11 @@
   "homepage": {
     "whatWeDo": "What We Do",
     "card1Title": "Personal Mode",
-    "card1Desc": "Scan your social posts, emails, and bios for AI-training risks. Rewrite flagged content in one click — $10/mo for unlimited analyses.",
-    "card2Title": "Enterprise API",
-    "card2Desc": "Upload datasets, detect PII & bias, erase toxic data, and retrain cleaner models — all via REST API with webhook notifications.",
+    "card1Desc": "AI-powered personal content safety. Scan social posts, emails, and messages for PII, toxicity, and bias before publishing. Get risk scores and AI-rewritten safe alternatives. 10 free analyses, then $10/month unlimited.",
+    "card2Title": "Enterprise / Developer API",
+    "card2Desc": "Integrate EraseAI directly into your applications via REST API. Dataset sanitization, ML pipeline feedback, and unlearning at scale. API keys, webhooks, and usage analytics for teams and enterprises.",
     "card3Title": "Developer Mode",
-    "card3Desc": "Measure your AI model's exposure to specific individuals, topics, or copyrighted content — and selectively unlearn it.",
+    "card3Desc": "The firewall between your code and AI systems. Scan prompts and code before sending to ChatGPT, Claude, Replit, or any AI tool. Detect secrets, PII, and proprietary logic leaks. Browser extension and IDE plugins coming soon.",
     "comingSoon": "COMING SOON"
   }
 }

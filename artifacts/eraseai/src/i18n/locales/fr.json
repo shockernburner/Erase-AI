@@ -802,11 +802,11 @@
   "homepage": {
     "whatWeDo": "Ce que nous faisons",
     "card1Title": "Mode Personnel",
-    "card1Desc": "Analysez vos publications, e-mails et bios pour détecter les risques d'entraînement IA. Réécrivez le contenu signalé en un clic — 10 $/mois pour des analyses illimitées.",
-    "card2Title": "API Entreprise",
-    "card2Desc": "Téléchargez des datasets, détectez les PII et biais, effacez les données toxiques et réentraînez des modèles plus propres — le tout via API REST avec notifications webhook.",
+    "card1Desc": "Sécurité de contenu personnel propulsée par l'IA. Analysez vos publications, e-mails et messages pour détecter les PII, la toxicité et les biais avant publication. Obtenez des scores de risque et des alternatives réécrites par l'IA. 10 analyses gratuites, puis 10 $/mois en illimité.",
+    "card2Title": "API Entreprise / Développeur",
+    "card2Desc": "Intégrez EraseAI directement dans vos applications via l'API REST. Nettoyage de datasets, retours de pipeline ML et désapprentissage à grande échelle. Clés API, webhooks et analyses d'utilisation pour les équipes et entreprises.",
     "card3Title": "Mode Développeur",
-    "card3Desc": "Mesurez l'exposition de votre modèle IA à des individus, sujets ou contenus protégés spécifiques — et désapprenez-les sélectivement.",
+    "card3Desc": "Le pare-feu entre votre code et les systèmes IA. Analysez les prompts et le code avant de les envoyer à ChatGPT, Claude, Replit ou tout autre outil IA. Détectez les secrets, PII et fuites de logique propriétaire. Extension navigateur et plugins IDE bientôt disponibles.",
     "comingSoon": "BIENTÔT DISPONIBLE"
   }
 }

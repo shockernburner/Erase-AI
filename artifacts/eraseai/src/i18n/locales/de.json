@@ -802,11 +802,11 @@
   "homepage": {
     "whatWeDo": "Was wir tun",
     "card1Title": "Persönlicher Modus",
-    "card1Desc": "Scannen Sie Ihre Social-Media-Posts, E-Mails und Bios auf KI-Trainingsrisiken. Markierte Inhalte mit einem Klick umschreiben — 10 $/Monat für unbegrenzte Analysen.",
-    "card2Title": "Enterprise-API",
-    "card2Desc": "Laden Sie Datensätze hoch, erkennen Sie PII und Bias, löschen Sie toxische Daten und trainieren Sie sauberere Modelle — alles über REST-API mit Webhook-Benachrichtigungen.",
+    "card1Desc": "KI-gestützte persönliche Inhaltssicherheit. Scannen Sie Social-Media-Posts, E-Mails und Nachrichten auf PII, Toxizität und Vorurteile vor der Veröffentlichung. Erhalten Sie Risikobewertungen und KI-umgeschriebene sichere Alternativen. 10 kostenlose Analysen, dann 10 $/Monat unbegrenzt.",
+    "card2Title": "Enterprise- / Entwickler-API",
+    "card2Desc": "Integrieren Sie EraseAI direkt in Ihre Anwendungen über die REST-API. Datensatzbereinigung, ML-Pipeline-Feedback und Verlernen im großen Maßstab. API-Schlüssel, Webhooks und Nutzungsanalysen für Teams und Unternehmen.",
     "card3Title": "Entwicklermodus",
-    "card3Desc": "Messen Sie die Exposition Ihres KI-Modells gegenüber bestimmten Personen, Themen oder urheberrechtlich geschützten Inhalten — und verlernen Sie diese gezielt.",
+    "card3Desc": "Die Firewall zwischen Ihrem Code und KI-Systemen. Scannen Sie Prompts und Code, bevor Sie sie an ChatGPT, Claude, Replit oder ein anderes KI-Tool senden. Erkennen Sie Geheimnisse, PII und Lecks proprietärer Logik. Browser-Erweiterung und IDE-Plugins demnächst verfügbar.",
     "comingSoon": "DEMNÄCHST VERFÜGBAR"
   }
 }
