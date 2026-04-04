@@ -1145,7 +1145,8 @@ export default function ApiDocs({ onBack, onUpgrade }: ApiDocsProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [section, setSection] = useState<SectionId>("overview");
-  const showUpgradeBanner = !user;
+  const plan = (user as Record<string, unknown> | null)?.planType as string | undefined;
+  const showUpgradeBanner = !user || !plan || plan === "free";
 
   return (
     <div className="min-h-screen w-full pb-20 relative">

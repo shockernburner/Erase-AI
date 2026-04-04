@@ -374,7 +374,7 @@ router.post("/webhooks/:id/test", async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await sendTestWebhook(webhook.id, webhook.url);
+    const result = await sendTestWebhook(webhook.id, webhook.url, webhook.secret);
 
     res.json({
       success: result.success,

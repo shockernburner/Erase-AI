@@ -2,6 +2,7 @@ import { db, webhooksTable, webhookDeliveriesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { URL } from "url";
 import dns from "dns/promises";
+import crypto from "crypto";
 
 export type WebhookEvent = "dataset.analyzed" | "dataset.erased" | "dataset.failed";
 
@@ -85,9 +86,14 @@ interface WebhookPayload {
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1000;
 
+function computeSignature(secret: string, body: string): string {
+  return crypto.createHmac("sha256", secret).update(body).digest("hex");
+}
+
 async function deliverWebhook(
   webhookId: string,
   webhookUrl: string,
+  webhookSecret: string,
   event: WebhookEvent,
   payload: WebhookPayload,
   attempt: number,
@@ -109,13 +115,17 @@ async function deliverWebhook(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
+    const bodyStr = JSON.stringify(payload);
+    const signature = computeSignature(webhookSecret, bodyStr);
+
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Webhook-Event": event,
+        "X-Webhook-Signature": signature,
       },
-      body: JSON.stringify(payload),
+      body: bodyStr,
       signal: controller.signal,
       redirect: "error",
     });
@@ -178,6 +188,7 @@ export async function dispatchWebhookEvent(
         const success = await deliverWebhook(
           webhook.id,
           webhook.url,
+          webhook.secret,
           event,
           payload,
           attempt,
@@ -197,6 +208,7 @@ export async function dispatchWebhookEvent(
 export async function sendTestWebhook(
   webhookId: string,
   webhookUrl: string,
+  webhookSecret: string,
 ): Promise<{ success: boolean; status: number | null; body: string | null }> {
   const testPayload: WebhookPayload = {
     event: "dataset.analyzed",
@@ -228,13 +240,17 @@ export async function sendTestWebhook(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
+    const bodyStr = JSON.stringify(testPayload);
+    const signature = computeSignature(webhookSecret, bodyStr);
+
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Webhook-Event": "dataset.analyzed",
+        "X-Webhook-Signature": signature,
       },
-      body: JSON.stringify(testPayload),
+      body: bodyStr,
       signal: controller.signal,
       redirect: "error",
     });
