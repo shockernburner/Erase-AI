@@ -880,7 +880,7 @@ export default function PersonalMode({
         const data = await res.json().catch(() => ({}));
         if (data.limit && data.used) {
           setLimitError({ used: data.used, limit: data.limit });
-          throw new Error("DAILY_LIMIT");
+          throw new Error("LIFETIME_LIMIT");
         }
         if (data.upgrade) {
           onUpgrade();
