@@ -114,6 +114,7 @@ export const BUSINESS_ROW_LIMIT = 10000;
 
 const PLAN_ROW_LIMITS: Record<string, number> = {
   free: FREE_ROW_LIMIT,
+  personal: FREE_ROW_LIMIT,
   pro: PRO_ROW_LIMIT,
   business: BUSINESS_ROW_LIMIT,
 };
@@ -134,7 +135,7 @@ export async function enforceRowLimit(req: Request, res: Response, next: NextFun
         rowCount = content.split("\n").filter((l: string) => l.trim()).length - 1;
       }
       if (rowCount > limit) {
-        const nextTier = plan === "free" ? "Pro" : plan === "pro" ? "Business" : "Enterprise";
+        const nextTier = (plan === "free" || plan === "personal") ? "Pro" : plan === "pro" ? "Business" : "Enterprise";
         res.status(400).json({
           error: `Dataset has ${rowCount} rows, exceeding the ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan limit of ${limit.toLocaleString()}. Upgrade to ${nextTier} for higher limits.`,
           upgrade: true,

@@ -128,9 +128,9 @@ router.post("/upload", requireActivePlan(), upload.single("file"), async (req: R
   }
 
   const plan = getUserPlan(req);
-  if (plan === "free" && rows.length > FREE_ROW_LIMIT) {
+  if ((plan === "free" || plan === "personal") && rows.length > FREE_ROW_LIMIT) {
     res.status(403).json({
-      error: `Free plan limited to ${FREE_ROW_LIMIT} rows per dataset`,
+      error: `${plan === "personal" ? "Personal" : "Free"} plan limited to ${FREE_ROW_LIMIT} rows per dataset`,
       upgrade: true,
       message: `Your file has ${rows.length} rows. Upgrade to Pro for unlimited rows.`,
       rowCount: rows.length,
@@ -1269,9 +1269,9 @@ router.post("/import-url", requireActivePlan(), async (req: Request, res: Respon
     }
 
     const plan = getUserPlan(req);
-    if (plan === "free" && rows.length > FREE_ROW_LIMIT) {
+    if ((plan === "free" || plan === "personal") && rows.length > FREE_ROW_LIMIT) {
       res.status(403).json({
-        error: `Free plan limited to ${FREE_ROW_LIMIT} rows per dataset`,
+        error: `${plan === "personal" ? "Personal" : "Free"} plan limited to ${FREE_ROW_LIMIT} rows per dataset`,
         upgrade: true,
         message: `The file has ${rows.length} rows. Upgrade to Pro for unlimited rows.`,
         rowCount: rows.length,
