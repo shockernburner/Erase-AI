@@ -36,7 +36,8 @@
     "free": "免费",
     "pro": "PRO",
     "business": "商业版",
-    "enterprise": "企业版"
+    "enterprise": "企业版",
+    "personal": "个人版"
   },
   "login": {
     "subtitle": "让AI忘记它不应该学习的东西",
@@ -130,7 +131,16 @@
     "failedCancel": "取消订阅失败",
     "somethingWrong": "出了点问题，请重试。",
     "active": "活跃",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "tierPersonal": "个人模式",
+    "tierPersonalCta": "订阅 — $10/月",
+    "tierPersonalDesc": "无限个人文本分析和改写",
+    "tierPersonalSegment": "适合保护在线形象的个人用户",
+    "tierPersonalF1": "无限个人文本分析",
+    "tierPersonalF2": "AI内容改写",
+    "tierPersonalF3": "风险趋势监控和警报",
+    "tierPersonalF4": "完整扫描历史",
+    "tierPersonalF5": "分类分析"
   },
   "dataset": {
     "title": "数据集清洗器",
@@ -480,7 +490,9 @@
     "paymentProcessing": "支付处理中",
     "paymentStillProcessing": "您的付款仍在处理中。这可能需要一些时间。请稍后再试或联系支持。",
     "goToDashboard": "前往仪表板",
-    "checkAgain": "再次检查"
+    "checkAgain": "再次检查",
+    "welcomePersonal": "欢迎使用个人模式！",
+    "personalActive": "您的个人模式计划已激活。享受无限文本分析、AI改写和趋势监控。"
   },
   "home": {
     "userInitial": "U",
@@ -699,7 +711,9 @@
       "scansToday": "今日扫描",
       "freeLimit": "免费计划每日限额",
       "unlimited": "无限扫描",
-      "recentAlertsList": "近期风险警报"
+      "recentAlertsList": "近期风险警报",
+      "scansUsed": "已使用分析次数",
+      "freeLifetimeLimit": "10次免费终身分析"
     },
     "action": {
       "analyzePost": "分析帖子",
@@ -724,7 +738,14 @@
       "failed": "改写失败，请重试。",
       "proRequired": "内容改写需要Pro、Business或Enterprise计划。"
     },
-    "historyTitle": "扫描历史"
+    "historyTitle": "扫描历史",
+    "lifetimeLimitReached": "已达免费限制（{{used}}/{{limit}}次终身分析）。订阅个人模式（$10/月）获取无限扫描。",
+    "subscribePersonalCta": "订阅 — $10/月",
+    "paywall": {
+      "title": "免费分析已用完",
+      "description": "您已使用完所有10次免费终身分析。订阅个人模式（$10/月）可解锁无限扫描、AI改写、趋势监控和警报。",
+      "cta": "订阅 — $10/月"
+    }
   },
   "social": {
     "title": "个人模式 — 社交媒体帖子",

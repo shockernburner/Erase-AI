@@ -16,9 +16,11 @@ import {
 const router: IRouter = Router();
 
 const PLAN_PRICING: Record<string, { price: number; currency: string }> = {
+  personal: { price: 10, currency: "USD" },
   pro: { price: 49, currency: "USD" },
   business: { price: 149, currency: "USD" },
 };
+const PERSONAL_PRICE_MONTHLY = 10;
 const PRO_PRICE_MONTHLY = 49;
 const PRO_PRICE_CURRENCY = "USD";
 const BUSINESS_PRICE_MONTHLY = 149;
@@ -66,6 +68,21 @@ router.get("/pricing", (_req: Request, res: Response) => {
           "PII & bias detection",
           "Data erasure & redaction",
           "Version history",
+        ],
+        limits: { maxRows: 100, mlFeedback: false, fullAnalysis: false, apiAccess: false, customRules: false },
+      },
+      {
+        id: "personal",
+        name: "Personal Mode",
+        price: PERSONAL_PRICE_MONTHLY,
+        currency: "USD",
+        interval: "month",
+        features: [
+          "Unlimited personal text analyses",
+          "AI-powered content rewriting",
+          "Risk trend monitoring & alerts",
+          "Full scan history",
+          "Category breakdown analytics",
         ],
         limits: { maxRows: 100, mlFeedback: false, fullAnalysis: false, apiAccess: false, customRules: false },
       },
@@ -128,7 +145,7 @@ router.post("/checkout", async (req: Request, res: Response) => {
   const { plan, returnUrl } = req.body as { plan?: string; returnUrl?: string };
   const pricing = plan ? PLAN_PRICING[plan] : undefined;
   if (!plan || !pricing) {
-    res.status(400).json({ error: "Only 'pro' and 'business' plans are available for self-serve checkout" });
+    res.status(400).json({ error: "Only 'personal', 'pro', and 'business' plans are available for self-serve checkout" });
     return;
   }
 
@@ -216,11 +233,11 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       return;
     }
 
-    const VALID_CHECKOUT_PLANS = ["pro", "business"];
+    const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
     const rawPlan = intent.metadata?.plan || "pro";
     const targetPlan = VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro";
 
-    if ((user.planType === "pro" || user.planType === "business") && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
+    if ((user.planType === "personal" || user.planType === "pro" || user.planType === "business") && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
       res.json({ status: "succeeded", planType: user.planType });
       return;
     }
@@ -247,7 +264,7 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       if (sid) {
         const session = await getSession(sid);
         if (session) {
-          session.user.planType = targetPlan as "free" | "pro" | "business" | "enterprise";
+          session.user.planType = targetPlan as "free" | "personal" | "pro" | "business" | "enterprise";
           await updateSession(sid, session);
         }
       }
@@ -371,7 +388,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
   try {
     switch (event.name) {
       case "payment_intent.succeeded": {
-        const VALID_PLANS = ["pro", "business"];
+        const VALID_PLANS = ["personal", "pro", "business"];
         const rawWebhookPlan = intentData.metadata?.plan || "pro";
         const webhookPlan = VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro";
         if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {

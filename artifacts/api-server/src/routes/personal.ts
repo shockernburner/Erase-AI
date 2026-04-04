@@ -5,11 +5,11 @@ import { analyzeText } from "../lib/personalAnalyzer";
 import { calculateRiskScore } from "../lib/riskScorer";
 import { rewriteContent } from "../lib/contentRewriter";
 import { generateAlerts } from "../lib/alertEngine";
-import { refreshPlanFromDB, requirePro } from "../middlewares/planMiddleware";
+import { refreshPlanFromDB, requirePersonalOrHigher } from "../middlewares/planMiddleware";
 
 const router = Router();
 
-const FREE_DAILY_LIMIT = 10;
+const FREE_LIFETIME_LIMIT = 10;
 const MAX_STORED_CONTENT_LENGTH = 200;
 
 function redactMatchedText(text: string): string {
@@ -36,24 +36,16 @@ router.post("/personal/analyze", refreshPlanFromDB, async (req, res) => {
 
     const plan = req.user.planType || "free";
     if (plan === "free") {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
       const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(personalScansTable)
-        .where(
-          and(
-            eq(personalScansTable.userId, req.user.id),
-            gte(personalScansTable.createdAt, todayStart)
-          )
-        );
+        .where(eq(personalScansTable.userId, req.user.id));
 
-      if (countResult && countResult.count >= FREE_DAILY_LIMIT) {
+      if (countResult && countResult.count >= FREE_LIFETIME_LIMIT) {
         res.status(429).json({
-          error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
+          error: `Free plan allows ${FREE_LIFETIME_LIMIT} lifetime analyses. Subscribe to Personal Mode ($10/month) for unlimited scans.`,
           upgrade: true,
-          limit: FREE_DAILY_LIMIT,
+          limit: FREE_LIFETIME_LIMIT,
           used: countResult.count,
         });
         return;
@@ -151,17 +143,10 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
       .from(personalScansTable)
       .where(whereClause);
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const [todayCount] = await db
+    const [totalUsedResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(personalScansTable)
-      .where(
-        and(
-          eq(personalScansTable.userId, req.user.id),
-          gte(personalScansTable.createdAt, todayStart)
-        )
-      );
+      .where(eq(personalScansTable.userId, req.user.id));
 
     const trendScans = await db
       .select({
@@ -192,8 +177,8 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
         createdAt: s.createdAt,
       })),
       total: countResult?.count ?? 0,
-      todayUsed: todayCount?.count ?? 0,
-      dailyLimit: plan === "free" ? FREE_DAILY_LIMIT : null,
+      totalUsed: totalUsedResult?.count ?? 0,
+      lifetimeLimit: plan === "free" ? FREE_LIFETIME_LIMIT : null,
       trend: trendScans,
     });
   } catch (err) {
@@ -202,7 +187,7 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
   }
 });
 
-router.post("/personal/rewrite", refreshPlanFromDB, requirePro(), async (req, res) => {
+router.post("/personal/rewrite", refreshPlanFromDB, requirePersonalOrHigher(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required" });
@@ -228,7 +213,7 @@ router.post("/personal/rewrite", refreshPlanFromDB, requirePro(), async (req, re
   }
 });
 
-router.get("/personal/alerts", refreshPlanFromDB, requirePro(), async (req, res) => {
+router.get("/personal/alerts", refreshPlanFromDB, requirePersonalOrHigher(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required" });
@@ -272,7 +257,7 @@ router.get("/personal/alerts", refreshPlanFromDB, requirePro(), async (req, res)
   }
 });
 
-router.post("/personal/alerts/:id/read", refreshPlanFromDB, requirePro(), async (req, res) => {
+router.post("/personal/alerts/:id/read", refreshPlanFromDB, requirePersonalOrHigher(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required" });
@@ -312,7 +297,7 @@ router.post("/personal/alerts/:id/read", refreshPlanFromDB, requirePro(), async 
   }
 });
 
-router.post("/personal/alerts/read-all", refreshPlanFromDB, requirePro(), async (req, res) => {
+router.post("/personal/alerts/read-all", refreshPlanFromDB, requirePersonalOrHigher(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required" });
@@ -336,7 +321,7 @@ router.post("/personal/alerts/read-all", refreshPlanFromDB, requirePro(), async 
   }
 });
 
-router.get("/personal/trends", refreshPlanFromDB, requirePro(), async (req, res) => {
+router.get("/personal/trends", refreshPlanFromDB, requirePersonalOrHigher(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required" });

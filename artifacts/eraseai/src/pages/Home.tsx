@@ -11,6 +11,14 @@ type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" |
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
+  if (plan === "personal") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold">
+        <Crown className="w-3 h-3" />
+        {t("plan.personal")}
+      </span>
+    );
+  }
   if (plan === "pro") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold">
@@ -138,13 +146,15 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               <Shield className="w-4 h-4" />
               {t("nav.personalMode")}
             </button>
-            <button
-              onClick={() => { setOpen(false); onNavigate("social"); }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-            >
-              <Megaphone className="w-4 h-4" />
-              {t("nav.socialPosts")}
-            </button>
+            {user.email === "firdous.mahmood26@gmail.com" && (
+              <button
+                onClick={() => { setOpen(false); onNavigate("social"); }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+              >
+                <Megaphone className="w-4 h-4" />
+                {t("nav.socialPosts")}
+              </button>
+            )}
             <button
               onClick={() => { setOpen(false); onNavigate("docs"); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"

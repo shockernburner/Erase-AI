@@ -32,6 +32,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   BarChart3,
+  Crown,
 } from "lucide-react";
 import {
   LineChart,
@@ -916,8 +917,8 @@ export default function PersonalMode({
       return res.json() as Promise<{
         scans: HistoryScan[];
         total: number;
-        todayUsed: number;
-        dailyLimit: number | null;
+        totalUsed: number;
+        lifetimeLimit: number | null;
         trend: TrendPoint[];
       }>;
     },
@@ -985,6 +986,29 @@ export default function PersonalMode({
           </div>
         </motion.header>
 
+        {historyQuery.data?.lifetimeLimit != null && historyQuery.data.totalUsed >= historyQuery.data.lifetimeLimit && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-5 rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 to-cyan-500/10 backdrop-blur-md"
+          >
+            <div className="flex items-start gap-4">
+              <Lock className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-foreground mb-1">{t("personal.paywall.title")}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{t("personal.paywall.description")}</p>
+                <button
+                  onClick={onUpgrade}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-cyan-400 text-black rounded-lg text-sm font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all"
+                >
+                  <Crown className="w-4 h-4" />
+                  {t("personal.paywall.cta")}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {lastScore && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -1029,16 +1053,16 @@ export default function PersonalMode({
           <div className="bg-card/50 border border-border/30 rounded-xl p-4 backdrop-blur-md">
             <div className="flex items-center gap-2 mb-2">
               <Eye className="w-5 h-5 text-primary" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase">{t("personal.dashboard.scansToday")}</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">{t("personal.dashboard.scansUsed")}</span>
             </div>
             <div className="text-3xl font-bold text-primary">
-              {historyQuery.data?.todayUsed ?? 0}
-              {historyQuery.data?.dailyLimit != null && (
-                <span className="text-lg text-muted-foreground font-normal">/{historyQuery.data.dailyLimit}</span>
+              {historyQuery.data?.totalUsed ?? 0}
+              {historyQuery.data?.lifetimeLimit != null && (
+                <span className="text-lg text-muted-foreground font-normal">/{historyQuery.data.lifetimeLimit}</span>
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {historyQuery.data?.dailyLimit != null ? t("personal.dashboard.freeLimit") : t("personal.dashboard.unlimited")}
+              {historyQuery.data?.lifetimeLimit != null ? t("personal.dashboard.freeLifetimeLimit") : t("personal.dashboard.unlimited")}
             </div>
           </div>
         </motion.div>
@@ -1159,12 +1183,12 @@ export default function PersonalMode({
                 <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
                   {limitError ? (
                     <div className="flex items-center justify-between">
-                      <span>{t("personal.dailyLimitReached", { used: limitError.used, limit: limitError.limit })}</span>
+                      <span>{t("personal.lifetimeLimitReached", { used: limitError.used, limit: limitError.limit })}</span>
                       <button
                         onClick={() => onUpgrade()}
                         className="ml-3 px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
                       >
-                        {t("personal.upgradeCta")}
+                        {t("personal.subscribePersonalCta")}
                       </button>
                     </div>
                   ) : (

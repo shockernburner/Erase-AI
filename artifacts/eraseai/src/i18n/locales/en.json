@@ -39,6 +39,7 @@
   },
   "plan": {
     "free": "FREE",
+    "personal": "PERSONAL",
     "pro": "PRO",
     "business": "BUSINESS",
     "enterprise": "ENTERPRISE"
@@ -135,6 +136,15 @@
     "tierEnterpriseF3": "Custom analysis rules",
     "tierEnterpriseF4": "SSO integration",
     "tierEnterpriseF5": "Dedicated support & SLA",
+    "tierPersonal": "Personal Mode",
+    "tierPersonalCta": "Subscribe — $10/mo",
+    "tierPersonalDesc": "Unlimited personal text analysis & rewriting",
+    "tierPersonalSegment": "For individuals protecting their online presence",
+    "tierPersonalF1": "Unlimited personal text analyses",
+    "tierPersonalF2": "AI-powered content rewriting",
+    "tierPersonalF3": "Risk trend monitoring & alerts",
+    "tierPersonalF4": "Full scan history",
+    "tierPersonalF5": "Category breakdown analytics",
     "tierEnterpriseF6": "Custom data retention"
   },
   "dataset": {
@@ -390,6 +400,8 @@
     "proActive": "Your Pro plan is now active. Enjoy up to 1,000 rows, ML Pipeline Feedback, and all Pro features.",
     "welcomeBusiness": "Welcome to Business!",
     "businessActive": "Your Business plan is now active. Enjoy up to 10,000 rows, 20 API keys, and all Business features.",
+    "welcomePersonal": "Welcome to Personal Mode!",
+    "personalActive": "Your Personal Mode plan is now active. Enjoy unlimited text analyses, AI rewriting, and trend monitoring.",
     "continueDashboard": "Continue to Dashboard",
     "paymentProcessing": "Payment Processing",
     "paymentStillProcessing": "Your payment is still being processed. This may take a few moments. Please check back shortly or contact support if the issue persists.",
@@ -531,6 +543,8 @@
     "analyzing": "Analyzing...",
     "analysisFailed": "Analysis failed",
     "dailyLimitReached": "Daily limit reached ({{used}}/{{limit}} scans). Upgrade for unlimited scans.",
+    "lifetimeLimitReached": "Free limit reached ({{used}}/{{limit}} lifetime analyses). Subscribe to Personal Mode ($10/mo) for unlimited scans.",
+    "subscribePersonalCta": "Subscribe — $10/mo",
     "upgradeCta": "Upgrade",
     "dailyUsage": "{{used}}/{{limit}} scans used today",
     "historyTitle": "Scan History",
@@ -543,12 +557,19 @@
     "allClear": "All Clear!",
     "allClearDesc": "No risks detected in your text. Safe to post.",
     "deductionBreakdown": "Risk Deduction Breakdown",
+    "paywall": {
+      "title": "Free Analyses Used Up",
+      "description": "You've used all 10 free lifetime analyses. Subscribe to Personal Mode for $10/month to unlock unlimited scans, AI rewriting, trend monitoring, and alerts.",
+      "cta": "Subscribe — $10/month"
+    },
     "dashboard": {
       "lastScore": "Last Risk Score",
       "noScansYet": "No scans yet",
       "recentAlerts": "Recent Alerts",
       "alertsDesc": "Medium/high risk scans",
+      "scansUsed": "Analyses Used",
       "scansToday": "Scans Today",
+      "freeLifetimeLimit": "10 free lifetime analyses",
       "freeLimit": "Free plan daily limit",
       "unlimited": "Unlimited scans",
       "recentAlertsList": "Recent Risk Alerts"

@@ -36,7 +36,8 @@
     "free": "KOSTENLOS",
     "pro": "PRO",
     "business": "BUSINESS",
-    "enterprise": "ENTERPRISE"
+    "enterprise": "ENTERPRISE",
+    "personal": "PERSÖNLICH"
   },
   "login": {
     "subtitle": "Lassen Sie KI vergessen, was sie nie lernen sollte",
@@ -130,7 +131,16 @@
     "failedCancel": "Abo konnte nicht gekündigt werden",
     "somethingWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
     "active": "Aktiv",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "tierPersonal": "Persönlicher Modus",
+    "tierPersonalCta": "Abonnieren — 10$/Monat",
+    "tierPersonalDesc": "Unbegrenzte persönliche Textanalyse und Umschreibung",
+    "tierPersonalSegment": "Für Einzelpersonen, die ihre Online-Präsenz schützen",
+    "tierPersonalF1": "Unbegrenzte persönliche Textanalysen",
+    "tierPersonalF2": "KI-gestützte Inhaltsumschreibung",
+    "tierPersonalF3": "Risikotrend-Überwachung und Warnungen",
+    "tierPersonalF4": "Vollständiger Scan-Verlauf",
+    "tierPersonalF5": "Kategorieaufschlüsselung"
   },
   "dataset": {
     "title": "Datensatz-Bereiniger",
@@ -480,7 +490,9 @@
     "paymentProcessing": "Zahlungsverarbeitung",
     "paymentStillProcessing": "Ihre Zahlung wird noch verarbeitet. Dies kann einige Momente dauern. Bitte überprüfen Sie später erneut oder kontaktieren Sie den Support.",
     "goToDashboard": "Zum Dashboard",
-    "checkAgain": "Erneut prüfen"
+    "checkAgain": "Erneut prüfen",
+    "welcomePersonal": "Willkommen im Persönlichen Modus!",
+    "personalActive": "Ihr Persönlicher Modus ist jetzt aktiv. Genießen Sie unbegrenzte Textanalysen, KI-Umschreibung und Trendüberwachung."
   },
   "home": {
     "userInitial": "B",
@@ -699,7 +711,9 @@
       "scansToday": "Analysen Heute",
       "freeLimit": "Kostenloses Tageslimit",
       "unlimited": "Unbegrenzte Analysen",
-      "recentAlertsList": "Aktuelle Risikowarnungen"
+      "recentAlertsList": "Aktuelle Risikowarnungen",
+      "scansUsed": "Analysen verwendet",
+      "freeLifetimeLimit": "10 kostenlose lebenslange Analysen"
     },
     "action": {
       "analyzePost": "Beitrag Analysieren",
@@ -724,7 +738,14 @@
       "failed": "Umschreiben fehlgeschlagen. Bitte erneut versuchen.",
       "proRequired": "Inhalts-Umschreiben erfordert einen Pro-, Business- oder Enterprise-Plan."
     },
-    "historyTitle": "Scanverlauf"
+    "historyTitle": "Scanverlauf",
+    "lifetimeLimitReached": "Kostenloses Limit erreicht ({{used}}/{{limit}} lebenslange Analysen). Abonnieren Sie den Persönlichen Modus (10$/Monat) für unbegrenzte Scans.",
+    "subscribePersonalCta": "Abonnieren — 10$/Monat",
+    "paywall": {
+      "title": "Kostenlose Analysen aufgebraucht",
+      "description": "Sie haben alle 10 kostenlosen lebenslangen Analysen aufgebraucht. Abonnieren Sie den Persönlichen Modus für 10$/Monat für unbegrenzte Scans, KI-Umschreibung, Trendüberwachung und Warnungen.",
+      "cta": "Abonnieren — 10$/Monat"
+    }
   },
   "social": {
     "title": "Persönlicher Modus — Social-Media-Beiträge",

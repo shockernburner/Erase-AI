@@ -40,7 +40,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
       });
       if (!res.ok) return false;
       const data = await res.json();
-      if ((data.planType === "pro" || data.planType === "business") && data.subscriptionStatus === "active") {
+      if ((data.planType === "personal" || data.planType === "pro" || data.planType === "business") && data.subscriptionStatus === "active") {
         sessionStorage.removeItem("eraseai_checkout_intent");
         setActivatedPlan(data.planType);
         setStatus("success");

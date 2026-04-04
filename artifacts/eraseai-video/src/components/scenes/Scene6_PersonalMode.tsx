@@ -211,7 +211,7 @@ export function Scene6_PersonalMode() {
 
       {phase >= 6 && (
         <motion.div 
-          className="absolute bottom-[10vh] left-0 right-0 flex justify-center"
+          className="absolute bottom-[10vh] left-0 right-0 flex flex-col items-center gap-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -219,6 +219,17 @@ export function Scene6_PersonalMode() {
             <ShieldAlert className="w-6 h-6 text-[#10B981]" />
             <span className="text-[1.5vw] font-display text-white">Continuous monitoring. Zero surprises.</span>
           </div>
+          <motion.div
+            className="flex items-center gap-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <span className="text-[1.1vw] text-white/50 font-mono">10 FREE ANALYSES</span>
+            <span className="text-white/30">|</span>
+            <span className="text-[1.3vw] font-display font-bold text-[#10B981]">$10/month</span>
+            <span className="text-[1vw] text-white/40 font-mono">UNLIMITED</span>
+          </motion.div>
         </motion.div>
       )}
     </motion.div>

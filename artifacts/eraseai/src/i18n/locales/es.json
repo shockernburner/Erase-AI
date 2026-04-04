@@ -36,7 +36,8 @@
     "free": "GRATIS",
     "pro": "PRO",
     "business": "BUSINESS",
-    "enterprise": "EMPRESA"
+    "enterprise": "EMPRESA",
+    "personal": "PERSONAL"
   },
   "login": {
     "subtitle": "Haz que la IA olvide lo que nunca debería aprender",
@@ -130,7 +131,16 @@
     "failedCancel": "Error al cancelar la suscripción",
     "somethingWrong": "Algo salió mal. Inténtalo de nuevo.",
     "active": "Activo",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "tierPersonal": "Modo Personal",
+    "tierPersonalCta": "Suscribirse — $10/mes",
+    "tierPersonalDesc": "Análisis de texto personal ilimitado y reescritura",
+    "tierPersonalSegment": "Para individuos que protegen su presencia en línea",
+    "tierPersonalF1": "Análisis de texto personales ilimitados",
+    "tierPersonalF2": "Reescritura de contenido con IA",
+    "tierPersonalF3": "Monitoreo de tendencias de riesgo y alertas",
+    "tierPersonalF4": "Historial completo de escaneos",
+    "tierPersonalF5": "Análisis por categoría"
   },
   "dataset": {
     "title": "Limpiador de datos",
@@ -480,7 +490,9 @@
     "paymentProcessing": "Procesando pago",
     "paymentStillProcessing": "Su pago aún se está procesando. Esto puede tardar unos momentos. Por favor, vuelva a intentarlo más tarde o contacte con soporte si el problema persiste.",
     "goToDashboard": "Ir al panel",
-    "checkAgain": "Verificar de nuevo"
+    "checkAgain": "Verificar de nuevo",
+    "welcomePersonal": "¡Bienvenido al Modo Personal!",
+    "personalActive": "Tu plan de Modo Personal está ahora activo. Disfruta de análisis ilimitados, reescritura con IA y monitoreo de tendencias."
   },
   "home": {
     "userInitial": "U",
@@ -699,7 +711,9 @@
       "scansToday": "Análisis Hoy",
       "freeLimit": "Límite diario gratuito",
       "unlimited": "Análisis ilimitados",
-      "recentAlertsList": "Alertas de Riesgo Recientes"
+      "recentAlertsList": "Alertas de Riesgo Recientes",
+      "scansUsed": "Análisis utilizados",
+      "freeLifetimeLimit": "10 análisis gratuitos de por vida"
     },
     "action": {
       "analyzePost": "Analizar Publicación",
@@ -724,7 +738,14 @@
       "failed": "La reescritura falló. Inténtalo de nuevo.",
       "proRequired": "La reescritura de contenido requiere un plan Pro, Business o Enterprise."
     },
-    "historyTitle": "Historial de Análisis"
+    "historyTitle": "Historial de Análisis",
+    "lifetimeLimitReached": "Límite gratuito alcanzado ({{used}}/{{limit}} análisis de por vida). Suscríbete al Modo Personal ($10/mes) para análisis ilimitados.",
+    "subscribePersonalCta": "Suscribirse — $10/mes",
+    "paywall": {
+      "title": "Análisis gratuitos agotados",
+      "description": "Has utilizado tus 10 análisis gratuitos de por vida. Suscríbete al Modo Personal por $10/mes para análisis ilimitados, reescritura con IA, monitoreo de tendencias y alertas.",
+      "cta": "Suscribirse — $10/mes"
+    }
   },
   "social": {
     "title": "Modo Personal — Publicaciones en Redes Sociales",

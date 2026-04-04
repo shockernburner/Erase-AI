@@ -36,7 +36,8 @@
     "free": "GRATUIT",
     "pro": "PRO",
     "business": "BUSINESS",
-    "enterprise": "ENTREPRISE"
+    "enterprise": "ENTREPRISE",
+    "personal": "PERSONNEL"
   },
   "login": {
     "subtitle": "Faites oublier à l'IA ce qu'elle ne devrait jamais apprendre",
@@ -130,7 +131,16 @@
     "failedCancel": "Échec de l'annulation",
     "somethingWrong": "Une erreur s'est produite. Veuillez réessayer.",
     "active": "Actif",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "tierPersonal": "Mode Personnel",
+    "tierPersonalCta": "S'abonner — 10$/mois",
+    "tierPersonalDesc": "Analyse de texte personnelle illimitée et réécriture",
+    "tierPersonalSegment": "Pour les particuliers protégeant leur présence en ligne",
+    "tierPersonalF1": "Analyses de texte personnelles illimitées",
+    "tierPersonalF2": "Réécriture de contenu par IA",
+    "tierPersonalF3": "Suivi des tendances de risque et alertes",
+    "tierPersonalF4": "Historique complet des analyses",
+    "tierPersonalF5": "Analyse par catégorie"
   },
   "dataset": {
     "title": "Nettoyeur de données",
@@ -480,7 +490,9 @@
     "paymentProcessing": "Traitement du paiement",
     "paymentStillProcessing": "Votre paiement est encore en cours de traitement. Cela peut prendre quelques instants. Veuillez vérifier plus tard ou contacter le support si le problème persiste.",
     "goToDashboard": "Aller au tableau de bord",
-    "checkAgain": "Vérifier à nouveau"
+    "checkAgain": "Vérifier à nouveau",
+    "welcomePersonal": "Bienvenue dans le Mode Personnel !",
+    "personalActive": "Votre plan Mode Personnel est maintenant actif. Profitez d'analyses illimitées, de la réécriture IA et du suivi des tendances."
   },
   "home": {
     "userInitial": "U",
@@ -699,7 +711,9 @@
       "scansToday": "Analyses Aujourd'hui",
       "freeLimit": "Limite quotidienne gratuite",
       "unlimited": "Analyses illimitées",
-      "recentAlertsList": "Alertes de Risque Récentes"
+      "recentAlertsList": "Alertes de Risque Récentes",
+      "scansUsed": "Analyses utilisées",
+      "freeLifetimeLimit": "10 analyses gratuites à vie"
     },
     "action": {
       "analyzePost": "Analyser un Post",
@@ -724,7 +738,14 @@
       "failed": "La réécriture a échoué. Veuillez réessayer.",
       "proRequired": "La réécriture de contenu nécessite un plan Pro, Business ou Enterprise."
     },
-    "historyTitle": "Historique des Analyses"
+    "historyTitle": "Historique des Analyses",
+    "lifetimeLimitReached": "Limite gratuite atteinte ({{used}}/{{limit}} analyses à vie). Abonnez-vous au Mode Personnel (10$/mois) pour des analyses illimitées.",
+    "subscribePersonalCta": "S'abonner — 10$/mois",
+    "paywall": {
+      "title": "Analyses gratuites épuisées",
+      "description": "Vous avez utilisé vos 10 analyses gratuites à vie. Abonnez-vous au Mode Personnel pour 10$/mois pour des analyses illimitées, la réécriture IA, le suivi des tendances et les alertes.",
+      "cta": "S'abonner — 10$/mois"
+    }
   },
   "social": {
     "title": "Mode Personnel — Publications Réseaux Sociaux",

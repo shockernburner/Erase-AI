@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle, Briefcase } from "lucide-react";
+import { ShieldX, Check, ArrowLeft, Loader2, Crown, Zap, Building2, Mail, Calendar, AlertTriangle, MessageCircle, Briefcase, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -18,9 +18,9 @@ interface PlanDetails {
   planEndDate: string | null;
 }
 
-type TierId = "free" | "pro" | "business" | "enterprise";
+type TierId = "free" | "personal" | "pro" | "business" | "enterprise";
 
-const TIER_ORDER: TierId[] = ["free", "pro", "business", "enterprise"];
+const TIER_ORDER: TierId[] = ["free", "personal", "pro", "business", "enterprise"];
 
 function tierIndex(id: TierId): number {
   return TIER_ORDER.indexOf(id);
@@ -52,6 +52,23 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         t("pricing.tierFreeF5"),
       ],
       cta: t("pricing.tierFreeCta"),
+      highlight: false,
+    },
+    {
+      id: "personal" as TierId,
+      name: t("pricing.tierPersonal"),
+      price: 10,
+      icon: <Shield className="w-6 h-6" />,
+      description: t("pricing.tierPersonalDesc"),
+      segment: t("pricing.tierPersonalSegment"),
+      features: [
+        t("pricing.tierPersonalF1"),
+        t("pricing.tierPersonalF2"),
+        t("pricing.tierPersonalF3"),
+        t("pricing.tierPersonalF4"),
+        t("pricing.tierPersonalF5"),
+      ],
+      cta: t("pricing.tierPersonalCta"),
       highlight: false,
     },
     {
@@ -112,7 +129,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   ];
 
   useEffect(() => {
-    if (currentPlan !== "free") {
+    if (currentPlan !== "free" && currentPlan !== "enterprise") {
       fetch(`${import.meta.env.BASE_URL}api/billing/plan`, { credentials: "include" })
         .then(r => r.json())
         .then(d => setPlanDetails(d))
@@ -218,12 +235,12 @@ export default function PricingPage({ onBack }: PricingPageProps) {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {tiers.map((tier, i) => {
             const isCurrentPlan = currentPlan === tier.id;
             const isDowngrade = tierIndex(tier.id) < tierIndex(currentPlan);
             const isUpgrade = tierIndex(tier.id) > tierIndex(currentPlan);
-            const canCheckout = tier.id === "pro" || tier.id === "business";
+            const canCheckout = tier.id === "personal" || tier.id === "pro" || tier.id === "business";
 
             return (
               <motion.div

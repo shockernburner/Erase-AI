@@ -29,6 +29,21 @@ export function requireActivePlan() {
   };
 }
 
+export function requirePersonalOrHigher() {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const plan = getUserPlan(req);
+    if (plan !== "personal" && plan !== "pro" && plan !== "business" && plan !== "enterprise") {
+      res.status(403).json({
+        error: "This feature requires a Personal, Pro, Business, or Enterprise plan",
+        upgrade: true,
+        message: "Upgrade to unlock this feature",
+      });
+      return;
+    }
+    next();
+  };
+}
+
 export function requirePro() {
   return (req: Request, res: Response, next: NextFunction) => {
     const plan = getUserPlan(req);
@@ -82,7 +97,7 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
         .from(usersTable)
         .where(eq(usersTable.id, req.user.id));
       if (freshUser) {
-        req.user.planType = (freshUser.planType || "free") as "free" | "pro" | "business" | "enterprise";
+        req.user.planType = (freshUser.planType || "free") as "free" | "personal" | "pro" | "business" | "enterprise";
         if (freshUser.planEndDate) {
           req.user.planEndDate = freshUser.planEndDate.toISOString();
         }

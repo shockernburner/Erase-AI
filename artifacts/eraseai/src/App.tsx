@@ -92,6 +92,9 @@ function AuthGate() {
   }
 
   if (view === "social") {
+    if (user?.email !== "firdous.mahmood26@gmail.com") {
+      return <Home onNavigate={setView} />;
+    }
     return <SocialPosts onBack={() => setView("home")} />;
   }
 
