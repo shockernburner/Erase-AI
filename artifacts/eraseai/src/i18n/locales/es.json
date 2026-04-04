@@ -641,7 +641,7 @@
     },
     "alerts": {
       "title": "Alertas de Monitoreo",
-      "proRequired": "Las alertas de monitoreo requieren un plan Pro+.",
+      "proRequired": "Las alertas de monitoreo requieren un plan de pago.",
       "markRead": "Marcar como leído",
       "markAllRead": "Marcar todo como leído",
       "type": {
@@ -657,7 +657,7 @@
     },
     "trends": {
       "title": "Análisis de Tendencias",
-      "proRequired": "El análisis de tendencias requiere un plan Pro+.",
+      "proRequired": "El análisis de tendencias requiere un plan de pago.",
       "avg30": "Promedio 30 Días",
       "prev30": "30 Días Anteriores",
       "change": "Cambio",
@@ -736,7 +736,7 @@
       "copied": "¡Copiado!",
       "tryAgain": "Reescribir de nuevo",
       "failed": "La reescritura falló. Inténtalo de nuevo.",
-      "proRequired": "La reescritura de contenido requiere un plan Pro, Business o Enterprise."
+      "proRequired": "La reescritura de contenido requiere un plan Personal, Pro, Business o Enterprise."
     },
     "historyTitle": "Historial de Análisis",
     "lifetimeLimitReached": "Límite gratuito alcanzado ({{used}}/{{limit}} análisis de por vida). Suscríbete al Modo Personal ($10/mes) para análisis ilimitados.",

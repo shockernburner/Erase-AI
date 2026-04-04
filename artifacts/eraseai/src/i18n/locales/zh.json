@@ -641,7 +641,7 @@
     },
     "alerts": {
       "title": "监控警报",
-      "proRequired": "监控警报需要Pro+计划。",
+      "proRequired": "监控警报需要付费计划。",
       "markRead": "标记已读",
       "markAllRead": "全部标记已读",
       "type": {
@@ -657,7 +657,7 @@
     },
     "trends": {
       "title": "趋势分析",
-      "proRequired": "趋势分析需要Pro+计划。",
+      "proRequired": "趋势分析需要付费计划。",
       "avg30": "30天平均",
       "prev30": "前30天",
       "change": "变化",
@@ -736,7 +736,7 @@
       "copied": "已复制！",
       "tryAgain": "重新改写",
       "failed": "改写失败，请重试。",
-      "proRequired": "内容改写需要Pro、Business或Enterprise计划。"
+      "proRequired": "内容改写需要Personal、Pro、Business或Enterprise计划。"
     },
     "historyTitle": "扫描历史",
     "lifetimeLimitReached": "已达免费限制（{{used}}/{{limit}}次终身分析）。订阅个人模式（$10/月）获取无限扫描。",

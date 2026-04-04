@@ -615,7 +615,7 @@
       "copied": "Copied!",
       "tryAgain": "Rewrite Again",
       "failed": "Rewrite failed. Please try again.",
-      "proRequired": "Content Rewrite requires a Pro, Business, or Enterprise plan."
+      "proRequired": "Content Rewrite requires a Personal, Pro, Business, or Enterprise plan."
     },
     "history": {
       "trendTitle": "Risk Score Trend (30 days)",
@@ -627,7 +627,7 @@
     },
     "alerts": {
       "title": "Monitoring Alerts",
-      "proRequired": "Monitoring alerts require a Pro+ plan.",
+      "proRequired": "Monitoring alerts require a paid plan.",
       "markRead": "Mark read",
       "markAllRead": "Mark all read",
       "type": {
@@ -643,7 +643,7 @@
     },
     "trends": {
       "title": "Trend Analytics",
-      "proRequired": "Trend analytics require a Pro+ plan.",
+      "proRequired": "Trend analytics require a paid plan.",
       "avg30": "30-Day Average",
       "prev30": "Previous 30 Days",
       "change": "Change",

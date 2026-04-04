@@ -641,7 +641,7 @@
     },
     "alerts": {
       "title": "Überwachungsalarme",
-      "proRequired": "Überwachungsalarme erfordern einen Pro+ Plan.",
+      "proRequired": "Überwachungsalarme erfordern einen kostenpflichtigen Plan.",
       "markRead": "Als gelesen markieren",
       "markAllRead": "Alle als gelesen markieren",
       "type": {
@@ -657,7 +657,7 @@
     },
     "trends": {
       "title": "Trendanalysen",
-      "proRequired": "Trendanalysen erfordern einen Pro+ Plan.",
+      "proRequired": "Trendanalysen erfordern einen kostenpflichtigen Plan.",
       "avg30": "30-Tage-Durchschnitt",
       "prev30": "Vorherige 30 Tage",
       "change": "Änderung",
@@ -736,7 +736,7 @@
       "copied": "Kopiert!",
       "tryAgain": "Erneut umschreiben",
       "failed": "Umschreiben fehlgeschlagen. Bitte erneut versuchen.",
-      "proRequired": "Inhalts-Umschreiben erfordert einen Pro-, Business- oder Enterprise-Plan."
+      "proRequired": "Inhalts-Umschreiben erfordert einen Personal-, Pro-, Business- oder Enterprise-Plan."
     },
     "historyTitle": "Scanverlauf",
     "lifetimeLimitReached": "Kostenloses Limit erreicht ({{used}}/{{limit}} lebenslange Analysen). Abonnieren Sie den Persönlichen Modus (10$/Monat) für unbegrenzte Scans.",

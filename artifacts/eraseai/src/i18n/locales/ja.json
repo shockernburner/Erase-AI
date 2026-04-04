@@ -641,7 +641,7 @@
     },
     "alerts": {
       "title": "モニタリングアラート",
-      "proRequired": "モニタリングアラートにはPro+プランが必要です。",
+      "proRequired": "モニタリングアラートには有料プランが必要です。",
       "markRead": "既読にする",
       "markAllRead": "すべて既読にする",
       "type": {
@@ -657,7 +657,7 @@
     },
     "trends": {
       "title": "トレンド分析",
-      "proRequired": "トレンド分析にはPro+プランが必要です。",
+      "proRequired": "トレンド分析には有料プランが必要です。",
       "avg30": "30日間平均",
       "prev30": "前の30日間",
       "change": "変化",
@@ -736,7 +736,7 @@
       "copied": "コピーしました！",
       "tryAgain": "再度書き換え",
       "failed": "書き換えに失敗しました。もう一度お試しください。",
-      "proRequired": "コンテンツ書き換えにはPro、Business、またはEnterpriseプランが必要です。"
+      "proRequired": "コンテンツ書き換えにはPersonal、Pro、Business、またはEnterpriseプランが必要です。"
     },
     "historyTitle": "スキャン履歴",
     "lifetimeLimitReached": "無料制限に達しました（{{used}}/{{limit}}回の生涯分析）。パーソナルモード（$10/月）に登録して無制限のスキャンを。",
