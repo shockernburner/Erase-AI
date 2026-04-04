@@ -851,6 +851,10 @@
     "usageCounter": "{{used}} von {{limit}} kostenlosen Scans heute verwendet",
     "limitReached": "Tägliches Scan-Limit erreicht. Upgraden für unbegrenzte Scans.",
     "upgradeCta": "Upgraden",
-    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "suggestionsTitle": "Handlungsempfehlungen",
+    "prevPage": "Zurück",
+    "nextPage": "Weiter",
+    "pageOf": "Seite {{page}} von {{total}}"
   }
 }

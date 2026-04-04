@@ -86,6 +86,7 @@ router.post("/analyze", refreshPlanFromDB, async (req, res) => {
       riskScore: result.riskScore,
       level: result.level,
       issues: result.issues,
+      suggestions: result.suggestions,
       summary: result.summary,
     });
   } catch (err) {

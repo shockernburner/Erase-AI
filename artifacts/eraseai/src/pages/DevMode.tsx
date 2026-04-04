@@ -15,6 +15,8 @@ import {
   Eraser,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Check,
   Clock,
@@ -22,6 +24,7 @@ import {
   Zap,
   FileCode,
   Crown,
+  Lightbulb,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
@@ -35,10 +38,17 @@ interface SafetyIssue {
   end: number;
 }
 
+interface SafetySuggestion {
+  category: string;
+  action: string;
+  detail: string;
+}
+
 interface AnalyzeResult {
   riskScore: number;
   level: "safe" | "caution" | "danger";
   issues: SafetyIssue[];
+  suggestions: SafetySuggestion[];
   summary: string;
 }
 
@@ -232,11 +242,13 @@ export default function DevMode({
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [sanitizeResult, setSanitizeResult] = useState<SanitizeResult | null>(null);
   const [activeTab, setActiveTab] = useState<"input" | "history">("input");
+  const [historyPage, setHistoryPage] = useState(0);
+  const HISTORY_PAGE_SIZE = 20;
 
   const historyQuery = useQuery({
-    queryKey: ["dev-history"],
+    queryKey: ["dev-history", historyPage],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/dev/history?limit=20`, { credentials: "include" });
+      const res = await fetch(`${API_BASE}/dev/history?limit=${HISTORY_PAGE_SIZE}&offset=${historyPage * HISTORY_PAGE_SIZE}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch history");
       return res.json() as Promise<{
         scans: HistoryScan[];
@@ -502,6 +514,29 @@ export default function DevMode({
                       </div>
                     </div>
                   )}
+
+                  {analyzeResult.suggestions && analyzeResult.suggestions.length > 0 && (
+                    <div className="bg-card/50 border border-amber-500/20 rounded-xl p-4 backdrop-blur-md space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-amber-400" />
+                        {t("devMode.suggestionsTitle")}
+                      </h3>
+                      <div className="space-y-3">
+                        {analyzeResult.suggestions.map((s, i) => (
+                          <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                            <span className="text-amber-400 mt-0.5 text-sm font-bold">{i + 1}.</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground">{s.action}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{s.detail}</p>
+                              <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground uppercase font-mono">
+                                {s.category.replace(/_/g, " ")}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -588,6 +623,30 @@ export default function DevMode({
                     {historyQuery.data.scans.map((scan) => (
                       <HistoryItem key={scan.id} scan={scan} />
                     ))}
+                  </div>
+                )}
+
+                {historyQuery.data && historyQuery.data.total > HISTORY_PAGE_SIZE && (
+                  <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-border/20">
+                    <button
+                      onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+                      disabled={historyPage === 0}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/20 text-muted-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      {t("devMode.prevPage")}
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      {t("devMode.pageOf", { page: historyPage + 1, total: Math.ceil(historyQuery.data.total / HISTORY_PAGE_SIZE) })}
+                    </span>
+                    <button
+                      onClick={() => setHistoryPage((p) => p + 1)}
+                      disabled={historyPage >= Math.ceil((historyQuery.data?.total ?? 0) / HISTORY_PAGE_SIZE) - 1}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/20 text-muted-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {t("devMode.nextPage")}
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
               </div>

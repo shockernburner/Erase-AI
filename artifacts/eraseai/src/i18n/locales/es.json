@@ -851,6 +851,10 @@
     "usageCounter": "{{used}} de {{limit}} escaneos gratuitos usados hoy",
     "limitReached": "Límite diario alcanzado. Actualiza para escaneos ilimitados.",
     "upgradeCta": "Actualizar",
-    "error": "Algo salió mal. Por favor, inténtalo de nuevo."
+    "error": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "suggestionsTitle": "Sugerencias prácticas",
+    "prevPage": "Anterior",
+    "nextPage": "Siguiente",
+    "pageOf": "Página {{page}} de {{total}}"
   }
 }

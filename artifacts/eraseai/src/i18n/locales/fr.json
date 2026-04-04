@@ -851,6 +851,10 @@
     "usageCounter": "{{used}} sur {{limit}} scans gratuits utilisés aujourd'hui",
     "limitReached": "Limite quotidienne atteinte. Passez à un plan supérieur pour des scans illimités.",
     "upgradeCta": "Mettre à niveau",
-    "error": "Une erreur est survenue. Veuillez réessayer."
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "suggestionsTitle": "Suggestions d'action",
+    "prevPage": "Précédent",
+    "nextPage": "Suivant",
+    "pageOf": "Page {{page}} sur {{total}}"
   }
 }

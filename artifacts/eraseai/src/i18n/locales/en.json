@@ -851,6 +851,10 @@
     "usageCounter": "{{used}} of {{limit}} free scans used today",
     "limitReached": "Daily scan limit reached. Upgrade for unlimited scans.",
     "upgradeCta": "Upgrade",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "suggestionsTitle": "Actionable Suggestions",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "pageOf": "Page {{page}} of {{total}}"
   }
 }

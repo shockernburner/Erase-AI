@@ -11,10 +11,17 @@ export interface SafetyIssue {
   end: number;
 }
 
+export interface SafetySuggestion {
+  category: IssueCategory;
+  action: string;
+  detail: string;
+}
+
 export interface SafetyResult {
   riskScore: number;
   level: "safe" | "caution" | "danger";
   issues: SafetyIssue[];
+  suggestions: SafetySuggestion[];
   summary: string;
 }
 
@@ -130,5 +137,63 @@ export function analyzePromptSafety(text: string): SafetyResult {
     summary = `Found ${issues.length} issue${issues.length > 1 ? "s" : ""}: ${parts.join(", ")}.`;
   }
 
-  return { riskScore, level, issues, summary };
+  const suggestions: SafetySuggestion[] = [];
+  const seenCategories = new Set<string>();
+  for (const issue of issues) {
+    if (seenCategories.has(issue.category)) continue;
+    seenCategories.add(issue.category);
+
+    switch (issue.category) {
+      case "secret_exposure":
+        suggestions.push({
+          category: "secret_exposure",
+          action: "Remove or mask all secrets before sending to AI",
+          detail: "Use environment variables instead of hardcoded secrets. Run the Sanitize function to automatically mask detected credentials.",
+        });
+        suggestions.push({
+          category: "secret_exposure",
+          action: "Use .env files and secret managers",
+          detail: "Store API keys, tokens, and database URLs in environment variables or a secret manager (AWS Secrets Manager, HashiCorp Vault). Never paste them into AI prompts.",
+        });
+        break;
+      case "pii":
+        suggestions.push({
+          category: "pii",
+          action: "Redact personal information before sharing with AI",
+          detail: "Replace real emails, phone numbers, SSNs, and credit card numbers with placeholder values like user@example.com or 555-0100.",
+        });
+        suggestions.push({
+          category: "pii",
+          action: "Use synthetic data for AI-assisted development",
+          detail: "Generate fake but realistic test data instead of using real personal information in prompts.",
+        });
+        break;
+      case "proprietary_logic":
+        suggestions.push({
+          category: "proprietary_logic",
+          action: "Abstract proprietary code before sharing",
+          detail: "Rename internal functions, classes, and API endpoints to generic names. Remove business-specific logic and keep only the pattern you need help with.",
+        });
+        suggestions.push({
+          category: "proprietary_logic",
+          action: "Strip internal comments and SQL schemas",
+          detail: "Remove TODO/FIXME comments with sensitive context, and replace real table/column names in SQL queries with generic equivalents.",
+        });
+        break;
+      case "toxicity":
+        suggestions.push({
+          category: "toxicity",
+          action: "Remove prompt injection patterns",
+          detail: "Detected language that attempts to override AI safety instructions. Remove phrases like 'ignore previous instructions' or 'act as if' to ensure safe AI interaction.",
+        });
+        suggestions.push({
+          category: "toxicity",
+          action: "Use structured prompts instead of role manipulation",
+          detail: "Instead of trying to bypass AI safety filters, use clear, structured prompts that describe your actual need. This produces better results and avoids account flags.",
+        });
+        break;
+    }
+  }
+
+  return { riskScore, level, issues, suggestions, summary };
 }

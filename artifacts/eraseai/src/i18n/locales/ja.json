@@ -851,6 +851,10 @@
     "usageCounter": "今日{{limit}}回中{{used}}回の無料スキャンを使用",
     "limitReached": "1日のスキャン上限に達しました。アップグレードで無制限に。",
     "upgradeCta": "アップグレード",
-    "error": "エラーが発生しました。もう一度お試しください。"
+    "error": "エラーが発生しました。もう一度お試しください。",
+    "suggestionsTitle": "推奨アクション",
+    "prevPage": "前へ",
+    "nextPage": "次へ",
+    "pageOf": "{{page}} / {{total}} ページ"
   }
 }
