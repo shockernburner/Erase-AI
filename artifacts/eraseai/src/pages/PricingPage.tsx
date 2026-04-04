@@ -129,7 +129,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   ];
 
   useEffect(() => {
-    if (currentPlan !== "free" && currentPlan !== "enterprise") {
+    if (currentPlan !== "free") {
       fetch(`${import.meta.env.BASE_URL}api/billing/plan`, { credentials: "include" })
         .then(r => r.json())
         .then(d => setPlanDetails(d))
