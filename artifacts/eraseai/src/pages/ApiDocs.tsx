@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@workspace/replit-auth-web";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -15,6 +16,8 @@ import {
   AlertTriangle,
   Gauge,
   Building2,
+  Crown,
+  Settings,
 } from "lucide-react";
 
 type SectionId = "overview" | "auth" | "datasets" | "webhooks" | "ratelimits" | "usecases";
@@ -132,6 +135,27 @@ function EndpointBlock({ method, path, desc, params, response, examples }: {
   );
 }
 
+function FreeUpgradeBanner({ onUpgrade }: { onUpgrade?: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="bg-primary/5 border border-primary/30 rounded-xl p-5 flex items-start gap-4 mb-8">
+      <Crown className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <h3 className="text-sm font-bold text-foreground mb-1">{t("docs.upgradeTitle")}</h3>
+        <p className="text-xs text-muted-foreground mb-3">{t("docs.upgradeDesc")}</p>
+        {onUpgrade && (
+          <button
+            onClick={onUpgrade}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            {t("docs.upgradeCta")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OverviewSection() {
   const { t } = useTranslation();
   return (
@@ -167,19 +191,25 @@ function AuthSection() {
   const examples: Record<Lang, string> = {
     curl: `curl -H "Authorization: Bearer eak_your_api_key_here" \\
   ${window.location.origin}/api/v1/datasets`,
-    java: `import java.net.http.*;
-import java.net.URI;
+    java: `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
-HttpClient client = HttpClient.newHttpClient();
-HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("${window.location.origin}/api/v1/datasets"))
-    .header("Authorization", "Bearer eak_your_api_key_here")
-    .GET()
-    .build();
+public class EraseAIAuth {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("${window.location.origin}/api/v1/datasets"))
+            .header("Authorization", "Bearer eak_your_api_key_here")
+            .GET()
+            .build();
 
-HttpResponse<String> response = client.send(
-    request, HttpResponse.BodyHandlers.ofString());
-System.out.println(response.body());`,
+        HttpResponse<String> response = client.send(
+            request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}`,
     python: `import requests
 
 API_KEY = "eak_your_api_key_here"
@@ -258,33 +288,45 @@ function DatasetsSection() {
           curl: `curl -X POST ${origin}/api/v1/datasets/upload \\
   -H "Authorization: Bearer eak_your_api_key_here" \\
   -F "file=@training_data.csv"`,
-          java: `import java.net.http.*;
+          java: `import java.io.*;
 import java.net.URI;
+import java.net.http.*;
 import java.nio.file.*;
 
-HttpClient client = HttpClient.newHttpClient();
-String boundary = "---Boundary" + System.currentTimeMillis();
-Path filePath = Path.of("training_data.csv");
-byte[] fileBytes = Files.readAllBytes(filePath);
+public class UploadDataset {
+    public static void main(String[] args) throws Exception {
+        String apiKey = "eak_your_api_key_here";
+        Path filePath = Path.of("training_data.csv");
+        String boundary = "----FormBoundary" + System.currentTimeMillis();
 
-String body = "--" + boundary + "\\r\\n"
-    + "Content-Disposition: form-data; name=\\"file\\"; "
-    + "filename=\\"training_data.csv\\"\\r\\n"
-    + "Content-Type: text/csv\\r\\n\\r\\n";
-String end = "\\r\\n--" + boundary + "--\\r\\n";
+        byte[] fileBytes = Files.readAllBytes(filePath);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        String header = "--" + boundary + "\\r\\n"
+            + "Content-Disposition: form-data; name=\\"file\\"; "
+            + "filename=\\"training_data.csv\\"\\r\\n"
+            + "Content-Type: text/csv\\r\\n\\r\\n";
+        String footer = "\\r\\n--" + boundary + "--\\r\\n";
 
-byte[] payload = concat(body.getBytes(), fileBytes, end.getBytes());
+        baos.write(header.getBytes());
+        baos.write(fileBytes);
+        baos.write(footer.getBytes());
 
-HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("${origin}/api/v1/datasets/upload"))
-    .header("Authorization", "Bearer eak_your_api_key_here")
-    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-    .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
-    .build();
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("${origin}/api/v1/datasets/upload"))
+            .header("Authorization", "Bearer " + apiKey)
+            .header("Content-Type",
+                "multipart/form-data; boundary=" + boundary)
+            .POST(HttpRequest.BodyPublishers.ofByteArray(
+                baos.toByteArray()))
+            .build();
 
-HttpResponse<String> response = client.send(
-    request, HttpResponse.BodyHandlers.ofString());
-System.out.println(response.body());`,
+        HttpResponse<String> response = client.send(
+            request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.statusCode());
+        System.out.println(response.body());
+    }
+}`,
           python: `import requests
 
 API_KEY = "eak_your_api_key_here"
@@ -316,15 +358,23 @@ print(response.json())`,
         examples={{
           curl: `curl ${origin}/api/v1/datasets \\
   -H "Authorization: Bearer eak_your_api_key_here"`,
-          java: `HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("${origin}/api/v1/datasets"))
-    .header("Authorization", "Bearer eak_your_api_key_here")
-    .GET()
-    .build();
+          java: `import java.net.URI;
+import java.net.http.*;
 
-HttpResponse<String> response = client.send(
-    request, HttpResponse.BodyHandlers.ofString());
-System.out.println(response.body());`,
+public class ListDatasets {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("${origin}/api/v1/datasets"))
+            .header("Authorization", "Bearer eak_your_api_key_here")
+            .GET()
+            .build();
+
+        HttpResponse<String> response = client.send(
+            request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}`,
           python: `response = requests.get(
     "${origin}/api/v1/datasets",
     headers={"Authorization": f"Bearer {API_KEY}"}
@@ -358,15 +408,23 @@ for dataset in response.json()["datasets"]:
         examples={{
           curl: `curl -X POST ${origin}/api/v1/datasets/42/analyze \\
   -H "Authorization: Bearer eak_your_api_key_here"`,
-          java: `HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("${origin}/api/v1/datasets/42/analyze"))
-    .header("Authorization", "Bearer eak_your_api_key_here")
-    .POST(HttpRequest.BodyPublishers.noBody())
-    .build();
+          java: `import java.net.URI;
+import java.net.http.*;
 
-HttpResponse<String> response = client.send(
-    request, HttpResponse.BodyHandlers.ofString());
-System.out.println(response.body());`,
+public class AnalyzeDataset {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("${origin}/api/v1/datasets/42/analyze"))
+            .header("Authorization", "Bearer eak_your_api_key_here")
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+
+        HttpResponse<String> response = client.send(
+            request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}`,
           python: `response = requests.post(
     "${origin}/api/v1/datasets/42/analyze",
     headers={"Authorization": f"Bearer {API_KEY}"}
@@ -413,15 +471,23 @@ for issue in result["issues"]:
         examples={{
           curl: `curl ${origin}/api/v1/datasets/42/result \\
   -H "Authorization: Bearer eak_your_api_key_here"`,
-          java: `HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("${origin}/api/v1/datasets/42/result"))
-    .header("Authorization", "Bearer eak_your_api_key_here")
-    .GET()
-    .build();
+          java: `import java.net.URI;
+import java.net.http.*;
 
-HttpResponse<String> response = client.send(
-    request, HttpResponse.BodyHandlers.ofString());
-System.out.println(response.body());`,
+public class GetResult {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("${origin}/api/v1/datasets/42/result"))
+            .header("Authorization", "Bearer eak_your_api_key_here")
+            .GET()
+            .build();
+
+        HttpResponse<String> response = client.send(
+            request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}`,
           python: `response = requests.get(
     "${origin}/api/v1/datasets/42/result",
     headers={"Authorization": f"Bearer {API_KEY}"}
@@ -454,15 +520,26 @@ curl -O ${origin}/api/v1/datasets/42/download?mode=redacted \\
 # Download full dataset with metadata
 curl -O ${origin}/api/v1/datasets/42/download?mode=full \\
   -H "Authorization: Bearer eak_your_api_key_here"`,
-          java: `HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("${origin}/api/v1/datasets/42/download?mode=clean"))
-    .header("Authorization", "Bearer eak_your_api_key_here")
-    .GET()
-    .build();
+          java: `import java.net.URI;
+import java.net.http.*;
+import java.nio.file.Path;
 
-HttpResponse<Path> response = client.send(request,
-    HttpResponse.BodyHandlers.ofFile(Path.of("clean_dataset.csv")));
-System.out.println("Downloaded to: " + response.body());`,
+public class DownloadDataset {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(
+                "${origin}/api/v1/datasets/42/download?mode=clean"))
+            .header("Authorization", "Bearer eak_your_api_key_here")
+            .GET()
+            .build();
+
+        HttpResponse<Path> response = client.send(request,
+            HttpResponse.BodyHandlers.ofFile(
+                Path.of("clean_dataset.csv")));
+        System.out.println("Downloaded to: " + response.body());
+    }
+}`,
           python: `response = requests.get(
     "${origin}/api/v1/datasets/42/download",
     headers={"Authorization": f"Bearer {API_KEY}"},
@@ -480,6 +557,8 @@ print("Downloaded clean dataset")`,
 function WebhooksSection() {
   const { t } = useTranslation();
   const [lang, setLang] = useState<Lang>("curl");
+  const [setupLang, setSetupLang] = useState<Lang>("curl");
+  const origin = window.location.origin;
 
   const payloadExample = `{
   "event": "dataset.analyzed",
@@ -499,7 +578,7 @@ function WebhooksSection() {
 #   Content-Type: application/json
 #   X-Webhook-Event: dataset.analyzed
 
-# Test with curl:
+# Test locally with curl:
 curl -X POST https://your-server.com/webhook \\
   -H "Content-Type: application/json" \\
   -H "X-Webhook-Event: dataset.analyzed" \\
@@ -507,8 +586,13 @@ curl -X POST https://your-server.com/webhook \\
     java: `import com.sun.net.httpserver.*;
 import java.io.*;
 import java.net.InetSocketAddress;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.HexFormat;
 
 public class WebhookReceiver {
+    static final String WEBHOOK_SECRET = "your_webhook_secret";
+
     public static void main(String[] args) throws Exception {
         HttpServer server = HttpServer.create(
             new InetSocketAddress(8080), 0);
@@ -517,22 +601,30 @@ public class WebhookReceiver {
             if ("POST".equals(exchange.getRequestMethod())) {
                 String event = exchange.getRequestHeaders()
                     .getFirst("X-Webhook-Event");
-                String body = new String(
-                    exchange.getRequestBody().readAllBytes());
+                String signature = exchange.getRequestHeaders()
+                    .getFirst("X-Webhook-Signature");
+                byte[] bodyBytes =
+                    exchange.getRequestBody().readAllBytes();
+                String body = new String(bodyBytes);
+
+                if (!verifySignature(bodyBytes, signature)) {
+                    exchange.sendResponseHeaders(401, 0);
+                    exchange.close();
+                    return;
+                }
 
                 System.out.println("Event: " + event);
                 System.out.println("Payload: " + body);
 
-                // Process the webhook event
                 switch (event) {
                     case "dataset.analyzed":
-                        handleAnalyzed(body);
+                        System.out.println("Analysis complete");
                         break;
                     case "dataset.erased":
-                        handleErased(body);
+                        System.out.println("Erasure applied");
                         break;
                     case "dataset.failed":
-                        handleFailed(body);
+                        System.out.println("Operation failed");
                         break;
                 }
 
@@ -544,13 +636,41 @@ public class WebhookReceiver {
         server.start();
         System.out.println("Webhook receiver on port 8080");
     }
+
+    static boolean verifySignature(byte[] body, String sig) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(
+                WEBHOOK_SECRET.getBytes(), "HmacSHA256"));
+            String expected =
+                HexFormat.of().formatHex(mac.doFinal(body));
+            return expected.equals(sig);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }`,
-    python: `from flask import Flask, request, jsonify
+    python: `import hmac
+import hashlib
+from flask import Flask, request, jsonify, abort
 
 app = Flask(__name__)
+WEBHOOK_SECRET = "your_webhook_secret"
+
+def verify_signature(payload: bytes, signature: str) -> bool:
+    expected = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature or "")
 
 @app.route("/webhook", methods=["POST"])
 def handle_webhook():
+    signature = request.headers.get("X-Webhook-Signature", "")
+    if not verify_signature(request.data, signature):
+        abort(401, "Invalid signature")
+
     event = request.headers.get("X-Webhook-Event")
     payload = request.json
 
@@ -570,6 +690,115 @@ def handle_webhook():
 
 if __name__ == "__main__":
     app.run(port=8080)`,
+  };
+
+  const setupExamples: Record<Lang, string> = {
+    curl: `# Register a webhook (session-authenticated, via Developer Dashboard API)
+curl -X POST ${origin}/api/developer/webhooks \\
+  -H "Content-Type: application/json" \\
+  -b "session_cookie" \\
+  -d '{"url": "https://your-server.com/webhook"}'
+
+# Update webhook URL
+curl -X PATCH ${origin}/api/developer/webhooks/WEBHOOK_ID \\
+  -H "Content-Type: application/json" \\
+  -b "session_cookie" \\
+  -d '{"url": "https://new-server.com/webhook"}'
+
+# Toggle webhook active/paused
+curl -X PATCH ${origin}/api/developer/webhooks/WEBHOOK_ID \\
+  -H "Content-Type: application/json" \\
+  -b "session_cookie" \\
+  -d '{"isActive": false}'
+
+# Send a test webhook
+curl -X POST ${origin}/api/developer/webhooks/WEBHOOK_ID/test \\
+  -b "session_cookie"
+
+# View delivery history
+curl ${origin}/api/developer/webhooks/WEBHOOK_ID/deliveries \\
+  -b "session_cookie"
+
+# Delete webhook
+curl -X DELETE ${origin}/api/developer/webhooks/WEBHOOK_ID \\
+  -b "session_cookie"`,
+    java: `import java.net.URI;
+import java.net.http.*;
+import java.net.CookieManager;
+
+public class WebhookSetup {
+    static final String BASE = "${origin}/api/developer";
+
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newBuilder()
+            .cookieHandler(new CookieManager())
+            .build();
+
+        // Register webhook
+        HttpRequest createReq = HttpRequest.newBuilder()
+            .uri(URI.create(BASE + "/webhooks"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(
+                "{\\"url\\": \\"https://your-server.com/webhook\\"}"))
+            .build();
+        HttpResponse<String> createRes = client.send(
+            createReq, HttpResponse.BodyHandlers.ofString());
+        System.out.println("Created: " + createRes.body());
+
+        // Send test webhook
+        String webhookId = "WEBHOOK_ID";
+        HttpRequest testReq = HttpRequest.newBuilder()
+            .uri(URI.create(
+                BASE + "/webhooks/" + webhookId + "/test"))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+        HttpResponse<String> testRes = client.send(
+            testReq, HttpResponse.BodyHandlers.ofString());
+        System.out.println("Test result: " + testRes.body());
+
+        // View delivery history
+        HttpRequest histReq = HttpRequest.newBuilder()
+            .uri(URI.create(
+                BASE + "/webhooks/" + webhookId + "/deliveries"))
+            .GET()
+            .build();
+        HttpResponse<String> histRes = client.send(
+            histReq, HttpResponse.BodyHandlers.ofString());
+        System.out.println("Deliveries: " + histRes.body());
+    }
+}`,
+    python: `import requests
+
+session = requests.Session()
+BASE = "${origin}/api/developer"
+
+# Register webhook
+create_res = session.post(f"{BASE}/webhooks", json={
+    "url": "https://your-server.com/webhook"
+})
+webhook = create_res.json()["webhook"]
+webhook_id = webhook["id"]
+print(f"Created webhook: {webhook_id}")
+
+# Send test
+test_res = session.post(f"{BASE}/webhooks/{webhook_id}/test")
+print(f"Test: {test_res.json()}")
+
+# View delivery history
+hist_res = session.get(f"{BASE}/webhooks/{webhook_id}/deliveries")
+for d in hist_res.json()["deliveries"]:
+    status = "OK" if d["success"] else "FAIL"
+    print(f"  {d['event']} -> {status} (HTTP {d['responseStatus']})")
+
+# Toggle active/paused
+session.patch(f"{BASE}/webhooks/{webhook_id}", json={
+    "isActive": False
+})
+print("Webhook paused")
+
+# Delete webhook
+session.delete(f"{BASE}/webhooks/{webhook_id}")
+print("Webhook deleted")`,
   };
 
   return (
@@ -602,6 +831,47 @@ if __name__ == "__main__":
         <h3 className="text-sm font-bold text-foreground mb-3">{t("docs.receiverExample")}</h3>
         <LangTabs active={lang} onChange={setLang} />
         <CodeBlock code={receiverExamples[lang]} lang={lang === "curl" ? "bash" : lang} />
+      </div>
+
+      <div>
+        <h3 className="text-sm font-bold text-foreground mb-1">{t("docs.signatureTitle")}</h3>
+        <p className="text-xs text-muted-foreground mb-3">{t("docs.signatureDesc")}</p>
+        <div className="space-y-2">
+          {[
+            { header: "X-Webhook-Event", desc: t("docs.sigHeaderEvent") },
+            { header: "X-Webhook-Signature", desc: t("docs.sigHeaderSig") },
+          ].map((h) => (
+            <div key={h.header} className="flex items-baseline gap-3 px-4 py-2 bg-card/40 border border-border/20 rounded-lg text-xs">
+              <code className="text-primary font-mono font-bold">{h.header}</code>
+              <span className="text-muted-foreground">{h.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+          <Settings className="w-4 h-4 text-primary" />
+          {t("docs.webhookSetupTitle")}
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">{t("docs.webhookSetupDesc")}</p>
+        <div className="space-y-2 mb-4">
+          {[
+            { method: "POST", path: "/api/developer/webhooks", desc: t("docs.whSetupCreate") },
+            { method: "PATCH", path: "/api/developer/webhooks/:id", desc: t("docs.whSetupUpdate") },
+            { method: "POST", path: "/api/developer/webhooks/:id/test", desc: t("docs.whSetupTest") },
+            { method: "GET", path: "/api/developer/webhooks/:id/deliveries", desc: t("docs.whSetupHistory") },
+            { method: "DELETE", path: "/api/developer/webhooks/:id", desc: t("docs.whSetupDelete") },
+          ].map((ep) => (
+            <div key={ep.method + ep.path} className="flex items-center gap-3 px-3 py-2 bg-muted/20 rounded-lg border border-border/20">
+              <MethodBadge method={ep.method} />
+              <code className="text-xs font-mono text-foreground/80 flex-1">{ep.path}</code>
+              <span className="text-xs text-muted-foreground hidden sm:inline">{ep.desc}</span>
+            </div>
+          ))}
+        </div>
+        <LangTabs active={setupLang} onChange={setSetupLang} />
+        <CodeBlock code={setupExamples[setupLang]} lang={setupLang === "curl" ? "bash" : setupLang} />
       </div>
 
       <div className="space-y-3">
@@ -731,37 +1001,47 @@ if [ "$HIGH_ISSUES" -gt 0 ]; then
   exit 1
 fi
 echo "PASS: No high-severity issues"`,
-    java: `import java.net.http.*;
-import java.net.URI;
+    java: `import java.net.URI;
+import java.net.http.*;
+import java.nio.file.*;
+import java.io.*;
 
 public class ComplianceScan {
     static final String API_KEY = "eak_your_api_key_here";
     static final String BASE = "${window.location.origin}/api/v1";
-    static final HttpClient client = HttpClient.newHttpClient();
 
     public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+
         // Step 1: List all datasets
-        var listReq = HttpRequest.newBuilder()
+        HttpRequest listReq = HttpRequest.newBuilder()
             .uri(URI.create(BASE + "/datasets"))
             .header("Authorization", "Bearer " + API_KEY)
             .GET().build();
-        var listRes = client.send(listReq,
+        HttpResponse<String> listRes = client.send(listReq,
             HttpResponse.BodyHandlers.ofString());
+        System.out.println("Datasets: " + listRes.body());
 
-        // Step 2: Analyze each dataset
-        // Parse JSON and iterate datasets
-        System.out.println("Scanning all datasets...");
-        System.out.println(listRes.body());
-
-        // Step 3: Analyze specific dataset
-        var analyzeReq = HttpRequest.newBuilder()
+        // Step 2: Analyze a specific dataset
+        HttpRequest analyzeReq = HttpRequest.newBuilder()
             .uri(URI.create(BASE + "/datasets/42/analyze"))
             .header("Authorization", "Bearer " + API_KEY)
             .POST(HttpRequest.BodyPublishers.noBody())
             .build();
-        var analyzeRes = client.send(analyzeReq,
+        HttpResponse<String> analyzeRes = client.send(analyzeReq,
             HttpResponse.BodyHandlers.ofString());
         System.out.println("Analysis: " + analyzeRes.body());
+
+        // Step 3: Download clean dataset
+        HttpRequest downloadReq = HttpRequest.newBuilder()
+            .uri(URI.create(
+                BASE + "/datasets/42/download?mode=clean"))
+            .header("Authorization", "Bearer " + API_KEY)
+            .GET().build();
+        HttpResponse<Path> downloadRes = client.send(downloadReq,
+            HttpResponse.BodyHandlers.ofFile(
+                Path.of("clean_output.csv")));
+        System.out.println("Downloaded: " + downloadRes.body());
     }
 }`,
     python: `import requests
@@ -861,9 +1141,11 @@ const SECTIONS: { id: SectionId; icon: typeof Book; labelKey: string }[] = [
   { id: "usecases", icon: Building2, labelKey: "docs.navUseCases" },
 ];
 
-export default function ApiDocs({ onBack }: ApiDocsProps) {
+export default function ApiDocs({ onBack, onUpgrade }: ApiDocsProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [section, setSection] = useState<SectionId>("overview");
+  const showUpgradeBanner = !user;
 
   return (
     <div className="min-h-screen w-full pb-20 relative">
@@ -897,6 +1179,8 @@ export default function ApiDocs({ onBack }: ApiDocsProps) {
             </div>
           </div>
         </motion.div>
+
+        {showUpgradeBanner && <FreeUpgradeBanner onUpgrade={onUpgrade} />}
 
         <div className="flex gap-8 flex-col md:flex-row">
           <motion.nav
