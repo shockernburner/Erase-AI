@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Activity, AlertTriangle, Eye, ArrowRightLeft, User, ShieldAlert } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ShieldCheck, Activity, Eye, ArrowRightLeft, User, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { easings } from '@/lib/video/animations';
 
@@ -14,7 +14,6 @@ export function Scene6_PersonalMode() {
       setTimeout(() => setPhase(4), 5000),  // Trend chart + rewrite arrow
       setTimeout(() => setPhase(5), 6500),  // Cleaned text appears
       setTimeout(() => setPhase(6), 8500),  // Final protection message
-      setTimeout(() => setPhase(7), 11000), // Exit drift
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
