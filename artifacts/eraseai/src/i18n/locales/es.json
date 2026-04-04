@@ -16,7 +16,8 @@
     "analytics": "Analítica",
     "personalMode": "Modo Personal",
     "socialPosts": "Publicaciones Sociales",
-    "apiDocs": "Documentación API"
+    "apiDocs": "Documentación API",
+    "devMode": "Modo Desarrollador"
   },
   "pipeline": {
     "label": "Control de datos IA",
@@ -808,5 +809,48 @@
     "card3Title": "Modo Desarrollador",
     "card3Desc": "El firewall entre tu código y los sistemas de IA. Escanea prompts y código antes de enviarlos a ChatGPT, Claude, Replit o cualquier herramienta de IA. Detecta secretos, PII y fugas de lógica propietaria. Extensión de navegador y plugins IDE próximamente.",
     "comingSoon": "PRÓXIMAMENTE"
+  },
+  "devMode": {
+    "title": "Modo Desarrollador",
+    "subtitle": "El firewall entre tu código y los sistemas de IA",
+    "back": "Volver al panel",
+    "scanTab": "Escanear y Analizar",
+    "historyTab": "Historial de Escaneos",
+    "inputTitle": "Escáner de Prompts / Código",
+    "inputDesc": "Pega tu prompt, fragmento de código o cualquier texto que planees enviar a un sistema de IA. Detectaremos secretos, PII, lógica propietaria y riesgos de inyección.",
+    "inputPlaceholder": "Pega tu prompt o código aquí...",
+    "analyzeBtn": "Analizar",
+    "sanitizeBtn": "Sanear",
+    "analyze": "Analizar",
+    "sanitize": "Sanear",
+    "risk": {
+      "safe": "Seguro para enviar",
+      "caution": "Revisar antes de enviar",
+      "danger": "No enviar — alto riesgo"
+    },
+    "category": {
+      "secret_exposure": "Exposición de Secretos",
+      "pii": "PII Detectada",
+      "proprietary_logic": "Lógica Propietaria",
+      "toxicity": "Inyección de Prompt"
+    },
+    "issuesFound": "{{count}} problema detectado",
+    "issuesFound_other": "{{count}} problemas detectados",
+    "issues": "problemas",
+    "diffView": "Original vs Saneado",
+    "original": "Original",
+    "sanitized": "Saneado",
+    "copySanitized": "Copiar saneado",
+    "copied": "¡Copiado!",
+    "sanitizeComplete": "{{count}} cambio aplicado",
+    "sanitizeComplete_other": "{{count}} cambios aplicados",
+    "moreChanges": "cambios más",
+    "historyTitle": "Historial de Escaneos",
+    "totalScans": "escaneos totales",
+    "noHistory": "Sin escaneos aún. Analiza o sanea texto para comenzar.",
+    "usageCounter": "{{used}} de {{limit}} escaneos gratuitos usados hoy",
+    "limitReached": "Límite diario alcanzado. Actualiza para escaneos ilimitados.",
+    "upgradeCta": "Actualizar",
+    "error": "Algo salió mal. Por favor, inténtalo de nuevo."
   }
 }

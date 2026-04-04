@@ -16,7 +16,8 @@
     "analytics": "Analytique",
     "personalMode": "Mode Personnel",
     "socialPosts": "Publications Sociales",
-    "apiDocs": "Documentation API"
+    "apiDocs": "Documentation API",
+    "devMode": "Mode Développeur"
   },
   "pipeline": {
     "label": "Contrôle des données IA",
@@ -808,5 +809,48 @@
     "card3Title": "Mode Développeur",
     "card3Desc": "Le pare-feu entre votre code et les systèmes IA. Analysez les prompts et le code avant de les envoyer à ChatGPT, Claude, Replit ou tout autre outil IA. Détectez les secrets, PII et fuites de logique propriétaire. Extension navigateur et plugins IDE bientôt disponibles.",
     "comingSoon": "BIENTÔT DISPONIBLE"
+  },
+  "devMode": {
+    "title": "Mode Développeur",
+    "subtitle": "Le pare-feu entre votre code et les systèmes IA",
+    "back": "Retour au tableau de bord",
+    "scanTab": "Scanner et analyser",
+    "historyTab": "Historique des scans",
+    "inputTitle": "Scanner de prompts / code",
+    "inputDesc": "Collez votre prompt, extrait de code ou tout texte que vous prévoyez d'envoyer à un système IA. Nous détecterons les secrets, PII, logique propriétaire et risques d'injection.",
+    "inputPlaceholder": "Collez votre prompt ou code ici...",
+    "analyzeBtn": "Analyser",
+    "sanitizeBtn": "Assainir",
+    "analyze": "Analyser",
+    "sanitize": "Assainir",
+    "risk": {
+      "safe": "Sûr à envoyer",
+      "caution": "Vérifier avant d'envoyer",
+      "danger": "Ne pas envoyer — risque élevé"
+    },
+    "category": {
+      "secret_exposure": "Exposition de secrets",
+      "pii": "PII détectées",
+      "proprietary_logic": "Logique propriétaire",
+      "toxicity": "Injection de prompt"
+    },
+    "issuesFound": "{{count}} problème détecté",
+    "issuesFound_other": "{{count}} problèmes détectés",
+    "issues": "problèmes",
+    "diffView": "Original vs Assaini",
+    "original": "Original",
+    "sanitized": "Assaini",
+    "copySanitized": "Copier l'assaini",
+    "copied": "Copié !",
+    "sanitizeComplete": "{{count}} modification appliquée",
+    "sanitizeComplete_other": "{{count}} modifications appliquées",
+    "moreChanges": "modifications supplémentaires",
+    "historyTitle": "Historique des scans",
+    "totalScans": "scans au total",
+    "noHistory": "Aucun scan. Analysez ou assainissez du texte pour commencer.",
+    "usageCounter": "{{used}} sur {{limit}} scans gratuits utilisés aujourd'hui",
+    "limitReached": "Limite quotidienne atteinte. Passez à un plan supérieur pour des scans illimités.",
+    "upgradeCta": "Mettre à niveau",
+    "error": "Une erreur est survenue. Veuillez réessayer."
   }
 }

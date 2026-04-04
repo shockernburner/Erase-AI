@@ -129,6 +129,28 @@ async function ensurePersonalAlertsTable() {
   }
 }
 
+async function ensureDevScansTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS dev_scans (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        scan_type TEXT NOT NULL,
+        input_text TEXT NOT NULL,
+        risk_score INTEGER NOT NULL DEFAULT 0,
+        issues TEXT NOT NULL DEFAULT '[]',
+        sanitized_text TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_dev_scans_user_id ON dev_scans(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_dev_scans_user_created ON dev_scans(user_id, created_at)`);
+    logger.info("Startup migration: dev_scans table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: dev_scans table warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
@@ -136,6 +158,7 @@ export async function runStartupMigrations() {
   await ensureWebhookDeliveriesTable();
   await ensurePersonalScansTable();
   await ensurePersonalAlertsTable();
+  await ensureDevScansTable();
   try {
     const demoDatasets = await db.execute(sql`
       SELECT id FROM datasets WHERE user_id = 'system-demo-user'

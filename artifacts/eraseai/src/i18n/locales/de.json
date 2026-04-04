@@ -16,7 +16,8 @@
     "analytics": "Analytik",
     "personalMode": "Persönlicher Modus",
     "socialPosts": "Social-Media-Beiträge",
-    "apiDocs": "API-Dokumentation"
+    "apiDocs": "API-Dokumentation",
+    "devMode": "Entwicklermodus"
   },
   "pipeline": {
     "label": "KI-Datenkontrolle",
@@ -808,5 +809,48 @@
     "card3Title": "Entwicklermodus",
     "card3Desc": "Die Firewall zwischen Ihrem Code und KI-Systemen. Scannen Sie Prompts und Code, bevor Sie sie an ChatGPT, Claude, Replit oder ein anderes KI-Tool senden. Erkennen Sie Geheimnisse, PII und Lecks proprietärer Logik. Browser-Erweiterung und IDE-Plugins demnächst verfügbar.",
     "comingSoon": "DEMNÄCHST VERFÜGBAR"
+  },
+  "devMode": {
+    "title": "Entwicklermodus",
+    "subtitle": "Die Firewall zwischen Ihrem Code und KI-Systemen",
+    "back": "Zurück zum Dashboard",
+    "scanTab": "Scannen & Analysieren",
+    "historyTab": "Scan-Verlauf",
+    "inputTitle": "Prompt- / Code-Scanner",
+    "inputDesc": "Fügen Sie Ihren Prompt, Code-Schnipsel oder beliebigen Text ein, den Sie an ein KI-System senden möchten. Wir erkennen Geheimnisse, PII, proprietäre Logik und Injektionsrisiken.",
+    "inputPlaceholder": "Fügen Sie Ihren Prompt oder Code hier ein...",
+    "analyzeBtn": "Analysieren",
+    "sanitizeBtn": "Bereinigen",
+    "analyze": "Analysieren",
+    "sanitize": "Bereinigen",
+    "risk": {
+      "safe": "Sicher zum Senden",
+      "caution": "Vor dem Senden überprüfen",
+      "danger": "Nicht senden — hohes Risiko"
+    },
+    "category": {
+      "secret_exposure": "Geheimnis-Exposition",
+      "pii": "PII erkannt",
+      "proprietary_logic": "Proprietäre Logik",
+      "toxicity": "Prompt-Injektion"
+    },
+    "issuesFound": "{{count}} Problem erkannt",
+    "issuesFound_other": "{{count}} Probleme erkannt",
+    "issues": "Probleme",
+    "diffView": "Original vs Bereinigt",
+    "original": "Original",
+    "sanitized": "Bereinigt",
+    "copySanitized": "Bereinigtes kopieren",
+    "copied": "Kopiert!",
+    "sanitizeComplete": "{{count}} Änderung angewendet",
+    "sanitizeComplete_other": "{{count}} Änderungen angewendet",
+    "moreChanges": "weitere Änderungen",
+    "historyTitle": "Scan-Verlauf",
+    "totalScans": "Scans insgesamt",
+    "noHistory": "Noch keine Scans. Analysieren oder bereinigen Sie Text, um zu beginnen.",
+    "usageCounter": "{{used}} von {{limit}} kostenlosen Scans heute verwendet",
+    "limitReached": "Tägliches Scan-Limit erreicht. Upgraden für unbegrenzte Scans.",
+    "upgradeCta": "Upgraden",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   }
 }

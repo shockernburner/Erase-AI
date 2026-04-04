@@ -16,7 +16,8 @@
     "analytics": "分析ダッシュボード",
     "personalMode": "パーソナルモード",
     "socialPosts": "ソーシャル投稿",
-    "apiDocs": "APIドキュメント"
+    "apiDocs": "APIドキュメント",
+    "devMode": "開発者モード"
   },
   "pipeline": {
     "label": "AIデータ制御",
@@ -808,5 +809,48 @@
     "card3Title": "開発者モード",
     "card3Desc": "コードとAIシステムの間のファイアウォール。ChatGPT、Claude、Replit、その他のAIツールに送信する前にプロンプトとコードをスキャン。シークレット、PII、独自ロジックの漏洩を検出。ブラウザ拡張機能とIDEプラグインが近日公開。",
     "comingSoon": "近日公開"
+  },
+  "devMode": {
+    "title": "開発者モード",
+    "subtitle": "コードとAIシステム間のファイアウォール",
+    "back": "ダッシュボードに戻る",
+    "scanTab": "スキャン＆分析",
+    "historyTab": "スキャン履歴",
+    "inputTitle": "プロンプト/コードスキャナー",
+    "inputDesc": "AIシステムに送信予定のプロンプト、コードスニペット、またはテキストを貼り付けてください。シークレット、PII、独自ロジック、インジェクションリスクを検出します。",
+    "inputPlaceholder": "プロンプトまたはコードをここに貼り付け...",
+    "analyzeBtn": "分析",
+    "sanitizeBtn": "サニタイズ",
+    "analyze": "分析",
+    "sanitize": "サニタイズ",
+    "risk": {
+      "safe": "送信安全",
+      "caution": "送信前に確認",
+      "danger": "送信不可 — 高リスク"
+    },
+    "category": {
+      "secret_exposure": "シークレット漏洩",
+      "pii": "PII検出",
+      "proprietary_logic": "独自ロジック",
+      "toxicity": "プロンプトインジェクション"
+    },
+    "issuesFound": "{{count}}件の問題を検出",
+    "issuesFound_other": "{{count}}件の問題を検出",
+    "issues": "件の問題",
+    "diffView": "オリジナル vs サニタイズ済み",
+    "original": "オリジナル",
+    "sanitized": "サニタイズ済み",
+    "copySanitized": "サニタイズ済みをコピー",
+    "copied": "コピーしました！",
+    "sanitizeComplete": "{{count}}件の変更を適用",
+    "sanitizeComplete_other": "{{count}}件の変更を適用",
+    "moreChanges": "件の追加変更",
+    "historyTitle": "スキャン履歴",
+    "totalScans": "合計スキャン",
+    "noHistory": "スキャンはまだありません。テキストを分析またはサニタイズして開始してください。",
+    "usageCounter": "今日{{limit}}回中{{used}}回の無料スキャンを使用",
+    "limitReached": "1日のスキャン上限に達しました。アップグレードで無制限に。",
+    "upgradeCta": "アップグレード",
+    "error": "エラーが発生しました。もう一度お試しください。"
   }
 }

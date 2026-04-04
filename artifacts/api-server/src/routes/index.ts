@@ -10,6 +10,7 @@ import developerRouter from "./developer";
 import v1Router from "./v1";
 import analyticsRouter from "./analytics";
 import personalRouter from "./personal";
+import devRouter from "./dev";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use("/developer", developerRouter);
 router.use("/v1", v1Router);
 router.use(analyticsRouter);
 router.use(personalRouter);
+router.use("/dev", devRouter);
 
 export default router;

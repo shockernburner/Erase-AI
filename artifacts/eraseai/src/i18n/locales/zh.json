@@ -16,7 +16,8 @@
     "analytics": "数据分析",
     "personalMode": "个人模式",
     "socialPosts": "社交媒体帖子",
-    "apiDocs": "API文档"
+    "apiDocs": "API文档",
+    "devMode": "开发者模式"
   },
   "pipeline": {
     "label": "AI数据控制",
@@ -808,5 +809,48 @@
     "card3Title": "开发者模式",
     "card3Desc": "代码与AI系统之间的防火墙。在发送到ChatGPT、Claude、Replit或任何AI工具之前扫描提示词和代码。检测密钥、PII和专有逻辑泄露。浏览器扩展和IDE插件即将推出。",
     "comingSoon": "即将推出"
+  },
+  "devMode": {
+    "title": "开发者模式",
+    "subtitle": "代码与AI系统之间的防火墙",
+    "back": "返回仪表板",
+    "scanTab": "扫描和分析",
+    "historyTab": "扫描历史",
+    "inputTitle": "提示词/代码扫描器",
+    "inputDesc": "粘贴您计划发送到AI系统的提示词、代码片段或任何文本。我们将检测密钥、PII、专有逻辑和注入风险。",
+    "inputPlaceholder": "在此粘贴您的提示词或代码...",
+    "analyzeBtn": "分析",
+    "sanitizeBtn": "清理",
+    "analyze": "分析",
+    "sanitize": "清理",
+    "risk": {
+      "safe": "可安全发送",
+      "caution": "发送前请检查",
+      "danger": "请勿发送 — 高风险"
+    },
+    "category": {
+      "secret_exposure": "密钥泄露",
+      "pii": "检测到PII",
+      "proprietary_logic": "专有逻辑",
+      "toxicity": "提示词注入"
+    },
+    "issuesFound": "检测到{{count}}个问题",
+    "issuesFound_other": "检测到{{count}}个问题",
+    "issues": "个问题",
+    "diffView": "原始 vs 清理后",
+    "original": "原始",
+    "sanitized": "清理后",
+    "copySanitized": "复制清理后的文本",
+    "copied": "已复制！",
+    "sanitizeComplete": "已应用{{count}}项更改",
+    "sanitizeComplete_other": "已应用{{count}}项更改",
+    "moreChanges": "更多更改",
+    "historyTitle": "扫描历史",
+    "totalScans": "总扫描次数",
+    "noHistory": "暂无扫描。分析或清理一些文本以开始。",
+    "usageCounter": "今天已使用{{used}}/{{limit}}次免费扫描",
+    "limitReached": "已达到每日扫描限制。升级以获得无限扫描。",
+    "upgradeCta": "升级",
+    "error": "出了点问题。请再试一次。"
   }
 }

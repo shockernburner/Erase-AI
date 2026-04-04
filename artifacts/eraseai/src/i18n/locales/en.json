@@ -16,7 +16,8 @@
     "analytics": "Analytics",
     "personalMode": "Personal Mode",
     "socialPosts": "Social Posts",
-    "apiDocs": "API Docs"
+    "apiDocs": "API Docs",
+    "devMode": "Developer Mode"
   },
   "home": {
     "userInitial": "U",
@@ -808,5 +809,48 @@
     "card3Title": "Developer Mode",
     "card3Desc": "The firewall between your code and AI systems. Scan prompts and code before sending to ChatGPT, Claude, Replit, or any AI tool. Detect secrets, PII, and proprietary logic leaks. Browser extension and IDE plugins coming soon.",
     "comingSoon": "COMING SOON"
+  },
+  "devMode": {
+    "title": "Developer Mode",
+    "subtitle": "The firewall between your code and AI systems",
+    "back": "Back to Dashboard",
+    "scanTab": "Scan & Analyze",
+    "historyTab": "Scan History",
+    "inputTitle": "Prompt / Code Scanner",
+    "inputDesc": "Paste your prompt, code snippet, or any text you plan to send to an AI system. We'll detect secrets, PII, proprietary logic, and injection risks.",
+    "inputPlaceholder": "Paste your prompt or code here...\n\nExample:\nconst API_KEY = \"sk-abc123...\";\nfetch('https://api.openai.com/v1/chat', {\n  headers: { Authorization: `Bearer ${API_KEY}` }\n});",
+    "analyzeBtn": "Analyze",
+    "sanitizeBtn": "Sanitize",
+    "analyze": "Analyze",
+    "sanitize": "Sanitize",
+    "risk": {
+      "safe": "Safe to send",
+      "caution": "Review before sending",
+      "danger": "Do not send — high risk"
+    },
+    "category": {
+      "secret_exposure": "Secret Exposure",
+      "pii": "PII Detected",
+      "proprietary_logic": "Proprietary Logic",
+      "toxicity": "Prompt Injection"
+    },
+    "issuesFound": "{{count}} issue detected",
+    "issuesFound_other": "{{count}} issues detected",
+    "issues": "issues",
+    "diffView": "Original vs Sanitized",
+    "original": "Original",
+    "sanitized": "Sanitized",
+    "copySanitized": "Copy sanitized",
+    "copied": "Copied!",
+    "sanitizeComplete": "{{count}} change applied",
+    "sanitizeComplete_other": "{{count}} changes applied",
+    "moreChanges": "more changes",
+    "historyTitle": "Scan History",
+    "totalScans": "total scans",
+    "noHistory": "No scans yet. Analyze or sanitize some text to get started.",
+    "usageCounter": "{{used}} of {{limit}} free scans used today",
+    "limitReached": "Daily scan limit reached. Upgrade for unlimited scans.",
+    "upgradeCta": "Upgrade",
+    "error": "Something went wrong. Please try again."
   }
 }
