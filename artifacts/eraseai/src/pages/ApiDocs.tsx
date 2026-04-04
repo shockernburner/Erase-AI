@@ -693,11 +693,13 @@ if __name__ == "__main__":
   };
 
   const setupExamples: Record<Lang, string> = {
-    curl: `# Register a webhook (session-authenticated, via Developer Dashboard API)
+    curl: `# Register a webhook — response includes secret (shown once!)
+# Save the secret to verify X-Webhook-Signature on deliveries
 curl -X POST ${origin}/api/developer/webhooks \\
   -H "Content-Type: application/json" \\
   -b "session_cookie" \\
   -d '{"url": "https://your-server.com/webhook"}'
+# Response: {"webhook":{"id":"...","url":"...","secret":"abc123...","isActive":true}}
 
 # Update webhook URL
 curl -X PATCH ${origin}/api/developer/webhooks/WEBHOOK_ID \\
@@ -772,13 +774,15 @@ public class WebhookSetup {
 session = requests.Session()
 BASE = "${origin}/api/developer"
 
-# Register webhook
+# Register webhook — secret is shown once in the response!
 create_res = session.post(f"{BASE}/webhooks", json={
     "url": "https://your-server.com/webhook"
 })
 webhook = create_res.json()["webhook"]
 webhook_id = webhook["id"]
+webhook_secret = webhook["secret"]  # Save this securely!
 print(f"Created webhook: {webhook_id}")
+print(f"Secret (save now, shown once): {webhook_secret}")
 
 # Send test
 test_res = session.post(f"{BASE}/webhooks/{webhook_id}/test")

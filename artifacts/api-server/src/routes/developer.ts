@@ -257,6 +257,7 @@ router.post("/webhooks", async (req: Request, res: Response) => {
       webhook: {
         id: webhook.id,
         url: webhook.url,
+        secret: webhook.secret,
         isActive: webhook.isActive === 1,
         createdAt: webhook.createdAt.toISOString(),
       },
