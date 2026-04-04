@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { ShieldX } from 'lucide-react';
 import { easings } from '@/lib/video/animations';
 
-export function Scene6_Outro() {
+export function Scene7_Outro() {
   return (
     <motion.div 
       className="absolute inset-0 flex flex-col items-center justify-center z-20"

@@ -85,10 +85,11 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 **EraseAI "How It Works" Tier Demo Video:**
 
 *   A separate video artifact (`artifacts/eraseai-video`) accessible at `/eraseai-video/`.
-*   Built with React, Framer Motion, and Tailwind CSS as a ~65-second animated tier progression demo.
-*   6 scenes: Intro → Free ($0) → Pro ($49) → Business ($149) → Enterprise/Government (Custom, "We build new APIs for your needs") → Outro.
-*   Each tier scene has distinct color theming: Free=green, Pro=cyan, Business=orange/amber, Enterprise=gold.
+*   Built with React, Framer Motion, and Tailwind CSS as a ~77-second animated tier progression + Personal Mode demo.
+*   7 scenes: Intro → Free ($0) → Pro ($49) → Business ($149) → Enterprise/Government (Custom) → Personal Mode → Outro.
+*   Each tier scene has distinct color theming: Free=green, Pro=cyan, Business=orange/amber, Enterprise=gold, Personal Mode=emerald (#10B981).
+*   Personal Mode scene (Scene6) showcases: animated risk gauge (SVG arc), text scanning with highlight overlay, category badges (toxicity/PII/bias/hate speech), AI content rewriting (original→cleaned), mini trend chart, and alert indicators. Duration: 12.5s.
 *   Uses the scaffold's `useVideoPlayer` hook for scene advancement and automatic looping.
 *   EraseAI branding: cyan (#06B6D4), dark background (#0a0a0f/#050508), Plus Jakarta Sans + JetBrains Mono fonts.
 *   Auto-plays on load, loops continuously, no interactivity.
-*   Scene files: `artifacts/eraseai-video/src/components/scenes/Scene{1-6}_*.tsx`.
+*   Scene files: `artifacts/eraseai-video/src/components/scenes/Scene{1-7}_*.tsx`.

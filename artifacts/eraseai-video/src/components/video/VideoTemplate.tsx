@@ -5,7 +5,8 @@ import { Scene2_FreeTier } from '@/components/scenes/Scene2_FreeTier';
 import { Scene3_ProTier } from '@/components/scenes/Scene3_ProTier';
 import { Scene4_BusinessTier } from '@/components/scenes/Scene4_BusinessTier';
 import { Scene5_EnterpriseTier } from '@/components/scenes/Scene5_EnterpriseTier';
-import { Scene6_Outro } from '@/components/scenes/Scene6_Outro';
+import { Scene6_PersonalMode } from '@/components/scenes/Scene6_PersonalMode';
+import { Scene7_Outro } from '@/components/scenes/Scene7_Outro';
 
 const SCENE_DURATIONS = {
   intro: 7000,
@@ -13,6 +14,7 @@ const SCENE_DURATIONS = {
   pro: 12000,
   business: 12000,
   enterprise: 15000,
+  personal: 12500,
   outro: 9000,
 };
 
@@ -56,7 +58,7 @@ function Background({ currentScene }: { currentScene: number }) {
 
       <motion.div
         animate={{
-          x: currentScene === 0 ? '80vw' : currentScene === 5 ? '10vw' : '50vw',
+          x: currentScene === 0 ? '80vw' : currentScene === 6 ? '10vw' : '50vw',
           y: currentScene === 3 ? '80vh' : '20vh',
           scale: currentScene === 2 ? 2 : 1,
           opacity: currentScene === 4 ? 0.1 : 0.4
@@ -76,7 +78,7 @@ function Background({ currentScene }: { currentScene: number }) {
         animate={{
           x: currentScene <= 2 ? '-10vw' : '70vw',
           y: currentScene >= 4 ? '10vh' : '60vh',
-          scale: currentScene === 5 ? 1.5 : 0.8,
+          scale: currentScene === 6 ? 1.5 : 0.8,
           opacity: 0.2
         }}
         transition={{ duration: 5, ease: "easeInOut" }}
@@ -110,7 +112,8 @@ export default function VideoTemplate() {
             {currentScene === 2 && <Scene3_ProTier key="pro" />}
             {currentScene === 3 && <Scene4_BusinessTier key="business" />}
             {currentScene === 4 && <Scene5_EnterpriseTier key="enterprise" />}
-            {currentScene === 5 && <Scene6_Outro key="outro" />}
+            {currentScene === 5 && <Scene6_PersonalMode key="personal" />}
+            {currentScene === 6 && <Scene7_Outro key="outro" />}
           </AnimatePresence>
 
           <Timeline scene={currentScene} totalScenes={totalScenes} />
