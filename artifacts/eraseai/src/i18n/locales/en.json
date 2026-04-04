@@ -798,5 +798,15 @@
       "linkedin": "LinkedIn",
       "tiktok": "TikTok"
     }
+  },
+  "homepage": {
+    "whatWeDo": "What We Do",
+    "card1Title": "Personal Mode",
+    "card1Desc": "Scan your social posts, emails, and bios for AI-training risks. Rewrite flagged content in one click — $10/mo for unlimited analyses.",
+    "card2Title": "Enterprise API",
+    "card2Desc": "Upload datasets, detect PII & bias, erase toxic data, and retrain cleaner models — all via REST API with webhook notifications.",
+    "card3Title": "Developer Mode",
+    "card3Desc": "Measure your AI model's exposure to specific individuals, topics, or copyrighted content — and selectively unlearn it.",
+    "comingSoon": "COMING SOON"
   }
 }

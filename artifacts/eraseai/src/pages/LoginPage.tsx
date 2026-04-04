@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Mail, Lock, User, Loader2, Eye, EyeOff, Zap, Database, BrainCircuit, Sparkles } from "lucide-react";
+import { ShieldX, Mail, Lock, User, Loader2, Eye, EyeOff, Zap, Database, BrainCircuit, Sparkles, Shield, Code2, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -63,8 +63,35 @@ export default function LoginPage() {
     window.location.href = "/api/auth/apple";
   };
 
+  const cards = [
+    {
+      icon: <Shield className="w-7 h-7" />,
+      title: t("homepage.card1Title"),
+      desc: t("homepage.card1Desc"),
+      border: "border-cyan-500/30",
+      iconBg: "bg-cyan-500/20 text-cyan-400",
+      badge: null,
+    },
+    {
+      icon: <Code2 className="w-7 h-7" />,
+      title: t("homepage.card2Title"),
+      desc: t("homepage.card2Desc"),
+      border: "border-violet-500/30",
+      iconBg: "bg-violet-500/20 text-violet-400",
+      badge: null,
+    },
+    {
+      icon: <Globe className="w-7 h-7" />,
+      title: t("homepage.card3Title"),
+      desc: t("homepage.card3Desc"),
+      border: "border-amber-500/30",
+      iconBg: "bg-amber-500/20 text-amber-400",
+      badge: t("homepage.comingSoon"),
+    },
+  ];
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col items-center relative overflow-y-auto">
       <div
         className="fixed inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none"
         style={{
@@ -79,6 +106,7 @@ export default function LoginPage() {
         <LanguageSelector />
       </div>
 
+      <div className="flex items-center justify-center w-full py-16 md:py-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -282,6 +310,41 @@ export default function LoginPage() {
           {t("app.copyright")}
         </p>
       </motion.div>
+      </div>
+
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        className="relative z-10 w-full max-w-4xl mx-auto px-4 pb-16 pt-4"
+      >
+        <h2 className="text-center text-lg font-semibold text-muted-foreground/70 uppercase tracking-widest mb-8 font-mono">
+          {t("homepage.whatWeDo")}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {cards.map((card, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 + i * 0.15 }}
+              className={`relative backdrop-blur-xl border ${card.border} rounded-2xl p-6 hover:scale-[1.03] transition-transform`}
+              style={{ backgroundColor: "rgba(15, 23, 42, 0.85)" }}
+            >
+              {card.badge && (
+                <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                  {card.badge}
+                </span>
+              )}
+              <div className={`inline-flex p-2.5 rounded-xl ${card.iconBg} mb-4`}>
+                {card.icon}
+              </div>
+              <h3 className="text-base font-bold text-foreground mb-2">{card.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{card.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
     </div>
   );
 }

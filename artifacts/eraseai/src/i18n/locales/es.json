@@ -798,5 +798,15 @@
       "linkedin": "LinkedIn",
       "tiktok": "TikTok"
     }
+  },
+  "homepage": {
+    "whatWeDo": "Lo que hacemos",
+    "card1Title": "Modo Personal",
+    "card1Desc": "Escanea tus publicaciones, correos y biografías en busca de riesgos de entrenamiento IA. Reescribe el contenido señalado con un clic — $10/mes para análisis ilimitados.",
+    "card2Title": "API Empresarial",
+    "card2Desc": "Sube datasets, detecta PII y sesgos, elimina datos tóxicos y reentrena modelos más limpios — todo a través de API REST con notificaciones webhook.",
+    "card3Title": "Modo Desarrollador",
+    "card3Desc": "Mide la exposición de tu modelo IA a individuos, temas o contenido con derechos de autor específicos — y desapréndelos selectivamente.",
+    "comingSoon": "PRÓXIMAMENTE"
   }
 }

@@ -798,5 +798,15 @@
       "linkedin": "LinkedIn",
       "tiktok": "TikTok"
     }
+  },
+  "homepage": {
+    "whatWeDo": "Was wir tun",
+    "card1Title": "Persönlicher Modus",
+    "card1Desc": "Scannen Sie Ihre Social-Media-Posts, E-Mails und Bios auf KI-Trainingsrisiken. Markierte Inhalte mit einem Klick umschreiben — 10 $/Monat für unbegrenzte Analysen.",
+    "card2Title": "Enterprise-API",
+    "card2Desc": "Laden Sie Datensätze hoch, erkennen Sie PII und Bias, löschen Sie toxische Daten und trainieren Sie sauberere Modelle — alles über REST-API mit Webhook-Benachrichtigungen.",
+    "card3Title": "Entwicklermodus",
+    "card3Desc": "Messen Sie die Exposition Ihres KI-Modells gegenüber bestimmten Personen, Themen oder urheberrechtlich geschützten Inhalten — und verlernen Sie diese gezielt.",
+    "comingSoon": "DEMNÄCHST VERFÜGBAR"
   }
 }

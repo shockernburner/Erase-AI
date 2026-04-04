@@ -798,5 +798,15 @@
       "linkedin": "LinkedIn",
       "tiktok": "TikTok"
     }
+  },
+  "homepage": {
+    "whatWeDo": "Ce que nous faisons",
+    "card1Title": "Mode Personnel",
+    "card1Desc": "Analysez vos publications, e-mails et bios pour détecter les risques d'entraînement IA. Réécrivez le contenu signalé en un clic — 10 $/mois pour des analyses illimitées.",
+    "card2Title": "API Entreprise",
+    "card2Desc": "Téléchargez des datasets, détectez les PII et biais, effacez les données toxiques et réentraînez des modèles plus propres — le tout via API REST avec notifications webhook.",
+    "card3Title": "Mode Développeur",
+    "card3Desc": "Mesurez l'exposition de votre modèle IA à des individus, sujets ou contenus protégés spécifiques — et désapprenez-les sélectivement.",
+    "comingSoon": "BIENTÔT DISPONIBLE"
   }
 }

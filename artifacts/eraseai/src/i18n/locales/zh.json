@@ -798,5 +798,15 @@
       "linkedin": "LinkedIn",
       "tiktok": "TikTok"
     }
+  },
+  "homepage": {
+    "whatWeDo": "我们的服务",
+    "card1Title": "个人模式",
+    "card1Desc": "扫描您的社交媒体帖子、电子邮件和简介，检测AI训练风险。一键改写标记内容 — 每月10美元，无限次分析。",
+    "card2Title": "企业API",
+    "card2Desc": "上传数据集，检测PII和偏见，擦除有害数据，重新训练更干净的模型 — 全部通过REST API实现，支持Webhook通知。",
+    "card3Title": "开发者模式",
+    "card3Desc": "衡量您的AI模型对特定个人、主题或受版权保护内容的暴露程度 — 并选择性地遗忘它们。",
+    "comingSoon": "即将推出"
   }
 }
