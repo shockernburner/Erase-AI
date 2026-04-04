@@ -828,6 +828,12 @@
       "caution": "Revisar antes de enviar",
       "danger": "No enviar — alto riesgo"
     },
+    "severity": {
+      "critical": "CRÍTICO",
+      "high": "ALTO",
+      "medium": "MEDIO",
+      "low": "BAJO"
+    },
     "category": {
       "secret_exposure": "Exposición de Secretos",
       "pii": "PII Detectada",

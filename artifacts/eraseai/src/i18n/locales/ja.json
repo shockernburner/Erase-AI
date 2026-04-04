@@ -828,6 +828,12 @@
       "caution": "送信前に確認",
       "danger": "送信不可 — 高リスク"
     },
+    "severity": {
+      "critical": "重大",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
     "category": {
       "secret_exposure": "シークレット漏洩",
       "pii": "PII検出",

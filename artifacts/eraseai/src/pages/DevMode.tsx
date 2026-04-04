@@ -116,10 +116,10 @@ function IssueBadge({ issue }: { issue: SafetyIssue }) {
   };
 
   const severityLabel: Record<string, string> = {
-    critical: "CRITICAL",
-    high: "HIGH",
-    medium: "MEDIUM",
-    low: "LOW",
+    critical: t("devMode.severity.critical"),
+    high: t("devMode.severity.high"),
+    medium: t("devMode.severity.medium"),
+    low: t("devMode.severity.low"),
   };
 
   return (

@@ -828,6 +828,12 @@
       "caution": "发送前请检查",
       "danger": "请勿发送 — 高风险"
     },
+    "severity": {
+      "critical": "严重",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
     "category": {
       "secret_exposure": "密钥泄露",
       "pii": "检测到PII",
