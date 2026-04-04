@@ -17,7 +17,8 @@
     "personalMode": "Modo Personal",
     "socialPosts": "Publicaciones Sociales",
     "apiDocs": "Documentación API",
-    "devMode": "Modo Desarrollador"
+    "devMode": "Modo Desarrollador",
+    "certifications": "Confianza y Cumplimiento"
   },
   "pipeline": {
     "label": "Control de datos IA",
@@ -862,5 +863,84 @@
     "prevPage": "Anterior",
     "nextPage": "Siguiente",
     "pageOf": "Página {{page}} de {{total}}"
+  },
+  "certifications": {
+    "title": "Confianza y Cumplimiento",
+    "subtitle": "Certificaciones auditadas independientemente en ciberseguridad, gobernanza de IA y privacidad de datos",
+    "backToDashboard": "Volver al panel",
+    "verify": "Verificar",
+    "disclaimer": "Todas las certificaciones listadas se mantienen mediante auditorías independientes de terceros. Los clientes pueden verificar el estado de las certificaciones directamente a través de los enlaces de las autoridades emisoras proporcionados anteriormente.",
+    "trustStrip": {
+      "label": "Certificado y conforme",
+      "viewAll": "Ver todas las certificaciones →"
+    },
+    "categories": {
+      "cybersecurity": "Ciberseguridad",
+      "aiSecurity": "Seguridad IA y Gobernanza IA",
+      "isoSecurity": "Seguridad de la información ISO/IEC",
+      "dataPrivacy": "Privacidad de datos (RGPD y más allá)"
+    },
+    "certs": {
+      "soc2": {
+        "name": "SOC 2 Type II",
+        "issuer": "AICPA (American Institute of CPAs)",
+        "desc": "Auditoría integral que cubre seguridad, disponibilidad, integridad del procesamiento, confidencialidad y controles de privacidad para plataformas SaaS."
+      },
+      "csaStar": {
+        "name": "Certificación CSA STAR",
+        "issuer": "Cloud Security Alliance",
+        "desc": "Evaluación independiente de la postura de seguridad en la nube basada en el marco Cloud Controls Matrix (CCM)."
+      },
+      "iso42001": {
+        "name": "ISO/IEC 42001:2023",
+        "issuer": "Organización Internacional de Normalización",
+        "desc": "Estándar de sistema de gestión de IA que establece requisitos para el desarrollo, despliegue y gobernanza responsable de la IA."
+      },
+      "iso23894": {
+        "name": "ISO/IEC 23894:2023",
+        "issuer": "Organización Internacional de Normalización",
+        "desc": "Guía de gestión de riesgos de IA para organizaciones que desarrollan, despliegan o utilizan sistemas de IA."
+      },
+      "nistAiRmf": {
+        "name": "NIST AI Risk Management Framework",
+        "issuer": "National Institute of Standards and Technology",
+        "desc": "Marco estadounidense para IA confiable que cubre gobernanza, mapeo de riesgos, medición y gestión de sistemas de IA."
+      },
+      "iso27001": {
+        "name": "ISO/IEC 27001:2022",
+        "issuer": "Organización Internacional de Normalización",
+        "desc": "Estándar de Sistema de Gestión de Seguridad de la Información (SGSI) — la certificación fundamental para controles de seguridad de la información."
+      },
+      "iso27701": {
+        "name": "ISO/IEC 27701:2019",
+        "issuer": "Organización Internacional de Normalización",
+        "desc": "Extensión de gestión de información de privacidad de ISO 27001, proporcionando controles de privacidad alineados con el RGPD."
+      },
+      "iso27017": {
+        "name": "ISO/IEC 27017:2015",
+        "issuer": "Organización Internacional de Normalización",
+        "desc": "Controles de seguridad específicos para la nube que proporcionan orientación para proveedores y clientes de servicios en la nube."
+      },
+      "iso27018": {
+        "name": "ISO/IEC 27018:2019",
+        "issuer": "Organización Internacional de Normalización",
+        "desc": "Protección de información de identificación personal (PII) en entornos de nube pública."
+      },
+      "gdpr": {
+        "name": "Cumplimiento RGPD",
+        "issuer": "Comité Europeo de Protección de Datos (CEPD)",
+        "desc": "Cumplimiento total del Reglamento General de Protección de Datos de la UE que cubre derechos de los interesados, procesamiento lícito y transferencias transfronterizas."
+      },
+      "ePrivacy": {
+        "name": "Sello ePrivacy",
+        "issuer": "ePrivacy GmbH (organismo certificado de la UE)",
+        "desc": "Certificación de privacidad específica de la UE que valida el cumplimiento de la Directiva ePrivacy."
+      },
+      "ccpa": {
+        "name": "Cumplimiento CCPA",
+        "issuer": "Oficina del Fiscal General de California",
+        "desc": "Cumplimiento de la Ley de Privacidad del Consumidor de California que cubre derechos del consumidor, mecanismos de exclusión y restricciones de venta de datos."
+      }
+    }
   }
 }

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone, Book, Code2 } from "lucide-react";
+import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone, Book, Code2, Award, ExternalLink } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications";
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
@@ -170,6 +170,13 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               {t("nav.apiDocs")}
             </button>
             <button
+              onClick={() => { setOpen(false); onNavigate("certifications"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-400 transition-all"
+            >
+              <Award className="w-4 h-4" />
+              {t("nav.certifications")}
+            </button>
+            <button
               onClick={() => { setOpen(false); onNavigate("pricing"); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
             >
@@ -310,10 +317,42 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
         </motion.div>
       </div>
 
-      <footer className="relative z-10 border-t border-border/30 mt-16 py-6 text-center">
-        <p className="text-xs font-mono text-muted-foreground/60">
-          {t("app.copyright")}
-        </p>
+      <footer className="relative z-10 border-t border-border/30 mt-16 py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+              {t("certifications.trustStrip.label")}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {[
+                { key: "SOC 2", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
+                { key: "ISO 27001", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
+                { key: "ISO 42001", color: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
+                { key: "GDPR", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+                { key: "NIST AI", color: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
+                { key: "CCPA", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+              ].map((badge) => (
+                <span
+                  key={badge.key}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono font-semibold tracking-wide ${badge.color}`}
+                >
+                  <Shield className="w-3 h-3" />
+                  {badge.key}
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={() => onNavigate("certifications")}
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              {t("certifications.trustStrip.viewAll")}
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+          <p className="text-xs font-mono text-muted-foreground/60 text-center">
+            {t("app.copyright")}
+          </p>
+        </div>
       </footer>
 
       <AnimatePresence>

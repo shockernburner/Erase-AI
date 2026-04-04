@@ -17,7 +17,8 @@
     "personalMode": "パーソナルモード",
     "socialPosts": "ソーシャル投稿",
     "apiDocs": "APIドキュメント",
-    "devMode": "開発者モード"
+    "devMode": "開発者モード",
+    "certifications": "信頼とコンプライアンス"
   },
   "pipeline": {
     "label": "AIデータ制御",
@@ -35,10 +36,10 @@
   },
   "plan": {
     "free": "無料",
+    "personal": "パーソナル",
     "pro": "PRO",
     "business": "ビジネス",
-    "enterprise": "エンタープライズ",
-    "personal": "パーソナル"
+    "enterprise": "エンタープライズ"
   },
   "login": {
     "subtitle": "AIが学ぶべきでないことを忘れさせる",
@@ -862,5 +863,84 @@
     "prevPage": "前へ",
     "nextPage": "次へ",
     "pageOf": "{{page}} / {{total}} ページ"
+  },
+  "certifications": {
+    "title": "信頼とコンプライアンス",
+    "subtitle": "サイバーセキュリティ、AIガバナンス、データプライバシーにおける独立監査済み認証",
+    "backToDashboard": "ダッシュボードに戻る",
+    "verify": "検証",
+    "disclaimer": "記載されているすべての認証は、独立した第三者監査を通じて維持されています。クライアントは上記の発行機関リンクを通じて直接認証状況を確認できます。",
+    "trustStrip": {
+      "label": "認証済み・準拠",
+      "viewAll": "すべての認証を表示 →"
+    },
+    "categories": {
+      "cybersecurity": "サイバーセキュリティ",
+      "aiSecurity": "AIセキュリティ＆AIガバナンス",
+      "isoSecurity": "ISO/IEC情報セキュリティ",
+      "dataPrivacy": "データプライバシー（GDPR以降）"
+    },
+    "certs": {
+      "soc2": {
+        "name": "SOC 2 Type II",
+        "issuer": "AICPA（米国公認会計士協会）",
+        "desc": "SaaSプラットフォームのセキュリティ、可用性、処理の完全性、機密性、プライバシー管理を網羅する包括的な監査。"
+      },
+      "csaStar": {
+        "name": "CSA STAR認証",
+        "issuer": "Cloud Security Alliance",
+        "desc": "Cloud Controls Matrix（CCM）フレームワークに基づくクラウドセキュリティ態勢の独立評価。"
+      },
+      "iso42001": {
+        "name": "ISO/IEC 42001:2023",
+        "issuer": "国際標準化機構",
+        "desc": "責任あるAI開発、展開、ガバナンスの要件を確立するAIマネジメントシステム規格。"
+      },
+      "iso23894": {
+        "name": "ISO/IEC 23894:2023",
+        "issuer": "国際標準化機構",
+        "desc": "AIシステムを開発、展開、使用する組織向けのAIリスクマネジメントガイダンス。"
+      },
+      "nistAiRmf": {
+        "name": "NIST AIリスクマネジメントフレームワーク",
+        "issuer": "米国国立標準技術研究所",
+        "desc": "AIシステムのガバナンス、リスクマッピング、測定、管理を網羅する信頼できるAIのための米国フレームワーク。"
+      },
+      "iso27001": {
+        "name": "ISO/IEC 27001:2022",
+        "issuer": "国際標準化機構",
+        "desc": "情報セキュリティマネジメントシステム（ISMS）規格 — 情報セキュリティ管理の基本認証。"
+      },
+      "iso27701": {
+        "name": "ISO/IEC 27701:2019",
+        "issuer": "国際標準化機構",
+        "desc": "ISO 27001のプライバシー情報管理拡張、GDPR準拠のプライバシー管理とデータ保護ガバナンスを提供。"
+      },
+      "iso27017": {
+        "name": "ISO/IEC 27017:2015",
+        "issuer": "国際標準化機構",
+        "desc": "クラウドサービスプロバイダーとクラウドサービス顧客の両方にガイダンスを提供するクラウド固有のセキュリティ管理。"
+      },
+      "iso27018": {
+        "name": "ISO/IEC 27018:2019",
+        "issuer": "国際標準化機構",
+        "desc": "パブリッククラウド環境における個人識別情報（PII）の保護。"
+      },
+      "gdpr": {
+        "name": "GDPR準拠",
+        "issuer": "欧州データ保護委員会（EDPB）",
+        "desc": "データ主体の権利、合法的処理、国境を越えた移転を網羅するEU一般データ保護規則への完全準拠。"
+      },
+      "ePrivacy": {
+        "name": "ePrivacyシール",
+        "issuer": "ePrivacy GmbH（EU認定機関）",
+        "desc": "ePrivacy指令への準拠を検証するEU固有のプライバシー認証。"
+      },
+      "ccpa": {
+        "name": "CCPA準拠",
+        "issuer": "カリフォルニア州司法長官事務所",
+        "desc": "消費者データ権利、オプトアウトメカニズム、データ販売制限を網羅するカリフォルニア消費者プライバシー法への準拠。"
+      }
+    }
   }
 }

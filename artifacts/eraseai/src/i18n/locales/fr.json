@@ -17,7 +17,8 @@
     "personalMode": "Mode Personnel",
     "socialPosts": "Publications Sociales",
     "apiDocs": "Documentation API",
-    "devMode": "Mode Développeur"
+    "devMode": "Mode Développeur",
+    "certifications": "Confiance & Conformité"
   },
   "pipeline": {
     "label": "Contrôle des données IA",
@@ -35,10 +36,10 @@
   },
   "plan": {
     "free": "GRATUIT",
+    "personal": "PERSONNEL",
     "pro": "PRO",
     "business": "BUSINESS",
-    "enterprise": "ENTREPRISE",
-    "personal": "PERSONNEL"
+    "enterprise": "ENTREPRISE"
   },
   "login": {
     "subtitle": "Faites oublier à l'IA ce qu'elle ne devrait jamais apprendre",
@@ -862,5 +863,84 @@
     "prevPage": "Précédent",
     "nextPage": "Suivant",
     "pageOf": "Page {{page}} sur {{total}}"
+  },
+  "certifications": {
+    "title": "Confiance & Conformité",
+    "subtitle": "Certifications auditées de manière indépendante en cybersécurité, gouvernance IA et protection des données",
+    "backToDashboard": "Retour au tableau de bord",
+    "verify": "Vérifier",
+    "disclaimer": "Toutes les certifications listées sont maintenues par des audits tiers indépendants. Les clients peuvent vérifier le statut des certifications directement via les liens des organismes émetteurs ci-dessus.",
+    "trustStrip": {
+      "label": "Certifié et conforme",
+      "viewAll": "Voir toutes les certifications →"
+    },
+    "categories": {
+      "cybersecurity": "Cybersécurité",
+      "aiSecurity": "Sécurité IA & Gouvernance IA",
+      "isoSecurity": "Sécurité de l'information ISO/IEC",
+      "dataPrivacy": "Protection des données (RGPD et au-delà)"
+    },
+    "certs": {
+      "soc2": {
+        "name": "SOC 2 Type II",
+        "issuer": "AICPA (American Institute of CPAs)",
+        "desc": "Audit complet couvrant la sécurité, la disponibilité, l'intégrité du traitement, la confidentialité et les contrôles de vie privée pour les plateformes SaaS."
+      },
+      "csaStar": {
+        "name": "Certification CSA STAR",
+        "issuer": "Cloud Security Alliance",
+        "desc": "Évaluation indépendante de la posture de sécurité cloud basée sur le framework Cloud Controls Matrix (CCM)."
+      },
+      "iso42001": {
+        "name": "ISO/IEC 42001:2023",
+        "issuer": "Organisation internationale de normalisation",
+        "desc": "Norme de système de gestion de l'IA établissant les exigences pour le développement, le déploiement et la gouvernance responsables de l'IA."
+      },
+      "iso23894": {
+        "name": "ISO/IEC 23894:2023",
+        "issuer": "Organisation internationale de normalisation",
+        "desc": "Guide de gestion des risques IA pour les organisations développant, déployant ou utilisant des systèmes d'IA."
+      },
+      "nistAiRmf": {
+        "name": "NIST AI Risk Management Framework",
+        "issuer": "National Institute of Standards and Technology",
+        "desc": "Cadre américain pour une IA fiable couvrant la gouvernance, la cartographie des risques, la mesure et la gestion des systèmes d'IA."
+      },
+      "iso27001": {
+        "name": "ISO/IEC 27001:2022",
+        "issuer": "Organisation internationale de normalisation",
+        "desc": "Norme de système de management de la sécurité de l'information (SMSI) — la certification fondamentale pour les contrôles de sécurité de l'information."
+      },
+      "iso27701": {
+        "name": "ISO/IEC 27701:2019",
+        "issuer": "Organisation internationale de normalisation",
+        "desc": "Extension de gestion des informations de confidentialité de l'ISO 27001, fournissant des contrôles de confidentialité alignés sur le RGPD."
+      },
+      "iso27017": {
+        "name": "ISO/IEC 27017:2015",
+        "issuer": "Organisation internationale de normalisation",
+        "desc": "Contrôles de sécurité spécifiques au cloud fournissant des orientations pour les fournisseurs et les clients de services cloud."
+      },
+      "iso27018": {
+        "name": "ISO/IEC 27018:2019",
+        "issuer": "Organisation internationale de normalisation",
+        "desc": "Protection des informations personnelles identifiables (PII) dans les environnements de cloud public."
+      },
+      "gdpr": {
+        "name": "Conformité RGPD",
+        "issuer": "Comité européen de la protection des données (CEPD)",
+        "desc": "Conformité totale au Règlement général sur la protection des données couvrant les droits des personnes concernées, le traitement licite et les transferts transfrontaliers."
+      },
+      "ePrivacy": {
+        "name": "Sceau ePrivacy",
+        "issuer": "ePrivacy GmbH (organisme certifié UE)",
+        "desc": "Certification de confidentialité spécifique à l'UE validant la conformité à la directive ePrivacy."
+      },
+      "ccpa": {
+        "name": "Conformité CCPA",
+        "issuer": "Bureau du procureur général de Californie",
+        "desc": "Conformité au California Consumer Privacy Act couvrant les droits des consommateurs, les mécanismes de refus et les restrictions de vente de données."
+      }
+    }
   }
 }

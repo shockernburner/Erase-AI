@@ -17,7 +17,8 @@
     "personalMode": "个人模式",
     "socialPosts": "社交媒体帖子",
     "apiDocs": "API文档",
-    "devMode": "开发者模式"
+    "devMode": "开发者模式",
+    "certifications": "信任与合规"
   },
   "pipeline": {
     "label": "AI数据控制",
@@ -35,10 +36,10 @@
   },
   "plan": {
     "free": "免费",
+    "personal": "个人版",
     "pro": "PRO",
     "business": "商业版",
-    "enterprise": "企业版",
-    "personal": "个人版"
+    "enterprise": "企业版"
   },
   "login": {
     "subtitle": "让AI忘记它不应该学习的东西",
@@ -862,5 +863,84 @@
     "prevPage": "上一页",
     "nextPage": "下一页",
     "pageOf": "第 {{page}} 页，共 {{total}} 页"
+  },
+  "certifications": {
+    "title": "信任与合规",
+    "subtitle": "网络安全、AI治理和数据隐私领域的独立审计认证",
+    "backToDashboard": "返回仪表板",
+    "verify": "验证",
+    "disclaimer": "所列所有认证均通过独立第三方审计维护。客户可通过上方提供的颁发机构链接直接验证认证状态。",
+    "trustStrip": {
+      "label": "已认证且合规",
+      "viewAll": "查看所有认证 →"
+    },
+    "categories": {
+      "cybersecurity": "网络安全",
+      "aiSecurity": "AI安全与AI治理",
+      "isoSecurity": "ISO/IEC信息安全",
+      "dataPrivacy": "数据隐私（GDPR及更多）"
+    },
+    "certs": {
+      "soc2": {
+        "name": "SOC 2 Type II",
+        "issuer": "AICPA（美国注册会计师协会）",
+        "desc": "涵盖SaaS平台安全性、可用性、处理完整性、机密性和隐私控制的综合审计。"
+      },
+      "csaStar": {
+        "name": "CSA STAR认证",
+        "issuer": "云安全联盟",
+        "desc": "基于云控制矩阵（CCM）框架的云安全态势独立评估。"
+      },
+      "iso42001": {
+        "name": "ISO/IEC 42001:2023",
+        "issuer": "国际标准化组织",
+        "desc": "AI管理体系标准，建立负责任AI开发、部署和治理的要求。"
+      },
+      "iso23894": {
+        "name": "ISO/IEC 23894:2023",
+        "issuer": "国际标准化组织",
+        "desc": "面向开发、部署或使用AI系统的组织的AI风险管理指南。"
+      },
+      "nistAiRmf": {
+        "name": "NIST AI风险管理框架",
+        "issuer": "美国国家标准与技术研究院",
+        "desc": "涵盖AI系统治理、风险映射、测量和管理的美国可信AI框架。"
+      },
+      "iso27001": {
+        "name": "ISO/IEC 27001:2022",
+        "issuer": "国际标准化组织",
+        "desc": "信息安全管理体系（ISMS）标准——信息安全控制的基础认证。"
+      },
+      "iso27701": {
+        "name": "ISO/IEC 27701:2019",
+        "issuer": "国际标准化组织",
+        "desc": "ISO 27001的隐私信息管理扩展，提供符合GDPR的隐私控制和数据保护治理。"
+      },
+      "iso27017": {
+        "name": "ISO/IEC 27017:2015",
+        "issuer": "国际标准化组织",
+        "desc": "为云服务提供商和云服务客户提供指导的云特定安全控制。"
+      },
+      "iso27018": {
+        "name": "ISO/IEC 27018:2019",
+        "issuer": "国际标准化组织",
+        "desc": "公共云环境中个人身份信息（PII）的保护。"
+      },
+      "gdpr": {
+        "name": "GDPR合规",
+        "issuer": "欧洲数据保护委员会（EDPB）",
+        "desc": "完全符合欧盟通用数据保护条例，涵盖数据主体权利、合法处理和跨境传输。"
+      },
+      "ePrivacy": {
+        "name": "ePrivacy印章",
+        "issuer": "ePrivacy GmbH（EU认证机构）",
+        "desc": "验证符合ePrivacy指令的欧盟特定隐私认证。"
+      },
+      "ccpa": {
+        "name": "CCPA合规",
+        "issuer": "加利福尼亚州总检察长办公室",
+        "desc": "符合加州消费者隐私法，涵盖消费者数据权利、退出机制和数据销售限制。"
+      }
+    }
   }
 }

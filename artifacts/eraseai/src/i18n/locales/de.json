@@ -17,7 +17,8 @@
     "personalMode": "Persönlicher Modus",
     "socialPosts": "Social-Media-Beiträge",
     "apiDocs": "API-Dokumentation",
-    "devMode": "Entwicklermodus"
+    "devMode": "Entwicklermodus",
+    "certifications": "Vertrauen & Compliance"
   },
   "pipeline": {
     "label": "KI-Datenkontrolle",
@@ -35,10 +36,10 @@
   },
   "plan": {
     "free": "KOSTENLOS",
+    "personal": "PERSÖNLICH",
     "pro": "PRO",
     "business": "BUSINESS",
-    "enterprise": "ENTERPRISE",
-    "personal": "PERSÖNLICH"
+    "enterprise": "ENTERPRISE"
   },
   "login": {
     "subtitle": "Lassen Sie KI vergessen, was sie nie lernen sollte",
@@ -862,5 +863,84 @@
     "prevPage": "Zurück",
     "nextPage": "Weiter",
     "pageOf": "Seite {{page}} von {{total}}"
+  },
+  "certifications": {
+    "title": "Vertrauen & Compliance",
+    "subtitle": "Unabhängig geprüfte Zertifizierungen in Cybersicherheit, KI-Governance und Datenschutz",
+    "backToDashboard": "Zurück zum Dashboard",
+    "verify": "Verifizieren",
+    "disclaimer": "Alle aufgeführten Zertifizierungen werden durch unabhängige Drittprüfungen aufrechterhalten. Kunden können den Zertifizierungsstatus direkt über die oben angegebenen Links der Zertifizierungsstellen überprüfen.",
+    "trustStrip": {
+      "label": "Zertifiziert & konform",
+      "viewAll": "Alle Zertifizierungen anzeigen →"
+    },
+    "categories": {
+      "cybersecurity": "Cybersicherheit",
+      "aiSecurity": "KI-Sicherheit & KI-Governance",
+      "isoSecurity": "ISO/IEC Informationssicherheit",
+      "dataPrivacy": "Datenschutz (DSGVO & darüber hinaus)"
+    },
+    "certs": {
+      "soc2": {
+        "name": "SOC 2 Type II",
+        "issuer": "AICPA (American Institute of CPAs)",
+        "desc": "Umfassende Prüfung von Sicherheit, Verfügbarkeit, Verarbeitungsintegrität, Vertraulichkeit und Datenschutzkontrollen für SaaS-Plattformen."
+      },
+      "csaStar": {
+        "name": "CSA STAR Zertifizierung",
+        "issuer": "Cloud Security Alliance",
+        "desc": "Unabhängige Bewertung der Cloud-Sicherheitslage basierend auf dem Cloud Controls Matrix (CCM) Framework."
+      },
+      "iso42001": {
+        "name": "ISO/IEC 42001:2023",
+        "issuer": "Internationale Organisation für Normung",
+        "desc": "KI-Managementsystem-Standard mit Anforderungen für verantwortungsvolle KI-Entwicklung, -Bereitstellung und -Governance."
+      },
+      "iso23894": {
+        "name": "ISO/IEC 23894:2023",
+        "issuer": "Internationale Organisation für Normung",
+        "desc": "KI-Risikomanagement-Leitfaden für Organisationen, die KI-Systeme entwickeln, bereitstellen oder nutzen."
+      },
+      "nistAiRmf": {
+        "name": "NIST AI Risk Management Framework",
+        "issuer": "National Institute of Standards and Technology",
+        "desc": "US-Framework für vertrauenswürdige KI, das Governance, Risikokartierung, Messung und Management von KI-Systemen abdeckt."
+      },
+      "iso27001": {
+        "name": "ISO/IEC 27001:2022",
+        "issuer": "Internationale Organisation für Normung",
+        "desc": "Informationssicherheits-Managementsystem (ISMS) — die grundlegende Zertifizierung für Informationssicherheitskontrollen."
+      },
+      "iso27701": {
+        "name": "ISO/IEC 27701:2019",
+        "issuer": "Internationale Organisation für Normung",
+        "desc": "Datenschutz-Informationsmanagement-Erweiterung zu ISO 27001 mit DSGVO-konformen Datenschutzkontrollen."
+      },
+      "iso27017": {
+        "name": "ISO/IEC 27017:2015",
+        "issuer": "Internationale Organisation für Normung",
+        "desc": "Cloud-spezifische Sicherheitskontrollen mit Leitlinien für Cloud-Service-Anbieter und -Kunden."
+      },
+      "iso27018": {
+        "name": "ISO/IEC 27018:2019",
+        "issuer": "Internationale Organisation für Normung",
+        "desc": "Schutz personenbezogener Daten (PII) in öffentlichen Cloud-Umgebungen."
+      },
+      "gdpr": {
+        "name": "DSGVO-Konformität",
+        "issuer": "Europäischer Datenschutzausschuss (EDSA)",
+        "desc": "Vollständige Konformität mit der EU-Datenschutz-Grundverordnung einschließlich Betroffenenrechte, rechtmäßiger Verarbeitung und grenzüberschreitender Übermittlung."
+      },
+      "ePrivacy": {
+        "name": "ePrivacy-Siegel",
+        "issuer": "ePrivacy GmbH (EU-zertifizierte Stelle)",
+        "desc": "EU-spezifische Datenschutzzertifizierung zur Validierung der Konformität mit der ePrivacy-Richtlinie."
+      },
+      "ccpa": {
+        "name": "CCPA-Konformität",
+        "issuer": "Büro des Generalstaatsanwalts von Kalifornien",
+        "desc": "Konformität mit dem California Consumer Privacy Act einschließlich Verbraucherrechte, Opt-out-Mechanismen und Datenweitergabebeschränkungen."
+      }
+    }
   }
 }
