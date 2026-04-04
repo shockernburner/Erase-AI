@@ -13,6 +13,7 @@ import DeveloperDashboard from "@/pages/DeveloperDashboard";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import PersonalMode from "@/pages/PersonalMode";
 import SocialPosts from "@/pages/SocialPosts";
+import ApiDocs from "@/pages/ApiDocs";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -24,7 +25,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs";
 
 function AuthGate() {
   const { t } = useTranslation();
@@ -92,6 +93,10 @@ function AuthGate() {
 
   if (view === "social") {
     return <SocialPosts onBack={() => setView("home")} />;
+  }
+
+  if (view === "docs") {
+    return <ApiDocs onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
   }
 
   return <Home onNavigate={setView} />;

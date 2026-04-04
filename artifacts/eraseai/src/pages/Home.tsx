@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone } from "lucide-react";
+import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone, Book } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs";
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
@@ -144,6 +144,13 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
             >
               <Megaphone className="w-4 h-4" />
               {t("nav.socialPosts")}
+            </button>
+            <button
+              onClick={() => { setOpen(false); onNavigate("docs"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+            >
+              <Book className="w-4 h-4" />
+              {t("nav.apiDocs")}
             </button>
             <button
               onClick={() => { setOpen(false); onNavigate("pricing"); }}
