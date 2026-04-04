@@ -14,7 +14,8 @@
     "logOut": "Log out",
     "developer": "Developer",
     "analytics": "Analytics",
-    "personalMode": "Personal Mode"
+    "personalMode": "Personal Mode",
+    "socialPosts": "Social Posts"
   },
   "home": {
     "userInitial": "U",
@@ -641,5 +642,57 @@
     "ja": "日本語",
     "zh": "中文",
     "selectLanguage": "Select language"
+  },
+  "social": {
+    "title": "Personal Mode — Social Media Posts",
+    "subtitle": "Ready-to-post marketing copy for every platform",
+    "back": "Back",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "chars": "characters",
+    "threadRecommended": "thread recommended",
+    "tipsTitle": "Posting Tips",
+    "tip1": "Pair each post with the EraseAI Personal Mode marketing video for maximum engagement.",
+    "tip2": "Post during peak hours: LinkedIn 8-10am weekdays, X noon-3pm, Facebook 1-4pm, TikTok 7-9pm.",
+    "tip3": "Add a link to your EraseAI sign-up page where indicated by [link].",
+    "tip4": "Customize the copy to match your brand voice — these are starting templates.",
+    "platformHint": {
+      "facebook": "Longer narrative posts with rich storytelling — optimized for engagement",
+      "twitter": "Concise, punchy tweets within 280 characters — optimized for shares",
+      "linkedin": "Professional tone for decision-makers — compliance and privacy angle",
+      "tiktok": "Short viral captions — optimized for video overlay and discoverability"
+    },
+    "facebook": {
+      "awarenessLabel": "Awareness Post",
+      "awareness": "Right now, AI models are being trained on YOUR data — your posts, your emails, your photos. Most people have no idea.\n\nEraseAI Personal Mode changes that. In seconds, you can:\n\n— Scan any text for AI training risks\n— Get a real-time Privacy Risk Score (0-100)\n— See exactly what's flagged: PII, bias, toxicity, hate speech\n— Rewrite risky content with AI while keeping your message intact\n— Track your privacy trends over time with alerts\n\nYour digital footprint is permanent. But you can control what AI learns from it.\n\nTry EraseAI Personal Mode free: [link]\n\n#DigitalPrivacy #AIProtection #EraseAI #DataGovernance #PersonalPrivacy",
+      "featureLabel": "Feature Spotlight",
+      "feature": "Ever wondered what your social media posts are teaching AI about you?\n\nEraseAI Personal Mode gives you a Privacy Risk Score in seconds. Paste your text, get scored 0-100, see the exact risks — then fix them with one click using our AI rewriter.\n\nIt's like a privacy spellchecker for the AI age.\n\nFeatures:\n— Real-time risk scoring with visual gauge\n— Category detection: toxicity, PII, bias, hate speech\n— AI-powered content rewriting\n— 30-day trend monitoring with smart alerts\n— Scan history with filtering\n\nProtect your words before AI learns from them: [link]\n\n#EraseAI #PrivacyFirst #AIGovernance #DataProtection"
+    },
+    "twitter": {
+      "hookLabel": "Hook Tweet",
+      "hook": "Your tweets are training AI right now.\n\nYou didn't consent to it.\n\nEraseAI Personal Mode: scan your content, get a privacy risk score, and fix it — in seconds.\n\nYour data. Your rules.\n\n#EraseAI #DigitalPrivacy",
+      "featureLabel": "Feature Tweet",
+      "feature": "NEW: EraseAI Personal Mode\n\n— Paste any text\n— Get instant privacy risk score (0-100)\n— Detect PII, toxicity, bias, hate speech\n— AI-rewrite to remove risks\n— Track trends & get alerts\n\nFree to start. Your privacy matters.\n\n#AIPrivacy #DataProtection",
+      "urgencyLabel": "Urgency Tweet",
+      "urgency": "AI companies are harvesting your data to train their models.\n\nEvery post. Every comment. Every email.\n\nEraseAI Personal Mode lets you scan, score, and fix your content before it becomes training data.\n\nTake control: [link]\n\n#EraseAI #PrivacyMatters"
+    },
+    "linkedin": {
+      "thoughtLabel": "Thought Leadership",
+      "thought": "The conversation about AI privacy has focused on what companies should do. But what about individuals?\n\nEvery day, we publish content that becomes training data for AI models — often without our knowledge or consent. The risks are real: personal information exposure, biased representations, toxic associations.\n\nThat's why we built EraseAI Personal Mode.\n\nIt gives individuals the same data governance tools that enterprises use:\n\n- Real-time Privacy Risk Scoring (0-100 scale)\n- Automated detection of PII, toxicity, bias, and hate speech\n- AI-powered content rewriting that preserves your message\n- 30-day trend monitoring with intelligent alerts\n- Complete scan history for compliance documentation\n\nFor compliance officers: Personal Mode helps employees self-audit before publishing, reducing organizational risk.\n\nFor individuals: it's the first line of defense for your digital footprint.\n\nAI governance isn't just a corporate responsibility — it's a personal one.\n\n#AIGovernance #DataPrivacy #Compliance #EraseAI #DigitalTransformation #PrivacyByDesign",
+      "complianceLabel": "Compliance Angle",
+      "compliance": "Question for compliance teams:\n\nAre your employees' social media posts creating AI training data risks for your organization?\n\nPII in LinkedIn posts. Biased language in company content. Sensitive data in public forums.\n\nEraseAI Personal Mode gives individuals a privacy risk scanner they can use before hitting 'Post' — catching issues that traditional compliance tools miss.\n\nKey capabilities:\n- Instant risk scoring with category breakdown\n- PII, bias, toxicity, and hate speech detection\n- AI-powered content rewriting\n- Trend monitoring and automated alerts\n\nProactive privacy > reactive damage control.\n\nLearn more: [link]\n\n#Compliance #RiskManagement #DataPrivacy #AIGovernance #EraseAI"
+    },
+    "tiktok": {
+      "viralLabel": "Viral Hook",
+      "viral": "POV: you just found out AI is being trained on everything you post online\n\nEraseAI Personal Mode scans your content and tells you EXACTLY what's risky — then fixes it for you\n\nYour data your rules\n\n#EraseAI #DigitalPrivacy #AIPrivacy #DataProtection #TechTok #PrivacyMatters #AITok",
+      "educationalLabel": "Educational",
+      "educational": "Things AI is learning from your posts right now:\n\n- your location (PII)\n- your opinions (bias training)\n- your arguments (toxicity flags)\n- your personal info (identity risk)\n\nEraseAI Personal Mode: paste text — get risk score — fix it in 1 click\n\nLink in bio\n\n#LearnOnTikTok #EraseAI #PrivacyCheck #AIFacts #DigitalSafety #TechEducation"
+    },
+    "platforms": {
+      "facebook": "Facebook",
+      "twitter": "X (Twitter)",
+      "linkedin": "LinkedIn",
+      "tiktok": "TikTok"
+    }
   }
 }

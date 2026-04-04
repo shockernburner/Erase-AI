@@ -14,7 +14,8 @@
     "logOut": "退出登录",
     "developer": "开发者",
     "analytics": "数据分析",
-    "personalMode": "个人模式"
+    "personalMode": "个人模式",
+    "socialPosts": "社交媒体帖子"
   },
   "pipeline": {
     "label": "AI数据控制",
@@ -641,5 +642,57 @@
       "proRequired": "内容改写需要Pro、Business或Enterprise计划。"
     },
     "historyTitle": "扫描历史"
+  },
+  "social": {
+    "title": "个人模式 — 社交媒体帖子",
+    "subtitle": "适用于各平台的即用型营销文案",
+    "back": "返回",
+    "copy": "复制",
+    "copied": "已复制！",
+    "chars": "字符",
+    "threadRecommended": "建议使用长推文",
+    "tipsTitle": "发布技巧",
+    "tip1": "将每篇帖子与EraseAI个人模式营销视频配对，以获得最大参与度。",
+    "tip2": "在高峰时段发布：LinkedIn工作日8-10点，X中午-下午3点，Facebook下午1-4点，TikTok晚上7-9点。",
+    "tip3": "在标记为[link]的位置添加您的EraseAI注册页面链接。",
+    "tip4": "根据您的品牌调性自定义文案 — 这些是起始模板。",
+    "platformHint": {
+      "facebook": "丰富叙事的长篇帖子 — 针对互动优化",
+      "twitter": "280字符内简洁有力的推文 — 针对分享优化",
+      "linkedin": "面向决策者的专业语调 — 合规和隐私视角",
+      "tiktok": "短小精悍的病毒式标题 — 针对视频叠加和发现优化"
+    },
+    "facebook": {
+      "awarenessLabel": "Awareness Post",
+      "awareness": "Right now, AI models are being trained on YOUR data — your posts, your emails, your photos. Most people have no idea.\n\nEraseAI Personal Mode changes that. In seconds, you can:\n\n— Scan any text for AI training risks\n— Get a real-time Privacy Risk Score (0-100)\n— See exactly what's flagged: PII, bias, toxicity, hate speech\n— Rewrite risky content with AI while keeping your message intact\n— Track your privacy trends over time with alerts\n\nYour digital footprint is permanent. But you can control what AI learns from it.\n\nTry EraseAI Personal Mode free: [link]\n\n#DigitalPrivacy #AIProtection #EraseAI #DataGovernance #PersonalPrivacy",
+      "featureLabel": "Feature Spotlight",
+      "feature": "Ever wondered what your social media posts are teaching AI about you?\n\nEraseAI Personal Mode gives you a Privacy Risk Score in seconds. Paste your text, get scored 0-100, see the exact risks — then fix them with one click using our AI rewriter.\n\nIt's like a privacy spellchecker for the AI age.\n\nFeatures:\n— Real-time risk scoring with visual gauge\n— Category detection: toxicity, PII, bias, hate speech\n— AI-powered content rewriting\n— 30-day trend monitoring with smart alerts\n— Scan history with filtering\n\nProtect your words before AI learns from them: [link]\n\n#EraseAI #PrivacyFirst #AIGovernance #DataProtection"
+    },
+    "twitter": {
+      "hookLabel": "Hook Tweet",
+      "hook": "Your tweets are training AI right now.\n\nYou didn't consent to it.\n\nEraseAI Personal Mode: scan your content, get a privacy risk score, and fix it — in seconds.\n\nYour data. Your rules.\n\n#EraseAI #DigitalPrivacy",
+      "featureLabel": "Feature Tweet",
+      "feature": "NEW: EraseAI Personal Mode\n\n— Paste any text\n— Get instant privacy risk score (0-100)\n— Detect PII, toxicity, bias, hate speech\n— AI-rewrite to remove risks\n— Track trends & get alerts\n\nFree to start. Your privacy matters.\n\n#AIPrivacy #DataProtection",
+      "urgencyLabel": "Urgency Tweet",
+      "urgency": "AI companies are harvesting your data to train their models.\n\nEvery post. Every comment. Every email.\n\nEraseAI Personal Mode lets you scan, score, and fix your content before it becomes training data.\n\nTake control: [link]\n\n#EraseAI #PrivacyMatters"
+    },
+    "linkedin": {
+      "thoughtLabel": "Thought Leadership",
+      "thought": "The conversation about AI privacy has focused on what companies should do. But what about individuals?\n\nEvery day, we publish content that becomes training data for AI models — often without our knowledge or consent. The risks are real: personal information exposure, biased representations, toxic associations.\n\nThat's why we built EraseAI Personal Mode.\n\nIt gives individuals the same data governance tools that enterprises use:\n\n- Real-time Privacy Risk Scoring (0-100 scale)\n- Automated detection of PII, toxicity, bias, and hate speech\n- AI-powered content rewriting that preserves your message\n- 30-day trend monitoring with intelligent alerts\n- Complete scan history for compliance documentation\n\nFor compliance officers: Personal Mode helps employees self-audit before publishing, reducing organizational risk.\n\nFor individuals: it's the first line of defense for your digital footprint.\n\nAI governance isn't just a corporate responsibility — it's a personal one.\n\n#AIGovernance #DataPrivacy #Compliance #EraseAI #DigitalTransformation #PrivacyByDesign",
+      "complianceLabel": "Compliance Angle",
+      "compliance": "Question for compliance teams:\n\nAre your employees' social media posts creating AI training data risks for your organization?\n\nPII in LinkedIn posts. Biased language in company content. Sensitive data in public forums.\n\nEraseAI Personal Mode gives individuals a privacy risk scanner they can use before hitting 'Post' — catching issues that traditional compliance tools miss.\n\nKey capabilities:\n- Instant risk scoring with category breakdown\n- PII, bias, toxicity, and hate speech detection\n- AI-powered content rewriting\n- Trend monitoring and automated alerts\n\nProactive privacy > reactive damage control.\n\nLearn more: [link]\n\n#Compliance #RiskManagement #DataPrivacy #AIGovernance #EraseAI"
+    },
+    "tiktok": {
+      "viralLabel": "Viral Hook",
+      "viral": "POV: you just found out AI is being trained on everything you post online\n\nEraseAI Personal Mode scans your content and tells you EXACTLY what's risky — then fixes it for you\n\nYour data your rules\n\n#EraseAI #DigitalPrivacy #AIPrivacy #DataProtection #TechTok #PrivacyMatters #AITok",
+      "educationalLabel": "Educational",
+      "educational": "Things AI is learning from your posts right now:\n\n- your location (PII)\n- your opinions (bias training)\n- your arguments (toxicity flags)\n- your personal info (identity risk)\n\nEraseAI Personal Mode: paste text — get risk score — fix it in 1 click\n\nLink in bio\n\n#LearnOnTikTok #EraseAI #PrivacyCheck #AIFacts #DigitalSafety #TechEducation"
+    },
+    "platforms": {
+      "facebook": "Facebook",
+      "twitter": "X (Twitter)",
+      "linkedin": "LinkedIn",
+      "tiktok": "TikTok"
+    }
   }
 }
