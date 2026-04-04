@@ -800,7 +800,7 @@
     }
   },
   "homepage": {
-    "whatWeDo": "Lo que hacemos",
+    "whatWeDo": "¿Lo que hacemos?",
     "card1Title": "Modo Personal",
     "card1Desc": "Seguridad de contenido personal impulsada por IA. Escanea publicaciones, correos y mensajes en busca de PII, toxicidad y sesgos antes de publicar. Obtén puntuaciones de riesgo y alternativas seguras reescritas por IA. 10 análisis gratuitos, luego $10/mes ilimitados.",
     "card2Title": "API Empresarial / Desarrollador",

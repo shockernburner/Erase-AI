@@ -800,7 +800,7 @@
     }
   },
   "homepage": {
-    "whatWeDo": "Ce que nous faisons",
+    "whatWeDo": "Ce que nous faisons ?",
     "card1Title": "Mode Personnel",
     "card1Desc": "Sécurité de contenu personnel propulsée par l'IA. Analysez vos publications, e-mails et messages pour détecter les PII, la toxicité et les biais avant publication. Obtenez des scores de risque et des alternatives réécrites par l'IA. 10 analyses gratuites, puis 10 $/mois en illimité.",
     "card2Title": "API Entreprise / Développeur",
