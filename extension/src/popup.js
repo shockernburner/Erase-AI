@@ -34,7 +34,7 @@ function formatTimeAgo(timestamp) {
 }
 
 function renderLastScan(scan) {
-  if (!scan || !scan.riskScore) {
+  if (!scan || scan.riskScore == null) {
     scanSummary.innerHTML = '<div class="no-scans">No scans yet</div>';
     return;
   }
@@ -136,6 +136,16 @@ saveUrlBtn.addEventListener("click", async () => {
   const url = apiUrlInput.value.trim() || DEFAULT_API_URL;
   if (!url.startsWith("https://")) {
     showKeyStatus("API URL must use HTTPS", "error");
+    return;
+  }
+  try {
+    const hostname = new URL(url).hostname;
+    if (!hostname.endsWith(".replit.app") && !hostname.endsWith(".repl.co")) {
+      showKeyStatus("Custom URL must be a *.replit.app domain", "error");
+      return;
+    }
+  } catch {
+    showKeyStatus("Invalid URL format", "error");
     return;
   }
   await chrome.storage.local.set({ apiUrl: url });

@@ -300,7 +300,7 @@
         if (response.changes && response.changes.length > 0) {
           const changeItems = response.changes.map((c) => `
             <div class="eraseai-issue-item">
-              <span class="eraseai-issue-badge eraseai-badge-medium">${escapeHtml(c.type)}</span>
+              <span class="eraseai-issue-badge eraseai-badge-medium">${escapeHtml(c.category || c.type || "redacted")}</span>
               <span><s style="color:#71717a">${escapeHtml(c.original)}</s> \u2192 ${escapeHtml(c.replacement)}</span>
             </div>`).join("");
 
