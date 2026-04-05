@@ -486,7 +486,7 @@
       observer = null;
     }
 
-    document.querySelectorAll("[data-eraseai-hooked]").forEach((el) => {
+    document.querySelectorAll("[data-eraseai-hooked='true']").forEach((el) => {
       el.removeEventListener("click", interceptSubmission, true);
       delete el.dataset.eraseaiHooked;
     });
