@@ -94,3 +94,16 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 *   EraseAI branding: cyan (#06B6D4), dark background (#0a0a0f/#050508), Plus Jakarta Sans + JetBrains Mono fonts.
 *   Auto-plays on load, loops continuously, no interactivity.
 *   Scene files: `artifacts/eraseai-video/src/components/scenes/Scene{1-7}_*.tsx`.
+
+**EraseAI Browser Extension (AI Firewall):**
+
+*   A standalone Chrome extension (Manifest V3) located in `/extension/`.
+*   Acts as a real-time AI privacy firewall, intercepting prompts before they're sent to AI platforms (ChatGPT, Claude, Gemini, Replit).
+*   Uses the existing `/api/dev/analyze` and `/api/dev/sanitize` endpoints with Bearer API key authentication (`eak_...`).
+*   Risk decision logic: riskScore > 70 = allow silently; 40–70 = warning overlay; < 40 = blocking overlay.
+*   In-page overlay shows risk score ring, categorized issues with severity badges, suggestions, and three action buttons (Cancel, Sanitize & Send, Send Anyway).
+*   Sanitize flow replaces input field content with sanitized text and shows change diff before sending.
+*   Extension popup provides: API key management, connection status indicator, enable/disable toggle, last scan summary, custom API URL, and dashboard link.
+*   Dark theme UI matching EraseAI brand (indigo/violet gradient, dark backgrounds).
+*   Files: `extension/manifest.json`, `extension/src/background.js`, `extension/src/content.js`, `extension/src/popup.html`, `extension/src/popup.js`, `extension/src/overlay.css`, `extension/icons/`.
+*   To load: Chrome → `chrome://extensions/` → Enable Developer Mode → "Load unpacked" → select the `extension/` directory.

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EraseAI Firewall</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 360px;
+      min-height: 400px;
+      background: #0f1017;
+      color: #e4e4e7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #16171f 0%, #1a1b26 100%);
+      padding: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f4f4f5;
+    }
+
+    .header-text p {
+      font-size: 11px;
+      color: #71717a;
+      margin-top: 2px;
+    }
+
+    .section {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #71717a;
+      margin-bottom: 12px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+
+    .status-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #d4d4d8;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.connected { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+    .status-dot.disconnected { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+    .status-dot.checking { background: #f59e0b; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      cursor: pointer;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #27272a;
+      border-radius: 22px;
+      transition: 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      bottom: 3px;
+      background: #71717a;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: #6366f1;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+      background: white;
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #e4e4e7;
+      font-size: 12px;
+      font-family: monospace;
+      outline: none;
+      transition: border 0.15s;
+    }
+
+    .input-field:focus {
+      border-color: #6366f1;
+    }
+
+    .input-field::placeholder {
+      color: #52525b;
+    }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: #a1a1aa;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      color: #e4e4e7;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .scan-summary {
+      padding: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+    }
+
+    .scan-summary .no-scans {
+      text-align: center;
+      color: #52525b;
+      font-size: 12px;
+      padding: 8px 0;
+    }
+
+    .scan-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .scan-score {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .scan-score.danger { color: #ef4444; }
+    .scan-score.caution { color: #f59e0b; }
+    .scan-score.safe { color: #22c55e; }
+
+    .scan-details {
+      text-align: right;
+    }
+
+    .scan-details .label {
+      font-size: 11px;
+      color: #71717a;
+    }
+
+    .scan-details .value {
+      font-size: 13px;
+      color: #d4d4d8;
+      font-weight: 500;
+    }
+
+    .scan-time {
+      font-size: 11px;
+      color: #52525b;
+      margin-top: 8px;
+    }
+
+    .footer {
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    .footer a {
+      color: #6366f1;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .api-url-section {
+      margin-top: 8px;
+    }
+
+    .api-url-toggle {
+      font-size: 11px;
+      color: #6366f1;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-weight: 500;
+    }
+
+    .api-url-toggle:hover {
+      text-decoration: underline;
+    }
+
+    .api-url-input {
+      margin-top: 8px;
+      display: none;
+    }
+
+    .api-url-input.visible {
+      display: block;
+    }
+
+    .status-text {
+      font-size: 11px;
+      margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .status-text.success {
+      color: #22c55e;
+      background: rgba(34,197,94,0.08);
+    }
+
+    .status-text.error {
+      color: #ef4444;
+      background: rgba(239,68,68,0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">E</div>
+    <div class="header-text">
+      <h1>EraseAI Firewall</h1>
+      <p>AI prompt privacy protection</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Status</div>
+    <div class="status-row">
+      <div class="status-label">
+        <span class="status-dot checking" id="connection-dot"></span>
+        <span id="connection-text">Checking...</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggle-enabled" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">API Key</div>
+    <div class="input-group">
+      <label>Your EraseAI API Key</label>
+      <div class="input-row">
+        <input type="password" class="input-field" id="api-key-input" placeholder="eak_xxxxxxxxxxxxxxxx">
+        <button class="btn btn-primary" id="save-key-btn">Save</button>
+      </div>
+      <div id="key-status" class="status-text" style="display:none"></div>
+    </div>
+    <div class="api-url-section">
+      <button class="api-url-toggle" id="url-toggle">Custom API URL</button>
+      <div class="api-url-input" id="url-input-section">
+        <div class="input-row">
+          <input type="text" class="input-field" id="api-url-input" placeholder="https://eraseai.replit.app">
+          <button class="btn btn-secondary" id="save-url-btn">Set</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Last Scan</div>
+    <div class="scan-summary" id="scan-summary">
+      <div class="no-scans">No scans yet</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="#" id="dashboard-link">Open EraseAI Dashboard →</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

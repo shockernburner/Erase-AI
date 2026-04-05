@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "EraseAI Firewall",
+  "version": "1.0.0",
+  "description": "AI Firewall — Analyze prompts for privacy risks before sending to AI platforms",
+  "permissions": ["storage", "activeTab"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://replit.com/*"
+      ],
+      "js": ["src/content.js"],
+      "css": ["src/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://replit.com/*",
+    "https://*.replit.app/*"
+  ]
+}
