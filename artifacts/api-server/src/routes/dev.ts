@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import crypto from "crypto";
@@ -6,8 +6,37 @@ import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
 import { refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { maskSecret } from "../lib/dev/secrets";
+import { apiKeyAuth } from "../middlewares/apiKeyMiddleware";
+import { getSessionId, getSession } from "../lib/auth";
 
 const router = Router();
+
+async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return apiKeyAuth(req, res, next);
+  }
+
+  const sid = getSessionId(req);
+  if (sid) {
+    const session = await getSession(sid);
+    if (session?.user?.id) {
+      req.isAuthenticated = function (this: Request) {
+        return this.user != null;
+      } as Request["isAuthenticated"];
+      req.user = session.user;
+      return next();
+    }
+  }
+
+  res.status(401).json({
+    error: "Authentication required. Use Bearer API key or session cookie.",
+    code: "AUTH_REQUIRED",
+    meta: buildMeta(),
+  });
+}
+
+router.use(sessionOrApiKeyAuth);
 
 const API_VERSION = "1.0";
 
@@ -74,6 +103,9 @@ router.post("/analyze", refreshPlanFromDB, async (req, res) => {
       res.status(429).json({
         error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
         code: "RATE_LIMIT_EXCEEDED",
+        upgrade: true,
+        limit: FREE_DAILY_LIMIT,
+        used,
         details: { upgrade: true, limit: FREE_DAILY_LIMIT, used },
         meta: buildMeta(),
       });
@@ -131,6 +163,9 @@ router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
       res.status(429).json({
         error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
         code: "RATE_LIMIT_EXCEEDED",
+        upgrade: true,
+        limit: FREE_DAILY_LIMIT,
+        used,
         details: { upgrade: true, limit: FREE_DAILY_LIMIT, used },
         meta: buildMeta(),
       });

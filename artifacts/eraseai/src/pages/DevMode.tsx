@@ -769,7 +769,7 @@ POST ${API_BASE}/dev/sanitize
   "suggestions": [...],
   "summary": "...",
   "meta": {
-    "version": "1.0.0",
+    "version": "1.0",
     "timestamp": "ISO-8601",
     "requestId": "uuid"
   }
