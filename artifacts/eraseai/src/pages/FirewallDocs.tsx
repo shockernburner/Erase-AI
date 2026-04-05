@@ -167,6 +167,63 @@ function InstallSection() {
 }`} lang="json" />
       </div>
 
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.browserCompatTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.browserCompatDesc")}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { name: "Chrome", status: t("firewallDocs.browserFull"), color: "text-green-400", bg: "bg-green-500/5 border-green-500/20" },
+            { name: "Edge", status: t("firewallDocs.browserFull"), color: "text-green-400", bg: "bg-green-500/5 border-green-500/20" },
+            { name: "Firefox", status: t("firewallDocs.browserPartial"), color: "text-yellow-400", bg: "bg-yellow-500/5 border-yellow-500/20" },
+          ].map((b) => (
+            <div key={b.name} className={`${b.bg} border rounded-lg p-3 space-y-1`}>
+              <h4 className="text-sm font-bold text-foreground">{b.name}</h4>
+              <p className={`text-xs font-medium ${b.color}`}>{b.status}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.edgeInstallTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.edgeInstallDesc")}</p>
+        <div className="space-y-3">
+          {[
+            t("firewallDocs.edgeStep1"),
+            t("firewallDocs.edgeStep2"),
+            t("firewallDocs.edgeStep3"),
+            t("firewallDocs.edgeStep4"),
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-3 text-sm bg-card/40 border border-border/20 rounded-lg p-3">
+              <span className="text-primary font-bold shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">{i + 1}</span>
+              <span className="text-muted-foreground">{step}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.firefoxInstallTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.firefoxInstallDesc")}</p>
+        <div className="space-y-3">
+          {[
+            t("firewallDocs.firefoxStep1"),
+            t("firewallDocs.firefoxStep2"),
+            t("firewallDocs.firefoxStep3"),
+            t("firewallDocs.firefoxStep4"),
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-3 text-sm bg-card/40 border border-border/20 rounded-lg p-3">
+              <span className="text-primary font-bold shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">{i + 1}</span>
+              <span className="text-muted-foreground">{step}</span>
+            </div>
+          ))}
+        </div>
+        <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-yellow-300/80">{t("firewallDocs.firefoxWarning")}</p>
+        </div>
+      </div>
+
       <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
         <p className="text-xs text-yellow-300/80">{t("firewallDocs.installWarning")}</p>
