@@ -341,6 +341,9 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
                 </span>
               ))}
             </div>
+            <p className="text-[9px] text-muted-foreground/50 font-medium">
+              {t("certifications.trustStrip.planned")}
+            </p>
             <button
               onClick={() => onNavigate("certifications")}
               className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"

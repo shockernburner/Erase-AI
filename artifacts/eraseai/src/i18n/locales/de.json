@@ -18,7 +18,7 @@
     "socialPosts": "Social-Media-Beiträge",
     "apiDocs": "API-Dokumentation",
     "devMode": "Entwicklermodus",
-    "certifications": "Vertrauen & Compliance"
+    "certifications": "Compliance-Roadmap"
   },
   "pipeline": {
     "label": "KI-Datenkontrolle",
@@ -865,14 +865,37 @@
     "pageOf": "Seite {{page}} von {{total}}"
   },
   "certifications": {
-    "title": "Vertrauen & Compliance",
-    "subtitle": "Unabhängig geprüfte Zertifizierungen in Cybersicherheit, KI-Governance und Datenschutz",
+    "title": "Compliance-Roadmap",
+    "subtitle": "Unser Weg zu branchenführenden Zertifizierungen in Cybersicherheit, KI-Governance und Datenschutz",
     "backToDashboard": "Zurück zum Dashboard",
-    "verify": "Verifizieren",
-    "disclaimer": "Alle aufgeführten Zertifizierungen werden durch unabhängige Drittprüfungen aufrechterhalten. Kunden können den Zertifizierungsstatus direkt über die oben angegebenen Links der Zertifizierungsstellen überprüfen.",
+    "learnMore": "Mehr erfahren",
+    "disclaimer": "Diese Seite zeigt unsere Compliance-Roadmap und Zielzertifizierungen. Keine der aufgeführten Zertifizierungen wurde bisher erlangt. Zeitpläne sind Schätzungen und können sich ändern. Für den aktuellen Compliance-Status kontaktieren Sie bitte unser Team.",
+    "roadmapNotice": {
+      "title": "Compliance-Roadmap — Noch nicht zertifiziert",
+      "body": "Die unten aufgeführten Zertifizierungen stellen Standards dar, die wir aktiv anstreben oder zu verfolgen planen. Sie zeigen keinen aktuellen Zertifizierungsstatus an. Zieldaten sind Schätzungen und können sich ändern."
+    },
+    "status": {
+      "planned": "Geplant",
+      "in_progress": "In Bearbeitung",
+      "targets": {
+        "soc2": "Ziel: Q4 2026",
+        "csaStar": "Ziel: 2027",
+        "iso42001": "Ziel: Q3 2026",
+        "iso23894": "Ziel: 2027",
+        "nistAiRmf": "Ziel: Q4 2026",
+        "iso27001": "Ziel: Q3 2026",
+        "iso27701": "Ziel: 2027",
+        "iso27017": "Ziel: 2027",
+        "iso27018": "Ziel: 2027",
+        "gdpr": "Ziel: Q4 2026",
+        "ePrivacy": "Ziel: 2027",
+        "ccpa": "Ziel: Q4 2026"
+      }
+    },
     "trustStrip": {
-      "label": "Zertifiziert & konform",
-      "viewAll": "Alle Zertifizierungen anzeigen →"
+      "label": "Compliance-Roadmap",
+      "viewAll": "Compliance-Roadmap anzeigen →",
+      "planned": "Geplante Zertifizierungen — noch nicht erlangt"
     },
     "categories": {
       "cybersecurity": "Cybersicherheit",

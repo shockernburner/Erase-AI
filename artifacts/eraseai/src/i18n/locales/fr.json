@@ -18,7 +18,7 @@
     "socialPosts": "Publications Sociales",
     "apiDocs": "Documentation API",
     "devMode": "Mode Développeur",
-    "certifications": "Confiance & Conformité"
+    "certifications": "Feuille de route conformité"
   },
   "pipeline": {
     "label": "Contrôle des données IA",
@@ -865,14 +865,37 @@
     "pageOf": "Page {{page}} sur {{total}}"
   },
   "certifications": {
-    "title": "Confiance & Conformité",
-    "subtitle": "Certifications auditées de manière indépendante en cybersécurité, gouvernance IA et protection des données",
+    "title": "Feuille de route conformité",
+    "subtitle": "Notre parcours vers les certifications de référence en cybersécurité, gouvernance IA et protection des données",
     "backToDashboard": "Retour au tableau de bord",
-    "verify": "Vérifier",
-    "disclaimer": "Toutes les certifications listées sont maintenues par des audits tiers indépendants. Les clients peuvent vérifier le statut des certifications directement via les liens des organismes émetteurs ci-dessus.",
+    "learnMore": "En savoir plus",
+    "disclaimer": "Cette page présente notre feuille de route de conformité et nos certifications cibles. Aucune des certifications listées n'a encore été obtenue. Les délais sont des estimations susceptibles de changer. Pour connaître notre statut de conformité actuel, veuillez contacter notre équipe.",
+    "roadmapNotice": {
+      "title": "Feuille de route conformité — Pas encore certifié",
+      "body": "Les certifications ci-dessous représentent les normes que nous poursuivons activement ou prévoyons de poursuivre. Elles n'indiquent pas un statut de certification actuel. Les dates cibles sont des estimations et peuvent évoluer."
+    },
+    "status": {
+      "planned": "Planifié",
+      "in_progress": "En cours",
+      "targets": {
+        "soc2": "Objectif : T4 2026",
+        "csaStar": "Objectif : 2027",
+        "iso42001": "Objectif : T3 2026",
+        "iso23894": "Objectif : 2027",
+        "nistAiRmf": "Objectif : T4 2026",
+        "iso27001": "Objectif : T3 2026",
+        "iso27701": "Objectif : 2027",
+        "iso27017": "Objectif : 2027",
+        "iso27018": "Objectif : 2027",
+        "gdpr": "Objectif : T4 2026",
+        "ePrivacy": "Objectif : 2027",
+        "ccpa": "Objectif : T4 2026"
+      }
+    },
     "trustStrip": {
-      "label": "Certifié et conforme",
-      "viewAll": "Voir toutes les certifications →"
+      "label": "Feuille de route conformité",
+      "viewAll": "Voir la feuille de route →",
+      "planned": "Certifications prévues — pas encore obtenues"
     },
     "categories": {
       "cybersecurity": "Cybersécurité",

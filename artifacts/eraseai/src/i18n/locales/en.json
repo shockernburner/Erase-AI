@@ -18,7 +18,7 @@
     "socialPosts": "Social Posts",
     "apiDocs": "API Docs",
     "devMode": "Developer Mode",
-    "certifications": "Trust & Compliance"
+    "certifications": "Compliance Roadmap"
   },
   "home": {
     "userInitial": "U",
@@ -865,14 +865,37 @@
     "pageOf": "Page {{page}} of {{total}}"
   },
   "certifications": {
-    "title": "Trust & Compliance",
-    "subtitle": "Independently audited certifications across cybersecurity, AI governance, and data privacy",
+    "title": "Compliance Roadmap",
+    "subtitle": "Our path to industry-leading certifications in cybersecurity, AI governance, and data privacy",
     "backToDashboard": "Back to Dashboard",
-    "verify": "Verify",
-    "disclaimer": "All certifications listed are maintained through independent third-party audits. Clients may verify certification status directly through the issuing authority links provided above.",
+    "learnMore": "Learn More",
+    "disclaimer": "This page outlines our compliance roadmap and target certifications. None of the certifications listed have been obtained yet. Timelines are estimates and subject to change. For current compliance status, please contact our team directly.",
+    "roadmapNotice": {
+      "title": "Compliance Roadmap — Not Yet Certified",
+      "body": "The certifications below represent standards we are actively pursuing or planning to pursue. They do not indicate current certification status. Target dates are estimates and may change as our compliance program evolves."
+    },
+    "status": {
+      "planned": "Planned",
+      "in_progress": "In Progress",
+      "targets": {
+        "soc2": "Target: Q4 2026",
+        "csaStar": "Target: 2027",
+        "iso42001": "Target: Q3 2026",
+        "iso23894": "Target: 2027",
+        "nistAiRmf": "Target: Q4 2026",
+        "iso27001": "Target: Q3 2026",
+        "iso27701": "Target: 2027",
+        "iso27017": "Target: 2027",
+        "iso27018": "Target: 2027",
+        "gdpr": "Target: Q4 2026",
+        "ePrivacy": "Target: 2027",
+        "ccpa": "Target: Q4 2026"
+      }
+    },
     "trustStrip": {
-      "label": "Certified & Compliant",
-      "viewAll": "View all certifications →"
+      "label": "Compliance Roadmap",
+      "viewAll": "View compliance roadmap →",
+      "planned": "Planned certifications — not yet obtained"
     },
     "categories": {
       "cybersecurity": "Cybersecurity",
