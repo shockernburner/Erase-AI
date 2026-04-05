@@ -6,6 +6,7 @@ import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
+import LandingPage from "@/pages/LandingPage";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
 
@@ -242,6 +243,7 @@ function VideoModal({ onClose }: { onClose: () => void }) {
 export default function Home({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   const { t } = useTranslation();
   const [showVideo, setShowVideo] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   return (
     <div className="min-h-screen w-full pb-20 relative">
@@ -263,11 +265,17 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           className="flex items-center justify-between mb-6 flex-wrap gap-4"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+            <div
+              className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)] cursor-pointer"
+              onClick={() => setShowDemo(false)}
+            >
               <ShieldX className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+              <h1
+                className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 cursor-pointer"
+                onClick={() => setShowDemo(false)}
+              >
                 {t("app.name")}
               </h1>
               <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-1">
@@ -297,31 +305,37 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           </div>
         </motion.header>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          className="flex items-center gap-3 mb-8 text-xs font-mono text-muted-foreground"
-        >
-          <span className="uppercase tracking-wider text-primary/70 font-semibold">{t("pipeline.label")}</span>
-          <span className="flex items-center gap-1.5">
-            {t("pipeline.upload")} <ArrowRight className="w-3 h-3" />
-            {t("pipeline.analyze")} <ArrowRight className="w-3 h-3" />
-            {t("pipeline.fix")} <ArrowRight className="w-3 h-3" />
-            {t("pipeline.verify")} <ArrowRight className="w-3 h-3" />
-            {t("pipeline.retrain")}
-          </span>
-          <span className="hidden sm:inline text-muted-foreground/50">|</span>
-          <span className="hidden sm:inline text-muted-foreground/60">{t("pipeline.subtitle")}</span>
-        </motion.div>
+        {showDemo ? (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="flex items-center gap-3 mb-8 text-xs font-mono text-muted-foreground"
+            >
+              <span className="uppercase tracking-wider text-primary/70 font-semibold">{t("pipeline.label")}</span>
+              <span className="flex items-center gap-1.5">
+                {t("pipeline.upload")} <ArrowRight className="w-3 h-3" />
+                {t("pipeline.analyze")} <ArrowRight className="w-3 h-3" />
+                {t("pipeline.fix")} <ArrowRight className="w-3 h-3" />
+                {t("pipeline.verify")} <ArrowRight className="w-3 h-3" />
+                {t("pipeline.retrain")}
+              </span>
+              <span className="hidden sm:inline text-muted-foreground/50">|</span>
+              <span className="hidden sm:inline text-muted-foreground/60">{t("pipeline.subtitle")}</span>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />
+            </motion.div>
+          </>
+        ) : (
+          <LandingPage onNavigate={onNavigate} onTryDemo={() => setShowDemo(true)} />
+        )}
       </div>
 
       <footer className="relative z-10 border-t border-border/30 mt-16 py-8">
