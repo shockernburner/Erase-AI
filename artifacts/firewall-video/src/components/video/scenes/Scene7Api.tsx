@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 const CURL_LINES = [
-  '$ curl -X POST https://api.eraseai.com/v1/scan \\',
+  '$ curl -X POST https://api.eraseai.ai/v1/scan \\',
   '  -H "Authorization: Bearer era_live_..." \\',
   '  -H "Content-Type: application/json" \\',
   '  -d \'{"text": "Deploy with key sk-proj-..."}\'',
