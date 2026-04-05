@@ -1,12 +1,23 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
 import { refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { maskSecret } from "../lib/dev/secrets";
 
 const router = Router();
+
+const API_VERSION = "1.0.0";
+
+function buildMeta() {
+  return {
+    version: API_VERSION,
+    timestamp: new Date().toISOString(),
+    requestId: crypto.randomUUID(),
+  };
+}
 
 const FREE_DAILY_LIMIT = 10;
 
@@ -42,18 +53,18 @@ async function checkDailyLimit(userId: string, plan: string): Promise<{ allowed:
 router.post("/analyze", refreshPlanFromDB, async (req, res) => {
   try {
     if (!req.user?.id) {
-      res.status(401).json({ error: "Authentication required" });
+      res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
       return;
     }
 
     const { text } = req.body;
     if (!text || typeof text !== "string") {
-      res.status(400).json({ error: "Text is required and must be a string" });
+      res.status(400).json({ error: "Text is required and must be a string", code: "INVALID_INPUT", meta: buildMeta() });
       return;
     }
 
     if (text.length > 10000) {
-      res.status(400).json({ error: "Text must be 10,000 characters or fewer" });
+      res.status(400).json({ error: "Text must be 10,000 characters or fewer", code: "INPUT_TOO_LONG", meta: buildMeta() });
       return;
     }
 
@@ -62,9 +73,11 @@ router.post("/analyze", refreshPlanFromDB, async (req, res) => {
     if (!allowed) {
       res.status(429).json({
         error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
+        code: "RATE_LIMIT_EXCEEDED",
         upgrade: true,
         limit: FREE_DAILY_LIMIT,
         used,
+        meta: buildMeta(),
       });
       return;
     }
@@ -88,28 +101,29 @@ router.post("/analyze", refreshPlanFromDB, async (req, res) => {
       issues: result.issues,
       suggestions: result.suggestions,
       summary: result.summary,
+      meta: buildMeta(),
     });
   } catch (err) {
     console.error("Dev analyze error:", err);
-    res.status(500).json({ error: "Analysis failed" });
+    res.status(500).json({ error: "Analysis failed", code: "ANALYSIS_FAILED", meta: buildMeta() });
   }
 });
 
 router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
   try {
     if (!req.user?.id) {
-      res.status(401).json({ error: "Authentication required" });
+      res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
       return;
     }
 
     const { text } = req.body;
     if (!text || typeof text !== "string") {
-      res.status(400).json({ error: "Text is required and must be a string" });
+      res.status(400).json({ error: "Text is required and must be a string", code: "INVALID_INPUT", meta: buildMeta() });
       return;
     }
 
     if (text.length > 10000) {
-      res.status(400).json({ error: "Text must be 10,000 characters or fewer" });
+      res.status(400).json({ error: "Text must be 10,000 characters or fewer", code: "INPUT_TOO_LONG", meta: buildMeta() });
       return;
     }
 
@@ -118,9 +132,11 @@ router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
     if (!allowed) {
       res.status(429).json({
         error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
+        code: "RATE_LIMIT_EXCEEDED",
         upgrade: true,
         limit: FREE_DAILY_LIMIT,
         used,
+        meta: buildMeta(),
       });
       return;
     }
@@ -139,17 +155,18 @@ router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
       sanitized: result.sanitized,
       changes: result.changes,
       changeCount: result.changes.length,
+      meta: buildMeta(),
     });
   } catch (err) {
     console.error("Dev sanitize error:", err);
-    res.status(500).json({ error: "Sanitization failed" });
+    res.status(500).json({ error: "Sanitization failed", code: "SANITIZATION_FAILED", meta: buildMeta() });
   }
 });
 
 router.get("/history", refreshPlanFromDB, async (req, res) => {
   try {
     if (!req.user?.id) {
-      res.status(401).json({ error: "Authentication required" });
+      res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
       return;
     }
 
@@ -185,10 +202,11 @@ router.get("/history", refreshPlanFromDB, async (req, res) => {
       total: (countResult.rows[0] as Record<string, unknown>)?.count ?? 0,
       todayUsed,
       dailyLimit: plan === "free" ? FREE_DAILY_LIMIT : null,
+      meta: buildMeta(),
     });
   } catch (err) {
     console.error("Dev history error:", err);
-    res.status(500).json({ error: "Failed to fetch history" });
+    res.status(500).json({ error: "Failed to fetch history", code: "HISTORY_FAILED", meta: buildMeta() });
   }
 });
 

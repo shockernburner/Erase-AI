@@ -862,7 +862,17 @@
     "suggestionsTitle": "推奨アクション",
     "prevPage": "前へ",
     "nextPage": "次へ",
-    "pageOf": "{{page}} / {{total}} ページ"
+    "pageOf": "{{page}} / {{total}} ページ",
+    "integrationTab": "統合",
+    "quickStartTitle": "クイックスタート",
+    "quickStartDesc": "これらのcurlコマンドをコピーして、DevModeスキャナーをワークフローに統合してください。リクエストにはアクティブなセッションCookieが必要です。",
+    "analyzeExample": "分析 — リスクを検出",
+    "sanitizeExample": "サニタイズ — テキストをクリーン",
+    "copyCode": "コピー",
+    "requestFormat": "リクエスト形式",
+    "responseFormat": "レスポンス形式",
+    "authNote": "すべてのリクエストにはセッション認証が必要です。各リクエストにセッションCookieを含めてください。APIキー認証はdevエンドポイントではサポートされていません。",
+    "rateLimitNote": "無料プラン: 1日10回スキャン。有料プラン: 無制限スキャン。制限を超えた場合、レスポンスにレート制限情報が返されます。"
   },
   "certifications": {
     "title": "コンプライアンスロードマップ",

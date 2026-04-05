@@ -862,7 +862,17 @@
     "suggestionsTitle": "操作建议",
     "prevPage": "上一页",
     "nextPage": "下一页",
-    "pageOf": "第 {{page}} 页，共 {{total}} 页"
+    "pageOf": "第 {{page}} 页，共 {{total}} 页",
+    "integrationTab": "集成",
+    "quickStartTitle": "快速开始",
+    "quickStartDesc": "复制这些curl命令，将DevMode扫描器集成到您的工作流程中。请求需要有效的会话Cookie。",
+    "analyzeExample": "分析 — 检测风险",
+    "sanitizeExample": "清理 — 净化文本",
+    "copyCode": "复制",
+    "requestFormat": "请求格式",
+    "responseFormat": "响应格式",
+    "authNote": "所有请求都需要会话认证。在每个请求中包含您的会话Cookie。dev端点不支持API密钥认证。",
+    "rateLimitNote": "免费计划：每天10次扫描。付费计划：无限扫描。超过限制时，响应中会返回速率限制信息。"
   },
   "certifications": {
     "title": "合规路线图",

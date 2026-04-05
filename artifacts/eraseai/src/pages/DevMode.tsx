@@ -25,6 +25,10 @@ import {
   FileCode,
   Crown,
   Lightbulb,
+  Plug,
+  Terminal,
+  BookOpen,
+  Info,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
@@ -241,7 +245,8 @@ export default function DevMode({
   const [inputText, setInputText] = useState("");
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [sanitizeResult, setSanitizeResult] = useState<SanitizeResult | null>(null);
-  const [activeTab, setActiveTab] = useState<"input" | "history">("input");
+  const [activeTab, setActiveTab] = useState<"input" | "history" | "integration">("input");
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(0);
   const HISTORY_PAGE_SIZE = 20;
 
@@ -406,6 +411,17 @@ export default function DevMode({
           >
             <Clock className="w-4 h-4" />
             {t("devMode.historyTab")}
+          </button>
+          <button
+            onClick={() => setActiveTab("integration")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "integration"
+                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                : "bg-card/50 text-muted-foreground border border-border/30 hover:bg-muted/20"
+            }`}
+          >
+            <Plug className="w-4 h-4" />
+            {t("devMode.integrationTab")}
           </button>
         </div>
 
@@ -649,6 +665,115 @@ export default function DevMode({
                     </button>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "integration" && (
+            <motion.div
+              key="integration"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
+              <div className="bg-card/50 border border-border/30 rounded-xl p-5 backdrop-blur-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <Terminal className="w-4 h-4 text-amber-400" />
+                  <h2 className="text-sm font-semibold text-foreground">{t("devMode.quickStartTitle")}</h2>
+                </div>
+                <p className="text-xs text-muted-foreground mb-5">{t("devMode.quickStartDesc")}</p>
+
+                <div className="space-y-5">
+                  {[
+                    {
+                      id: "analyze",
+                      label: t("devMode.analyzeExample"),
+                      code: `curl -X POST ${window.location.origin}${API_BASE}/dev/analyze \\
+  -H "Content-Type: application/json" \\
+  -H "Cookie: session=YOUR_SESSION_COOKIE" \\
+  -d '{"text": "My API key is sk-abc123..."}'`,
+                    },
+                    {
+                      id: "sanitize",
+                      label: t("devMode.sanitizeExample"),
+                      code: `curl -X POST ${window.location.origin}${API_BASE}/dev/sanitize \\
+  -H "Content-Type: application/json" \\
+  -H "Cookie: session=YOUR_SESSION_COOKIE" \\
+  -d '{"text": "Contact john@example.com or call 555-1234"}'`,
+                    },
+                  ].map((snippet) => (
+                    <div key={snippet.id}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-foreground uppercase tracking-wide">{snippet.label}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(snippet.code);
+                            setCopiedSnippet(snippet.id);
+                            setTimeout(() => setCopiedSnippet(null), 2000);
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                        >
+                          {copiedSnippet === snippet.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {copiedSnippet === snippet.id ? t("devMode.copied") : t("devMode.copyCode")}
+                        </button>
+                      </div>
+                      <pre className="p-3 rounded-lg bg-background/80 border border-border/40 text-xs text-foreground font-mono overflow-x-auto whitespace-pre-wrap break-all leading-relaxed">
+                        {snippet.code}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-card/50 border border-border/30 rounded-xl p-5 backdrop-blur-md">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BookOpen className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-sm font-semibold text-foreground">{t("devMode.requestFormat")}</h3>
+                  </div>
+                  <pre className="p-3 rounded-lg bg-background/80 border border-border/40 text-xs text-foreground font-mono overflow-x-auto whitespace-pre leading-relaxed">
+{`POST ${API_BASE}/dev/analyze
+POST ${API_BASE}/dev/sanitize
+
+{
+  "text": "string (required, max 10,000 chars)"
+}`}
+                  </pre>
+                </div>
+
+                <div className="bg-card/50 border border-border/30 rounded-xl p-5 backdrop-blur-md">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BookOpen className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-sm font-semibold text-foreground">{t("devMode.responseFormat")}</h3>
+                  </div>
+                  <pre className="p-3 rounded-lg bg-background/80 border border-border/40 text-xs text-foreground font-mono overflow-x-auto whitespace-pre leading-relaxed">
+{`// analyze response
+{
+  "riskScore": 85,
+  "level": "safe"|"caution"|"danger",
+  "issues": [...],
+  "suggestions": [...],
+  "summary": "...",
+  "meta": {
+    "version": "1.0.0",
+    "timestamp": "ISO-8601",
+    "requestId": "uuid"
+  }
+}`}
+                  </pre>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                  <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">{t("devMode.authNote")}</p>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                  <Info className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">{t("devMode.rateLimitNote")}</p>
+                </div>
               </div>
             </motion.div>
           )}

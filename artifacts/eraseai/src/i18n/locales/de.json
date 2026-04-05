@@ -862,7 +862,17 @@
     "suggestionsTitle": "Handlungsempfehlungen",
     "prevPage": "Zurück",
     "nextPage": "Weiter",
-    "pageOf": "Seite {{page}} von {{total}}"
+    "pageOf": "Seite {{page}} von {{total}}",
+    "integrationTab": "Integration",
+    "quickStartTitle": "Schnellstart",
+    "quickStartDesc": "Kopieren Sie diese curl-Befehle, um den DevMode-Scanner in Ihren Workflow zu integrieren. Anfragen erfordern ein aktives Sitzungs-Cookie.",
+    "analyzeExample": "Analysieren — Risiken erkennen",
+    "sanitizeExample": "Bereinigen — Text säubern",
+    "copyCode": "Kopieren",
+    "requestFormat": "Anfrageformat",
+    "responseFormat": "Antwortformat",
+    "authNote": "Alle Anfragen erfordern Sitzungsauthentifizierung. Fügen Sie Ihr Sitzungs-Cookie in jede Anfrage ein. API-Schlüssel-Authentifizierung wird für Dev-Endpunkte nicht unterstützt.",
+    "rateLimitNote": "Kostenloser Plan: 10 Scans pro Tag. Bezahlte Pläne: unbegrenzte Scans. Ratenlimit-Informationen werden in der Antwort zurückgegeben, wenn überschritten."
   },
   "certifications": {
     "title": "Compliance-Roadmap",

@@ -862,7 +862,17 @@
     "suggestionsTitle": "Actionable Suggestions",
     "prevPage": "Previous",
     "nextPage": "Next",
-    "pageOf": "Page {{page}} of {{total}}"
+    "pageOf": "Page {{page}} of {{total}}",
+    "integrationTab": "Integration",
+    "quickStartTitle": "Quick Start",
+    "quickStartDesc": "Copy these curl commands to integrate the DevMode scanner into your workflow. Requests require an active session cookie.",
+    "analyzeExample": "Analyze — detect risks",
+    "sanitizeExample": "Sanitize — clean text",
+    "copyCode": "Copy",
+    "requestFormat": "Request Format",
+    "responseFormat": "Response Format",
+    "authNote": "All requests require session authentication. Include your session cookie in each request. API key auth is not supported for dev endpoints.",
+    "rateLimitNote": "Free plan: 10 scans per day. Paid plans: unlimited scans. Rate limit info is returned in the response when exceeded."
   },
   "certifications": {
     "title": "Compliance Roadmap",
