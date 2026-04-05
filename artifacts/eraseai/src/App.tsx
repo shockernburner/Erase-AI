@@ -16,6 +16,7 @@ import SocialPosts from "@/pages/SocialPosts";
 import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
+import FirewallDocs from "@/pages/FirewallDocs";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -27,7 +28,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
 
 function AuthGate() {
   const { t } = useTranslation();
@@ -106,6 +107,10 @@ function AuthGate() {
 
   if (view === "devMode") {
     return <DevMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+  }
+
+  if (view === "firewallDocs") {
+    return <FirewallDocs onBack={() => setView("home")} onUpgrade={() => setView("pricing")} onDevMode={() => setView("devMode")} />;
   }
 
   if (view === "certifications") {

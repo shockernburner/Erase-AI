@@ -1,17 +1,17 @@
 # Overview
 
-This project is a pnpm workspace monorepo using TypeScript, designed to build a full-stack web application called EraseAI. EraseAI is a demo-ready application showcasing AI "machine unlearning" capabilities, targeting the ethical AI and data governance market.
+This project, EraseAI, is a pnpm workspace monorepo using TypeScript, designed as a full-stack web application demonstrating AI "machine unlearning" capabilities. It targets the ethical AI and data governance market, aiming to be a "Git for AI Training Data" by providing a platform for managing and curating AI training data.
 
-**EraseAI Vision:** To provide a comprehensive platform for managing and curating AI training data, ensuring data quality, privacy, and fairness through automated analysis, unlearning operations, and actionable ML feedback. The platform aims to be "Git for AI Training Data," offering version control, auditability, and verifiable data transformation.
+**Vision:** To offer a comprehensive platform for ensuring data quality, privacy, and fairness through automated analysis, unlearning operations, and actionable ML feedback.
 
 **Key Capabilities:**
-*   **AI Dataset Unlearning Engine:** Upload, version, delete, redact, and verify erasure of sensitive or unwanted data from datasets.
-*   **Dataset Intelligence Engine:** Automated analysis for PII, bias, toxic content, duplicates, and data quality issues, with auto-fix capabilities.
-*   **ML Feedback Engine:** Rule-based recommendations for ML pipeline adjustments based on dataset analysis, including code snippets.
-*   **Authentication & Access Control:** Secure user management with email/password and social logins, and tiered access based on subscription plans.
-*   **Payments:** Integration with Airwallex for managing paid subscriptions.
+*   **AI Dataset Unlearning Engine:** For uploading, versioning, deleting, redacting, and verifying data erasure from datasets.
+*   **Dataset Intelligence Engine:** Automated analysis for PII, bias, toxic content, duplicates, and data quality issues, with auto-fix functionalities.
+*   **ML Feedback Engine:** Provides rule-based recommendations for ML pipeline adjustments.
+*   **Authentication & Access Control:** Secure user management with tiered access.
+*   **Payments:** Integration for managing paid subscriptions.
 
-The project leverages a modern stack including Express.js for the API, PostgreSQL with Drizzle ORM for data persistence, and React for the frontend.
+The project utilizes Express.js for the API, PostgreSQL with Drizzle ORM, and React for the frontend.
 
 # User Preferences
 
@@ -19,7 +19,7 @@ I prefer iterative development. Ask before making major changes. I prefer to use
 
 # System Architecture
 
-The project is structured as a pnpm monorepo with `artifacts/` for deployable applications (api-server, eraseai frontend) and `lib/` for shared libraries (database, API spec, generated clients/schemas).
+The project is structured as a pnpm monorepo, separating deployable applications (`artifacts/`) from shared libraries (`lib/`).
 
 **Technical Stack:**
 *   **Monorepo:** pnpm workspaces
@@ -28,82 +28,42 @@ The project is structured as a pnpm monorepo with `artifacts/` for deployable ap
 *   **TypeScript:** v5.9
 *   **Validation:** Zod (v4), `drizzle-zod`
 *   **API Codegen:** Orval (from OpenAPI spec)
-*   **Build Tool:** esbuild (for CJS bundles)
 
 **Core Architectural Decisions:**
-*   **TypeScript Monorepo:** Enforces type safety across the entire project with composite projects for efficient type checking and build processes.
-*   **API-First Development:** Uses OpenAPI for API specification (`lib/api-spec`), which then generates React Query hooks (`lib/api-client-react`) and Zod schemas (`lib/api-zod`) for client and server-side validation respectively, ensuring consistency.
-*   **Layered Backend:** The `api-server` utilizes a clear separation of concerns with routes, middleware, and a dedicated database layer (`lib/db`).
-*   **Version-Controlled Datasets:** The `eraseai` application implements a robust versioning system for datasets, allowing immutable transformations (delete/redact) and historical tracking.
-*   **Rule-Based AI Logic:** Both the Dataset Intelligence Engine and ML Feedback Engine operate on rule-based systems for analysis and recommendations, enabling clear logic and auditability.
-*   **Secure Authentication:** Session-based authentication with httpOnly cookies, bcrypt hashing for passwords, and support for OAuth (Google, Apple).
-*   **Scalable Payments:** Integration with Airwallex for one-time payments, designed for a subscription-like model managed at the application level.
+*   **TypeScript Monorepo:** Ensures type safety and efficient build processes.
+*   **API-First Development:** Uses OpenAPI to generate client and server-side components, ensuring API consistency.
+*   **Layered Backend:** `api-server` maintains clear separation of concerns.
+*   **Version-Controlled Datasets:** Implements robust versioning for immutable data transformations and historical tracking.
+*   **Rule-Based AI Logic:** Both Dataset Intelligence and ML Feedback engines use rule-based systems for auditable analysis and recommendations.
+*   **Secure Authentication:** Session-based authentication with httpOnly cookies, bcrypt hashing, and OAuth support.
+*   **Scalable Payments:** Airwallex integration for managing subscriptions.
 
 **UI/UX Decisions (EraseAI Frontend):**
-*   **Design:** Dark-mode UI with a cyan accent branding.
-*   **Interactive Data Display:** Features like side-by-side Before/After diffs for erasure verification, interactive analysis results panels with summary cards, and expandable flagged row lists.
-*   **Workflow Orchestration:** "Run Demo" and "Run Full Demo" buttons automate complex workflows, providing step-by-step progress feedback to the user.
-*   **Contextual Upgrade Prompts:** Free users encountering feature limits are presented with upgrade prompts.
+*   **Design:** Dark-mode UI with a cyan accent.
+*   **Interactive Data Display:** Features like side-by-side diffs for erasure verification and interactive analysis results.
+*   **Workflow Orchestration:** "Run Demo" buttons automate complex workflows with progress feedback.
+*   **Contextual Upgrade Prompts:** Guides free users to upgrade when feature limits are met.
 
 **Feature Specifications:**
 
-*   **EraseAI App:**
-    *   **Live Demo:** End-to-end demonstration of data upload, preview, erasure, and verification.
-    *   **AI Dataset Unlearning Engine:** Handles dataset uploads (JSON/CSV/TXT), cloud URL import (HTTP/HTTPS CSV/JSON/TXT), column-level deletion for CSV datasets (with chip UI and confirmation), "Delete" or "Redact" operations creating new immutable versions, version history browsing, side-by-side diffs (red=deleted, yellow=redacted), Data Impact panel with Forget Score, operation audit log, and downloadable datasets in clean/redacted/full modes.
-    *   **Dataset Intelligence Engine:** Automated PII detection (emails, phone numbers), biased language (gender/racial), toxic content, duplicate rows, low-quality entry detection. Interactive results with category summary, expandable flagged rows, per-category "Fix" buttons, and "Apply All Fixes." Dataset Profiling for CSV (delimiter detection, column-level profiling: type, missing%, cardinality, numeric stats, categorical top-N, bias detection, ML recommendations).
-    *   **ML Feedback Engine:** Rule-based recommendations mapping detected issues to preprocessing, training, and evaluation suggestions. Recommendations include code snippets, priority levels, and are filterable/exportable (Markdown/JSON).
-    *   **Authentication:** Email/Password (bcrypt), Google OAuth, Apple Sign-In. Session-based auth with httpOnly cookies. All dataset APIs require authentication, scoped by `userId`.
-    *   **Payments & Access Control:** Four-tier pricing (Free, Pro $49/mo, Business $149/mo, Enterprise custom). Integration with Airwallex Payment Intents for checkout. Webhook processing for payment status updates. `requirePro()` middleware gates premium features (includes "business" tier). `requireBusiness()` middleware for Business+ features. Row limits: Free=100, Pro=1K, Business=10K, Enterprise=unlimited.
-    *   **API Key System & Public API v1:** Pro/Business/Enterprise users can generate API keys from the Developer Dashboard. Keys are SHA-256 hashed (raw shown once). Plan-aware key limits: Pro=5, Business=20, Enterprise=100. Endpoints: `/api/developer/keys` (CRUD), `/api/developer/usage` (usage stats), `/api/v1/datasets/*` (upload, list, analyze, result, download). Bearer token auth via `apiKeyMiddleware.ts`. Schema: `api_keys` table in `lib/db/src/schema/auth.ts`.
-    *   **API Rate Limiting & Usage Tracking:** Per-plan monthly rate limits: Pro=1,000 req/mo, Business=10,000 req/mo, Enterprise=unlimited. Middleware in `rateLimitMiddleware.ts` enforces limits and returns `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers. 429 response when exceeded. All API v1 requests logged to `api_usage` table (non-blocking). Developer Dashboard shows usage meter with progress bar, daily breakdown chart, and upgrade CTA near limits. Admin endpoint `GET /api/admin/api-usage` provides aggregate stats, top users, and daily trends.
-    *   **Personal Mode:** Advisory-only text analysis for individual users. Scans text for toxicity, bias, PII, and hate speech before posting publicly. Risk scoring: starts at 100, deducts per flag (toxicity -20, hate speech -30, PII -25, bias -15). Levels: Low (70-100), Medium (40-69), High (0-39). Free users: 10 scans/day; Pro+: unlimited. Stores truncated/redacted content for privacy. Content Rewrite Assistant (Pro+): rewrites flagged text to remove risks. Continuous Monitoring (Pro+): alert engine generates `risk_spike` (score 20+ pts below rolling avg), `new_category` (first-time flag type), and `trending_up` (7-day avg 10+ pts worse than 30-day avg) alerts after each scan. AlertsPanel with mark-read/mark-all-read. TrendsPanel with 30-day avg comparison, category breakdown bar chart, and daily average line chart. Routes: `POST /api/personal/analyze`, `GET /api/personal/history`, `POST /api/personal/rewrite`, `GET /api/personal/alerts`, `POST /api/personal/alerts/:id/read`, `POST /api/personal/alerts/read-all`, `GET /api/personal/trends`. Frontend: `PersonalMode.tsx`. DB: `personal_scans`, `personal_alerts` tables. Alert engine: `alertEngine.ts`. i18n: all 6 locales.
-    *   **Social Posts Page:** Marketing copy hub for Personal Mode promotion. Accessible from user menu (Megaphone icon). Four platform tabs: Facebook, X (Twitter), LinkedIn, TikTok. Each platform has 2-3 ready-to-post templates with copy-to-clipboard. Character counts shown; thread recommendation for tweets >280 chars. Posting tips section at bottom. Uses stable platform IDs (`facebook`, `twitter`, `linkedin`, `tiktok`) with translated UI chrome and English marketing copy (hashtags/platform-specific). i18n: all 6 locales (UI labels translated, post content English). Frontend: `SocialPosts.tsx`. Route: `social` view in App.tsx.
-    *   **Developer Mode (AI Exposure Control):** The firewall between code and AI systems. Scans prompts, code snippets, and text before sending to AI tools (ChatGPT, Claude, etc.) for secrets, PII, proprietary logic, and prompt injection risks. **Analyze endpoint** (`POST /api/dev/analyze`): returns risk score (0-100), level (safe/caution/danger), categorized issues, and summary. **Sanitize endpoint** (`POST /api/dev/sanitize`): masks secrets, redacts PII, abstracts function/class names, returns side-by-side diff. **History endpoint** (`GET /api/dev/history`): scan history with daily usage counter. Free tier: 10 scans/day (unified across analyze+sanitize); paid plans: unlimited. Sensitive input is redacted before DB storage. Backend libs: `lib/dev/secrets.ts` (regex secret detection), `lib/dev/safety.ts` (prompt risk analysis), `lib/dev/sanitize.ts` (masking/abstraction). DB: `dev_scans` table. Frontend: `DevMode.tsx` with amber theming, BETA badge, tabbed UI (Scan & Analyze / History), issue cards color-coded by category (secret_exposure=red, pii=blue, proprietary_logic=amber, toxicity=orange). i18n: all 6 locales.
-    *   **Webhook System:** Max 1 webhook per user (enforced by unique DB index). CRUD endpoints under `/api/developer/webhooks`. Webhook dispatcher fires on `dataset.analyzed`, `dataset.erased`, `dataset.failed` events with 3-attempt exponential backoff (1s, 2s, 4s). "Send Test" button delivers test payload. Delivery history shows last 20 events. SSRF protection blocks localhost, private IPs, internal domains, and metadata endpoints. Schema: `webhooks` + `webhook_deliveries` tables in `lib/db/src/schema/auth.ts`. Dispatcher: `artifacts/api-server/src/lib/webhookDispatcher.ts`. Developer Dashboard UI shows webhook configuration, active/pause toggle, test button, and delivery history.
+*   **EraseAI App:** Includes live demo, AI Dataset Unlearning Engine (upload, preview, delete/redact, version history, diffs, Forget Score, audit log), Dataset Intelligence Engine (PII, bias, toxic content detection with auto-fix, dataset profiling), ML Feedback Engine (rule-based recommendations with code snippets), Authentication (Email/Password, Google OAuth, Apple Sign-In), Payments & Access Control (four-tier pricing, Airwallex integration, feature gating), API Key System & Public API v1 (developer dashboard, plan-aware key limits), API Rate Limiting & Usage Tracking, Personal Mode (advisory text analysis, content rewrite assistant, continuous monitoring), Social Posts Page (marketing hub for Personal Mode), Developer Mode (AI Exposure Control for prompts and code with analyze/sanitize endpoints, history, rate limits).
+*   **Webhook System:** Allows users to configure webhooks triggered by dataset events with exponential backoff and SSRF protection.
+*   **EraseAI "How It Works" Tier Demo Video:** A separate React-based animated video (`artifacts/eraseai-video`) demonstrating tier progression and Personal Mode features with distinct color themes.
+*   **EraseAI Browser Extension (AI Firewall):** A Chrome extension (`extension/`) that intercepts and scans prompts before they are sent to AI platforms, using the `/api/dev/analyze` and `/api/dev/sanitize` endpoints, providing real-time risk assessment and sanitization.
+*   **Firewall Integration Documentation:** In-app documentation page (`FirewallDocs.tsx`) covering extension installation, API endpoints (ping, analyze, sanitize, history), extension architecture (content script, service worker, popup), rate limits/errors, supported platforms (ChatGPT, Claude, Gemini, Replit), and custom platform integration guide. Accessible via user menu → "Firewall Docs". i18n supported across all 6 locales.
 
 # External Dependencies
 
-*   **PostgreSQL:** Primary database for all application data.
-*   **Airwallex API:** Used for processing payments and managing user subscriptions.
-*   **Google OAuth:** For social login functionality.
-*   **Apple Sign-In:** For social login functionality.
-*   **Orval:** Code generation tool for API clients and schemas from OpenAPI specifications.
-*   **Drizzle ORM:** TypeScript ORM for interacting with PostgreSQL.
-*   **Zod:** Schema declaration and validation library.
-*   **Express.js:** Web application framework for the API server.
-*   **React:** Frontend library for building user interfaces.
-*   **React Query:** Data fetching and caching library for React.
-*   **PapaParse:** (Implicitly used in `api-server` for CSV parsing)
-
-**Internationalization (i18n):**
-*   **Framework:** react-i18next with i18next and i18next-browser-languagedetector.
-*   **Supported Languages:** English (en), French (fr), German (de), Spanish (es), Japanese (ja), Chinese (zh).
-*   **Translation Files:** Located in `artifacts/eraseai/src/i18n/locales/{lang}.json`.
-*   **Configuration:** `artifacts/eraseai/src/i18n/index.ts` — auto-detects browser language, stores preference in localStorage under key `eraseai-lang`.
-*   **Language Selector:** `artifacts/eraseai/src/components/LanguageSelector.tsx` — globe icon dropdown in top-right corner, visible on both login page and main app header.
-*   **Coverage:** LoginPage, Home (header/nav/pipeline/footer), PricingPage (all tiers/features/modals), AdminDashboard (header/stats/sections), DatasetSanitizer (upload area, key buttons, upgrade prompts).
-
-**EraseAI "How It Works" Tier Demo Video:**
-
-*   A separate video artifact (`artifacts/eraseai-video`) accessible at `/eraseai-video/`.
-*   Built with React, Framer Motion, and Tailwind CSS as a ~77-second animated tier progression + Personal Mode demo.
-*   7 scenes: Intro → Free ($0) → Pro ($49) → Business ($149) → Enterprise/Government (Custom) → Personal Mode → Outro.
-*   Each tier scene has distinct color theming: Free=green, Pro=cyan, Business=orange/amber, Enterprise=gold, Personal Mode=emerald (#10B981).
-*   Personal Mode scene (Scene6) showcases: animated risk gauge (SVG arc), text scanning with highlight overlay, category badges (toxicity/PII/bias/hate speech), AI content rewriting (original→cleaned), mini trend chart, and alert indicators. Duration: 12.5s.
-*   Uses the scaffold's `useVideoPlayer` hook for scene advancement and automatic looping.
-*   EraseAI branding: cyan (#06B6D4), dark background (#0a0a0f/#050508), Plus Jakarta Sans + JetBrains Mono fonts.
-*   Auto-plays on load, loops continuously, no interactivity.
-*   Scene files: `artifacts/eraseai-video/src/components/scenes/Scene{1-7}_*.tsx`.
-
-**EraseAI Browser Extension (AI Firewall):**
-
-*   A standalone Chrome extension (Manifest V3) located in `/extension/`.
-*   Acts as a real-time AI privacy firewall, intercepting prompts before they're sent to AI platforms (ChatGPT, Claude, Gemini, Replit).
-*   Uses the existing `/api/dev/analyze` and `/api/dev/sanitize` endpoints with Bearer API key authentication (`eak_...`).
-*   Risk decision logic: riskScore > 70 = allow silently; 40–70 = warning overlay; < 40 = blocking overlay.
-*   In-page overlay shows risk score ring, categorized issues with severity badges, suggestions, and three action buttons (Cancel, Sanitize & Send, Send Anyway).
-*   Sanitize flow replaces input field content with sanitized text and shows change diff before sending.
-*   Extension popup provides: API key management, connection status indicator, enable/disable toggle, last scan summary, custom API URL, and dashboard link.
-*   Dark theme UI matching EraseAI brand (indigo/violet gradient, dark backgrounds).
-*   Files: `extension/manifest.json`, `extension/src/background.js`, `extension/src/content.js`, `extension/src/popup.html`, `extension/src/popup.js`, `extension/src/overlay.css`, `extension/icons/`.
-*   To load: Chrome → `chrome://extensions/` → Enable Developer Mode → "Load unpacked" → select the `extension/` directory.
+*   **PostgreSQL:** Primary database.
+*   **Airwallex API:** For payment processing.
+*   **Google OAuth:** For social logins.
+*   **Apple Sign-In:** For social logins.
+*   **Orval:** For OpenAPI-based code generation.
+*   **Drizzle ORM:** For database interaction.
+*   **Zod:** For schema validation.
+*   **Express.js:** For the API server.
+*   **React:** For the frontend UI.
+*   **React Query:** For data fetching and caching.
+*   **PapaParse:** For CSV parsing.
+*   **react-i18next, i18next, i18next-browser-languagedetector:** For internationalization, supporting English, French, German, Spanish, Japanese, and Chinese.
+*   **Framer Motion & Tailwind CSS:** Used in the demo video for animations and styling.

@@ -7,7 +7,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
@@ -161,6 +161,13 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
             >
               <Code2 className="w-4 h-4" />
               {t("nav.devMode")}
+            </button>
+            <button
+              onClick={() => { setOpen(false); onNavigate("firewallDocs"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all"
+            >
+              <Shield className="w-4 h-4" />
+              {t("nav.firewallDocs")}
             </button>
             <button
               onClick={() => { setOpen(false); onNavigate("docs"); }}
