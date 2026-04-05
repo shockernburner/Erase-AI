@@ -19,9 +19,14 @@ import {
   Crown,
   Settings,
   MonitorSmartphone,
+  Key,
+  Code2,
+  Laptop,
+  Smartphone,
+  HelpCircle,
 } from "lucide-react";
 
-type SectionId = "overview" | "install" | "endpoints" | "extension" | "ratelimits" | "platforms";
+type SectionId = "overview" | "apikey" | "install" | "endpoints" | "extension" | "ratelimits" | "platforms" | "vscode" | "replit" | "xcode" | "troubleshooting";
 
 interface FirewallDocsProps {
   onBack: () => void;
@@ -398,11 +403,11 @@ function ExtensionSection() {
     { type: "ANALYZE", text },
     (result) => {
       if (result.riskScore > 70) {
-        // Safe — auto-send
+        // Safety score > 70 = low risk — auto-send
         bypassNext = true;
         triggerSend();
       } else {
-        // Risky — show results with options
+        // Safety score <= 70 = medium/high risk — show overlay
         renderResults(panel, result, inputEl);
       }
     }
@@ -599,6 +604,500 @@ myPlatform: {
   );
 }
 
+function ApiKeySection() {
+  const { t } = useTranslation();
+  const origin = window.location.origin;
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">{t("firewallDocs.apiKeyTitle")}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.apiKeyDesc")}</p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.apiKeyStepsTitle")}</h3>
+        <div className="space-y-3">
+          {[
+            t("firewallDocs.apiKeyStep1"),
+            t("firewallDocs.apiKeyStep2"),
+            t("firewallDocs.apiKeyStep3"),
+            t("firewallDocs.apiKeyStep4"),
+            t("firewallDocs.apiKeyStep5"),
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-3 text-sm bg-card/40 border border-border/20 rounded-lg p-3">
+              <span className="text-primary font-bold shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">{i + 1}</span>
+              <span className="text-muted-foreground">{step}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.apiKeyTestTitle")}</h3>
+        <CodeBlock code={`curl -H "Authorization: Bearer eak_your_api_key" \\
+  ${origin}/api/dev/ping`} lang="bash" />
+        <CodeBlock code={`import requests
+
+API_KEY = "eak_your_api_key"
+BASE_URL = "${origin}/api/dev"
+
+response = requests.get(
+    f"{BASE_URL}/ping",
+    headers={"Authorization": f"Bearer {API_KEY}"}
+)
+print(response.json())  # {"ok": true, "meta": {...}}`} lang="python" />
+      </div>
+
+      <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+        <p className="text-xs text-yellow-300/80">{t("firewallDocs.apiKeyWarning")}</p>
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.apiKeyLimitsTitle")}</h3>
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
+            <div className="text-primary font-bold text-lg">5</div>
+            <div className="text-muted-foreground">Pro</div>
+          </div>
+          <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
+            <div className="text-violet-400 font-bold text-lg">20</div>
+            <div className="text-muted-foreground">Business</div>
+          </div>
+          <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
+            <div className="text-yellow-400 font-bold text-lg">100</div>
+            <div className="text-muted-foreground">Enterprise</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VSCodeSection() {
+  const { t } = useTranslation();
+  const origin = window.location.origin;
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">{t("firewallDocs.vscodeTitle")}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.vscodeDesc")}</p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.vscodeSettingsTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.vscodeSettingsDesc")}</p>
+        <CodeBlock code={`// .vscode/settings.json
+{
+  "eraseai.apiKey": "eak_your_api_key",
+  "eraseai.apiUrl": "${origin}/api/dev",
+  "eraseai.autoScan": true,
+  "eraseai.blockOnHighRisk": true,
+  "eraseai.scanOnSave": true
+}`} lang="json" />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.vscodePreCommitTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.vscodePreCommitDesc")}</p>
+        <CodeBlock code={`#!/bin/bash
+# .git/hooks/pre-commit — EraseAI Firewall pre-commit hook
+
+API_KEY="eak_your_api_key"
+API_URL="${origin}/api/dev"
+EXIT_CODE=0
+
+for file in $(git diff --cached --name-only --diff-filter=ACM); do
+  content=$(git show ":$file" | head -c 10000)
+  if [ -z "$content" ]; then continue; fi
+
+  result=$(curl -s -X POST "$API_URL/analyze" \\
+    -H "Authorization: Bearer $API_KEY" \\
+    -H "Content-Type: application/json" \\
+    -d "{\\"text\\": $(echo "$content" | jq -Rs .)}")
+
+  score=$(echo "$result" | jq -r '.riskScore // 100')
+  level=$(echo "$result" | jq -r '.level // "safe"')
+
+  if [ "$level" = "danger" ]; then
+    echo "❌ BLOCKED: $file (safety score: $score)"
+    echo "   $(echo "$result" | jq -r '.summary')"
+    EXIT_CODE=1
+  elif [ "$level" = "caution" ]; then
+    echo "⚠️  WARNING: $file (safety score: $score)"
+    echo "   $(echo "$result" | jq -r '.summary')"
+  fi
+done
+
+exit $EXIT_CODE`} lang="bash" />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.vscodePythonTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.vscodePythonDesc")}</p>
+        <CodeBlock code={`import requests
+import sys
+import json
+
+API_KEY = "eak_your_api_key"
+BASE_URL = "${origin}/api/dev"
+
+def analyze_file(filepath):
+    with open(filepath, 'r') as f:
+        content = f.read()[:10000]
+
+    response = requests.post(
+        f"{BASE_URL}/analyze",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={"text": content}
+    )
+    result = response.json()
+    score = result.get("riskScore", 100)
+    level = result.get("level", "safe")
+    issues = result.get("issues", [])
+
+    print(f"[{level.upper()}] {filepath} — safety score: {score}")
+    for issue in issues:
+        print(f"  [{issue['severity']}] {issue['detail']}")
+
+    return level != "danger"
+
+def sanitize_file(filepath):
+    with open(filepath, 'r') as f:
+        content = f.read()[:10000]
+
+    response = requests.post(
+        f"{BASE_URL}/sanitize",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={"text": content}
+    )
+    result = response.json()
+    print(f"Applied {result['changeCount']} changes")
+    for change in result.get("changes", []):
+        print(f"  {change['category']}: {change['original']} → {change['replacement']}")
+
+    return result["sanitized"]
+
+if __name__ == "__main__":
+    for filepath in sys.argv[1:]:
+        analyze_file(filepath)`} lang="python" />
+      </div>
+    </div>
+  );
+}
+
+function ReplitSection() {
+  const { t } = useTranslation();
+  const origin = window.location.origin;
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">{t("firewallDocs.replitTitle")}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.replitDesc")}</p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.replitMiddlewareTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.replitMiddlewareDesc")}</p>
+        <CodeBlock code={`// eraseai-middleware.js — Wrap AI SDK calls with EraseAI scanning
+const API_KEY = process.env.ERASEAI_API_KEY;
+const API_URL = "${origin}/api/dev";
+
+async function scanBeforeSend(prompt) {
+  const res = await fetch(API_URL + "/analyze", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + API_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ text: prompt })
+  });
+
+  const result = await res.json();
+  if (result.level === "danger") {
+    throw new Error(
+      "EraseAI blocked: " + result.summary
+    );
+  }
+
+  if (result.level === "caution") {
+    const sanitized = await fetch(API_URL + "/sanitize", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text: prompt })
+    });
+    const cleaned = await sanitized.json();
+    return cleaned.sanitized;
+  }
+
+  return prompt; // safe — pass through
+}
+
+module.exports = { scanBeforeSend };`} lang="javascript" />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.replitUsageTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.replitUsageDesc")}</p>
+        <CodeBlock code={`const { scanBeforeSend } = require("./eraseai-middleware");
+const { OpenAI } = require("openai");
+
+const openai = new OpenAI();
+
+async function chat(userPrompt) {
+  // Scan & sanitize before sending to AI
+  const safePrompt = await scanBeforeSend(userPrompt);
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "user", content: safePrompt }]
+  });
+
+  return response.choices[0].message.content;
+}`} lang="javascript" />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.replitPythonTitle")}</h3>
+        <CodeBlock code={`import requests
+import os
+
+ERASEAI_KEY = os.environ["ERASEAI_API_KEY"]
+ERASEAI_URL = "${origin}/api/dev"
+
+def firewall_scan(prompt: str) -> str:
+    """Scan prompt through EraseAI firewall, sanitize if needed."""
+    headers = {
+        "Authorization": f"Bearer {ERASEAI_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Step 1: Analyze
+    analysis = requests.post(
+        f"{ERASEAI_URL}/analyze",
+        headers=headers,
+        json={"text": prompt}
+    ).json()
+
+    if analysis["level"] == "danger":
+        raise ValueError(f"Blocked by EraseAI: {analysis['summary']}")
+
+    if analysis["level"] == "caution":
+        # Step 2: Auto-sanitize
+        sanitized = requests.post(
+            f"{ERASEAI_URL}/sanitize",
+            headers=headers,
+            json={"text": prompt}
+        ).json()
+        return sanitized["sanitized"]
+
+    return prompt  # safe`} lang="python" />
+      </div>
+    </div>
+  );
+}
+
+function XcodeSection() {
+  const { t } = useTranslation();
+  const origin = window.location.origin;
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">{t("firewallDocs.xcodeTitle")}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.xcodeDesc")}</p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.xcodeSwiftTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.xcodeSwiftDesc")}</p>
+        <CodeBlock code={`import Foundation
+
+struct EraseAIFirewall {
+    let apiKey: String
+    let baseURL: String
+
+    init(apiKey: String, baseURL: String = "${origin}/api/dev") {
+        self.apiKey = apiKey
+        self.baseURL = baseURL
+    }
+
+    struct AnalyzeResult: Codable {
+        let riskScore: Int
+        let level: String
+        let issues: [Issue]
+        let suggestions: [Suggestion]
+        let summary: String
+    }
+
+    struct Issue: Codable {
+        let category: String
+        let severity: String
+        let detail: String
+    }
+
+    struct Suggestion: Codable {
+        let action: String
+        let detail: String
+    }
+
+    struct SanitizeResult: Codable {
+        let sanitized: String
+        let changeCount: Int
+    }
+
+    func analyze(text: String) async throws -> AnalyzeResult {
+        var request = URLRequest(
+            url: URL(string: "\\(baseURL)/analyze")!
+        )
+        request.httpMethod = "POST"
+        request.setValue("Bearer \\(apiKey)",
+            forHTTPHeaderField: "Authorization")
+        request.setValue("application/json",
+            forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            ["text": text]
+        )
+
+        let (data, _) = try await URLSession.shared.data(
+            for: request
+        )
+        return try JSONDecoder().decode(
+            AnalyzeResult.self, from: data
+        )
+    }
+
+    func sanitize(text: String) async throws -> SanitizeResult {
+        var request = URLRequest(
+            url: URL(string: "\\(baseURL)/sanitize")!
+        )
+        request.httpMethod = "POST"
+        request.setValue("Bearer \\(apiKey)",
+            forHTTPHeaderField: "Authorization")
+        request.setValue("application/json",
+            forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            ["text": text]
+        )
+
+        let (data, _) = try await URLSession.shared.data(
+            for: request
+        )
+        return try JSONDecoder().decode(
+            SanitizeResult.self, from: data
+        )
+    }
+}`} lang="javascript" />
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.xcodeBuildPhaseTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.xcodeBuildPhaseDesc")}</p>
+        <CodeBlock code={`#!/bin/bash
+# Xcode Build Phase Script — EraseAI Pre-Build Scan
+# Add as: Build Phases → New Run Script Phase
+
+API_KEY="$ERASEAI_API_KEY"
+API_URL="${origin}/api/dev"
+
+if [ -z "$API_KEY" ]; then
+  echo "warning: ERASEAI_API_KEY not set, skipping scan"
+  exit 0
+fi
+
+BLOCKED=0
+for file in $(find "$SRCROOT" -name "*.swift" -newer "$BUILT_PRODUCTS_DIR"); do
+  content=$(head -c 10000 "$file")
+  if [ -z "$content" ]; then continue; fi
+
+  result=$(curl -s -X POST "$API_URL/analyze" \\
+    -H "Authorization: Bearer $API_KEY" \\
+    -H "Content-Type: application/json" \\
+    -d "{\\"text\\": $(echo "$content" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}")
+
+  level=$(echo "$result" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('level','safe'))")
+
+  if [ "$level" = "danger" ]; then
+    echo "error: EraseAI blocked $file — contains secrets or PII"
+    BLOCKED=1
+  fi
+done
+
+exit $BLOCKED`} lang="bash" />
+      </div>
+    </div>
+  );
+}
+
+function TroubleshootingSection() {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">{t("firewallDocs.troubleshootTitle")}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.troubleshootDesc")}</p>
+      </div>
+
+      <div className="space-y-4">
+        {[
+          {
+            q: t("firewallDocs.troubleQ1"),
+            a: t("firewallDocs.troubleA1"),
+          },
+          {
+            q: t("firewallDocs.troubleQ2"),
+            a: t("firewallDocs.troubleA2"),
+          },
+          {
+            q: t("firewallDocs.troubleQ3"),
+            a: t("firewallDocs.troubleA3"),
+          },
+          {
+            q: t("firewallDocs.troubleQ4"),
+            a: t("firewallDocs.troubleA4"),
+          },
+          {
+            q: t("firewallDocs.troubleQ5"),
+            a: t("firewallDocs.troubleA5"),
+          },
+        ].map((item, i) => (
+          <div key={i} className="bg-card/40 border border-border/20 rounded-xl p-4 space-y-2">
+            <h3 className="text-sm font-bold text-foreground">{item.q}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{item.a}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.scoreExplainTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.scoreExplainDesc")}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3 space-y-1">
+            <h4 className="text-xs font-bold text-red-400">{t("firewallDocs.scoreDanger")}</h4>
+            <p className="text-[11px] text-muted-foreground">{t("firewallDocs.scoreDangerDesc")}</p>
+          </div>
+          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3 space-y-1">
+            <h4 className="text-xs font-bold text-yellow-400">{t("firewallDocs.scoreCaution")}</h4>
+            <p className="text-[11px] text-muted-foreground">{t("firewallDocs.scoreCautionDesc")}</p>
+          </div>
+          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 space-y-1">
+            <h4 className="text-xs font-bold text-green-400">{t("firewallDocs.scoreSafe")}</h4>
+            <p className="text-[11px] text-muted-foreground">{t("firewallDocs.scoreSafeDesc")}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FirewallDocs({ onBack, onUpgrade, onDevMode }: FirewallDocsProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -608,11 +1107,16 @@ export default function FirewallDocs({ onBack, onUpgrade, onDevMode }: FirewallD
 
   const navItems: { id: SectionId; icon: typeof Shield; label: string }[] = [
     { id: "overview", icon: Shield, label: t("firewallDocs.navOverview") },
+    { id: "apikey", icon: Key, label: t("firewallDocs.navApiKey") },
     { id: "install", icon: Download, label: t("firewallDocs.navInstall") },
     { id: "endpoints", icon: Terminal, label: t("firewallDocs.navEndpoints") },
     { id: "extension", icon: Puzzle, label: t("firewallDocs.navExtension") },
+    { id: "vscode", icon: Code2, label: t("firewallDocs.navVSCode") },
+    { id: "replit", icon: Laptop, label: t("firewallDocs.navReplit") },
+    { id: "xcode", icon: Smartphone, label: t("firewallDocs.navXcode") },
     { id: "ratelimits", icon: Gauge, label: t("firewallDocs.navRateLimits") },
     { id: "platforms", icon: Globe, label: t("firewallDocs.navPlatforms") },
+    { id: "troubleshooting", icon: HelpCircle, label: t("firewallDocs.navTroubleshoot") },
   ];
 
   return (
@@ -654,11 +1158,16 @@ export default function FirewallDocs({ onBack, onUpgrade, onDevMode }: FirewallD
 
             <main className="flex-1 min-w-0">
               {activeSection === "overview" && <OverviewSection />}
+              {activeSection === "apikey" && <ApiKeySection />}
               {activeSection === "install" && <InstallSection />}
               {activeSection === "endpoints" && <EndpointsSection />}
               {activeSection === "extension" && <ExtensionSection />}
+              {activeSection === "vscode" && <VSCodeSection />}
+              {activeSection === "replit" && <ReplitSection />}
+              {activeSection === "xcode" && <XcodeSection />}
               {activeSection === "ratelimits" && <RateLimitsSection />}
               {activeSection === "platforms" && <PlatformsSection />}
+              {activeSection === "troubleshooting" && <TroubleshootingSection />}
 
               {onDevMode && (
                 <div className="mt-8 bg-amber-500/5 border border-amber-500/20 rounded-xl p-5 flex items-start gap-4">
