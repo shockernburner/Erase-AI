@@ -768,11 +768,15 @@ POST ${API_BASE}/dev/sanitize
   "issues": [...],
   "suggestions": [...],
   "summary": "...",
-  "meta": {
-    "version": "1.0",
-    "timestamp": "ISO-8601",
-    "requestId": "uuid"
-  }
+  "meta": { "version": "1.0", "timestamp": "ISO-8601", "requestId": "uuid" }
+}
+
+// sanitize response
+{
+  "sanitized": "cleaned text...",
+  "changes": [{ "type": "pii", "original": "...", "replacement": "..." }],
+  "changeCount": 2,
+  "meta": { "version": "1.0", "timestamp": "ISO-8601", "requestId": "uuid" }
 }`}
                   </pre>
                 </div>
