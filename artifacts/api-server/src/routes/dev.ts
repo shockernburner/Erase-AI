@@ -9,7 +9,7 @@ import { maskSecret } from "../lib/dev/secrets";
 
 const router = Router();
 
-const API_VERSION = "1.0.0";
+const API_VERSION = "1.0";
 
 function buildMeta() {
   return {
@@ -74,9 +74,7 @@ router.post("/analyze", refreshPlanFromDB, async (req, res) => {
       res.status(429).json({
         error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
         code: "RATE_LIMIT_EXCEEDED",
-        upgrade: true,
-        limit: FREE_DAILY_LIMIT,
-        used,
+        details: { upgrade: true, limit: FREE_DAILY_LIMIT, used },
         meta: buildMeta(),
       });
       return;
@@ -133,9 +131,7 @@ router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
       res.status(429).json({
         error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
         code: "RATE_LIMIT_EXCEEDED",
-        upgrade: true,
-        limit: FREE_DAILY_LIMIT,
-        used,
+        details: { upgrade: true, limit: FREE_DAILY_LIMIT, used },
         meta: buildMeta(),
       });
       return;

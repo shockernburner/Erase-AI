@@ -101,7 +101,7 @@ function AuthGate() {
   }
 
   if (view === "docs") {
-    return <ApiDocs onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+    return <ApiDocs onBack={() => setView("home")} onUpgrade={() => setView("pricing")} onDevMode={() => setView("devMode")} />;
   }
 
   if (view === "devMode") {

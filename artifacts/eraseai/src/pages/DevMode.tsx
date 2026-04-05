@@ -250,6 +250,19 @@ export default function DevMode({
   const [historyPage, setHistoryPage] = useState(0);
   const HISTORY_PAGE_SIZE = 20;
 
+  const apiKeysQuery = useQuery({
+    queryKey: ["dev-api-keys"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/developer/keys`, { credentials: "include" });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.keys || []) as { id: string; prefix: string; name: string }[];
+    },
+    enabled: activeTab === "integration",
+    staleTime: 60_000,
+  });
+  const keyPrefix = apiKeysQuery.data?.[0]?.prefix || "eak_...";
+
   const historyQuery = useQuery({
     queryKey: ["dev-history", historyPage],
     queryFn: async () => {
@@ -275,7 +288,7 @@ export default function DevMode({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data.upgrade) {
+        if (data.details?.upgrade || data.upgrade) {
           onUpgrade();
           throw new Error("UPGRADE_REQUIRED");
         }
@@ -300,7 +313,7 @@ export default function DevMode({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data.upgrade) {
+        if (data.details?.upgrade || data.upgrade) {
           onUpgrade();
           throw new Error("UPGRADE_REQUIRED");
         }
@@ -691,7 +704,7 @@ export default function DevMode({
                       label: t("devMode.analyzeExample"),
                       code: `curl -X POST ${window.location.origin}${API_BASE}/dev/analyze \\
   -H "Content-Type: application/json" \\
-  -H "Cookie: session=YOUR_SESSION_COOKIE" \\
+  -H "Authorization: Bearer ${keyPrefix}" \\
   -d '{"text": "My API key is sk-abc123..."}'`,
                     },
                     {
@@ -699,7 +712,7 @@ export default function DevMode({
                       label: t("devMode.sanitizeExample"),
                       code: `curl -X POST ${window.location.origin}${API_BASE}/dev/sanitize \\
   -H "Content-Type: application/json" \\
-  -H "Cookie: session=YOUR_SESSION_COOKIE" \\
+  -H "Authorization: Bearer ${keyPrefix}" \\
   -d '{"text": "Contact john@example.com or call 555-1234"}'`,
                     },
                   ].map((snippet) => (

@@ -470,7 +470,10 @@
     "cicdDesc": "上传数据集、分析它、检查关键问题并下载清理后的输出。",
     "upgradeTitle": "API访问需要付费计划",
     "upgradeDesc": "升级到Pro、Business或Enterprise以生成API密钥并访问此处记录的所有端点。",
-    "upgradeCta": "升级计划"
+    "upgradeCta": "升级计划",
+    "devModeTitle": "试用DevMode集成",
+    "devModeDesc": "带复制功能的交互式curl示例。即时测试分析和清理端点。",
+    "devModeCta": "打开DevMode"
   },
   "language": {
     "en": "English",
@@ -865,13 +868,13 @@
     "pageOf": "第 {{page}} 页，共 {{total}} 页",
     "integrationTab": "集成",
     "quickStartTitle": "快速开始",
-    "quickStartDesc": "复制这些curl命令，将DevMode扫描器集成到您的工作流程中。请求需要有效的会话Cookie。",
+    "quickStartDesc": "复制这些curl命令，将DevMode扫描器集成到您的工作流程中。在Authorization头中包含您的API密钥。",
     "analyzeExample": "分析 — 检测风险",
     "sanitizeExample": "清理 — 净化文本",
     "copyCode": "复制",
     "requestFormat": "请求格式",
     "responseFormat": "响应格式",
-    "authNote": "所有请求都需要会话认证。在每个请求中包含您的会话Cookie。dev端点不支持API密钥认证。",
+    "authNote": "所有请求都需要在Authorization头中包含API密钥：Bearer eak_... 从开发者仪表板生成密钥。完整参考请查看API文档页面。",
     "rateLimitNote": "免费计划：每天10次扫描。付费计划：无限扫描。超过限制时，响应中会返回速率限制信息。"
   },
   "certifications": {

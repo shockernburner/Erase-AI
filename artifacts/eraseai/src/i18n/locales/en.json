@@ -738,7 +738,10 @@
     "cicdDesc": "Upload a dataset, analyze it for issues, gate on high-severity findings, and download the cleaned output — all in a single script.",
     "upgradeTitle": "API Access Requires a Paid Plan",
     "upgradeDesc": "Upgrade to Pro, Business, or Enterprise to generate API keys and access all endpoints documented here.",
-    "upgradeCta": "Upgrade Plan"
+    "upgradeCta": "Upgrade Plan",
+    "devModeTitle": "Try DevMode Integration",
+    "devModeDesc": "Interactive curl examples with copy-to-clipboard. Test the analyze and sanitize endpoints instantly.",
+    "devModeCta": "Open DevMode"
   },
   "language": {
     "en": "English",
@@ -865,13 +868,13 @@
     "pageOf": "Page {{page}} of {{total}}",
     "integrationTab": "Integration",
     "quickStartTitle": "Quick Start",
-    "quickStartDesc": "Copy these curl commands to integrate the DevMode scanner into your workflow. Requests require an active session cookie.",
+    "quickStartDesc": "Copy these curl commands to integrate the DevMode scanner into your workflow. Include your API key in the Authorization header.",
     "analyzeExample": "Analyze — detect risks",
     "sanitizeExample": "Sanitize — clean text",
     "copyCode": "Copy",
     "requestFormat": "Request Format",
     "responseFormat": "Response Format",
-    "authNote": "All requests require session authentication. Include your session cookie in each request. API key auth is not supported for dev endpoints.",
+    "authNote": "All requests require an API key in the Authorization header: Bearer eak_... Generate keys from the Developer Dashboard. See the API Docs page for full reference.",
     "rateLimitNote": "Free plan: 10 scans per day. Paid plans: unlimited scans. Rate limit info is returned in the response when exceeded."
   },
   "certifications": {

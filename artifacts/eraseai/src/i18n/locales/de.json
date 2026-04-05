@@ -470,7 +470,10 @@
     "cicdDesc": "Laden Sie ein Dataset hoch, analysieren Sie es, prüfen Sie auf kritische Probleme und laden Sie die bereinigte Ausgabe herunter.",
     "upgradeTitle": "API-Zugang erfordert einen kostenpflichtigen Plan",
     "upgradeDesc": "Wechseln Sie zu Pro, Business oder Enterprise, um API-Schlüssel zu generieren und auf alle hier dokumentierten Endpunkte zuzugreifen.",
-    "upgradeCta": "Plan upgraden"
+    "upgradeCta": "Plan upgraden",
+    "devModeTitle": "DevMode-Integration testen",
+    "devModeDesc": "Interaktive curl-Beispiele mit Kopierfunktion. Testen Sie die Analyse- und Bereinigungsendpunkte sofort.",
+    "devModeCta": "DevMode öffnen"
   },
   "language": {
     "en": "English",
@@ -865,13 +868,13 @@
     "pageOf": "Seite {{page}} von {{total}}",
     "integrationTab": "Integration",
     "quickStartTitle": "Schnellstart",
-    "quickStartDesc": "Kopieren Sie diese curl-Befehle, um den DevMode-Scanner in Ihren Workflow zu integrieren. Anfragen erfordern ein aktives Sitzungs-Cookie.",
+    "quickStartDesc": "Kopieren Sie diese curl-Befehle, um den DevMode-Scanner in Ihren Workflow zu integrieren. Fügen Sie Ihren API-Schlüssel in den Authorization-Header ein.",
     "analyzeExample": "Analysieren — Risiken erkennen",
     "sanitizeExample": "Bereinigen — Text säubern",
     "copyCode": "Kopieren",
     "requestFormat": "Anfrageformat",
     "responseFormat": "Antwortformat",
-    "authNote": "Alle Anfragen erfordern Sitzungsauthentifizierung. Fügen Sie Ihr Sitzungs-Cookie in jede Anfrage ein. API-Schlüssel-Authentifizierung wird für Dev-Endpunkte nicht unterstützt.",
+    "authNote": "Alle Anfragen erfordern einen API-Schlüssel im Authorization-Header: Bearer eak_... Generieren Sie Schlüssel im Entwickler-Dashboard. Die vollständige Referenz finden Sie auf der API-Dokumentationsseite.",
     "rateLimitNote": "Kostenloser Plan: 10 Scans pro Tag. Bezahlte Pläne: unbegrenzte Scans. Ratenlimit-Informationen werden in der Antwort zurückgegeben, wenn überschritten."
   },
   "certifications": {

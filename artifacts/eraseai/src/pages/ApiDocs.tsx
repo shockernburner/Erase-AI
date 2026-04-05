@@ -26,6 +26,7 @@ type Lang = "curl" | "java" | "python";
 interface ApiDocsProps {
   onBack: () => void;
   onUpgrade?: () => void;
+  onDevMode?: () => void;
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -1145,7 +1146,7 @@ const SECTIONS: { id: SectionId; icon: typeof Book; labelKey: string }[] = [
   { id: "usecases", icon: Building2, labelKey: "docs.navUseCases" },
 ];
 
-export default function ApiDocs({ onBack, onUpgrade }: ApiDocsProps) {
+export default function ApiDocs({ onBack, onUpgrade, onDevMode }: ApiDocsProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [section, setSection] = useState<SectionId>("overview");
@@ -1223,7 +1224,30 @@ export default function ApiDocs({ onBack, onUpgrade }: ApiDocsProps) {
             {section === "datasets" && <DatasetsSection />}
             {section === "webhooks" && <WebhooksSection />}
             {section === "ratelimits" && <RateLimitsSection />}
-            {section === "usecases" && <UseCasesSection />}
+            {section === "usecases" && (
+              <>
+                <UseCasesSection />
+                {onDevMode && (
+                  <div className="mt-6 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-500/20 text-amber-400 p-2 rounded-lg">
+                        <Shield className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-foreground">{t("docs.devModeTitle")}</h3>
+                        <p className="text-xs text-muted-foreground">{t("docs.devModeDesc")}</p>
+                      </div>
+                      <button
+                        onClick={onDevMode}
+                        className="px-4 py-2 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-semibold hover:bg-amber-500/30 transition-colors whitespace-nowrap"
+                      >
+                        {t("docs.devModeCta")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </motion.main>
         </div>
       </div>

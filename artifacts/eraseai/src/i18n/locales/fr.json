@@ -470,7 +470,10 @@
     "cicdDesc": "Téléchargez un dataset, analysez-le, vérifiez les problèmes critiques et téléchargez la sortie nettoyée.",
     "upgradeTitle": "L'accès API nécessite un plan payant",
     "upgradeDesc": "Passez à Pro, Business ou Enterprise pour générer des clés API et accéder à tous les endpoints documentés ici.",
-    "upgradeCta": "Mettre à niveau"
+    "upgradeCta": "Mettre à niveau",
+    "devModeTitle": "Essayer l'intégration DevMode",
+    "devModeDesc": "Exemples curl interactifs avec copie. Testez les endpoints d'analyse et de nettoyage instantanément.",
+    "devModeCta": "Ouvrir DevMode"
   },
   "language": {
     "en": "English",
@@ -865,13 +868,13 @@
     "pageOf": "Page {{page}} sur {{total}}",
     "integrationTab": "Intégration",
     "quickStartTitle": "Démarrage rapide",
-    "quickStartDesc": "Copiez ces commandes curl pour intégrer le scanner DevMode dans votre workflow. Les requêtes nécessitent un cookie de session actif.",
+    "quickStartDesc": "Copiez ces commandes curl pour intégrer le scanner DevMode dans votre workflow. Incluez votre clé API dans l'en-tête Authorization.",
     "analyzeExample": "Analyser — détecter les risques",
     "sanitizeExample": "Assainir — nettoyer le texte",
     "copyCode": "Copier",
     "requestFormat": "Format de requête",
     "responseFormat": "Format de réponse",
-    "authNote": "Toutes les requêtes nécessitent une authentification par session. Incluez votre cookie de session dans chaque requête. L'authentification par clé API n'est pas prise en charge pour les endpoints dev.",
+    "authNote": "Toutes les requêtes nécessitent une clé API dans l'en-tête Authorization : Bearer eak_... Générez des clés depuis le tableau de bord développeur. Consultez la page Documentation API pour la référence complète.",
     "rateLimitNote": "Plan gratuit : 10 scans par jour. Plans payants : scans illimités. Les informations de limite sont retournées dans la réponse en cas de dépassement."
   },
   "certifications": {

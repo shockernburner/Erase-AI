@@ -470,7 +470,10 @@
     "cicdDesc": "Cargue un dataset, analícelo, verifique problemas críticos y descargue la salida limpiada.",
     "upgradeTitle": "El acceso API requiere un plan de pago",
     "upgradeDesc": "Actualice a Pro, Business o Enterprise para generar claves API y acceder a todos los endpoints documentados aquí.",
-    "upgradeCta": "Actualizar plan"
+    "upgradeCta": "Actualizar plan",
+    "devModeTitle": "Probar la integración DevMode",
+    "devModeDesc": "Ejemplos curl interactivos con copiar al portapapeles. Pruebe los endpoints de análisis y limpieza al instante.",
+    "devModeCta": "Abrir DevMode"
   },
   "language": {
     "en": "English",
@@ -865,13 +868,13 @@
     "pageOf": "Página {{page}} de {{total}}",
     "integrationTab": "Integración",
     "quickStartTitle": "Inicio rápido",
-    "quickStartDesc": "Copia estos comandos curl para integrar el escáner DevMode en tu flujo de trabajo. Las solicitudes requieren una cookie de sesión activa.",
+    "quickStartDesc": "Copia estos comandos curl para integrar el escáner DevMode en tu flujo de trabajo. Incluye tu clave API en el encabezado Authorization.",
     "analyzeExample": "Analizar — detectar riesgos",
     "sanitizeExample": "Sanear — limpiar texto",
     "copyCode": "Copiar",
     "requestFormat": "Formato de solicitud",
     "responseFormat": "Formato de respuesta",
-    "authNote": "Todas las solicitudes requieren autenticación por sesión. Incluye tu cookie de sesión en cada solicitud. La autenticación por clave API no es compatible con los endpoints dev.",
+    "authNote": "Todas las solicitudes requieren una clave API en el encabezado Authorization: Bearer eak_... Genera claves desde el panel de desarrollador. Consulta la página de documentación API para la referencia completa.",
     "rateLimitNote": "Plan gratuito: 10 escaneos por día. Planes de pago: escaneos ilimitados. La información del límite se devuelve en la respuesta cuando se excede."
   },
   "certifications": {

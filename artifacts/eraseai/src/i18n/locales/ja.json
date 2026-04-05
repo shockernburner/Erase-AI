@@ -470,7 +470,10 @@
     "cicdDesc": "データセットをアップロードし、分析し、重大な問題を確認し、クリーンな出力をダウンロードします。",
     "upgradeTitle": "APIアクセスには有料プランが必要です",
     "upgradeDesc": "Pro、Business、またはEnterpriseにアップグレードして、APIキーを生成し、ここに記載されているすべてのエンドポイントにアクセスしてください。",
-    "upgradeCta": "プランをアップグレード"
+    "upgradeCta": "プランをアップグレード",
+    "devModeTitle": "DevMode統合を試す",
+    "devModeDesc": "コピー機能付きのインタラクティブなcurl例。分析とサニタイズのエンドポイントを即座にテストできます。",
+    "devModeCta": "DevModeを開く"
   },
   "language": {
     "en": "English",
@@ -865,13 +868,13 @@
     "pageOf": "{{page}} / {{total}} ページ",
     "integrationTab": "統合",
     "quickStartTitle": "クイックスタート",
-    "quickStartDesc": "これらのcurlコマンドをコピーして、DevModeスキャナーをワークフローに統合してください。リクエストにはアクティブなセッションCookieが必要です。",
+    "quickStartDesc": "これらのcurlコマンドをコピーして、DevModeスキャナーをワークフローに統合してください。AuthorizationヘッダーにAPIキーを含めてください。",
     "analyzeExample": "分析 — リスクを検出",
     "sanitizeExample": "サニタイズ — テキストをクリーン",
     "copyCode": "コピー",
     "requestFormat": "リクエスト形式",
     "responseFormat": "レスポンス形式",
-    "authNote": "すべてのリクエストにはセッション認証が必要です。各リクエストにセッションCookieを含めてください。APIキー認証はdevエンドポイントではサポートされていません。",
+    "authNote": "すべてのリクエストにはAuthorizationヘッダーにAPIキーが必要です: Bearer eak_... 開発者ダッシュボードからキーを生成してください。完全なリファレンスはAPIドキュメントページをご覧ください。",
     "rateLimitNote": "無料プラン: 1日10回スキャン。有料プラン: 無制限スキャン。制限を超えた場合、レスポンスにレート制限情報が返されます。"
   },
   "certifications": {
