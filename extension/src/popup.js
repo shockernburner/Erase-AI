@@ -41,7 +41,7 @@ function renderLastScan(scan) {
 
   const scoreClass = scan.riskScore < 40 ? "danger" : scan.riskScore <= 70 ? "caution" : "safe";
   const levelLabel = scan.level === "danger" ? "High Risk" : scan.level === "caution" ? "Medium Risk" : "Safe";
-  const issueCount = scan.issues ? scan.issues.length : 0;
+  const issueCount = scan.issueCount != null ? scan.issueCount : (scan.issues ? scan.issues.length : 0);
   const timeAgo = scan.scannedAt ? formatTimeAgo(scan.scannedAt) : "";
 
   scanSummary.innerHTML = `

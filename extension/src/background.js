@@ -98,7 +98,16 @@ async function testConnection() {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "ANALYZE") {
     analyzePrompt(message.text).then((result) => {
-      chrome.storage.local.set({ lastScan: { ...result, scannedAt: Date.now() } });
+      if (result.riskScore != null) {
+        chrome.storage.local.set({
+          lastScan: {
+            riskScore: result.riskScore,
+            level: result.level,
+            issueCount: result.issues ? result.issues.length : 0,
+            scannedAt: Date.now(),
+          },
+        });
+      }
       sendResponse(result);
     }).catch(() => sendResponse({ error: "Analysis failed" }));
     return true;
