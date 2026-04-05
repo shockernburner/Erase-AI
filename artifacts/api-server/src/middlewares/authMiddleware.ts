@@ -26,7 +26,7 @@ declare global {
   }
 }
 
-const PUBLIC_PREFIXES = ["/api/auth/", "/api/healthz", "/api/billing/webhook", "/api/v1/", "/api/dev/"];
+const PUBLIC_PREFIXES = ["/api/auth/", "/api/healthz", "/api/billing/webhook", "/api/v1/"];
 
 function isPublicRoute(path: string): boolean {
   return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
@@ -41,9 +41,11 @@ export async function authMiddleware(
     return this.user != null;
   } as Request["isAuthenticated"];
 
+  const isDevRoute = req.path.startsWith("/api/dev/");
+
   const sid = getSessionId(req);
   if (!sid) {
-    if (!isPublicRoute(req.path)) {
+    if (!isPublicRoute(req.path) && !isDevRoute) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
@@ -54,7 +56,7 @@ export async function authMiddleware(
   const session = await getSession(sid);
   if (!session?.user?.id) {
     await clearSession(res, sid);
-    if (!isPublicRoute(req.path)) {
+    if (!isPublicRoute(req.path) && !isDevRoute) {
       res.status(401).json({ error: "Session expired. Please log in again." });
       return;
     }

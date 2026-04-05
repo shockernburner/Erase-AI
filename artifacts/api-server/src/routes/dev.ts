@@ -1,12 +1,12 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { db } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { db, apiKeysTable, usersTable } from "@workspace/db";
+import { sql, eq, and, isNull } from "drizzle-orm";
 import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
 import { refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { maskSecret } from "../lib/dev/secrets";
-import { apiKeyAuth } from "../middlewares/apiKeyMiddleware";
+import { hashApiKey } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
 
 const router = Router();
@@ -14,7 +14,60 @@ const router = Router();
 async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith("Bearer ")) {
-    return apiKeyAuth(req, res, next);
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      res.status(401).json({ error: "API key is empty", code: "AUTH_INVALID_KEY", meta: buildMeta() });
+      return;
+    }
+
+    const keyHash = hashApiKey(token);
+    const [apiKey] = await db
+      .select()
+      .from(apiKeysTable)
+      .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
+
+    if (!apiKey) {
+      res.status(401).json({ error: "Invalid or revoked API key", code: "AUTH_INVALID_KEY", meta: buildMeta() });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, apiKey.userId));
+
+    if (!user) {
+      res.status(401).json({ error: "API key owner not found", code: "AUTH_USER_NOT_FOUND", meta: buildMeta() });
+      return;
+    }
+
+    db.update(apiKeysTable)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeysTable.id, apiKey.id))
+      .execute()
+      .catch(() => {});
+
+    req.isAuthenticated = function (this: Request) {
+      return this.user != null;
+    } as Request["isAuthenticated"];
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImageUrl: user.profileImageUrl,
+      role: user.role as "user" | "admin",
+      planType: (user.planType || "free") as "free" | "pro" | "business" | "enterprise",
+      planStartDate: user.planStartDate?.toISOString() ?? null,
+      planEndDate: user.planEndDate?.toISOString() ?? null,
+    };
+    req.apiKeyId = apiKey.id;
+    return next();
+  }
+
+  if (req.user?.id) {
+    return next();
   }
 
   const sid = getSessionId(req);
