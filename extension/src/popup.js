@@ -140,7 +140,7 @@ saveUrlBtn.addEventListener("click", async () => {
   }
   try {
     const hostname = new URL(url).hostname;
-    if (!hostname.endsWith(".replit.app") && !hostname.endsWith(".repl.co")) {
+    if (!hostname.endsWith(".replit.app")) {
       showKeyStatus("Custom URL must be a *.replit.app domain", "error");
       return;
     }
