@@ -338,6 +338,9 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
                 >
                   <Shield className="w-3 h-3" />
                   {badge.key}
+                  <span className="text-[8px] font-sans text-muted-foreground/60 uppercase ml-0.5">
+                    {t("certifications.status.planned")}
+                  </span>
                 </span>
               ))}
             </div>
