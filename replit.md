@@ -51,6 +51,7 @@ The project is structured as a pnpm monorepo, separating deployable applications
 *   **EraseAI "How It Works" Tier Demo Video:** A separate React-based animated video (`artifacts/eraseai-video`) demonstrating tier progression and Personal Mode features with distinct color themes.
 *   **EraseAI Browser Extension (AI Firewall):** A Chrome extension (`extension/`) that intercepts and scans prompts before they are sent to AI platforms, using the `/api/dev/analyze` and `/api/dev/sanitize` endpoints, providing real-time risk assessment and sanitization.
 *   **Firewall Integration Documentation:** In-app documentation page (`FirewallDocs.tsx`) covering extension installation, API endpoints (ping, analyze, sanitize, history), extension architecture (content script, service worker, popup), rate limits/errors, supported platforms (ChatGPT, Claude, Gemini, Replit), and custom platform integration guide. Accessible via user menu → "Firewall Docs". i18n supported across all 6 locales.
+*   **EraseAI Firewall Demo Video:** A ~38s animated social media video (`artifacts/firewall-video`) showcasing the AI Firewall feature with 8 scenes: Hook (glitch text), Problem (dev leaking secrets to ChatGPT), Solution Reveal (shield logo), Browser Demo (ChatGPT + EraseAI overlay with risk ring), Code Integration (VS Code/Replit/Xcode carousel), Sanitize Flow (before/after), API Power (curl + JSON), and CTA/Outro. Built with React + Framer Motion + Tailwind, auto-plays and loops.
 
 # External Dependencies
 

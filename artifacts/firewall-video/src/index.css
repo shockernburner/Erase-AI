@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #6366f1;
+  --color-primary-light: #818cf8;
+  --color-accent: #06b6d4;
+  --color-accent-light: #22d3ee;
+  --color-violet: #8b5cf6;
+  --color-bg: #0a0a0f;
+  --color-bg-card: #1a1b23;
+  --color-danger: #ef4444;
+  --color-caution: #f59e0b;
+  --color-safe: #22c55e;
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-accent: var(--color-accent);
+  --color-accent-light: var(--color-accent-light);
+  --color-violet: var(--color-violet);
+  --color-bg: var(--color-bg);
+  --color-bg-card: var(--color-bg-card);
+  --color-danger: var(--color-danger);
+  --color-caution: var(--color-caution);
+  --color-safe: var(--color-safe);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg);
+  color: #f4f4f5;
+  overflow: hidden;
+}
+
+@keyframes glitch-1 {
+  0%, 100% { clip-path: inset(20% 0 60% 0); transform: translate(-2px, 2px); }
+  25% { clip-path: inset(40% 0 30% 0); transform: translate(2px, -1px); }
+  50% { clip-path: inset(60% 0 10% 0); transform: translate(-1px, 1px); }
+  75% { clip-path: inset(10% 0 70% 0); transform: translate(1px, -2px); }
+}
+
+@keyframes glitch-2 {
+  0%, 100% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -2px); }
+  25% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 1px); }
+  50% { clip-path: inset(30% 0 40% 0); transform: translate(1px, -1px); }
+  75% { clip-path: inset(50% 0 20% 0); transform: translate(-1px, 2px); }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes typing-cursor {
+  0%, 100% { border-right-color: var(--color-accent); }
+  50% { border-right-color: transparent; }
+}
