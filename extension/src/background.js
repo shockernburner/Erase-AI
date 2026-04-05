@@ -77,13 +77,11 @@ async function testConnection() {
   }
 
   try {
-    const response = await fetch(`${config.apiUrl}/api/dev/analyze`, {
-      method: "POST",
+    const response = await fetch(`${config.apiUrl}/api/dev/ping`, {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${config.apiKey}`,
       },
-      body: JSON.stringify({ text: "connection test" }),
     });
 
     if (response.ok) {

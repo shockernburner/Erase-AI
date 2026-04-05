@@ -101,6 +101,10 @@ function buildMeta() {
   };
 }
 
+router.get("/ping", (_req, res) => {
+  res.json({ ok: true, meta: buildMeta() });
+});
+
 const FREE_DAILY_LIMIT = 10;
 
 function redactInputForStorage(text: string): string {
