@@ -771,6 +771,8 @@
       "latestScore": "Dernier score : {{score}}/100",
       "contentScans": "Analyses de Contenu",
       "flagsDetected": "{{count}} alerte(s) dans la dernière analyse",
+      "promptRisk": "Risque Prompt",
+      "promptIssues": "{{count}} problème(s) détecté(s)",
       "avgRisk": "Score de Risque Moyen",
       "basedOnTrend": "Basé sur l'historique des analyses"
     }

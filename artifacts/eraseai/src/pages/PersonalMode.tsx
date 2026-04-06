@@ -847,9 +847,18 @@ function extractTextFromFile(file: File): Promise<string> {
   });
 }
 
+interface FirewallIssue {
+  category: string;
+  severity: string;
+  detail: string;
+  match: string;
+  start: number;
+  end: number;
+}
+
 interface FirewallResult {
   riskScore: number;
-  issues: { type: string; severity: string; detail: string; matchedText: string }[];
+  issues: FirewallIssue[];
 }
 
 interface SanitizeResult {
@@ -857,9 +866,10 @@ interface SanitizeResult {
   changes: { type: string; original: string; replacement: string }[];
 }
 
-function RiskReportPanel({ contentResult, historyData }: {
+function RiskReportPanel({ contentResult, historyData, promptResult }: {
   contentResult: ScanResult | null;
   historyData: { totalUsed: number; trend?: TrendPoint[] } | undefined;
+  promptResult: FirewallResult | null;
 }) {
   const { t } = useTranslation();
 
@@ -869,12 +879,16 @@ function RiskReportPanel({ contentResult, historyData }: {
 
   const latestContentScore = contentResult?.riskScore ?? null;
   const contentFlags = contentResult?.flags?.length ?? 0;
+  const promptScore = promptResult?.riskScore ?? null;
+  const promptIssues = promptResult?.issues?.length ?? 0;
 
-  const overallLevel = latestContentScore !== null
-    ? latestContentScore >= 70 ? "high" : latestContentScore >= 40 ? "medium" : "low"
-    : avgContentRisk !== null
-      ? avgContentRisk >= 70 ? "high" : avgContentRisk >= 40 ? "medium" : "low"
-      : null;
+  const combinedScore = latestContentScore !== null && promptScore !== null
+    ? Math.round((latestContentScore + promptScore) / 2)
+    : latestContentScore ?? promptScore ?? avgContentRisk;
+
+  const overallLevel = combinedScore !== null
+    ? combinedScore >= 70 ? "high" : combinedScore >= 40 ? "medium" : "low"
+    : null;
 
   const levelColors = {
     low: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
@@ -894,14 +908,14 @@ function RiskReportPanel({ contentResult, historyData }: {
       </div>
       <p className="text-sm text-muted-foreground mb-4">{t("personal.riskReport.subtitle")}</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className={`p-4 rounded-xl border ${overallLevel ? levelColors[overallLevel] : "border-border/30 bg-muted/10 text-muted-foreground"}`}>
           <div className="text-xs font-semibold uppercase mb-1">{t("personal.riskReport.overallRisk")}</div>
           <div className="text-2xl font-bold">
             {overallLevel ? t(`personal.risk.${overallLevel}`) : "—"}
           </div>
-          {latestContentScore !== null && (
-            <div className="text-xs mt-1 opacity-80">{t("personal.riskReport.latestScore", { score: latestContentScore })}</div>
+          {combinedScore !== null && (
+            <div className="text-xs mt-1 opacity-80">{t("personal.riskReport.latestScore", { score: combinedScore })}</div>
           )}
         </div>
 
@@ -914,8 +928,16 @@ function RiskReportPanel({ contentResult, historyData }: {
         </div>
 
         <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
+          <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("personal.riskReport.promptRisk")}</div>
+          <div className="text-2xl font-bold text-primary">{promptScore ?? "—"}</div>
+          {promptIssues > 0 && (
+            <div className="text-xs text-amber-400 mt-1">{t("personal.riskReport.promptIssues", { count: promptIssues })}</div>
+          )}
+        </div>
+
+        <div className="p-4 rounded-xl border border-border/30 bg-muted/10">
           <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("personal.riskReport.avgRisk")}</div>
-          <div className="text-2xl font-bold text-primary">{avgContentRisk ?? "—"}</div>
+          <div className="text-2xl font-bold text-foreground">{avgContentRisk ?? "—"}</div>
           {avgContentRisk !== null && (
             <div className="text-xs text-muted-foreground mt-1">{t("personal.riskReport.basedOnTrend")}</div>
           )}
@@ -925,7 +947,7 @@ function RiskReportPanel({ contentResult, historyData }: {
   );
 }
 
-function PromptProtectionPanel() {
+function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (result: FirewallResult | null) => void }) {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
   const [firewallResult, setFirewallResult] = useState<FirewallResult | null>(null);
@@ -946,6 +968,7 @@ function PromptProtectionPanel() {
     onSuccess: (data) => {
       setFirewallResult(data);
       setSanitizedResult(null);
+      onFirewallResult?.(data);
     },
   });
 
@@ -1056,12 +1079,12 @@ function PromptProtectionPanel() {
                       <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-bold uppercase text-yellow-400">{issue.type}</span>
+                          <span className="text-xs font-bold uppercase text-yellow-400">{issue.category}</span>
                           <span className="text-xs opacity-70 text-muted-foreground">({issue.severity})</span>
                         </div>
                         <p className="text-sm text-muted-foreground">{issue.detail}</p>
-                        {issue.matchedText && (
-                          <p className="text-xs mt-1 opacity-60 font-mono text-muted-foreground truncate">"{issue.matchedText}"</p>
+                        {issue.match && (
+                          <p className="text-xs mt-1 opacity-60 font-mono text-muted-foreground truncate">"{issue.match}"</p>
                         )}
                       </div>
                     </div>
@@ -1115,6 +1138,7 @@ export default function PersonalMode({
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [latestPromptResult, setLatestPromptResult] = useState<FirewallResult | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [limitError, setLimitError] = useState<{ used: number; limit: number } | null>(null);
@@ -1324,9 +1348,9 @@ export default function PersonalMode({
 
         <AlertsPanel onUpgrade={onUpgrade} />
 
-        <PromptProtectionPanel />
+        <PromptProtectionPanel onFirewallResult={setLatestPromptResult} />
 
-        <RiskReportPanel contentResult={result} historyData={historyQuery.data} />
+        <RiskReportPanel contentResult={result} historyData={historyQuery.data} promptResult={latestPromptResult} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

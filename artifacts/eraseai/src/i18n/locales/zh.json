@@ -771,6 +771,8 @@
       "latestScore": "最新评分：{{score}}/100",
       "contentScans": "内容扫描",
       "flagsDetected": "最新扫描中检测到 {{count}} 个标记",
+      "promptRisk": "提示词风险",
+      "promptIssues": "检测到 {{count}} 个问题",
       "avgRisk": "平均风险评分",
       "basedOnTrend": "基于扫描历史"
     }

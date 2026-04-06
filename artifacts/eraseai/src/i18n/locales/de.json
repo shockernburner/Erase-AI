@@ -771,6 +771,8 @@
       "latestScore": "Neuester Score: {{score}}/100",
       "contentScans": "Inhaltsscans",
       "flagsDetected": "{{count}} Markierung(en) im letzten Scan",
+      "promptRisk": "Prompt-Risiko",
+      "promptIssues": "{{count}} Problem(e) erkannt",
       "avgRisk": "Durchschn. Risikoscore",
       "basedOnTrend": "Basierend auf Scan-Verlauf"
     }

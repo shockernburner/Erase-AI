@@ -556,6 +556,8 @@
       "latestScore": "Latest score: {{score}}/100",
       "contentScans": "Content Scans",
       "flagsDetected": "{{count}} flag(s) in latest scan",
+      "promptRisk": "Prompt Risk",
+      "promptIssues": "{{count}} issue(s) detected",
       "avgRisk": "Avg. Risk Score",
       "basedOnTrend": "Based on scan history"
     },

@@ -771,6 +771,8 @@
       "latestScore": "最新スコア：{{score}}/100",
       "contentScans": "コンテンツスキャン",
       "flagsDetected": "最新スキャンで{{count}}件のフラグ検出",
+      "promptRisk": "プロンプトリスク",
+      "promptIssues": "{{count}}件の問題を検出",
       "avgRisk": "平均リスクスコア",
       "basedOnTrend": "スキャン履歴に基づく"
     }
