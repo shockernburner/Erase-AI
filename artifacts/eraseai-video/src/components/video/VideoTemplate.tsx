@@ -1,21 +1,23 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { Scene1_Intro } from '@/components/scenes/Scene1_Intro';
-import { Scene2_FreeTier } from '@/components/scenes/Scene2_FreeTier';
-import { Scene3_ProTier } from '@/components/scenes/Scene3_ProTier';
-import { Scene4_BusinessTier } from '@/components/scenes/Scene4_BusinessTier';
-import { Scene5_EnterpriseTier } from '@/components/scenes/Scene5_EnterpriseTier';
-import { Scene6_PersonalMode } from '@/components/scenes/Scene6_PersonalMode';
-import { Scene7_Outro } from '@/components/scenes/Scene7_Outro';
+import { Scene2_ContentScanning } from '@/components/scenes/Scene2_ContentScanning';
+import { Scene3_AIRewriting } from '@/components/scenes/Scene3_AIRewriting';
+import { Scene4_PromptProtection } from '@/components/scenes/Scene4_PromptProtection';
+import { Scene5_TrendMonitoring } from '@/components/scenes/Scene5_TrendMonitoring';
+import { Scene6_DevTools } from '@/components/scenes/Scene6_DevTools';
+import { Scene7_Trust } from '@/components/scenes/Scene7_Trust';
+import { Scene8_Outro } from '@/components/scenes/Scene8_Outro';
 
 const SCENE_DURATIONS = {
   intro: 7000,
-  free: 10000,
-  pro: 12000,
-  business: 12000,
-  enterprise: 15000,
-  personal: 12500,
-  outro: 9000,
+  scanning: 10000,
+  rewriting: 10000,
+  firewall: 10000,
+  trends: 10000,
+  devtools: 10000,
+  trust: 10000,
+  outro: 8000,
 };
 
 const TOTAL_MS = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0);
@@ -58,7 +60,7 @@ function Background({ currentScene }: { currentScene: number }) {
 
       <motion.div
         animate={{
-          x: currentScene === 0 ? '80vw' : currentScene === 6 ? '10vw' : '50vw',
+          x: currentScene === 0 ? '80vw' : currentScene === 7 ? '10vw' : '50vw',
           y: currentScene === 3 ? '80vh' : '20vh',
           scale: currentScene === 2 ? 2 : 1,
           opacity: currentScene === 4 ? 0.1 : 0.4
@@ -77,8 +79,8 @@ function Background({ currentScene }: { currentScene: number }) {
       <motion.div
         animate={{
           x: currentScene <= 2 ? '-10vw' : '70vw',
-          y: currentScene >= 4 ? '10vh' : '60vh',
-          scale: currentScene === 6 ? 1.5 : 0.8,
+          y: currentScene >= 5 ? '10vh' : '60vh',
+          scale: currentScene === 7 ? 1.5 : 0.8,
           opacity: 0.2
         }}
         transition={{ duration: 5, ease: "easeInOut" }}
@@ -108,12 +110,13 @@ export default function VideoTemplate() {
 
           <AnimatePresence mode="popLayout">
             {currentScene === 0 && <Scene1_Intro key="intro" />}
-            {currentScene === 1 && <Scene2_FreeTier key="free" />}
-            {currentScene === 2 && <Scene3_ProTier key="pro" />}
-            {currentScene === 3 && <Scene4_BusinessTier key="business" />}
-            {currentScene === 4 && <Scene5_EnterpriseTier key="enterprise" />}
-            {currentScene === 5 && <Scene6_PersonalMode key="personal" />}
-            {currentScene === 6 && <Scene7_Outro key="outro" />}
+            {currentScene === 1 && <Scene2_ContentScanning key="scanning" />}
+            {currentScene === 2 && <Scene3_AIRewriting key="rewriting" />}
+            {currentScene === 3 && <Scene4_PromptProtection key="firewall" />}
+            {currentScene === 4 && <Scene5_TrendMonitoring key="trends" />}
+            {currentScene === 5 && <Scene6_DevTools key="devtools" />}
+            {currentScene === 6 && <Scene7_Trust key="trust" />}
+            {currentScene === 7 && <Scene8_Outro key="outro" />}
           </AnimatePresence>
 
           <Timeline scene={currentScene} totalScenes={totalScenes} />

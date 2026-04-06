@@ -10,8 +10,8 @@ export function Scene1_Intro() {
     const timers = [
       setTimeout(() => setPhase(1), 500),
       setTimeout(() => setPhase(2), 1200),
-      setTimeout(() => setPhase(3), 2000),
-      setTimeout(() => setPhase(4), 5500), // Start exit
+      setTimeout(() => setPhase(3), 2200),
+      setTimeout(() => setPhase(4), 5500),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
@@ -26,7 +26,7 @@ export function Scene1_Intro() {
     >
       <motion.div
         initial={{ scale: 0, rotate: -90 }}
-        animate={{ scale: phase >= 3 ? 0.7 : 1, rotate: 0, y: phase >= 3 ? -100 : 0 }}
+        animate={{ scale: phase >= 3 ? 0.7 : 1, rotate: 0, y: phase >= 3 ? -80 : 0 }}
         transition={{ type: "spring", damping: 20, stiffness: 200 }}
         className="relative mb-8"
       >
@@ -55,7 +55,7 @@ export function Scene1_Intro() {
             transition={{ duration: 0.8, ease: easings.easeOut.ease }}
             className="text-[2vw] font-mono text-primary/80 uppercase tracking-[0.2em] text-center"
           >
-            How It Works
+            AI Data Governance Platform
           </motion.h2>
         </motion.div>
       )}
@@ -65,11 +65,29 @@ export function Scene1_Intro() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: easings.easeOut.ease }}
-          className="absolute bottom-1/4"
+          className="absolute bottom-[22%] flex flex-col items-center gap-4"
         >
-          <div className="text-[3vw] font-display font-bold text-white tracking-tight">
-            Choose Your Plan
+          <div className="text-[2.8vw] font-display font-bold text-white tracking-tight text-center">
+            Protect Your Content. Secure Your Data.
           </div>
+          <motion.div
+            className="flex items-center gap-6 mt-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            {['Scan', 'Rewrite', 'Protect', 'Monitor'].map((word, i) => (
+              <motion.span
+                key={word}
+                className="text-[1.2vw] font-mono text-primary/60 uppercase tracking-widest"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + i * 0.15 }}
+              >
+                {word}
+              </motion.span>
+            ))}
+          </motion.div>
         </motion.div>
       )}
     </motion.div>
