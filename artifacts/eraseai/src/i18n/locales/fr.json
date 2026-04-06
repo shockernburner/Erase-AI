@@ -763,7 +763,17 @@
     "promptProtectionSanitize": "Assainir le prompt",
     "promptProtectionSanitizing": "Assainissement...",
     "promptProtectionSanitized": "Prompt assaini",
-    "promptProtectionOriginal": "Prompt original"
+    "promptProtectionOriginal": "Prompt original",
+    "riskReport": {
+      "title": "Rapport de Risque",
+      "subtitle": "Aperçu unifié de vos résultats d'analyse de contenu et de protection des prompts.",
+      "overallRisk": "Risque Global",
+      "latestScore": "Dernier score : {{score}}/100",
+      "contentScans": "Analyses de Contenu",
+      "flagsDetected": "{{count}} alerte(s) dans la dernière analyse",
+      "avgRisk": "Score de Risque Moyen",
+      "basedOnTrend": "Basé sur l'historique des analyses"
+    }
   },
   "social": {
     "title": "Mode Personnel — Publications Réseaux Sociaux",
@@ -774,7 +784,7 @@
     "chars": "caractères",
     "threadRecommended": "fil recommandé",
     "tipsTitle": "Conseils de Publication",
-    "tip1": "Associez chaque publication à la vidéo marketing EraseAI Personal Mode pour un engagement maximal.",
+    "tip1": "Associez chaque publication à la vidéo marketing EraseAI Personal pour un engagement maximal.",
     "tip2": "Publiez aux heures de pointe : LinkedIn 8-10h en semaine, X midi-15h, Facebook 13-16h, TikTok 19-21h.",
     "tip3": "Ajoutez un lien vers votre page d'inscription EraseAI où [link] est indiqué.",
     "tip4": "Personnalisez le texte selon votre ton de marque — ce sont des modèles de départ.",
@@ -786,29 +796,29 @@
     },
     "facebook": {
       "awarenessLabel": "Awareness Post",
-      "awareness": "Right now, AI models are being trained on YOUR data — your posts, your emails, your photos. Most people have no idea.\n\nEraseAI Personal Mode changes that. In seconds, you can:\n\n— Scan any text for AI training risks\n— Get a real-time Privacy Risk Score (0-100)\n— See exactly what's flagged: PII, bias, toxicity, hate speech\n— Rewrite risky content with AI while keeping your message intact\n— Track your privacy trends over time with alerts\n\nYour digital footprint is permanent. But you can control what AI learns from it.\n\nTry EraseAI Personal Mode free: [link]\n\n#DigitalPrivacy #AIProtection #EraseAI #DataGovernance #PersonalPrivacy",
+      "awareness": "Right now, AI models are being trained on YOUR data — your posts, your emails, your photos. Most people have no idea.\n\nEraseAI Personal changes that. In seconds, you can:\n\n— Scan any text for AI training risks\n— Get a real-time Privacy Risk Score (0-100)\n— See exactly what's flagged: PII, bias, toxicity, hate speech\n— Rewrite risky content with AI while keeping your message intact\n— Track your privacy trends over time with alerts\n\nYour digital footprint is permanent. But you can control what AI learns from it.\n\nTry EraseAI Personal free: [link]\n\n#DigitalPrivacy #AIProtection #EraseAI #DataGovernance #PersonalPrivacy",
       "featureLabel": "Feature Spotlight",
-      "feature": "Ever wondered what your social media posts are teaching AI about you?\n\nEraseAI Personal Mode gives you a Privacy Risk Score in seconds. Paste your text, get scored 0-100, see the exact risks — then fix them with one click using our AI rewriter.\n\nIt's like a privacy spellchecker for the AI age.\n\nFeatures:\n— Real-time risk scoring with visual gauge\n— Category detection: toxicity, PII, bias, hate speech\n— AI-powered content rewriting\n— 30-day trend monitoring with smart alerts\n— Scan history with filtering\n\nProtect your words before AI learns from them: [link]\n\n#EraseAI #PrivacyFirst #AIGovernance #DataProtection"
+      "feature": "Ever wondered what your social media posts are teaching AI about you?\n\nEraseAI Personal gives you a Privacy Risk Score in seconds. Paste your text, get scored 0-100, see the exact risks — then fix them with one click using our AI rewriter.\n\nIt's like a privacy spellchecker for the AI age.\n\nFeatures:\n— Real-time risk scoring with visual gauge\n— Category detection: toxicity, PII, bias, hate speech\n— AI-powered content rewriting\n— 30-day trend monitoring with smart alerts\n— Scan history with filtering\n\nProtect your words before AI learns from them: [link]\n\n#EraseAI #PrivacyFirst #AIGovernance #DataProtection"
     },
     "twitter": {
       "hookLabel": "Hook Tweet",
-      "hook": "Your tweets are training AI right now.\n\nYou didn't consent to it.\n\nEraseAI Personal Mode: scan your content, get a privacy risk score, and fix it — in seconds.\n\nYour data. Your rules.\n\n#EraseAI #DigitalPrivacy",
+      "hook": "Your tweets are training AI right now.\n\nYou didn't consent to it.\n\nEraseAI Personal: scan your content, get a privacy risk score, and fix it — in seconds.\n\nYour data. Your rules.\n\n#EraseAI #DigitalPrivacy",
       "featureLabel": "Feature Tweet",
-      "feature": "NEW: EraseAI Personal Mode\n\n— Paste any text\n— Get instant privacy risk score (0-100)\n— Detect PII, toxicity, bias, hate speech\n— AI-rewrite to remove risks\n— Track trends & get alerts\n\nFree to start. Your privacy matters.\n\n#AIPrivacy #DataProtection",
+      "feature": "NEW: EraseAI Personal\n\n— Paste any text\n— Get instant privacy risk score (0-100)\n— Detect PII, toxicity, bias, hate speech\n— AI-rewrite to remove risks\n— Track trends & get alerts\n\nFree to start. Your privacy matters.\n\n#AIPrivacy #DataProtection",
       "urgencyLabel": "Urgency Tweet",
-      "urgency": "AI companies are harvesting your data to train their models.\n\nEvery post. Every comment. Every email.\n\nEraseAI Personal Mode lets you scan, score, and fix your content before it becomes training data.\n\nTake control: [link]\n\n#EraseAI #PrivacyMatters"
+      "urgency": "AI companies are harvesting your data to train their models.\n\nEvery post. Every comment. Every email.\n\nEraseAI Personal lets you scan, score, and fix your content before it becomes training data.\n\nTake control: [link]\n\n#EraseAI #PrivacyMatters"
     },
     "linkedin": {
       "thoughtLabel": "Thought Leadership",
-      "thought": "The conversation about AI privacy has focused on what companies should do. But what about individuals?\n\nEvery day, we publish content that becomes training data for AI models — often without our knowledge or consent. The risks are real: personal information exposure, biased representations, toxic associations.\n\nThat's why we built EraseAI Personal Mode.\n\nIt gives individuals the same data governance tools that enterprises use:\n\n- Real-time Privacy Risk Scoring (0-100 scale)\n- Automated detection of PII, toxicity, bias, and hate speech\n- AI-powered content rewriting that preserves your message\n- 30-day trend monitoring with intelligent alerts\n- Complete scan history for compliance documentation\n\nFor compliance officers: Personal Mode helps employees self-audit before publishing, reducing organizational risk.\n\nFor individuals: it's the first line of defense for your digital footprint.\n\nAI governance isn't just a corporate responsibility — it's a personal one.\n\n#AIGovernance #DataPrivacy #Compliance #EraseAI #DigitalTransformation #PrivacyByDesign",
+      "thought": "The conversation about AI privacy has focused on what companies should do. But what about individuals?\n\nEvery day, we publish content that becomes training data for AI models — often without our knowledge or consent. The risks are real: personal information exposure, biased representations, toxic associations.\n\nThat's why we built EraseAI Personal.\n\nIt gives individuals the same data governance tools that enterprises use:\n\n- Real-time Privacy Risk Scoring (0-100 scale)\n- Automated detection of PII, toxicity, bias, and hate speech\n- AI-powered content rewriting that preserves your message\n- 30-day trend monitoring with intelligent alerts\n- Complete scan history for compliance documentation\n\nFor compliance officers: EraseAI Personal helps employees self-audit before publishing, reducing organizational risk.\n\nFor individuals: it's the first line of defense for your digital footprint.\n\nAI governance isn't just a corporate responsibility — it's a personal one.\n\n#AIGovernance #DataPrivacy #Compliance #EraseAI #DigitalTransformation #PrivacyByDesign",
       "complianceLabel": "Compliance Angle",
-      "compliance": "Question for compliance teams:\n\nAre your employees' social media posts creating AI training data risks for your organization?\n\nPII in LinkedIn posts. Biased language in company content. Sensitive data in public forums.\n\nEraseAI Personal Mode gives individuals a privacy risk scanner they can use before hitting 'Post' — catching issues that traditional compliance tools miss.\n\nKey capabilities:\n- Instant risk scoring with category breakdown\n- PII, bias, toxicity, and hate speech detection\n- AI-powered content rewriting\n- Trend monitoring and automated alerts\n\nProactive privacy > reactive damage control.\n\nLearn more: [link]\n\n#Compliance #RiskManagement #DataPrivacy #AIGovernance #EraseAI"
+      "compliance": "Question for compliance teams:\n\nAre your employees' social media posts creating AI training data risks for your organization?\n\nPII in LinkedIn posts. Biased language in company content. Sensitive data in public forums.\n\nEraseAI Personal gives individuals a privacy risk scanner they can use before hitting 'Post' — catching issues that traditional compliance tools miss.\n\nKey capabilities:\n- Instant risk scoring with category breakdown\n- PII, bias, toxicity, and hate speech detection\n- AI-powered content rewriting\n- Trend monitoring and automated alerts\n\nProactive privacy > reactive damage control.\n\nLearn more: [link]\n\n#Compliance #RiskManagement #DataPrivacy #AIGovernance #EraseAI"
     },
     "tiktok": {
       "viralLabel": "Viral Hook",
-      "viral": "POV: you just found out AI is being trained on everything you post online\n\nEraseAI Personal Mode scans your content and tells you EXACTLY what's risky — then fixes it for you\n\nYour data your rules\n\n#EraseAI #DigitalPrivacy #AIPrivacy #DataProtection #TechTok #PrivacyMatters #AITok",
+      "viral": "POV: you just found out AI is being trained on everything you post online\n\nEraseAI Personal scans your content and tells you EXACTLY what's risky — then fixes it for you\n\nYour data your rules\n\n#EraseAI #DigitalPrivacy #AIPrivacy #DataProtection #TechTok #PrivacyMatters #AITok",
       "educationalLabel": "Educational",
-      "educational": "Things AI is learning from your posts right now:\n\n- your location (PII)\n- your opinions (bias training)\n- your arguments (toxicity flags)\n- your personal info (identity risk)\n\nEraseAI Personal Mode: paste text — get risk score — fix it in 1 click\n\nLink in bio\n\n#LearnOnTikTok #EraseAI #PrivacyCheck #AIFacts #DigitalSafety #TechEducation"
+      "educational": "Things AI is learning from your posts right now:\n\n- your location (PII)\n- your opinions (bias training)\n- your arguments (toxicity flags)\n- your personal info (identity risk)\n\nEraseAI Personal: paste text — get risk score — fix it in 1 click\n\nLink in bio\n\n#LearnOnTikTok #EraseAI #PrivacyCheck #AIFacts #DigitalSafety #TechEducation"
     },
     "platforms": {
       "facebook": "Facebook",
@@ -819,7 +829,7 @@
   },
   "homepage": {
     "whatWeDo": "Ce que nous faisons ?",
-    "card1Title": "Mode Personnel",
+    "card1Title": "EraseAI Personal",
     "card1Desc": "Sécurité de contenu personnel propulsée par l'IA. Analysez vos publications, e-mails et messages pour détecter les PII, la toxicité et les biais avant publication. Obtenez des scores de risque et des alternatives réécrites par l'IA. 10 analyses gratuites, puis 5 $/mois en illimité.",
     "card2Title": "API Entreprise / Développeur",
     "card2Desc": "Intégrez EraseAI directement dans vos applications via l'API REST. Nettoyage de datasets, retours de pipeline ML et désapprentissage à grande échelle. Clés API, webhooks et analyses d'utilisation pour les équipes et entreprises.",

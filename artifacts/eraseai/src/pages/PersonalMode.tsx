@@ -857,6 +857,74 @@ interface SanitizeResult {
   changes: { type: string; original: string; replacement: string }[];
 }
 
+function RiskReportPanel({ contentResult, historyData }: {
+  contentResult: ScanResult | null;
+  historyData: { totalUsed: number; trend?: TrendPoint[] } | undefined;
+}) {
+  const { t } = useTranslation();
+
+  const avgContentRisk = historyData?.trend && historyData.trend.length > 0
+    ? Math.round(historyData.trend.reduce((a, b) => a + b.avgScore, 0) / historyData.trend.length)
+    : null;
+
+  const latestContentScore = contentResult?.riskScore ?? null;
+  const contentFlags = contentResult?.flags?.length ?? 0;
+
+  const overallLevel = latestContentScore !== null
+    ? latestContentScore >= 70 ? "high" : latestContentScore >= 40 ? "medium" : "low"
+    : avgContentRisk !== null
+      ? avgContentRisk >= 70 ? "high" : avgContentRisk >= 40 ? "medium" : "low"
+      : null;
+
+  const levelColors = {
+    low: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
+    medium: "text-amber-400 border-amber-400/30 bg-amber-400/10",
+    high: "text-red-400 border-red-400/30 bg-red-400/10",
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/50 border border-border/30 rounded-2xl p-6 backdrop-blur-md mb-6"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart3 className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">{t("personal.riskReport.title")}</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">{t("personal.riskReport.subtitle")}</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className={`p-4 rounded-xl border ${overallLevel ? levelColors[overallLevel] : "border-border/30 bg-muted/10 text-muted-foreground"}`}>
+          <div className="text-xs font-semibold uppercase mb-1">{t("personal.riskReport.overallRisk")}</div>
+          <div className="text-2xl font-bold">
+            {overallLevel ? t(`personal.risk.${overallLevel}`) : "—"}
+          </div>
+          {latestContentScore !== null && (
+            <div className="text-xs mt-1 opacity-80">{t("personal.riskReport.latestScore", { score: latestContentScore })}</div>
+          )}
+        </div>
+
+        <div className="p-4 rounded-xl border border-border/30 bg-muted/10">
+          <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("personal.riskReport.contentScans")}</div>
+          <div className="text-2xl font-bold text-foreground">{historyData?.totalUsed ?? 0}</div>
+          {contentFlags > 0 && (
+            <div className="text-xs text-amber-400 mt-1">{t("personal.riskReport.flagsDetected", { count: contentFlags })}</div>
+          )}
+        </div>
+
+        <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
+          <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">{t("personal.riskReport.avgRisk")}</div>
+          <div className="text-2xl font-bold text-primary">{avgContentRisk ?? "—"}</div>
+          {avgContentRisk !== null && (
+            <div className="text-xs text-muted-foreground mt-1">{t("personal.riskReport.basedOnTrend")}</div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function PromptProtectionPanel() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
@@ -1257,6 +1325,8 @@ export default function PersonalMode({
         <AlertsPanel onUpgrade={onUpgrade} />
 
         <PromptProtectionPanel />
+
+        <RiskReportPanel contentResult={result} historyData={historyQuery.data} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
