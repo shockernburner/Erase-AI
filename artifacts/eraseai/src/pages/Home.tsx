@@ -376,6 +376,17 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               <ExternalLink className="w-3 h-3" />
             </button>
           </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-6 text-xs text-muted-foreground/60">
+            <a href={`${import.meta.env.BASE_URL}ai-firewall`} className="hover:text-primary transition-colors">AI Firewall</a>
+            <span className="text-border/30">·</span>
+            <a href={`${import.meta.env.BASE_URL}chatgpt-data-leak`} className="hover:text-primary transition-colors">Prevent Data Leaks</a>
+            <span className="text-border/30">·</span>
+            <a href={`${import.meta.env.BASE_URL}ai-prompt-security`} className="hover:text-primary transition-colors">Prompt Security</a>
+            <span className="text-border/30">·</span>
+            <a href={`${import.meta.env.BASE_URL}api-key-protection-ai`} className="hover:text-primary transition-colors">API Key Protection</a>
+            <span className="text-border/30">·</span>
+            <a href={`${import.meta.env.BASE_URL}blog`} className="hover:text-primary transition-colors">Blog</a>
+          </div>
           <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
             <a
               href="https://wa.me/85290576851"

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://eraseai.ai/sitemap.xml

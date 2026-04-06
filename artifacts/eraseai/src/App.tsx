@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
+import { Router, Route, Switch } from "wouter";
 import Home from "@/pages/Home";
 import LoginPage from "@/pages/LoginPage";
 import PricingPage from "@/pages/PricingPage";
@@ -19,6 +20,15 @@ import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
 import { Loader2 } from "lucide-react";
 
+const AiFirewallPage = lazy(() => import("@/pages/seo/AiFirewallPage"));
+const ChatgptDataLeakPage = lazy(() => import("@/pages/seo/ChatgptDataLeakPage"));
+const AiPromptSecurityPage = lazy(() => import("@/pages/seo/AiPromptSecurityPage"));
+const ApiKeyProtectionPage = lazy(() => import("@/pages/seo/ApiKeyProtectionPage"));
+const BlogIndex = lazy(() => import("@/pages/seo/BlogIndex"));
+const BlogPost_ApiKeys = lazy(() => import("@/pages/seo/BlogPost_ApiKeys"));
+const BlogPost_AiFirewall = lazy(() => import("@/pages/seo/BlogPost_AiFirewall"));
+const BlogPost_PreventLeaks = lazy(() => import("@/pages/seo/BlogPost_PreventLeaks"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,6 +39,14 @@ const queryClient = new QueryClient({
 });
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
+
+function SeoLoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+    </div>
+  );
+}
 
 function AuthGate() {
   const { t } = useTranslation();
@@ -121,10 +139,28 @@ function AuthGate() {
 }
 
 function App() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthGate />
+        <Router base={base === "/" ? "" : base}>
+          <Suspense fallback={<SeoLoadingFallback />}>
+            <Switch>
+              <Route path="/ai-firewall" component={AiFirewallPage} />
+              <Route path="/chatgpt-data-leak" component={ChatgptDataLeakPage} />
+              <Route path="/ai-prompt-security" component={AiPromptSecurityPage} />
+              <Route path="/api-key-protection-ai" component={ApiKeyProtectionPage} />
+              <Route path="/blog" component={BlogIndex} />
+              <Route path="/blog/api-keys-chatgpt" component={BlogPost_ApiKeys} />
+              <Route path="/blog/what-is-ai-firewall" component={BlogPost_AiFirewall} />
+              <Route path="/blog/prevent-data-leaks-ai" component={BlogPost_PreventLeaks} />
+              <Route>
+                <AuthGate />
+              </Route>
+            </Switch>
+          </Suspense>
+        </Router>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
