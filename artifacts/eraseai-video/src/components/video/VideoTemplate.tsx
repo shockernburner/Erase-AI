@@ -112,6 +112,7 @@ export default function VideoTemplate() {
     audio.loop = true;
 
     let clickHandler: (() => void) | null = null;
+    let fadeIntervalId: ReturnType<typeof setInterval> | null = null;
 
     const playPromise = audio.play();
     if (playPromise) {
@@ -129,12 +130,13 @@ export default function VideoTemplate() {
     const fadeTimer = setTimeout(() => {
       if (!audio) return;
       let vol = audio.volume;
-      const fadeInterval = setInterval(() => {
+      fadeIntervalId = setInterval(() => {
         vol -= 0.02;
         if (vol <= 0) {
           audio.volume = 0;
           audio.pause();
-          clearInterval(fadeInterval);
+          if (fadeIntervalId) clearInterval(fadeIntervalId);
+          fadeIntervalId = null;
         } else {
           audio.volume = vol;
         }
@@ -143,6 +145,7 @@ export default function VideoTemplate() {
 
     return () => {
       clearTimeout(fadeTimer);
+      if (fadeIntervalId) clearInterval(fadeIntervalId);
       if (clickHandler) {
         document.removeEventListener('click', clickHandler);
       }
@@ -152,7 +155,7 @@ export default function VideoTemplate() {
 
   return (
     <div className="w-full h-screen overflow-hidden relative" style={{ backgroundColor: '#050508' }}>
-      <audio ref={audioRef} src={`${import.meta.env.BASE_URL}bgm.m4a`} preload="auto" />
+      <audio ref={audioRef} src={`${import.meta.env.BASE_URL}bgm.m4a`} preload="auto" autoPlay />
       <div className="relative w-full h-full flex items-center justify-center">
         <div className="relative w-full max-w-[177.78vh] overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <Background currentScene={currentScene} />
