@@ -775,7 +775,8 @@
       "promptIssues": "检测到 {{count}} 个问题",
       "avgRisk": "平均风险评分",
       "basedOnTrend": "基于扫描历史"
-    }
+    },
+    "scanContentTitle": "扫描您的内容"
   },
   "social": {
     "title": "个人模式 — 社交媒体帖子",

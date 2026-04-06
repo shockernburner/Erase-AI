@@ -775,7 +775,8 @@
       "promptIssues": "{{count}} Problem(e) erkannt",
       "avgRisk": "Durchschn. Risikoscore",
       "basedOnTrend": "Basierend auf Scan-Verlauf"
-    }
+    },
+    "scanContentTitle": "Inhalte scannen"
   },
   "social": {
     "title": "Persönlicher Modus — Social-Media-Beiträge",

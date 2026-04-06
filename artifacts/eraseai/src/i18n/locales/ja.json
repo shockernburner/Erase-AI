@@ -775,7 +775,8 @@
       "promptIssues": "{{count}}件の問題を検出",
       "avgRisk": "平均リスクスコア",
       "basedOnTrend": "スキャン履歴に基づく"
-    }
+    },
+    "scanContentTitle": "コンテンツをスキャン"
   },
   "social": {
     "title": "パーソナルモード — ソーシャルメディア投稿",

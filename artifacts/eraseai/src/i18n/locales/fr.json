@@ -775,7 +775,8 @@
       "promptIssues": "{{count}} problème(s) détecté(s)",
       "avgRisk": "Score de Risque Moyen",
       "basedOnTrend": "Basé sur l'historique des analyses"
-    }
+    },
+    "scanContentTitle": "Analysez votre Contenu"
   },
   "social": {
     "title": "Mode Personnel — Publications Réseaux Sociaux",

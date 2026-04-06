@@ -775,7 +775,8 @@
       "promptIssues": "{{count}} problema(s) detectado(s)",
       "avgRisk": "Puntuación Promedio",
       "basedOnTrend": "Basado en el historial de escaneos"
-    }
+    },
+    "scanContentTitle": "Escanea tu Contenido"
   },
   "social": {
     "title": "Modo Personal — Publicaciones en Redes Sociales",

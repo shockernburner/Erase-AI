@@ -1055,7 +1055,7 @@ function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (resul
                   <ShieldAlert className="w-6 h-6 text-yellow-400" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-yellow-400">{t("personal.promptProtectionRisky")}</p>
-                    <p className="text-xs text-muted-foreground">{firewallResult.issues.length} issue{firewallResult.issues.length !== 1 ? "s" : ""}</p>
+                    <p className="text-xs text-muted-foreground">{t("personal.riskReport.promptIssues", { count: firewallResult.issues.length })}</p>
                   </div>
                   {!sanitizedResult && (
                     <button
@@ -1356,8 +1356,13 @@ export default function PersonalMode({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6"
+          className="mb-6"
         >
+          <div className="flex items-center gap-2 mb-3">
+            <Eye className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">{t("personal.scanContentTitle")}</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             onClick={() => { setScanMode("post"); setResult(null); }}
             className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${scanMode === "post" ? "border-primary bg-primary/10 text-primary" : "border-border/30 bg-card/50 text-muted-foreground hover:border-primary/50 hover:text-primary"}`}
@@ -1394,6 +1399,7 @@ export default function PersonalMode({
               <div className="text-xs opacity-70">{t("personal.action.uploadFileDesc")}</div>
             </div>
           </button>
+          </div>
         </motion.div>
 
         <input

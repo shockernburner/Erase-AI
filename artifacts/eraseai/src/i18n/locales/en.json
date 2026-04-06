@@ -561,6 +561,7 @@
       "avgRisk": "Avg. Risk Score",
       "basedOnTrend": "Based on scan history"
     },
+    "scanContentTitle": "Scan Your Content",
     "description": "Paste your text below to scan for risks before sharing publicly. We check for toxicity, bias, personal information, and hate speech.",
     "placeholder": "Paste your text here to analyze for risks...",
     "profileRiskScan": "Profile Risk Scan",
