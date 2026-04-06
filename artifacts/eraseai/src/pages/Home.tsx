@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone, Book, Code2, Award, ExternalLink } from "lucide-react";
+import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone, Book, Code2, Award, ExternalLink, MessageCircle, Mail } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
@@ -375,6 +375,24 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               {t("certifications.trustStrip.viewAll")}
               <ExternalLink className="w-3 h-3" />
             </button>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
+            <a
+              href="https://wa.me/85290576851"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-green-400 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 text-green-500" />
+              +852 9057 6851
+            </a>
+            <a
+              href="mailto:director@futureonward.com"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Mail className="w-4 h-4 text-primary" />
+              director@futureonward.com
+            </a>
           </div>
           <p className="text-xs font-mono text-muted-foreground/60 text-center">
             {t("app.copyright")}

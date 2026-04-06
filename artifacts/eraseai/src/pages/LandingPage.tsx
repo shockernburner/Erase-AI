@@ -19,6 +19,8 @@ import {
   Bot,
   Sparkles,
   Crown,
+  MessageCircle,
+  Mail,
 } from "lucide-react";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
@@ -222,16 +224,32 @@ export default function LandingPage({
             {t("landing.modesTitle")}
           </h3>
           <p className="text-muted-foreground mb-12 text-center">{t("landing.modesSubtitle")}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          <motion.div
+            variants={fadeUp}
+            className="p-8 rounded-2xl border border-primary/30 bg-primary/5 backdrop-blur-sm cursor-pointer hover:scale-[1.01] transition-transform shadow-[0_0_40px_rgba(6,182,212,0.1)] mb-8"
+            onClick={() => onNavigate("personal")}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <Shield className="w-10 h-10 text-primary" />
+              <div>
+                <h4 className="text-2xl font-bold text-foreground">{t("landing.modePersonalTitle")}</h4>
+                <span className="text-sm font-semibold text-primary">$5/{t("pricing.month")}</span>
+              </div>
+            </div>
+            <p className="text-muted-foreground mb-6">{t("landing.modePersonalDesc")}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  {t(`landing.modePersonalF${i}`)}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              {
-                key: "personal",
-                icon: User,
-                color: "text-emerald-400",
-                border: "border-emerald-500/20",
-                bg: "bg-emerald-500/5",
-                action: () => onNavigate("personal"),
-              },
               {
                 key: "developer",
                 icon: Code2,
@@ -361,7 +379,7 @@ export default function LandingPage({
             {t("landing.pricingTitle")}
           </h3>
           <p className="text-muted-foreground mb-12 text-center">{t("landing.pricingSubtitle")}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 key: "free",
@@ -371,11 +389,18 @@ export default function LandingPage({
                 highlight: false,
               },
               {
+                key: "personal",
+                price: "$5",
+                icon: Shield,
+                features: ["pricingPersonalF1", "pricingPersonalF2", "pricingPersonalF3"],
+                highlight: true,
+              },
+              {
                 key: "pro",
                 price: "$49",
                 icon: Crown,
                 features: ["pricingProF1", "pricingProF2", "pricingProF3"],
-                highlight: true,
+                highlight: false,
               },
               {
                 key: "enterprise",
@@ -422,6 +447,39 @@ export default function LandingPage({
                 </button>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </SectionWrapper>
+
+      <SectionWrapper>
+        <div className="max-w-2xl mx-auto text-center">
+          <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
+            {t("landing.contactTitle")}
+          </h3>
+          <p className="text-muted-foreground mb-8">{t("landing.contactSubtitle")}</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <a
+              href="https://wa.me/85290576851"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-6 py-4 rounded-xl border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all"
+            >
+              <MessageCircle className="w-6 h-6 text-green-500" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">{t("landing.contactWhatsapp")}</p>
+                <p className="text-sm font-semibold text-foreground">{t("landing.contactWhatsappNumber")}</p>
+              </div>
+            </a>
+            <a
+              href="mailto:director@futureonward.com"
+              className="flex items-center gap-3 px-6 py-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all"
+            >
+              <Mail className="w-6 h-6 text-primary" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">{t("landing.contactEmail")}</p>
+                <p className="text-sm font-semibold text-foreground">{t("landing.contactEmailAddress")}</p>
+              </div>
+            </a>
           </div>
         </div>
       </SectionWrapper>

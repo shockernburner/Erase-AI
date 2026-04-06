@@ -16,11 +16,11 @@ import {
 const router: IRouter = Router();
 
 const PLAN_PRICING: Record<string, { price: number; currency: string }> = {
-  personal: { price: 10, currency: "USD" },
+  personal: { price: 5, currency: "USD" },
   pro: { price: 49, currency: "USD" },
   business: { price: 149, currency: "USD" },
 };
-const PERSONAL_PRICE_MONTHLY = 10;
+const PERSONAL_PRICE_MONTHLY = 5;
 const PRO_PRICE_MONTHLY = 49;
 const PRO_PRICE_CURRENCY = "USD";
 const BUSINESS_PRICE_MONTHLY = 149;

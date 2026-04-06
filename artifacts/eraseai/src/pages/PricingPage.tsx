@@ -57,7 +57,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     {
       id: "personal" as TierId,
       name: t("pricing.tierPersonal"),
-      price: 10,
+      price: 5,
       icon: <Shield className="w-6 h-6" />,
       description: t("pricing.tierPersonalDesc"),
       segment: t("pricing.tierPersonalSegment"),

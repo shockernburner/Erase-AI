@@ -847,6 +847,193 @@ function extractTextFromFile(file: File): Promise<string> {
   });
 }
 
+interface FirewallResult {
+  riskScore: number;
+  issues: { type: string; severity: string; detail: string; matchedText: string }[];
+}
+
+interface SanitizeResult {
+  sanitized: string;
+  changes: { type: string; original: string; replacement: string }[];
+}
+
+function PromptProtectionPanel() {
+  const { t } = useTranslation();
+  const [prompt, setPrompt] = useState("");
+  const [firewallResult, setFirewallResult] = useState<FirewallResult | null>(null);
+  const [sanitizedResult, setSanitizedResult] = useState<SanitizeResult | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const analyzeMutation = useMutation({
+    mutationFn: async (text: string) => {
+      const res = await fetch(`${API_BASE}/dev/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("Analysis failed");
+      return res.json() as Promise<FirewallResult>;
+    },
+    onSuccess: (data) => {
+      setFirewallResult(data);
+      setSanitizedResult(null);
+    },
+  });
+
+  const sanitizeMutation = useMutation({
+    mutationFn: async (text: string) => {
+      const res = await fetch(`${API_BASE}/dev/sanitize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("Sanitization failed");
+      return res.json() as Promise<SanitizeResult>;
+    },
+    onSuccess: (data) => {
+      setSanitizedResult(data);
+    },
+  });
+
+  const handleCopy = () => {
+    if (sanitizedResult?.sanitized) {
+      navigator.clipboard.writeText(sanitizedResult.sanitized);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/50 border border-primary/20 rounded-2xl p-6 backdrop-blur-md mb-6"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <Shield className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">{t("personal.promptProtectionTitle")}</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">{t("personal.promptProtectionDesc")}</p>
+
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder={t("personal.promptProtectionPlaceholder")}
+        className="w-full h-28 bg-background/50 border border-border/30 rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all mb-3"
+        maxLength={5000}
+      />
+
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs text-muted-foreground">{prompt.length}/5000</span>
+        <button
+          onClick={() => { if (prompt.trim()) analyzeMutation.mutate(prompt.trim()); }}
+          disabled={!prompt.trim() || analyzeMutation.isPending}
+          className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          {analyzeMutation.isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Shield className="w-4 h-4" />
+          )}
+          {analyzeMutation.isPending ? t("personal.promptProtectionAnalyzing") : t("personal.promptProtectionAnalyze")}
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {firewallResult && (
+          <motion.div
+            key="firewall-result"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-3"
+          >
+            {firewallResult.issues.length === 0 ? (
+              <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10">
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                <div>
+                  <p className="text-sm font-medium text-emerald-400">{t("personal.promptProtectionSafe")}</p>
+                  <p className="text-xs text-muted-foreground">{t("personal.promptProtectionSafeDesc")}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-yellow-400/30 bg-yellow-400/10">
+                  <ShieldAlert className="w-6 h-6 text-yellow-400" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-yellow-400">{t("personal.promptProtectionRisky")}</p>
+                    <p className="text-xs text-muted-foreground">{firewallResult.issues.length} issue{firewallResult.issues.length !== 1 ? "s" : ""}</p>
+                  </div>
+                  {!sanitizedResult && (
+                    <button
+                      onClick={() => sanitizeMutation.mutate(prompt.trim())}
+                      disabled={sanitizeMutation.isPending}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition-all"
+                    >
+                      {sanitizeMutation.isPending ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      )}
+                      {sanitizeMutation.isPending ? t("personal.promptProtectionSanitizing") : t("personal.promptProtectionSanitize")}
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {firewallResult.issues.map((issue, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-yellow-500/20 bg-yellow-500/5">
+                      <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-bold uppercase text-yellow-400">{issue.type}</span>
+                          <span className="text-xs opacity-70 text-muted-foreground">({issue.severity})</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{issue.detail}</p>
+                        {issue.matchedText && (
+                          <p className="text-xs mt-1 opacity-60 font-mono text-muted-foreground truncate">"{issue.matchedText}"</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {sanitizedResult && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold text-red-400 uppercase">{t("personal.promptProtectionOriginal")}</span>
+                    <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                      {prompt}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold text-emerald-400 uppercase">{t("personal.promptProtectionSanitized")}</span>
+                    <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+                      {sanitizedResult.sanitized}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? t("personal.rewrite.copied") : t("personal.rewrite.copy")}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 const HISTORY_PAGE_SIZE = 10;
 
 export default function PersonalMode({
@@ -1068,6 +1255,8 @@ export default function PersonalMode({
         </motion.div>
 
         <AlertsPanel onUpgrade={onUpgrade} />
+
+        <PromptProtectionPanel />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
