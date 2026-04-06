@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { useVideoPlayer } from '@/lib/video';
 import { Scene1_Intro } from '@/components/scenes/Scene1_Intro';
 import { Scene2_ContentScanning } from '@/components/scenes/Scene2_ContentScanning';
@@ -102,8 +103,27 @@ export default function VideoTemplate() {
     durations: SCENE_DURATIONS,
   });
 
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = 0.6;
+    const playPromise = audio.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        const handleClick = () => {
+          audio.play().catch(() => {});
+          document.removeEventListener('click', handleClick);
+        };
+        document.addEventListener('click', handleClick);
+      });
+    }
+  }, []);
+
   return (
     <div className="w-full h-screen overflow-hidden relative" style={{ backgroundColor: '#050508' }}>
+      <audio ref={audioRef} src={`${import.meta.env.BASE_URL}bgm.m4a`} preload="auto" />
       <div className="relative w-full h-full flex items-center justify-center">
         <div className="relative w-full max-w-[177.78vh] overflow-hidden" style={{ aspectRatio: '16/9' }}>
           <Background currentScene={currentScene} />
