@@ -72,7 +72,7 @@ export function Scene8_Outro() {
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center gap-4">
-            {['Personal', 'Professional', 'Enterprise'].map((tier, i) => (
+            {['Personal Protection', 'Professional Tools', 'Enterprise Scale'].map((tier, i) => (
               <motion.div
                 key={tier}
                 className="px-5 py-2 rounded-full border border-white/20 bg-white/5"

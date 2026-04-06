@@ -10,14 +10,14 @@ import { Scene7_Trust } from '@/components/scenes/Scene7_Trust';
 import { Scene8_Outro } from '@/components/scenes/Scene8_Outro';
 
 const SCENE_DURATIONS = {
-  intro: 7000,
-  scanning: 10000,
-  rewriting: 10000,
-  firewall: 10000,
-  trends: 10000,
-  devtools: 10000,
-  trust: 10000,
-  outro: 8000,
+  intro: 8000,
+  scanning: 11000,
+  rewriting: 11000,
+  firewall: 11000,
+  trends: 11000,
+  devtools: 11000,
+  trust: 11000,
+  outro: 9000,
 };
 
 const TOTAL_MS = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0);
