@@ -67,6 +67,10 @@ export function Scene1_Intro() {
           >
             <div className="w-16 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
+            <p className="text-[1.6vw] font-display text-white/70 text-center tracking-tight">
+              Protect your content before it reaches AI
+            </p>
+
             <div className="flex items-center gap-[2vw]">
               {['Scan', 'Rewrite', 'Protect', 'Monitor'].map((word, i) => (
                 <motion.span

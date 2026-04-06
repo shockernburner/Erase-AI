@@ -109,16 +109,45 @@ export default function VideoTemplate() {
     const audio = audioRef.current;
     if (!audio) return;
     audio.volume = 0.6;
+    audio.loop = true;
+
+    let clickHandler: (() => void) | null = null;
+
     const playPromise = audio.play();
     if (playPromise) {
       playPromise.catch(() => {
-        const handleClick = () => {
+        clickHandler = () => {
           audio.play().catch(() => {});
-          document.removeEventListener('click', handleClick);
+          document.removeEventListener('click', clickHandler!);
+          clickHandler = null;
         };
-        document.addEventListener('click', handleClick);
+        document.addEventListener('click', clickHandler);
       });
     }
+
+    const fadeOutTime = TOTAL_MS - 3000;
+    const fadeTimer = setTimeout(() => {
+      if (!audio) return;
+      let vol = audio.volume;
+      const fadeInterval = setInterval(() => {
+        vol -= 0.02;
+        if (vol <= 0) {
+          audio.volume = 0;
+          audio.pause();
+          clearInterval(fadeInterval);
+        } else {
+          audio.volume = vol;
+        }
+      }, 100);
+    }, fadeOutTime);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      if (clickHandler) {
+        document.removeEventListener('click', clickHandler);
+      }
+      audio.pause();
+    };
   }, []);
 
   return (
