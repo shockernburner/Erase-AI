@@ -234,7 +234,7 @@ export default function LandingPage({
               <Shield className="w-10 h-10 text-primary" />
               <div>
                 <h4 className="text-2xl font-bold text-foreground">{t("landing.modePersonalTitle")}</h4>
-                <span className="text-sm font-semibold text-primary">$5/{t("pricing.month")}</span>
+                <span className="text-sm font-semibold text-primary">$5{t("pricing.month")}</span>
               </div>
             </div>
             <p className="text-muted-foreground mb-6">{t("landing.modePersonalDesc")}</p>

@@ -820,7 +820,7 @@
   "homepage": {
     "whatWeDo": "Was wir tun?",
     "card1Title": "Persönlicher Modus",
-    "card1Desc": "KI-gestützte persönliche Inhaltssicherheit. Scannen Sie Social-Media-Posts, E-Mails und Nachrichten auf PII, Toxizität und Vorurteile vor der Veröffentlichung. Erhalten Sie Risikobewertungen und KI-umgeschriebene sichere Alternativen. 10 kostenlose Analysen, dann 10 $/Monat unbegrenzt.",
+    "card1Desc": "KI-gestützte persönliche Inhaltssicherheit. Scannen Sie Social-Media-Posts, E-Mails und Nachrichten auf PII, Toxizität und Vorurteile vor der Veröffentlichung. Erhalten Sie Risikobewertungen und KI-umgeschriebene sichere Alternativen. 10 kostenlose Analysen, dann 5 $/Monat unbegrenzt.",
     "card2Title": "Enterprise- / Entwickler-API",
     "card2Desc": "Integrieren Sie EraseAI direkt in Ihre Anwendungen über die REST-API. Datensatzbereinigung, ML-Pipeline-Feedback und Verlernen im großen Maßstab. API-Schlüssel, Webhooks und Nutzungsanalysen für Teams und Unternehmen.",
     "card3Title": "Entwicklermodus",

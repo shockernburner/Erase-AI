@@ -73,16 +73,16 @@ router.get("/pricing", (_req: Request, res: Response) => {
       },
       {
         id: "personal",
-        name: "Personal Mode",
+        name: "EraseAI Personal",
         price: PERSONAL_PRICE_MONTHLY,
         currency: "USD",
         interval: "month",
         features: [
+          "AI Firewall browser extension",
           "Unlimited personal text analyses",
           "AI-powered content rewriting",
           "Risk trend monitoring & alerts",
           "Full scan history",
-          "Category breakdown analytics",
         ],
         limits: { maxRows: 100, mlFeedback: false, fullAnalysis: false, apiAccess: false, customRules: false },
       },

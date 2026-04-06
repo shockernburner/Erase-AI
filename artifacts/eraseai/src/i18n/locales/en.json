@@ -820,7 +820,7 @@
   "homepage": {
     "whatWeDo": "What We Do?",
     "card1Title": "Personal Mode",
-    "card1Desc": "AI-powered personal content safety. Scan social posts, emails, and messages for PII, toxicity, and bias before publishing. Get risk scores and AI-rewritten safe alternatives. 10 free analyses, then $10/month unlimited.",
+    "card1Desc": "AI-powered personal content safety. Scan social posts, emails, and messages for PII, toxicity, and bias before publishing. Get risk scores and AI-rewritten safe alternatives. 10 free analyses, then $5/month unlimited.",
     "card2Title": "Enterprise / Developer API",
     "card2Desc": "Integrate EraseAI directly into your applications via REST API. Dataset sanitization, ML pipeline feedback, and unlearning at scale. API keys, webhooks, and usage analytics for teams and enterprises.",
     "card3Title": "Developer Mode",
