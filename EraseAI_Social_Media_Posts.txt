@@ -1,0 +1,192 @@
+ERASEAI — SOCIAL MEDIA POSTS
+=============================
+Platforms: LinkedIn, X (Twitter), TikTok
+Website: eraseai.ai
+
+
+================================================================
+LINKEDIN
+================================================================
+
+
+--- POST 1: Launch Announcement ---
+
+Every day, employees paste passwords, API keys, and customer data into ChatGPT. Once it's sent, you can't take it back.
+
+We built EraseAI to fix this.
+
+EraseAI is an AI data governance platform that sits between your team and every AI model — scanning content, blocking threats, and sanitizing datasets before damage is done.
+
+What it does:
+- AI Firewall catches prompt injections with 99% accuracy
+- Content Scanner scores risk across 10+ dimensions in real-time
+- AI Rewriter transforms risky prompts into safe versions automatically
+- Dataset Sanitizer cleans training data at scale (up to 250K rows)
+
+5 pricing tiers from Free to Enterprise. Built in Hong Kong for the $6.5B APAC AI security market.
+
+Try it free at eraseai.ai
+
+#AIGovernance #DataPrivacy #CyberSecurity #AIFirewall #MachineLearning #HongKong
+
+
+--- POST 2: Problem-Led Story ---
+
+Samsung banned ChatGPT after engineers leaked source code through prompts.
+
+They're not alone. 75% of Hong Kong banks are now deploying AI tools internally — but almost none have a protection layer between employees and the models they use.
+
+That's the gap EraseAI fills.
+
+We intercept every prompt, scan for PII, toxicity, and injection attacks, then either block, rewrite, or log it — all in milliseconds.
+
+For individuals: $5/month gets you unlimited scanning, AI rewriting, and trend monitoring.
+
+For enterprises: SDK, API keys, webhooks, dataset sanitization, and a full compliance roadmap (SOC 2, ISO 27001, GDPR).
+
+The AI security market in Asia-Pacific is growing 32% annually. We're building the governance layer it needs.
+
+eraseai.ai
+
+#DataLeaks #AICompliance #PromptSecurity #Cybersecurity #StartupLife
+
+
+--- POST 3: Developer-Focused ---
+
+If you're building with AI, you need a governance layer in your pipeline.
+
+EraseAI gives you one SDK call:
+
+const client = new EraseClient(API_KEY);
+const report = await client.analyze(content);
+const clean = await client.sanitize(dataset);
+
+What you get:
+- Content scanning (PII, toxicity, bias, defamation)
+- Prompt injection blocking (99% detection rate)
+- Dataset sanitization with version control and Forget Score verification
+- Webhooks for real-time event notifications
+
+CSV, JSON, TXT — up to 250K rows per dataset. Full audit trail for compliance.
+
+Free tier available. Pro starts at $49/month with 5 API keys.
+
+eraseai.ai
+
+#DevTools #API #AIGovernance #OpenAPI #TypeScript #DataEngineering
+
+
+================================================================
+X / TWITTER
+================================================================
+
+
+--- POST 1: Hook ---
+
+Your team is pasting passwords into ChatGPT right now.
+
+EraseAI catches it before it's sent.
+
+AI Firewall. Content Scanner. Dataset Sanitizer. One platform.
+
+Free to start → eraseai.ai
+
+
+--- POST 2: Stats ---
+
+99% prompt injection detection.
+95% jailbreak prevention.
+87% data leak blocking.
+
+EraseAI sits between your users and every AI model — in real-time.
+
+Browser extension + REST API.
+
+eraseai.ai
+
+
+--- POST 3: Personal Mode ---
+
+For $5/month, EraseAI scans everything you type before it reaches any AI.
+
+- Unlimited content scanning
+- AI rewriting (risky → safe, same meaning)
+- 30-day safety score tracking
+- Risk spike alerts
+
+Your data. Your control.
+
+eraseai.ai
+
+
+--- POST 4: Developer ---
+
+One SDK. One API call. Full AI governance.
+
+const clean = await client.sanitize(dataset);
+
+Scan content. Block injections. Clean datasets up to 250K rows. Webhooks. Audit trails.
+
+Free tier → eraseai.ai
+
+
+--- POST 5: Market ---
+
+$6.5B — that's the APAC AI security market.
+
+Growing at 32% annually.
+
+75% of HK banks deploying AI tools with no protection layer.
+
+We're building it. eraseai.ai
+
+
+================================================================
+TIKTOK
+================================================================
+
+
+--- VIDEO 1: "POV: You're the IT security guy" ---
+Format: 15-30s, trending audio, text overlay
+
+[Text on screen, rapid cuts:]
+- "Company data leaked to AI" 
+- "Passwords, API keys, customer records"
+- "You can't undo it"
+- "Unless you have EraseAI"
+- Show the AI Firewall blocking a malicious prompt
+- "99% injection detection. Real-time."
+- "eraseai.ai — free to start"
+
+Caption: Your IT security team needs this. Link in bio. #AIFirewall #CyberSecurity #DataLeak #ChatGPT #TechTok
+
+
+--- VIDEO 2: "What $5/month gets you" ---
+Format: 15s, fast cuts with price reveal
+
+[Text on screen:]
+- "What does $5/month get you?"
+- "Unlimited AI content scanning"
+- "Automatic rewriting of risky prompts"
+- "30-day safety score tracking"
+- "Risk spike alerts"
+- "Your data never reaches the AI"
+- "EraseAI Personal Mode"
+
+Caption: $5/month to protect everything you type into AI. Worth it? #EraseAI #AIPrivacy #PersonalMode #TechTok #DataPrivacy
+
+
+--- VIDEO 3: "Samsung banned ChatGPT. Here's why." ---
+Format: 30s, storytelling hook
+
+[Text on screen:]
+- "Samsung engineers pasted source code into ChatGPT"
+- "The code became part of the training data"
+- "Samsung banned ChatGPT company-wide"
+- "But banning AI isn't the answer"
+- "EraseAI scans every prompt BEFORE it's sent"
+- "Blocks injections. Rewrites risky content. Logs everything."
+- "Don't ban AI. Govern it."
+- "eraseai.ai"
+
+Caption: Don't ban AI. Protect it. #Samsung #ChatGPT #DataLeak #AIGovernance #CyberSecurity #EraseAI
