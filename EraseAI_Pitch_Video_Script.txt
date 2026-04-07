@@ -1,0 +1,81 @@
+ERASEAI — FINAL PITCH VIDEO SCRIPT
+Runtime: ~2 minutes 30 seconds
+Website: eraseai.ai
+
+================================================================
+
+[0:00–0:15] HOOK
+================================================================
+
+Every day, millions of people paste confidential data into ChatGPT, Claude, and Gemini — passwords, API keys, customer records, financial data. Once it's sent, you can't take it back.
+
+That's the problem EraseAI solves.
+
+================================================================
+
+[0:15–0:40] THE PROBLEM
+================================================================
+
+Here's what's happening right now.
+
+75% of Hong Kong banks are deploying AI tools. DBS Bank has 25,000 employees using their own GPT daily. Samsung banned ChatGPT after engineers leaked source code. And it's not just enterprises — individuals share personal information with AI every single day without realizing the risk.
+
+The AI security market in Asia Pacific alone is worth 6.5 billion dollars and growing at 32% annually. But most companies have zero protection between their employees and AI tools.
+
+================================================================
+
+[0:40–1:15] THE SOLUTION
+================================================================
+
+EraseAI is an AI data governance platform — think of it as a firewall for AI.
+
+For individuals at just 5 dollars a month, our Personal Mode scans everything you type before it reaches ChatGPT, Claude, or Gemini. It detects passwords, API keys, credit card numbers, personal information — and either blocks or rewrites the prompt in real-time.
+
+For developers, our SDK integrates directly into your workflow. One line of code and every prompt your app sends is sanitized automatically.
+
+For enterprises, our Dataset Sanitizer scans entire training datasets — we detect PII, bias, toxic content, and give you a verified Forget Score proving the data is clean. Upload, scan, fix, verify, export. Five steps.
+
+================================================================
+
+[1:15–1:45] LIVE DEMO
+================================================================
+
+[Screen-share the app at eraseai.ai]
+
+Let me show you. Here's the dashboard. I'll type a prompt that contains an API key and a database password... watch what happens.
+
+EraseAI catches it instantly — risk score 92, high risk. It highlights exactly what's dangerous and rewrites it into a safe version.
+
+For datasets, I upload a CSV, it scans every row, flags PII and bias, and I can redact everything with one click. The Forget Score goes from 38 to 97 — verified clean.
+
+================================================================
+
+[1:45–2:10] TRACTION & MARKET
+================================================================
+
+We're based in Hong Kong, targeting the fastest-growing AI security market in the world. Asia Pacific businesses are spending 52 billion dollars on security by 2027.
+
+Our pricing starts free, 5 dollars for personal, 49 for pro, 149 for business, and custom enterprise plans.
+
+We've built full SEO infrastructure with landing pages ranking for AI firewall, ChatGPT data leak, and API key protection.
+
+We've identified 24 high-priority enterprise prospects including HSBC, DBS, AIA, Grab, and Sea Group — and 18 VC funds actively investing in AI security in our region.
+
+================================================================
+
+[2:10–2:30] CLOSING
+================================================================
+
+EraseAI. Make AI forget what it should never learn.
+
+Try it free at eraseai.ai.
+
+================================================================
+
+END OF SCRIPT
+
+Tips for recording:
+- Record a screen-share of eraseai.ai during the demo section
+- Keep energy up during the hook — it's the first thing people hear
+- Show the actual product during 1:15-1:45
+- End with the logo and URL visible on screen

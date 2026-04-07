@@ -28,10 +28,22 @@ title = "Erase AI.pptx"
 id = "CcToUOqWdqOD7gG8Qrhlt"
 uri = "file://EraseAI_Prospects_Customers.csv"
 type = "table"
-title = "EraseAI Prospect List — Potential Customers (Asia)"
+title = "Prospect List — Customers (Asia)"
 
 [[outputs]]
 id = "cYq8cFTTMdMWhqKkY6v_S"
 uri = "file://EraseAI_Prospects_Investors.csv"
 type = "table"
-title = "EraseAI Prospect List — VC Funds & Investors (Asia)"
+title = "Prospect List — Investors (Asia)"
+
+[[outputs]]
+id = "OxNVzWsMRKknixJwnxmwC"
+uri = "file://EraseAI_Pitch_Video_Script.txt"
+type = "text"
+title = "Pitch Video Script (~2.5 min)"
+
+[[outputs]]
+id = "082sdoWM0_jt9N7m8lx3L"
+uri = "file://EraseAI_Buildathon_Answers.txt"
+type = "text"
+title = "Buildathon Answers (3 Questions)"
