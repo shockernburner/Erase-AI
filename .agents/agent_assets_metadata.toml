@@ -23,3 +23,15 @@ id = "JzQxH9-vyafK9NvNhCsdM"
 uri = "file://.local/outputs/Erase-AI.pptx"
 type = "slides"
 title = "Erase AI.pptx"
+
+[[outputs]]
+id = "CcToUOqWdqOD7gG8Qrhlt"
+uri = "file://EraseAI_Prospects_Customers.csv"
+type = "table"
+title = "EraseAI Prospect List — Potential Customers (Asia)"
+
+[[outputs]]
+id = "cYq8cFTTMdMWhqKkY6v_S"
+uri = "file://EraseAI_Prospects_Investors.csv"
+type = "table"
+title = "EraseAI Prospect List — VC Funds & Investors (Asia)"

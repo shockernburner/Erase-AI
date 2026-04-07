@@ -1,0 +1,25 @@
+Company,Website,Country,Industry,Est. Headcount,Fit Score (1-5),Tier,Target Contact Title,Why They Need EraseAI,Trigger / Signal
+HSBC,hsbc.com,Hong Kong,Banking,"220,000",5,1,Group CISO / Head of AI Governance,"600+ AI use cases, 85% staff have LLM access via HSBC Productivity Suite — massive surface area for data leaks",Scaling GenAI tools enterprise-wide; Mistral AI partnership
+Standard Chartered,sc.com,Hong Kong,Banking,"85,000",5,1,Group CISO / CTO,Major AI deployment in trade finance and compliance — high risk of sensitive financial data in prompts,Active AI expansion across Asia markets
+Bank of China (HK),bochk.com,Hong Kong,Banking,"14,000",4,1,Head of IT Security,State-owned bank under strict HKMA AI governance guidelines; must prevent data leaks to comply,HKMA GenAI Sandbox Initiative
+Hang Seng Bank,hangseng.com,Hong Kong,Banking,"8,000",4,1,CISO / Head of Digital,HSBC subsidiary rolling out AI tools; needs prompt protection for customer data,Part of HKMA AI Sandbox cohort
+AIA Group,aia.com,Hong Kong,Insurance,"25,000",5,1,Group CISO / CTO,Planning GenAI integration for distribution; fined HK$23M for AML lapses — heightened compliance pressure,GenAI integration planned; regulatory scrutiny on data governance
+Prudential Hong Kong,prudential.com.hk,Hong Kong,Insurance,"5,000",4,2,Head of IT / CISO,Using AI for medical underwriting (MedScreen+) — processes sensitive health data via AI,AI-powered medical underwriting deployment
+Manulife Hong Kong,manulife.com.hk,Hong Kong,Insurance,"4,000",4,2,CTO / Head of Data Security,Deploying AI across claims and customer service — handles sensitive PII daily,Active AI deployment in claims processing
+WeLab,welab.co,Hong Kong,Fintech,"1,200",4,1,CTO / VP Engineering,Virtual bank using AI for credit scoring — developer team uses AI tools daily,Rapid AI-first fintech growth
+ZA Bank (ZhongAn),za.group,Hong Kong,Fintech/InsurTech,"3,000",4,1,CTO / Head of AI,Digital-only bank with heavy AI usage for underwriting and fraud detection,AI-native company expanding rapidly
+Cathay Pacific,cathaypacific.com,Hong Kong,Aviation,"20,000",3,2,CISO / Head of Digital,Large workforce using AI tools; suffered major data breach in 2018 — security is priority,Past data breach makes AI data protection a board-level concern
+DBS Bank,dbs.com,Singapore,Banking,"40,000",5,1,Group CISO / Head of AI CoE,"25,000+ employees use DBS-GPT daily; 370 AI use cases — enormous data leak surface",DBS-GPT enterprise-wide; S$750M AI value in 2024
+OCBC Bank,ocbc.com,Singapore,Banking,"30,000",5,1,Group CISO / CTO,Major AI deployment across banking operations; under MAS AI governance requirements,Active GenAI adoption under MAS regulatory pressure
+UOB,uob.com.sg,Singapore,Banking,"25,000",4,1,CISO / Head of AI Strategy,Deploying AI across retail and commercial banking; needs prompt protection,MAS FEAT guidelines mandate AI governance controls
+Grab,grab.com,Singapore,Tech/Super App,"10,000",4,1,CISO / VP Engineering,Super app handling payments/lending data; AI used for fraud detection — 36M users' data at risk,$20.2B market cap; AI integration across operations
+Sea Group (Shopee),sea.com,Singapore,Tech/E-commerce,"60,000",4,1,CISO / VP Engineering,"Google AI partnership across Shopee, Garena, Monee — massive developer team using AI tools",Google AI partnership for agentic commerce
+ADVANCE.AI,advance.ai,Singapore,AI/Fintech,500,4,2,CTO / Head of Product,Processes 500M+ identity verifications annually — enormous sensitive data volume,Rapid growth in AI-powered identity verification across SEA
+Nium,nium.com,Singapore,Fintech/Payments,"1,500",4,2,CISO / CTO,Cross-border payments processing 10M+ transactions/month — API keys at high risk,10M+ monthly transactions; rapid expansion
+Tookitaki,tookitaki.com,Singapore,RegTech/AML,300,3,2,CTO,AML compliance AI company — developers handle sensitive regulatory data daily,AI-powered compliance tools for financial institutions
+GoTo Group,gotocompany.com,Indonesia,Tech/Super App,"9,000",4,2,CISO / VP Engineering,"Indonesia's largest tech company with payments, ride-hailing, e-commerce — massive AI adoption",AI integration across Gojek + Tokopedia platforms
+Kasikornbank (KBank),kasikornbank.com,Thailand,Banking,"20,000",3,2,CTO / CISO,Thailand's top digital bank with AI-powered services,Leading Thai bank in AI/digital transformation
+VNG Corporation,vng.com.vn,Vietnam,Tech,"4,000",3,2,CTO / Head of Security,"Vietnam's tech unicorn with AI across gaming, payments, cloud",Vietnam unicorn with active AI development
+CIMB Group,cimb.com,Malaysia,Banking,"33,000",3,2,Group CISO,ASEAN universal bank with AI strategy across 15 countries,AI strategy deployment across ASEAN operations
+CYFIRMA,cyfirma.com,Singapore,Cybersecurity,200,3,3,CTO / Head of Product,AI-based threat intelligence — potential partner or customer for their own AI tools,AI-native cybersecurity company in SG
+CloudSEK,cloudsek.com,Singapore,Cybersecurity,300,3,3,CTO,Digital risk and data leak prevention — potential partner for AI prompt protection,Funded cybersecurity company focused on data leak prevention
