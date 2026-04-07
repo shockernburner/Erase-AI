@@ -12,6 +12,12 @@ uri = "file://artifacts/pitch-deck/public/problem-bg.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "b5aKHFUHcUGpNsLwEORnu"
+uri = "file://EraseAI_Project_Hero.png"
+type = "image"
+title = "EraseAI hero shield image"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -53,3 +59,9 @@ id = "qlM0zebp6Wrikg4V8e0aC"
 uri = "file://EraseAI_Pitch_Deck_URL.txt"
 type = "text"
 title = "Pitch Deck URL & Slide Summary"
+
+[[outputs]]
+id = "VRxAcjCrsz3r1EpHYHfbM"
+uri = "file://EraseAI_Project_Hero.png"
+type = "image"
+title = "EraseAI Project Hero Image"
