@@ -31,14 +31,16 @@ export default function TitleSlide() {
           <h1 className="font-display text-[6.5vw] leading-[0.92] font-bold tracking-tighter text-text">
             Never Learn
           </h1>
-          <p className="mt-[3vh] max-w-[50vw] text-[2vw] leading-snug text-muted font-body">
-            The AI Data Governance Platform for privacy, fairness, and compliance.
+          <p className="mt-[3vh] max-w-[50vw] text-[1.8vw] leading-snug text-muted font-body">
+            The AI Data Governance Platform — real-time firewall, content scanning, dataset sanitization, and developer API for privacy, fairness, and compliance.
           </p>
         </div>
         <div className="flex items-center gap-[2vw]">
-          <span className="font-body text-[1.3vw] text-muted">Agent 4 Buildathon</span>
+          <span className="font-body text-[1.3vw] text-muted">eraseai.ai</span>
           <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
-          <span className="font-body text-[1.3vw] text-muted">2026</span>
+          <span className="font-body text-[1.3vw] text-muted">Hong Kong</span>
+          <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
+          <span className="font-body text-[1.3vw] text-muted">Agent 4 Buildathon 2026</span>
         </div>
       </div>
     </div>

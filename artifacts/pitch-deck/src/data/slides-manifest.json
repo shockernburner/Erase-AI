@@ -4,7 +4,7 @@
     "position": 1,
     "filepath": "src/pages/slides/TitleSlide.tsx",
     "title": "EraseAI",
-    "description": "Hero title slide with tagline and branding.",
+    "description": "Hero title slide with tagline, platform overview, and branding.",
     "speakerNotes": ""
   },
   {
@@ -12,47 +12,63 @@
     "position": 2,
     "filepath": "src/pages/slides/ProblemSlide.tsx",
     "title": "The Problem",
-    "description": "Three critical problems in AI training data: privacy violations, hidden bias, and toxic content.",
+    "description": "Data leaks to AI, prompt injection attacks, and toxic training data — with market stats.",
     "speakerNotes": ""
   },
   {
     "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
     "position": 3,
     "filepath": "src/pages/slides/SolutionSlide.tsx",
-    "title": "The Solution",
-    "description": "EraseAI's four-step workflow: Detect, Analyze, Erase, Verify.",
+    "title": "The Platform",
+    "description": "Four core capabilities: Content Scanning, AI Firewall, AI Rewriting, Dataset Sanitizer.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890124",
+    "position": 4,
+    "filepath": "src/pages/slides/FirewallSlide.tsx",
+    "title": "AI Firewall",
+    "description": "Real-time prompt protection — injection detection, jailbreak prevention, data leak blocking.",
     "speakerNotes": ""
   },
   {
     "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
-    "position": 4,
+    "position": 5,
     "filepath": "src/pages/slides/FeaturesSlide.tsx",
-    "title": "Key Features",
-    "description": "Three core engines: Dataset Unlearning, Intelligence Engine, and ML Feedback.",
+    "title": "Content Intelligence",
+    "description": "Content scanning, AI rewriting, trend monitoring, and personal mode.",
     "speakerNotes": ""
   },
   {
     "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
-    "position": 5,
+    "position": 6,
     "filepath": "src/pages/slides/HowItWorksSlide.tsx",
-    "title": "How It Works",
-    "description": "Five-step workflow from upload to verified export.",
+    "title": "Developer Tools",
+    "description": "SDK, API integration, dataset sanitizer, batch processing, webhooks, ML feedback.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "f6a7b8c9-d0e1-2345-fabc-456789012346",
+    "position": 7,
+    "filepath": "src/pages/slides/PricingSlide.tsx",
+    "title": "Pricing",
+    "description": "Five tiers from Free to Enterprise — individuals to large organizations.",
     "speakerNotes": ""
   },
   {
     "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
-    "position": 6,
+    "position": 8,
     "filepath": "src/pages/slides/TechStackSlide.tsx",
-    "title": "Tech Stack",
-    "description": "Production-ready technology stack overview.",
+    "title": "Trust & Tech Stack",
+    "description": "Compliance roadmap (SOC 2, ISO 27001, GDPR) and production technology stack.",
     "speakerNotes": ""
   },
   {
     "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
-    "position": 7,
+    "position": 9,
     "filepath": "src/pages/slides/ClosingSlide.tsx",
     "title": "Thank You",
-    "description": "Closing slide with branding and tagline.",
+    "description": "Closing slide with full feature list, contact info, and branding.",
     "speakerNotes": ""
   }
 ]

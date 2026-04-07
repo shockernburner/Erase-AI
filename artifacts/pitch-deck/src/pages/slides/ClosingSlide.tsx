@@ -17,13 +17,15 @@ export default function ClosingSlide() {
           Make AI forget what it should never learn
         </p>
         <div className="w-[8vw] h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent mb-[4vh]" />
-        <p className="font-body text-[1.5vw] text-muted max-w-[45vw] leading-relaxed mb-[5vh]">
-          The complete data governance platform for privacy-conscious AI development. Detect risk. Clean data. Fix your model.
+        <p className="font-body text-[1.5vw] text-muted max-w-[50vw] leading-relaxed mb-[5vh]">
+          AI Firewall. Content Scanning. Dataset Sanitizer. Developer API. Personal Mode. Trend Monitoring. Full compliance stack.
         </p>
         <div className="flex items-center gap-[3vw]">
           <span className="font-body text-[1.3vw] text-text/70">eraseai.ai</span>
           <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
-          <span className="font-body text-[1.3vw] text-text/70">Agent 4 Buildathon 2026</span>
+          <span className="font-body text-[1.3vw] text-text/70">director@futureonward.com</span>
+          <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
+          <span className="font-body text-[1.3vw] text-text/70">Hong Kong</span>
         </div>
       </div>
     </div>

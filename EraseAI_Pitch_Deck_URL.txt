@@ -7,13 +7,15 @@ https://875881c0-b2eb-4021-bfd3-641b1f1dff37-00-1keikneyw59ij.riker.replit.dev/p
 Published / Production URL:
 https://eraseai.ai/pitch-deck/
 
-Slides (7 total):
-1. Title — "Make AI Forget What It Should Never Learn"
-2. The Problem — Privacy violations, hidden bias, toxic content in AI training data
-3. The Solution — Detect, Analyze, Erase, Verify workflow
-4. Key Features — Dataset Unlearning, Intelligence Engine, ML Feedback
-5. How It Works — Upload → Scan → Fix → Verify → Export
-6. Tech Stack — TypeScript, React+Vite, Express 5, PostgreSQL, Airwallex
-7. Closing — "Detect risk. Clean data. Fix your model." eraseai.ai
+Slides (9 total):
+1. Title — "Make AI Forget What It Should Never Learn" — platform overview, HK base
+2. The Problem — Data leaks to AI, prompt injection, toxic training data, $6.5B market
+3. The Platform — 4 capabilities: Content Scanning, AI Firewall, AI Rewriting, Dataset Sanitizer
+4. AI Firewall — Prompt injection (99%), jailbreak (95%), data leak (87%), browser extension + API
+5. Content Intelligence — Scanning, AI rewriting, trend monitoring, personal mode ($5/mo)
+6. Developer Tools — SDK, dataset sanitizer (250K rows), API keys, webhooks, ML feedback
+7. Pricing — Free/$5/$49/$149/Enterprise with full feature comparison
+8. Trust & Tech Stack — SOC 2, ISO 27001, ISO 42001, GDPR + TypeScript, React, Express, PostgreSQL
+9. Closing — Full feature list, contact info (director@futureonward.com, eraseai.ai)
 
-Verification: Pitch deck confirmed live and accessible (HTTP 200, all 7 slides rendering correctly).
+Verification: Pitch deck confirmed live and accessible (HTTP 200, all 9 slides rendering correctly).
