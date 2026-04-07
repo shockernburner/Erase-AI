@@ -47,3 +47,9 @@ id = "082sdoWM0_jt9N7m8lx3L"
 uri = "file://EraseAI_Buildathon_Answers.txt"
 type = "text"
 title = "Buildathon Answers (3 Questions)"
+
+[[outputs]]
+id = "qlM0zebp6Wrikg4V8e0aC"
+uri = "file://EraseAI_Pitch_Deck_URL.txt"
+type = "text"
+title = "Pitch Deck URL & Slide Summary"

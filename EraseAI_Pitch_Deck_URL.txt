@@ -1,0 +1,19 @@
+ERASEAI — PITCH DECK
+====================
+
+Live Pitch Deck URL (Development):
+https://875881c0-b2eb-4021-bfd3-641b1f1dff37-00-1keikneyw59ij.riker.replit.dev/pitch-deck/
+
+Published / Production URL:
+https://eraseai.ai/pitch-deck/
+
+Slides (7 total):
+1. Title — "Make AI Forget What It Should Never Learn"
+2. The Problem — Privacy violations, hidden bias, toxic content in AI training data
+3. The Solution — Detect, Analyze, Erase, Verify workflow
+4. Key Features — Dataset Unlearning, Intelligence Engine, ML Feedback
+5. How It Works — Upload → Scan → Fix → Verify → Export
+6. Tech Stack — TypeScript, React+Vite, Express 5, PostgreSQL, Airwallex
+7. Closing — "Detect risk. Clean data. Fix your model." eraseai.ai
+
+Verification: Pitch deck confirmed live and accessible (HTTP 200, all 7 slides rendering correctly).
