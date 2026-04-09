@@ -76,12 +76,6 @@ interface PaymentIntentResponse {
   metadata: Record<string, string>;
 }
 
-interface PaymentLinkResponse {
-  id: string;
-  url: string;
-  status: string;
-}
-
 export async function createCheckoutSession(params: {
   amount: number;
   currency: string;
@@ -91,32 +85,6 @@ export async function createCheckoutSession(params: {
   plan?: string;
 }): Promise<{ intentId: string; clientSecret: string; checkoutUrl: string }> {
   const planLabel = params.plan || "pro";
-
-  try {
-    const link = await airwallexRequest<PaymentLinkResponse>(
-      "POST",
-      "/api/v1/pa/payment_links",
-      {
-        amount: params.amount,
-        currency: params.currency,
-        title: `EraseAI ${planLabel.charAt(0).toUpperCase() + planLabel.slice(1)} Plan`,
-        reusable: false,
-        metadata: {
-          user_id: params.userId,
-          plan: planLabel,
-          merchant_order_id: params.merchantOrderId,
-        },
-      },
-    );
-
-    return {
-      intentId: link.id,
-      clientSecret: "",
-      checkoutUrl: link.url,
-    };
-  } catch (linkErr) {
-    console.warn("Payment Links API unavailable, falling back to HPP:", linkErr);
-  }
 
   const intent = await airwallexRequest<PaymentIntentResponse>(
     "POST",
@@ -134,11 +102,14 @@ export async function createCheckoutSession(params: {
     },
   );
 
+  const successUrl = encodeURIComponent(params.returnUrl);
   const checkoutUrl =
     `${CHECKOUT_BASE}/hpp?intent_id=${encodeURIComponent(intent.id)}` +
     `&client_secret=${encodeURIComponent(intent.client_secret)}` +
     `&mode=payment` +
-    `&currency=${encodeURIComponent(params.currency)}`;
+    `&currency=${encodeURIComponent(params.currency)}` +
+    `&successUrl=${successUrl}` +
+    `&failUrl=${successUrl}`;
 
   return {
     intentId: intent.id,
@@ -153,23 +124,6 @@ export async function getPaymentIntent(
   return airwallexRequest<PaymentIntentResponse>(
     "GET",
     `/api/v1/pa/payment_intents/${intentId}`,
-  );
-}
-
-interface PaymentLinkDetailResponse {
-  id: string;
-  url: string;
-  status: string;
-  metadata?: Record<string, string>;
-  payment_intents?: Array<{ id: string; status: string }>;
-}
-
-export async function getPaymentLink(
-  linkId: string,
-): Promise<PaymentLinkDetailResponse> {
-  return airwallexRequest<PaymentLinkDetailResponse>(
-    "GET",
-    `/api/v1/pa/payment_links/${linkId}`,
   );
 }
 
