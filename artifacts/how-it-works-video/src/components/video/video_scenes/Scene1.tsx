@@ -58,7 +58,7 @@ export function Scene1() {
             animate={phase >= 3 ? { y: '0%', opacity: 1 } : { y: '120%', opacity: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            AI Data Governance Layer
+            How It Works
           </motion.p>
         </motion.div>
 

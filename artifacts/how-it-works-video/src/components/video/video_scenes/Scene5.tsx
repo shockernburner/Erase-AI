@@ -100,15 +100,14 @@ export function Scene5() {
           </motion.span>
         </motion.div>
 
-        <motion.div
-          className="flex gap-[2vw]"
+        <motion.p
+          className="text-[1vw] text-slate-500 mt-[1vh]"
           initial={{ opacity: 0 }}
           animate={phase >= 4 ? { opacity: 0.5 } : { opacity: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <span className="text-[0.75vw] text-slate-500 uppercase tracking-wider">director@futureonward.com</span>
-          <span className="text-[0.75vw] text-slate-500 uppercase tracking-wider">wa.me/85290576851</span>
-        </motion.div>
+          AI Data Governance Layer
+        </motion.p>
       </div>
     </motion.div>
   );
