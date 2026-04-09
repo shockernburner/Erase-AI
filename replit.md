@@ -40,6 +40,10 @@ The project is structured as a pnpm monorepo, separating deployable applications
 
 **UI/UX Decisions (EraseAI Frontend):**
 *   **Design:** Dark-mode UI with a cyan accent.
+*   **Landing Page:** Video-first experience (`PublicLanding.tsx`) — full-screen autoplay video with Skip button, followed by 3-mode selector cards (Developer/Enterprise/Personal) with try-before-signup preview mode, "Join when you want" auth section with reusable `AuthForm.tsx` component, and contact footer (WhatsApp + email).
+*   **Dashboard:** Card-based expandable grid (`Home.tsx`) for logged-in users — Dataset Sanitizer, Personal Mode, Developer Dashboard, Dev Mode, Firewall Docs, API Docs, Certifications, Pricing. Includes UserMenu with plan badge and Contact Us section.
+*   **Preview Mode:** Unauthenticated users can click a mode card to preview dashboards with a "Back to Homepage" button and "Preview Mode" badge overlay.
+*   **Plan-Based Routing:** After login, users land on their plan's default view — personal→PersonalMode, pro→DeveloperDashboard, business/enterprise→AnalyticsDashboard, free→Home dashboard.
 *   **Interactive Data Display:** Features like side-by-side diffs for erasure verification and interactive analysis results.
 *   **Workflow Orchestration:** "Run Demo" buttons automate complex workflows with progress feedback.
 *   **Contextual Upgrade Prompts:** Guides free users to upgrade when feature limits are met.

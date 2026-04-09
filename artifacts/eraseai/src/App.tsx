@@ -6,7 +6,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
 import { Router, Route, Switch } from "wouter";
 import Home from "@/pages/Home";
-import LoginPage from "@/pages/LoginPage";
+import PublicLanding from "@/pages/PublicLanding";
 import PricingPage from "@/pages/PricingPage";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -18,6 +18,7 @@ import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
+import { ArrowLeft } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const AiFirewallPage = lazy(() => import("@/pages/seo/AiFirewallPage"));
@@ -39,6 +40,7 @@ const queryClient = new QueryClient({
 });
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
+type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 function SeoLoadingFallback() {
   return (
@@ -48,9 +50,47 @@ function SeoLoadingFallback() {
   );
 }
 
+function PreviewWrapper({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+  return (
+    <div className="relative">
+      <div className="fixed top-4 left-4 z-50">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-sm font-medium text-foreground hover:bg-muted/40 transition-all shadow-lg"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Homepage
+        </button>
+      </div>
+      <div className="fixed top-4 right-4 z-50">
+        <span className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+          Preview Mode
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function getDefaultViewForPlan(planType: string | undefined): AppView {
+  const plan = planType || "free";
+  switch (plan) {
+    case "personal":
+      return "personal";
+    case "pro":
+      return "developer";
+    case "business":
+    case "enterprise":
+      return "analytics";
+    default:
+      return "home";
+  }
+}
+
 function AuthGate() {
   const { t } = useTranslation();
   const { isLoading, isAuthenticated, user } = useAuth();
+  const [previewMode, setPreviewMode] = useState<PreviewMode>(null);
   const [view, setView] = useState<AppView>(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("admin") === "true") {
@@ -61,6 +101,7 @@ function AuthGate() {
     }
     return "home";
   });
+  const [initialViewSet, setInitialViewSet] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,6 +109,19 @@ function AuthGate() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && user && !initialViewSet && view === "home") {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.get("admin") && !params.get("checkout")) {
+        const plan = user.planType || "free";
+        if (plan !== "free") {
+          setView(getDefaultViewForPlan(plan));
+        }
+      }
+      setInitialViewSet(true);
+    }
+  }, [isAuthenticated, user, initialViewSet, view]);
 
   if (isLoading) {
     return (
@@ -81,11 +135,32 @@ function AuthGate() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    if (previewMode === "developer") {
+      return (
+        <PreviewWrapper onBack={() => setPreviewMode(null)}>
+          <DeveloperDashboard onBack={() => setPreviewMode(null)} onUpgrade={() => setPreviewMode(null)} />
+        </PreviewWrapper>
+      );
+    }
+    if (previewMode === "enterprise") {
+      return (
+        <PreviewWrapper onBack={() => setPreviewMode(null)}>
+          <AnalyticsDashboard onBack={() => setPreviewMode(null)} onUpgrade={() => setPreviewMode(null)} />
+        </PreviewWrapper>
+      );
+    }
+    if (previewMode === "personal") {
+      return (
+        <PreviewWrapper onBack={() => setPreviewMode(null)}>
+          <PersonalMode onBack={() => setPreviewMode(null)} onUpgrade={() => setPreviewMode(null)} />
+        </PreviewWrapper>
+      );
+    }
+    return <PublicLanding onPreview={setPreviewMode} />;
   }
 
   if (view === "admin" && user?.role !== "admin") {
-    return <LoginPage />;
+    return <Home onNavigate={setView} />;
   }
 
   if (view === "checkout-success") {

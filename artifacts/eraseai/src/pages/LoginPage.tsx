@@ -1,94 +1,11 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Mail, Lock, User, Loader2, Eye, EyeOff, Zap, Database, BrainCircuit, Sparkles, Shield, Code2, Globe } from "lucide-react";
+import { ShieldX } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import AuthForm from "@/components/AuthForm";
 
 export default function LoginPage() {
   const { t } = useTranslation();
-  const { login, signup } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [providers, setProviders] = useState<{ google: boolean; apple: boolean }>({ google: false, apple: false });
-
-  useEffect(() => {
-    fetch("/api/auth/providers")
-      .then((r) => r.json())
-      .then((data) => setProviders({ google: !!data.google, apple: !!data.apple }))
-      .catch(() => {});
-  }, []);
-
-  const features = [
-    { icon: <Database className="w-5 h-5" />, title: t("login.featureDataset"), desc: t("login.featureDatasetDesc") },
-    { icon: <Zap className="w-5 h-5" />, title: t("login.featureUnlearning"), desc: t("login.featureUnlearningDesc") },
-    { icon: <BrainCircuit className="w-5 h-5" />, title: t("login.featurePipeline"), desc: t("login.featurePipelineDesc") },
-  ];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      let result: { error?: string };
-      if (mode === "signup") {
-        result = await signup({ email, password, firstName, lastName });
-      } else {
-        result = await login(email, password);
-      }
-
-      if (result.error) {
-        setError(result.error);
-      }
-    } catch {
-      setError(t("login.genericError"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/google";
-  };
-
-  const handleAppleLogin = () => {
-    window.location.href = "/api/auth/apple";
-  };
-
-  const cards = [
-    {
-      icon: <Shield className="w-7 h-7" />,
-      title: t("homepage.card1Title"),
-      desc: t("homepage.card1Desc"),
-      border: "border-cyan-500/30",
-      iconBg: "bg-cyan-500/20 text-cyan-400",
-      badge: null,
-    },
-    {
-      icon: <Code2 className="w-7 h-7" />,
-      title: t("homepage.card2Title"),
-      desc: t("homepage.card2Desc"),
-      border: "border-violet-500/30",
-      iconBg: "bg-violet-500/20 text-violet-400",
-      badge: null,
-    },
-    {
-      icon: <Globe className="w-7 h-7" />,
-      title: t("homepage.card3Title"),
-      desc: t("homepage.card3Desc"),
-      border: "border-amber-500/30",
-      iconBg: "bg-amber-500/20 text-amber-400",
-      badge: t("homepage.comingSoon"),
-    },
-  ];
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center relative overflow-y-auto">
@@ -107,244 +24,31 @@ export default function LoginPage() {
       </div>
 
       <div className="flex items-center justify-center w-full py-16 md:py-24">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 max-w-md w-full mx-4"
-      >
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.5)] mb-4">
-            <ShieldX className="w-10 h-10" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10 max-w-md w-full mx-4"
+        >
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.5)] mb-4">
+              <ShieldX className="w-10 h-10" />
+            </div>
+            <h1 className="text-4xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+              {t("app.name")}
+            </h1>
+            <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-2">
+              {t("login.subtitle")}
+            </p>
           </div>
-          <h1 className="text-4xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-            {t("app.name")}
-          </h1>
-          <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-2">
-            {t("login.subtitle")}
+
+          <AuthForm />
+
+          <p className="text-center text-xs text-muted-foreground/50 mt-6 font-mono">
+            {t("app.copyright")}
           </p>
-        </div>
-
-        <div className="bg-card/50 backdrop-blur-md border border-border/50 rounded-2xl p-6 space-y-5">
-          <div className="hidden sm:block space-y-3">
-            {features.map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + i * 0.1 }}
-                className="flex items-start gap-3 p-3 rounded-xl bg-muted/10 border border-border/20"
-              >
-                <span className="text-primary mt-0.5 shrink-0">{f.icon}</span>
-                <div>
-                  <span className="text-sm font-semibold text-foreground">{f.title}</span>
-                  <p className="text-xs text-muted-foreground mt-0.5">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="flex rounded-xl bg-muted/20 p-1 border border-border/20">
-            <button
-              onClick={() => { setMode("login"); setError(null); }}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                mode === "login"
-                  ? "bg-primary text-black shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("login.logIn")}
-            </button>
-            <button
-              onClick={() => { setMode("signup"); setError(null); }}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                mode === "signup"
-                  ? "bg-primary text-black shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t("login.signUp")}
-            </button>
-          </div>
-
-          {mode === "signup" && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
-            >
-              <Sparkles className="w-4 h-4 text-primary shrink-0" />
-              <p className="text-sm text-primary font-medium">
-                {t("login.trialBanner")}
-              </p>
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {mode === "signup" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder={t("login.firstName")}
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
-                  />
-                </div>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder={t("login.lastName")}
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="email"
-                placeholder={t("login.email")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder={t("login.password")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                className="w-full pl-10 pr-10 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {error && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2"
-              >
-                {error}
-              </motion.p>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)] py-5 text-base"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {mode === "signup" ? t("login.creatingAccount") : t("login.loggingIn")}
-                </>
-              ) : (
-                mode === "signup" ? t("login.startTrial") : t("login.logIn")
-              )}
-            </Button>
-          </form>
-
-          {(providers.google || providers.apple) && (
-            <>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border/30" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-card/50 px-3 text-muted-foreground/60">{t("login.orContinue")}</span>
-                </div>
-              </div>
-
-              <div className={`grid gap-3 ${providers.google && providers.apple ? "grid-cols-2" : "grid-cols-1"}`}>
-                {providers.google && (
-                  <button
-                    onClick={handleGoogleLogin}
-                    className="flex items-center justify-center gap-2 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm font-medium text-foreground hover:bg-muted/30 transition-colors"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                    </svg>
-                    Google
-                  </button>
-                )}
-                {providers.apple && (
-                  <button
-                    onClick={handleAppleLogin}
-                    className="flex items-center justify-center gap-2 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm font-medium text-foreground hover:bg-muted/30 transition-colors"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                    </svg>
-                    Apple
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground/50 mt-6 font-mono">
-          {t("app.copyright")}
-        </p>
-      </motion.div>
+        </motion.div>
       </div>
-
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-        className="relative z-10 w-full max-w-4xl mx-auto px-4 pb-16 pt-4"
-      >
-        <h2 className="text-center text-lg font-semibold text-muted-foreground/70 uppercase tracking-widest mb-8 font-mono">
-          {t("homepage.whatWeDo")}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {cards.map((card, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 + i * 0.15 }}
-              className={`relative backdrop-blur-xl border ${card.border} rounded-2xl p-6 hover:scale-[1.03] transition-transform`}
-              style={{ backgroundColor: "rgba(15, 23, 42, 0.85)" }}
-            >
-              {card.badge && (
-                <span className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                  {card.badge}
-                </span>
-              )}
-              <div className={`inline-flex p-2.5 rounded-xl ${card.iconBg} mb-4`}>
-                {card.icon}
-              </div>
-              <h3 className="text-base font-bold text-foreground mb-2">{card.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{card.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
     </div>
   );
 }

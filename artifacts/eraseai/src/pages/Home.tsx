@@ -1,12 +1,33 @@
 import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
-import { ShieldX, Globe, ArrowRight, LogOut, Crown, LayoutDashboard, Play, X, Clock, Key, BarChart3, Shield, Megaphone, Book, Code2, Award, ExternalLink, MessageCircle, Mail } from "lucide-react";
+import {
+  ShieldX,
+  Globe,
+  LogOut,
+  Crown,
+  LayoutDashboard,
+  Play,
+  X,
+  Clock,
+  Key,
+  BarChart3,
+  Shield,
+  Megaphone,
+  Book,
+  Code2,
+  Award,
+  ExternalLink,
+  MessageCircle,
+  Mail,
+  Database,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
-import LandingPage from "@/pages/LandingPage";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
 
@@ -240,10 +261,185 @@ function VideoModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+interface DashboardCard {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: string;
+  borderColor: string;
+  bgColor: string;
+  view: AppView;
+  content?: React.ReactNode;
+}
+
+function ExpandableCard({
+  card,
+  expanded,
+  onToggle,
+  onNavigate,
+}: {
+  card: DashboardCard;
+  expanded: boolean;
+  onToggle: () => void;
+  onNavigate: (view: AppView) => void;
+}) {
+  return (
+    <motion.div
+      layout
+      className={`rounded-2xl border ${card.borderColor} ${card.bgColor} backdrop-blur-sm overflow-hidden transition-all`}
+    >
+      <button
+        onClick={onToggle}
+        className="w-full p-6 text-left flex items-start gap-4 hover:bg-white/[0.02] transition-colors"
+      >
+        <div className={`p-2.5 rounded-xl ${card.color} shrink-0`}>
+          {card.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold text-foreground mb-1">{card.title}</h3>
+          <p className="text-sm text-muted-foreground">{card.description}</p>
+        </div>
+        {expanded ? (
+          <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-6 border-t border-border/20 pt-4">
+              {card.content ? (
+                card.content
+              ) : (
+                <button
+                  onClick={() => onNavigate(card.view)}
+                  className="px-6 py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all"
+                >
+                  Open {card.title}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 export default function Home({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [showVideo, setShowVideo] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+
+  const plan = user?.planType || "free";
+
+  const cards: DashboardCard[] = [
+    {
+      id: "sanitizer",
+      icon: <Database className="w-6 h-6" />,
+      title: "Dataset Sanitizer",
+      description: "Upload, analyze, and clean datasets — detect PII, bias, toxicity, and more.",
+      color: "bg-cyan-500/20 text-cyan-400",
+      borderColor: "border-cyan-500/30",
+      bgColor: "bg-cyan-500/5",
+      view: "home",
+      content: <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />,
+    },
+    {
+      id: "personal",
+      icon: <Shield className="w-6 h-6" />,
+      title: t("nav.personalMode"),
+      description: "Scan posts and profiles for safety risks, get AI-rewritten safe versions.",
+      color: "bg-emerald-500/20 text-emerald-400",
+      borderColor: "border-emerald-500/30",
+      bgColor: "bg-emerald-500/5",
+      view: "personal",
+    },
+    {
+      id: "developer",
+      icon: <Key className="w-6 h-6" />,
+      title: t("nav.developer"),
+      description: "Manage API keys, monitor usage, configure webhooks, and view code snippets.",
+      color: "bg-amber-500/20 text-amber-400",
+      borderColor: "border-amber-500/30",
+      bgColor: "bg-amber-500/5",
+      view: "developer",
+    },
+    ...(plan === "business" || plan === "enterprise"
+      ? [
+          {
+            id: "analytics",
+            icon: <BarChart3 className="w-6 h-6" />,
+            title: t("nav.analytics"),
+            description: "Advanced metrics, forget scores, compliance tracking, and processing activity.",
+            color: "bg-violet-500/20 text-violet-400",
+            borderColor: "border-violet-500/30",
+            bgColor: "bg-violet-500/5",
+            view: "analytics" as AppView,
+          },
+        ]
+      : []),
+    {
+      id: "devMode",
+      icon: <Code2 className="w-6 h-6" />,
+      title: t("nav.devMode"),
+      description: "Interactive developer playground for testing AI governance features.",
+      color: "bg-amber-500/20 text-amber-400",
+      borderColor: "border-amber-500/30",
+      bgColor: "bg-amber-500/5",
+      view: "devMode",
+    },
+    {
+      id: "firewallDocs",
+      icon: <Shield className="w-6 h-6" />,
+      title: t("nav.firewallDocs"),
+      description: "Browser extension documentation for real-time AI firewall protection.",
+      color: "bg-red-500/20 text-red-400",
+      borderColor: "border-red-500/30",
+      bgColor: "bg-red-500/5",
+      view: "firewallDocs",
+    },
+    {
+      id: "docs",
+      icon: <Book className="w-6 h-6" />,
+      title: t("nav.apiDocs"),
+      description: "Full API reference, endpoint documentation, and integration guides.",
+      color: "bg-blue-500/20 text-blue-400",
+      borderColor: "border-blue-500/30",
+      bgColor: "bg-blue-500/5",
+      view: "docs",
+    },
+    {
+      id: "certifications",
+      icon: <Award className="w-6 h-6" />,
+      title: t("nav.certifications"),
+      description: "SOC 2, ISO 27001, GDPR, NIST AI compliance roadmap and status.",
+      color: "bg-emerald-500/20 text-emerald-400",
+      borderColor: "border-emerald-500/30",
+      bgColor: "bg-emerald-500/5",
+      view: "certifications",
+    },
+    {
+      id: "pricing",
+      icon: <Crown className="w-6 h-6" />,
+      title: plan === "free" ? t("nav.upgradePlan") : t("nav.managePlan"),
+      description: "View plans, upgrade, or manage your current subscription.",
+      color: "bg-primary/20 text-primary",
+      borderColor: "border-primary/30",
+      bgColor: "bg-primary/5",
+      view: "pricing",
+    },
+  ];
 
   return (
     <div className="min-h-screen w-full pb-20 relative">
@@ -257,25 +453,19 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
         }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
         <motion.header
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex items-center justify-between mb-6 flex-wrap gap-4"
+          className="flex items-center justify-between mb-8 flex-wrap gap-4"
         >
           <div className="flex items-center gap-3">
-            <div
-              className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)] cursor-pointer"
-              onClick={() => setShowDemo(false)}
-            >
+            <div className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
               <ShieldX className="w-8 h-8" />
             </div>
             <div>
-              <h1
-                className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 cursor-pointer"
-                onClick={() => setShowDemo(false)}
-              >
+              <h1 className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
                 {t("app.name")}
               </h1>
               <p className="text-sm font-mono text-primary/80 uppercase tracking-widest mt-1">
@@ -305,53 +495,79 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           </div>
         </motion.header>
 
-        {showDemo ? (
-          <>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 }}
-              className="flex items-center gap-3 mb-8 text-xs font-mono text-muted-foreground"
-            >
-              <span className="uppercase tracking-wider text-primary/70 font-semibold">{t("pipeline.label")}</span>
-              <span className="flex items-center gap-1.5">
-                {t("pipeline.upload")} <ArrowRight className="w-3 h-3" />
-                {t("pipeline.analyze")} <ArrowRight className="w-3 h-3" />
-                {t("pipeline.fix")} <ArrowRight className="w-3 h-3" />
-                {t("pipeline.verify")} <ArrowRight className="w-3 h-3" />
-                {t("pipeline.retrain")}
-              </span>
-              <span className="hidden sm:inline text-muted-foreground/50">|</span>
-              <span className="hidden sm:inline text-muted-foreground/60">{t("pipeline.subtitle")}</span>
-            </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-8"
+        >
+          <h2 className="text-xl font-bold text-foreground mb-1">
+            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Click any card to expand and use it right here.
+          </p>
+        </motion.div>
 
+        <div className="space-y-4 mb-12">
+          {cards.map((card, i) => (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              key={card.id}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ delay: 0.1 + i * 0.05 }}
             >
-              <DatasetSanitizer onNavigatePricing={() => onNavigate("pricing")} />
+              <ExpandableCard
+                card={card}
+                expanded={expandedCard === card.id}
+                onToggle={() =>
+                  setExpandedCard(expandedCard === card.id ? null : card.id)
+                }
+                onNavigate={onNavigate}
+              />
             </motion.div>
-          </>
-        ) : (
-          <LandingPage onNavigate={onNavigate} onTryDemo={() => setShowDemo(true)} />
-        )}
-      </div>
+          ))}
+        </div>
 
-      <footer className="relative z-10 border-t border-border/30 mt-16 py-8">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex flex-col items-center gap-4 mb-6">
-            <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
-              {t("certifications.trustStrip.label")}
-            </p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="border-t border-border/30 pt-8 pb-4"
+        >
+          <h3 className="text-center text-sm font-semibold text-muted-foreground/80 uppercase tracking-wider mb-6">
+            Contact Us
+          </h3>
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
+            <a
+              href="https://wa.me/85290576851"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-6 py-4 rounded-xl border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all"
+            >
+              <MessageCircle className="w-6 h-6 text-green-500" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">WhatsApp</p>
+                <p className="text-sm font-semibold text-foreground">+852 9057 6851</p>
+              </div>
+            </a>
+            <a
+              href="mailto:director@futureonward.com"
+              className="flex items-center gap-3 px-6 py-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all"
+            >
+              <Mail className="w-6 h-6 text-primary" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">Email</p>
+                <p className="text-sm font-semibold text-foreground">director@futureonward.com</p>
+              </div>
+            </a>
+          </div>
+          <div className="flex flex-col items-center gap-4">
             <div className="flex flex-wrap items-center justify-center gap-3">
               {[
                 { key: "SOC 2", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
                 { key: "ISO 27001", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-                { key: "ISO 42001", color: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
                 { key: "GDPR", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
-                { key: "NIST AI", color: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
-                { key: "CCPA", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
               ].map((badge) => (
                 <span
                   key={badge.key}
@@ -365,9 +581,6 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
                 </span>
               ))}
             </div>
-            <p className="text-[9px] text-muted-foreground/50 font-medium">
-              {t("certifications.trustStrip.planned")}
-            </p>
             <button
               onClick={() => onNavigate("certifications")}
               className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
@@ -376,40 +589,11 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               <ExternalLink className="w-3 h-3" />
             </button>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-6 text-xs text-muted-foreground/60">
-            <a href={`${import.meta.env.BASE_URL}ai-firewall`} className="hover:text-primary transition-colors">AI Firewall</a>
-            <span className="text-border/30">·</span>
-            <a href={`${import.meta.env.BASE_URL}chatgpt-data-leak`} className="hover:text-primary transition-colors">Prevent Data Leaks</a>
-            <span className="text-border/30">·</span>
-            <a href={`${import.meta.env.BASE_URL}ai-prompt-security`} className="hover:text-primary transition-colors">Prompt Security</a>
-            <span className="text-border/30">·</span>
-            <a href={`${import.meta.env.BASE_URL}api-key-protection-ai`} className="hover:text-primary transition-colors">API Key Protection</a>
-            <span className="text-border/30">·</span>
-            <a href={`${import.meta.env.BASE_URL}blog`} className="hover:text-primary transition-colors">Blog</a>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
-            <a
-              href="https://wa.me/85290576851"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-green-400 transition-colors"
-            >
-              <MessageCircle className="w-4 h-4 text-green-500" />
-              +852 9057 6851
-            </a>
-            <a
-              href="mailto:director@futureonward.com"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              <Mail className="w-4 h-4 text-primary" />
-              director@futureonward.com
-            </a>
-          </div>
-          <p className="text-xs font-mono text-muted-foreground/60 text-center">
+          <p className="text-xs font-mono text-muted-foreground/60 text-center mt-6">
             {t("app.copyright")}
           </p>
-        </div>
-      </footer>
+        </motion.div>
+      </div>
 
       <AnimatePresence>
         {showVideo && <VideoModal onClose={() => setShowVideo(false)} />}
