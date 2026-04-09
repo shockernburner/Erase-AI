@@ -443,6 +443,10 @@ router.post("/webhook", async (req: Request, res: Response) => {
       case "payment_intent.payment_failed":
       case "payment_intent.cancelled": {
         if (user.subscriptionStatus !== "pending") break;
+        const isLinkCheckout = user.subscriptionId?.startsWith("plink_");
+        if (isLinkCheckout) {
+          break;
+        }
         const failCorrelated =
           !user.subscriptionId ||
           user.subscriptionId === intentData.id;
