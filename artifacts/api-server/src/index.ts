@@ -2,7 +2,6 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDemoData } from "./seed";
 import { runStartupMigrations } from "./migrations";
-import { execSync } from "child_process";
 
 const rawPort = process.env["PORT"];
 
@@ -18,11 +17,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-try {
-  execSync(`fuser -k ${port}/tcp 2>/dev/null`, { stdio: "ignore" });
-} catch {}
-
-app.listen(port, async (err) => {
+const server = app.listen(port, async (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
@@ -31,4 +26,13 @@ app.listen(port, async (err) => {
   logger.info({ port }, "Server listening");
   await runStartupMigrations();
   await seedDemoData();
+});
+
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    logger.error({ port }, "Port already in use. Kill the stale process or choose a different PORT.");
+  } else {
+    logger.error({ err }, "Server startup error");
+  }
+  process.exit(1);
 });
