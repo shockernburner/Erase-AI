@@ -165,7 +165,8 @@ router.post("/checkout", async (req: Request, res: Response) => {
     return;
   }
 
-  const merchantOrderId = `eraseai_${plan}_${req.user!.id}_${Date.now()}`;
+  const rand = crypto.randomBytes(4).toString("hex");
+  const merchantOrderId = `ea_${plan}_${Date.now()}_${rand}`;
   const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
   const host = req.get("host") || "";
   const origin = `${proto}://${host}`;
