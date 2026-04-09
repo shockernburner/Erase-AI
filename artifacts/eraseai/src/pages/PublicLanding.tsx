@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,28 +9,33 @@ import {
   Code2,
   Building2,
   Shield,
-  ArrowLeft,
   MessageCircle,
   Mail,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { FeedbackButton } from "@/components/FeedbackModal";
 import AuthForm from "@/components/AuthForm";
+
+const VIDEO_SEEN_KEY = "eraseai_video_seen";
 
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const { t } = useTranslation();
-  const [videoFinished, setVideoFinished] = useState(false);
+  const alreadySeen = localStorage.getItem(VIDEO_SEEN_KEY) === "1";
+  const [videoFinished, setVideoFinished] = useState(alreadySeen);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleSkip = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.pause();
     }
+    localStorage.setItem(VIDEO_SEEN_KEY, "1");
     setVideoFinished(true);
   }, []);
 
   const handleVideoEnd = useCallback(() => {
+    localStorage.setItem(VIDEO_SEEN_KEY, "1");
     setVideoFinished(true);
   }, []);
 
@@ -70,7 +75,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               className="absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all"
             >
               <SkipForward className="w-4 h-4" />
-              Skip
+              {t("landing.skip")}
             </button>
           </motion.div>
         ) : (
@@ -81,23 +86,47 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
             transition={{ duration: 0.6 }}
             className="relative z-10"
           >
-            <div className="absolute top-4 right-4 z-20">
-              <LanguageSelector />
-            </div>
-
-            <div className="max-w-5xl mx-auto px-4 pt-12 pb-8">
-              <div className="flex flex-col items-center text-center mb-16">
-                <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.5)] mb-4">
-                  <ShieldX className="w-10 h-10" />
+            <motion.header
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center justify-between px-4 sm:px-6 lg:px-8 pt-6 max-w-5xl mx-auto flex-wrap gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+                  <ShieldX className="w-6 h-6" />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 mb-2">
-                  EraseAI
-                </h1>
-                <p className="text-sm font-mono text-primary/80 uppercase tracking-widest">
-                  {t("app.tagline")}
-                </p>
+                <div>
+                  <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                    {t("app.name")}
+                  </span>
+                  <p className="text-[10px] font-mono text-primary/80 uppercase tracking-widest">
+                    {t("app.tagline")}
+                  </p>
+                </div>
               </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    localStorage.removeItem(VIDEO_SEEN_KEY);
+                    setVideoFinished(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
+                >
+                  <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
+                  {t("nav.seeHow")}
+                </button>
+                <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
+                  <Globe className="w-3.5 h-3.5 text-primary" />
+                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  {t("nav.live")}
+                </div>
+                <LanguageSelector />
+                <FeedbackButton />
+              </div>
+            </motion.header>
 
+            <div className="max-w-5xl mx-auto px-4 pt-8 pb-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -105,10 +134,10 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 className="text-center mb-12"
               >
                 <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-3">
-                  What brings you here?
+                  {t("landing.whatBringsYou")}
                 </h2>
                 <p className="text-muted-foreground">
-                  Try any mode once — no account needed
+                  {t("landing.tryOnce")}
                 </p>
               </motion.div>
 
@@ -124,14 +153,14 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 >
                   <Code2 className="w-10 h-10 text-amber-400 mb-4 group-hover:scale-110 transition-transform" />
                   <h3 className="text-lg font-bold text-foreground mb-2">
-                    Are you a Developer?
+                    {t("landing.devCardTitle")}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Integrate AI data governance into your apps with our API, SDKs, and real-time webhooks.
+                    {t("landing.devCardDesc")}
                   </p>
                   <div className="mt-4 flex items-center gap-2 text-amber-400 text-sm font-medium">
                     <Play className="w-4 h-4" />
-                    Try Developer Dashboard
+                    {t("landing.devCardCta")}
                   </div>
                 </button>
 
@@ -141,14 +170,14 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 >
                   <Building2 className="w-10 h-10 text-cyan-400 mb-4 group-hover:scale-110 transition-transform" />
                   <h3 className="text-lg font-bold text-foreground mb-2">
-                    Enterprise / Business / Govt?
+                    {t("landing.entCardTitle")}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Need regulatory compliance, dataset sanitization, and AI governance at scale?
+                    {t("landing.entCardDesc")}
                   </p>
                   <div className="mt-4 flex items-center gap-2 text-cyan-400 text-sm font-medium">
                     <Play className="w-4 h-4" />
-                    Try Enterprise Analytics
+                    {t("landing.entCardCta")}
                   </div>
                 </button>
 
@@ -158,14 +187,14 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 >
                   <Shield className="w-10 h-10 text-emerald-400 mb-4 group-hover:scale-110 transition-transform" />
                   <h3 className="text-lg font-bold text-foreground mb-2">
-                    Protect your social presence?
+                    {t("landing.personalCardTitle")}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Scan your posts and profiles for toxicity, PII leaks, bias — and get AI-rewritten safe versions.
+                    {t("landing.personalCardDesc")}
                   </p>
                   <div className="mt-4 flex items-center gap-2 text-emerald-400 text-sm font-medium">
                     <Play className="w-4 h-4" />
-                    Try Personal Mode
+                    {t("landing.personalCardCta")}
                   </div>
                 </button>
               </motion.div>
@@ -177,7 +206,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 className="max-w-md mx-auto mb-16"
               >
                 <h3 className="text-center text-xl font-display font-bold text-foreground mb-2">
-                  Join when you want
+                  {t("landing.joinWhenYouWant")}
                 </h3>
                 <p className="text-center text-sm text-muted-foreground mb-6">
                   {t("login.subtitle")}
@@ -194,6 +223,9 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 transition={{ delay: 0.6 }}
                 className="border-t border-border/30 pt-8 pb-8"
               >
+                <h3 className="text-center text-sm font-semibold text-muted-foreground/80 uppercase tracking-wider mb-4">
+                  {t("landing.contactUs")}
+                </h3>
                 <div className="flex flex-wrap items-center justify-center gap-6 mb-4">
                   <a
                     href="https://wa.me/85290576851"

@@ -18,8 +18,11 @@ import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
-import { ArrowLeft } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { DeveloperPreview, EnterprisePreview, PersonalPreview } from "@/components/PreviewDashboards";
+import { ArrowLeft, Loader2, ShieldX, Globe } from "lucide-react";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { FeedbackButton } from "@/components/FeedbackModal";
+import { motion } from "framer-motion";
 
 const AiFirewallPage = lazy(() => import("@/pages/seo/AiFirewallPage"));
 const ChatgptDataLeakPage = lazy(() => import("@/pages/seo/ChatgptDataLeakPage"));
@@ -50,24 +53,71 @@ function SeoLoadingFallback() {
   );
 }
 
-function PreviewWrapper({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+function PreviewPage({ mode, onBack }: { mode: PreviewMode; onBack: () => void }) {
+  const { t } = useTranslation();
+
   return (
-    <div className="relative">
-      <div className="fixed top-4 left-4 z-50">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-sm font-medium text-foreground hover:bg-muted/40 transition-all shadow-lg"
+    <div className="min-h-screen w-full relative">
+      <div
+        className="fixed inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none"
+        style={{
+          backgroundImage: `url(${import.meta.env.BASE_URL}images/bg-mesh.png)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between mb-8 flex-wrap gap-4"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Homepage
-        </button>
+          <div className="flex items-center gap-3">
+            <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+              <ShieldX className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                {t("app.name")}
+              </span>
+              <p className="text-[10px] font-mono text-primary/80 uppercase tracking-widest">
+                {t("app.tagline")}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-sm font-medium text-foreground hover:bg-muted/40 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {t("landing.backToHomepage")}
+            </button>
+            <span className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+              {t("landing.previewMode")}
+            </span>
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
+              <Globe className="w-3.5 h-3.5 text-primary" />
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              {t("nav.live")}
+            </div>
+            <LanguageSelector />
+            <FeedbackButton />
+          </div>
+        </motion.header>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="pb-16"
+        >
+          {mode === "developer" && <DeveloperPreview />}
+          {mode === "enterprise" && <EnterprisePreview />}
+          {mode === "personal" && <PersonalPreview />}
+        </motion.div>
       </div>
-      <div className="fixed top-4 right-4 z-50">
-        <span className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-          Preview Mode
-        </span>
-      </div>
-      {children}
     </div>
   );
 }
@@ -135,26 +185,8 @@ function AuthGate() {
   }
 
   if (!isAuthenticated) {
-    if (previewMode === "developer") {
-      return (
-        <PreviewWrapper onBack={() => setPreviewMode(null)}>
-          <DeveloperDashboard onBack={() => setPreviewMode(null)} onUpgrade={() => setPreviewMode(null)} />
-        </PreviewWrapper>
-      );
-    }
-    if (previewMode === "enterprise") {
-      return (
-        <PreviewWrapper onBack={() => setPreviewMode(null)}>
-          <AnalyticsDashboard onBack={() => setPreviewMode(null)} onUpgrade={() => setPreviewMode(null)} />
-        </PreviewWrapper>
-      );
-    }
-    if (previewMode === "personal") {
-      return (
-        <PreviewWrapper onBack={() => setPreviewMode(null)}>
-          <PersonalMode onBack={() => setPreviewMode(null)} onUpgrade={() => setPreviewMode(null)} />
-        </PreviewWrapper>
-      );
+    if (previewMode) {
+      return <PreviewPage mode={previewMode} onBack={() => setPreviewMode(null)} />;
     }
     return <PublicLanding onPreview={setPreviewMode} />;
   }

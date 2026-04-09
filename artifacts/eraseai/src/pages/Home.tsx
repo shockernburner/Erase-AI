@@ -324,7 +324,7 @@ function ExpandableCard({
                   onClick={() => onNavigate(card.view)}
                   className="px-6 py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all"
                 >
-                  Open {card.title}
+                  {card.title}
                 </button>
               )}
             </div>
@@ -347,8 +347,8 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
     {
       id: "sanitizer",
       icon: <Database className="w-6 h-6" />,
-      title: "Dataset Sanitizer",
-      description: "Upload, analyze, and clean datasets — detect PII, bias, toxicity, and more.",
+      title: t("home.sanitizerTitle"),
+      description: t("home.sanitizerDesc"),
       color: "bg-cyan-500/20 text-cyan-400",
       borderColor: "border-cyan-500/30",
       bgColor: "bg-cyan-500/5",
@@ -359,7 +359,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "personal",
       icon: <Shield className="w-6 h-6" />,
       title: t("nav.personalMode"),
-      description: "Scan posts and profiles for safety risks, get AI-rewritten safe versions.",
+      description: t("home.personalDesc"),
       color: "bg-emerald-500/20 text-emerald-400",
       borderColor: "border-emerald-500/30",
       bgColor: "bg-emerald-500/5",
@@ -369,7 +369,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "developer",
       icon: <Key className="w-6 h-6" />,
       title: t("nav.developer"),
-      description: "Manage API keys, monitor usage, configure webhooks, and view code snippets.",
+      description: t("home.devDesc"),
       color: "bg-amber-500/20 text-amber-400",
       borderColor: "border-amber-500/30",
       bgColor: "bg-amber-500/5",
@@ -381,7 +381,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
             id: "analytics",
             icon: <BarChart3 className="w-6 h-6" />,
             title: t("nav.analytics"),
-            description: "Advanced metrics, forget scores, compliance tracking, and processing activity.",
+            description: t("home.analyticsDesc"),
             color: "bg-violet-500/20 text-violet-400",
             borderColor: "border-violet-500/30",
             bgColor: "bg-violet-500/5",
@@ -393,7 +393,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "devMode",
       icon: <Code2 className="w-6 h-6" />,
       title: t("nav.devMode"),
-      description: "Interactive developer playground for testing AI governance features.",
+      description: t("home.devModeDesc"),
       color: "bg-amber-500/20 text-amber-400",
       borderColor: "border-amber-500/30",
       bgColor: "bg-amber-500/5",
@@ -403,7 +403,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "firewallDocs",
       icon: <Shield className="w-6 h-6" />,
       title: t("nav.firewallDocs"),
-      description: "Browser extension documentation for real-time AI firewall protection.",
+      description: t("home.firewallDesc"),
       color: "bg-red-500/20 text-red-400",
       borderColor: "border-red-500/30",
       bgColor: "bg-red-500/5",
@@ -413,7 +413,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "docs",
       icon: <Book className="w-6 h-6" />,
       title: t("nav.apiDocs"),
-      description: "Full API reference, endpoint documentation, and integration guides.",
+      description: t("home.docsDesc"),
       color: "bg-blue-500/20 text-blue-400",
       borderColor: "border-blue-500/30",
       bgColor: "bg-blue-500/5",
@@ -423,7 +423,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "certifications",
       icon: <Award className="w-6 h-6" />,
       title: t("nav.certifications"),
-      description: "SOC 2, ISO 27001, GDPR, NIST AI compliance roadmap and status.",
+      description: t("home.certsDesc"),
       color: "bg-emerald-500/20 text-emerald-400",
       borderColor: "border-emerald-500/30",
       bgColor: "bg-emerald-500/5",
@@ -433,7 +433,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       id: "pricing",
       icon: <Crown className="w-6 h-6" />,
       title: plan === "free" ? t("nav.upgradePlan") : t("nav.managePlan"),
-      description: "View plans, upgrade, or manage your current subscription.",
+      description: t("home.pricingDesc"),
       color: "bg-primary/20 text-primary",
       borderColor: "border-primary/30",
       bgColor: "bg-primary/5",
@@ -502,10 +502,10 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           className="mb-8"
         >
           <h2 className="text-xl font-bold text-foreground mb-1">
-            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
+            {t("home.welcomeBack")}{user?.firstName ? `, ${user.firstName}` : ""}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Click any card to expand and use it right here.
+            {t("home.clickToExpand")}
           </p>
         </motion.div>
 
@@ -536,7 +536,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           className="border-t border-border/30 pt-8 pb-4"
         >
           <h3 className="text-center text-sm font-semibold text-muted-foreground/80 uppercase tracking-wider mb-6">
-            Contact Us
+            {t("landing.contactUs")}
           </h3>
           <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
             <a
