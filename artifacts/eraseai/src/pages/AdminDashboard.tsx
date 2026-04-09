@@ -130,6 +130,9 @@ function MiniBarChart({ data }: { data: VisitTrend[] }) {
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
+  if (plan === "personal") {
+    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.personal")}</span>;
+  }
   if (plan === "pro") {
     return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-bold"><Crown className="w-3 h-3" />{t("plan.pro")}</span>;
   }
@@ -149,7 +152,7 @@ function PlanSelector({ user, onUpdate }: { user: UserRow; onUpdate: (id: string
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(false);
 
-  const plans = ["free", "pro", "business", "enterprise"] as const;
+  const plans = ["free", "personal", "pro", "business", "enterprise"] as const;
   const statuses = ["active", "canceled", "past_due"] as const;
 
   const handleSelectPlan = async (plan: string) => {
@@ -361,7 +364,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5 font-medium">{t("admin.plan")}</label>
             <div className="flex gap-2">
-              {(["free", "pro", "enterprise"] as const).map((p) => (
+              {(["free", "personal", "pro", "business", "enterprise"] as const).map((p) => (
                 <button
                   key={p}
                   type="button"
