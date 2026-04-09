@@ -200,6 +200,7 @@ router.post("/checkout", async (req: Request, res: Response) => {
     res.json({
       intentId: result.intentId,
       clientSecret: result.clientSecret,
+      checkoutUrl: "",
       provider: "airwallex",
       airwallexEnv: getSdkEnv(),
       amount: pricing.price,
