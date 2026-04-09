@@ -8,6 +8,7 @@ import {
   Crown,
   LayoutDashboard,
   Play,
+  Film,
   X,
   Clock,
   Key,
@@ -261,6 +262,41 @@ function VideoModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function FounderPitchModal({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <video
+          autoPlay
+          playsInline
+          className="w-full h-full object-contain"
+          src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
+          onEnded={onClose}
+        />
+      </motion.div>
+    </motion.div>
+  );
+}
+
 interface DashboardCard {
   id: string;
   icon: React.ReactNode;
@@ -339,6 +375,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
   const { t } = useTranslation();
   const { user } = useAuth();
   const [showVideo, setShowVideo] = useState(false);
+  const [showFounderPitch, setShowFounderPitch] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   const plan = user?.planType || "free";
@@ -539,6 +576,13 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
 
           <div className="flex items-center gap-3">
             <button
+              onClick={() => setShowFounderPitch(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/30 transition-all group"
+            >
+              <Film className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              {t("nav.founderPitch")}
+            </button>
+            <button
               onClick={() => setShowVideo(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
             >
@@ -660,6 +704,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
 
       <AnimatePresence>
         {showVideo && <VideoModal onClose={() => setShowVideo(false)} />}
+        {showFounderPitch && <FounderPitchModal onClose={() => setShowFounderPitch(false)} />}
       </AnimatePresence>
     </div>
   );

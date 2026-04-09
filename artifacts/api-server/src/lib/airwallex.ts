@@ -101,7 +101,7 @@ export async function createPaymentIntent(params: {
   );
 
   const checkoutUrl =
-    `${CHECKOUT_BASE}/pci#intent_id=${encodeURIComponent(intent.id)}` +
+    `${CHECKOUT_BASE}/hpp#intent_id=${encodeURIComponent(intent.id)}` +
     `&client_secret=${encodeURIComponent(intent.client_secret)}` +
     `&mode=payment` +
     `&currency=${encodeURIComponent(params.currency)}`;
