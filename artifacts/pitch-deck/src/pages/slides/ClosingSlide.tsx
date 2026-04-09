@@ -25,7 +25,7 @@ export default function ClosingSlide() {
           <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
           <span className="font-body text-[1.3vw] text-text/70">director@futureonward.com</span>
           <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
-          <span className="font-body text-[1.3vw] text-text/70">Hong Kong</span>
+          <span className="font-body text-[1.3vw] text-text/70">Singapore</span>
         </div>
       </div>
     </div>

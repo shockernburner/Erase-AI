@@ -38,7 +38,7 @@ export default function TitleSlide() {
         <div className="flex items-center gap-[2vw]">
           <span className="font-body text-[1.3vw] text-muted">eraseai.ai</span>
           <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
-          <span className="font-body text-[1.3vw] text-muted">Hong Kong</span>
+          <span className="font-body text-[1.3vw] text-muted">Singapore</span>
           <span className="w-[0.3vw] h-[0.3vw] rounded-full bg-primary" />
           <span className="font-body text-[1.3vw] text-muted">Agent 4 Buildathon 2026</span>
         </div>
