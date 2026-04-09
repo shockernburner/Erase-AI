@@ -198,7 +198,6 @@ router.post("/checkout", async (req: Request, res: Response) => {
     }).where(eq(usersTable.id, req.user!.id));
 
     res.json({
-      checkoutUrl: result.checkoutUrl,
       intentId: result.intentId,
       clientSecret: result.clientSecret,
       provider: "airwallex",

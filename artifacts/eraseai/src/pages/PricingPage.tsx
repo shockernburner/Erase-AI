@@ -191,16 +191,13 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             intent_id: data.intentId,
             client_secret: data.clientSecret,
             currency: data.currency || "USD",
-            country_code: "SG",
+            country_code: "US",
             successUrl,
+            failUrl: successUrl,
           });
         } catch (sdkErr) {
           console.error("Airwallex SDK redirect failed:", sdkErr);
-          if (data.checkoutUrl) {
-            window.location.href = data.checkoutUrl;
-          } else {
-            alert(t("pricing.somethingWrong"));
-          }
+          alert(t("pricing.somethingWrong"));
         }
         return;
       }

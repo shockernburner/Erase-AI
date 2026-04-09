@@ -7,11 +7,6 @@ const API_BASE =
     ? "https://api.airwallex.com"
     : "https://api-demo.airwallex.com";
 
-const CHECKOUT_BASE =
-  AIRWALLEX_ENV === "production"
-    ? "https://checkout.airwallex.com"
-    : "https://checkout-demo.airwallex.com";
-
 let cachedToken: string | null = null;
 let tokenExpiresAt = 0;
 
@@ -83,7 +78,7 @@ export async function createCheckoutSession(params: {
   merchantOrderId: string;
   returnUrl: string;
   plan?: string;
-}): Promise<{ intentId: string; clientSecret: string; checkoutUrl: string }> {
+}): Promise<{ intentId: string; clientSecret: string }> {
   const planLabel = params.plan || "pro";
 
   const intent = await airwallexRequest<PaymentIntentResponse>(
@@ -102,19 +97,9 @@ export async function createCheckoutSession(params: {
     },
   );
 
-  const successUrl = encodeURIComponent(params.returnUrl);
-  const checkoutUrl =
-    `${CHECKOUT_BASE}/hpp?intent_id=${encodeURIComponent(intent.id)}` +
-    `&client_secret=${encodeURIComponent(intent.client_secret)}` +
-    `&mode=payment` +
-    `&currency=${encodeURIComponent(params.currency)}` +
-    `&successUrl=${successUrl}` +
-    `&failUrl=${successUrl}`;
-
   return {
     intentId: intent.id,
     clientSecret: intent.client_secret,
-    checkoutUrl,
   };
 }
 
