@@ -1278,7 +1278,7 @@ export default function PersonalMode({
   });
 
   const handleAnalyze = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || previewMode) return;
     setResult(null);
     analyzeMutation.mutate(text.trim());
   };
@@ -1530,7 +1530,7 @@ export default function PersonalMode({
                 </div>
                 <button
                   onClick={handleAnalyze}
-                  disabled={!text.trim() || analyzeMutation.isPending}
+                  disabled={!text.trim() || analyzeMutation.isPending || !!previewMode}
                   className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {analyzeMutation.isPending ? (
