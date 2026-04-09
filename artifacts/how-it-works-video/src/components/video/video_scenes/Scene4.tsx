@@ -1,156 +1,185 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export function Scene4() {
   const [phase, setPhase] = useState(0);
+  const videoRef1 = useRef<HTMLVideoElement>(null);
+  const videoRef2 = useRef<HTMLVideoElement>(null);
+  const videoRef3 = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setPhase(1), 300),
       setTimeout(() => setPhase(2), 1200),
-      setTimeout(() => setPhase(3), 2500),
-      setTimeout(() => setPhase(4), 4000),
-      setTimeout(() => setPhase(5), 6000),
-      setTimeout(() => setPhase(6), 8000),
-      setTimeout(() => setPhase(7), 10000),
+      setTimeout(() => setPhase(3), 3000),
+      setTimeout(() => setPhase(4), 5000),
+      setTimeout(() => setPhase(5), 7000),
+      setTimeout(() => setPhase(6), 9000),
+      setTimeout(() => setPhase(7), 11000),
+      setTimeout(() => setPhase(8), 13000),
+      setTimeout(() => setPhase(9), 15500),
+      setTimeout(() => setPhase(10), 18000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
+  useEffect(() => {
+    if (phase >= 2 && videoRef1.current) {
+      videoRef1.current.play().catch(() => {});
+    }
+    if (phase >= 5 && videoRef2.current) {
+      videoRef2.current.play().catch(() => {});
+    }
+    if (phase >= 8 && videoRef3.current) {
+      videoRef3.current.play().catch(() => {});
+    }
+  }, [phase]);
+
   return (
     <motion.div
       className="absolute inset-0 z-10"
-      initial={{ clipPath: 'polygon(50% 0%, 50% 0%, 50% 100%, 50% 100%)' }}
-      animate={{ clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
-      exit={{ clipPath: 'polygon(50% 0%, 50% 0%, 50% 100%, 50% 100%)' }}
-      transition={{ duration: 0.9, ease: [0.4, 0, 0.2, 1] }}
+      initial={{ opacity: 0, scale: 1.15 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, y: '-50%', scale: 0.9 }}
+      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="absolute top-[5vh] left-[4vw] z-20">
+      <div className="absolute top-[4vh] right-[4vw] z-20 text-right">
         <motion.div
-          className="flex items-center gap-[1vw] mb-[1vh]"
-          initial={{ opacity: 0, x: -40 }}
-          animate={phase >= 1 ? { opacity: 1, x: 0 } : { opacity: 0, x: -40 }}
+          className="flex items-center justify-end gap-[1vw] mb-[1vh]"
+          initial={{ opacity: 0, x: 40 }}
+          animate={phase >= 1 ? { opacity: 1, x: 0 } : { opacity: 0, x: 40 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="w-[2.5vw] h-[2.5vw] rounded-lg bg-gradient-to-br from-[#8b5cf6] to-[#ec4899] flex items-center justify-center">
+          <h2 className="text-[2.8vw] font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+            Developer Mode
+          </h2>
+          <div className="w-[2.5vw] h-[2.5vw] rounded-lg bg-gradient-to-br from-[#3b82f6] to-[#06B6D4] flex items-center justify-center">
             <svg className="w-[1.3vw] h-[1.3vw]" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
             </svg>
           </div>
-          <h2 className="text-[2.8vw] font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            Personal Mode
-          </h2>
         </motion.div>
         <motion.div
-          className="h-[3px] bg-gradient-to-r from-[#8b5cf6] to-transparent rounded-full"
+          className="h-[3px] bg-gradient-to-l from-[#3b82f6] to-transparent rounded-full ml-auto"
           initial={{ width: 0 }}
           animate={phase >= 1 ? { width: '18vw' } : { width: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
         />
         <motion.p
-          className="text-[1.2vw] text-slate-400 mt-[1.5vh] max-w-[28vw]"
+          className="text-[1.1vw] text-slate-400 mt-[1vh] max-w-[28vw] ml-auto"
           initial={{ opacity: 0 }}
           animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
         >
-          Protect yourself. Scan text before sharing with AI platforms.
+          API docs, prompt scanner, AI Firewall, SDK integration, browser extensions
         </motion.p>
       </div>
 
-      <div className="absolute right-[8vw] top-[18vh] w-[50vw] flex flex-col gap-[2vh]">
+      <motion.div
+        className="absolute left-[3vw] top-[16vh] w-[44vw] rounded-xl overflow-hidden border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.6)] z-10"
+        initial={{ opacity: 0, x: -80, rotateY: -10 }}
+        animate={phase >= 2 ? (phase >= 4 ? { opacity: 0.5, scale: 0.8, x: -30, y: -20 } : { opacity: 1, x: 0, rotateY: -3, rotateX: 3 }) : { opacity: 0, x: -80, rotateY: -10 }}
+        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+        style={{ transformPerspective: 1200 }}
+      >
+        <video
+          ref={videoRef1}
+          src={`${import.meta.env.BASE_URL}clips/dev_scanner.mp4`}
+          muted
+          playsInline
+          className="w-full h-auto"
+        />
         <motion.div
-          className="rounded-xl border border-white/10 bg-[#111827]/90 backdrop-blur-sm p-[1.5vw] shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
-          initial={{ opacity: 0, x: 60, rotateY: 10 }}
-          animate={phase >= 2 ? { opacity: 1, x: 0, rotateY: 0 } : { opacity: 0, x: 60, rotateY: 10 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          style={{ transformPerspective: 1200 }}
-        >
-          <div className="flex items-center gap-[0.5vw] mb-[1vh]">
-            <div className="w-[0.5vw] h-[0.5vw] rounded-full bg-[#ef4444]" />
-            <span className="text-[0.9vw] text-slate-400 font-medium">Input Text</span>
-          </div>
-          <motion.div className="text-[0.85vw] text-slate-300 font-mono leading-relaxed bg-[#0a0e1a] rounded-lg p-[1vw]">
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={phase >= 3 ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              My name is <span className="text-[#ef4444] bg-[#ef4444]/10 px-1 rounded">John Smith</span> and I live at{' '}
-              <span className="text-[#ef4444] bg-[#ef4444]/10 px-1 rounded">123 Main St, Singapore</span>.{' '}
-              My email is <span className="text-[#ef4444] bg-[#ef4444]/10 px-1 rounded">john@company.com</span>.{' '}
-              Please help me draft a complaint about my employer.
-            </motion.span>
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          className="flex items-center justify-center gap-[1vw]"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={phase >= 4 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        >
-          <motion.div
-            className="w-[3vw] h-[3vw] rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#06B6D4] flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.4)]"
-            animate={phase >= 4 ? { rotate: [0, 360] } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          >
-            <svg className="w-[1.5vw] h-[1.5vw]" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </motion.div>
-          <div className="flex flex-col">
-            <span className="text-[1vw] text-white font-bold">Scanning & Sanitizing</span>
-            <span className="text-[0.7vw] text-slate-400">3 PII instances detected</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="rounded-xl border border-[#10B981]/30 bg-[#111827]/90 backdrop-blur-sm p-[1.5vw] shadow-[0_20px_60px_rgba(16,185,129,0.1)]"
-          initial={{ opacity: 0, x: 60, rotateY: 10 }}
-          animate={phase >= 5 ? { opacity: 1, x: 0, rotateY: 0 } : { opacity: 0, x: 60, rotateY: 10 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          style={{ transformPerspective: 1200 }}
-        >
-          <div className="flex items-center gap-[0.5vw] mb-[1vh]">
-            <div className="w-[0.5vw] h-[0.5vw] rounded-full bg-[#10B981]" />
-            <span className="text-[0.9vw] text-[#10B981] font-medium">Sanitized Output</span>
-          </div>
-          <motion.div className="text-[0.85vw] text-slate-300 font-mono leading-relaxed bg-[#0a0e1a] rounded-lg p-[1vw]">
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={phase >= 5 ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              My name is <span className="text-[#10B981] bg-[#10B981]/10 px-1 rounded">[REDACTED]</span> and I live at{' '}
-              <span className="text-[#10B981] bg-[#10B981]/10 px-1 rounded">[REDACTED]</span>.{' '}
-              My email is <span className="text-[#10B981] bg-[#10B981]/10 px-1 rounded">[REDACTED]</span>.{' '}
-              Please help me draft a complaint about my employer.
-            </motion.span>
-          </motion.div>
-        </motion.div>
-      </div>
+          className="absolute left-0 right-0 h-[2px] bg-[#06B6D4] shadow-[0_0_15px_#06B6D4,0_0_30px_#06B6D4] pointer-events-none"
+          initial={{ top: '15%' }}
+          animate={phase >= 3 ? { top: ['15%', '85%', '15%'] } : { top: '15%' }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+        />
+      </motion.div>
 
       <motion.div
-        className="absolute left-[6vw] bottom-[10vh] flex flex-col gap-[1.5vh] z-20"
+        className="absolute left-[3vw] top-[22vh] z-20"
         initial={{ opacity: 0 }}
-        animate={phase >= 6 ? { opacity: 1 } : { opacity: 0 }}
+        animate={phase >= 3 ? (phase >= 4 ? { opacity: 0 } : { opacity: 1 }) : { opacity: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="px-[1vw] py-[0.6vh] rounded-lg border border-[#3b82f6]/30 bg-[#0a0e1a]/90 backdrop-blur-sm">
+          <span className="text-[0.75vw] text-[#3b82f6] font-semibold">Prompt Interception</span>
+          <p className="text-[0.6vw] text-slate-400 mt-[0.2vh]">Scan prompts for secrets, PII &amp; injection risks</p>
+        </div>
+      </motion.div>
+
+      <motion.div
+        className="absolute right-[4vw] top-[18vh] w-[48vw] rounded-xl overflow-hidden border border-[#3b82f6]/30 shadow-[0_20px_70px_rgba(59,130,246,0.2)] z-15"
+        initial={{ opacity: 0, y: 80, scale: 0.85 }}
+        animate={phase >= 5 ? (phase >= 7 ? { opacity: 0.5, scale: 0.8, y: -15 } : { opacity: 1, y: 0, scale: 1, rotateY: -3, rotateX: 2 }) : { opacity: 0, y: 80, scale: 0.85 }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        style={{ transformPerspective: 1200 }}
+      >
+        <video
+          ref={videoRef2}
+          src={`${import.meta.env.BASE_URL}clips/firewall_overview.mp4`}
+          muted
+          playsInline
+          className="w-full h-auto"
+        />
+      </motion.div>
+
+      <motion.div
+        className="absolute left-[3vw] bottom-[25vh] z-20"
+        initial={{ opacity: 0 }}
+        animate={phase >= 6 ? (phase >= 7 ? { opacity: 0 } : { opacity: 1 }) : { opacity: 0 }}
+      >
+        <div className="flex flex-col gap-[0.8vh]">
+          <div className="px-[1vw] py-[0.5vh] rounded-lg border border-[#06B6D4]/30 bg-[#0a0e1a]/90 backdrop-blur-sm">
+            <span className="text-[0.7vw] text-[#06B6D4] font-semibold">AI Firewall Installation</span>
+            <div className="text-[0.6vw] text-slate-400 font-mono mt-[0.2vh]">pip install eraseai-firewall</div>
+          </div>
+          <div className="px-[1vw] py-[0.5vh] rounded-lg border border-[#10B981]/30 bg-[#0a0e1a]/90 backdrop-blur-sm">
+            <span className="text-[0.7vw] text-[#10B981] font-semibold">Docs &amp; API Reference</span>
+            <div className="text-[0.6vw] text-slate-400 font-mono mt-[0.2vh]">eraseai.ai/docs/firewall</div>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div
+        className="absolute left-[5vw] right-[5vw] top-[20vh] rounded-xl overflow-hidden border border-[#F59E0B]/30 shadow-[0_20px_70px_rgba(245,158,11,0.2)] z-20"
+        initial={{ opacity: 0, y: 80, scale: 0.85 }}
+        animate={phase >= 8 ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 80, scale: 0.85 }}
+        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <video
+          ref={videoRef3}
+          src={`${import.meta.env.BASE_URL}clips/dev_api.mp4`}
+          muted
+          playsInline
+          className="w-full h-auto"
+        />
+      </motion.div>
+
+      <motion.div
+        className="absolute bottom-[5vh] left-[4vw] right-[4vw] flex justify-between z-30"
+        initial={{ opacity: 0 }}
+        animate={phase >= 9 ? { opacity: 1 } : { opacity: 0 }}
       >
         {[
-          { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', label: 'Advisory Text Analysis', color: '#8b5cf6' },
-          { icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', label: 'Content Rewrite Assistant', color: '#ec4899' },
-          { icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', label: 'Continuous Monitoring', color: '#06B6D4' },
-        ].map((feature, i) => (
+          { label: 'Prompt Interception', icon: '🛡', color: '#3b82f6' },
+          { label: 'Risk Analysis', icon: '🔍', color: '#06B6D4' },
+          { label: 'API Keys & Webhooks', icon: '🔑', color: '#F59E0B' },
+          { label: 'Auto-Sanitize', icon: '✨', color: '#10B981' },
+          { label: 'IDE/Browser Extensions', icon: '🧩', color: '#8b5cf6' },
+          { label: 'Firewall Install', icon: '🔥', color: '#ef4444' },
+        ].map((tag, i) => (
           <motion.div
-            key={feature.label}
-            className="flex items-center gap-[0.8vw] px-[1.2vw] py-[0.8vh] rounded-lg border border-white/5 bg-[#0a0e1a]/80 backdrop-blur-sm"
-            initial={{ opacity: 0, x: -30 }}
-            animate={phase >= 6 ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
-            transition={{ delay: i * 0.12, type: 'spring', stiffness: 300, damping: 25 }}
+            key={tag.label}
+            className="flex flex-col items-center gap-[0.3vh] px-[0.8vw] py-[0.5vh] rounded-lg border bg-[#0a0e1a]/80 backdrop-blur-sm"
+            style={{ borderColor: `${tag.color}40` }}
+            initial={{ opacity: 0, y: 15 }}
+            animate={phase >= 9 ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+            transition={{ delay: i * 0.06 }}
           >
-            <svg className="w-[1vw] h-[1vw]" viewBox="0 0 24 24" fill="none" stroke={feature.color} strokeWidth="2">
-              <path d={feature.icon} />
-            </svg>
-            <span className="text-[0.9vw] text-white">{feature.label}</span>
+            <span className="text-[1vw]">{tag.icon}</span>
+            <span className="text-[0.6vw] font-medium" style={{ color: tag.color }}>{tag.label}</span>
           </motion.div>
         ))}
       </motion.div>

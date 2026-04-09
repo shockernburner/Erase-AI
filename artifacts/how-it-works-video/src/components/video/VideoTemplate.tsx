@@ -5,21 +5,18 @@ import { Scene2 } from './video_scenes/Scene2';
 import { Scene3 } from './video_scenes/Scene3';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
-import { Scene6 } from './video_scenes/Scene6';
 
 const SCENE_DURATIONS = {
   intro: 6000,
-  enterprise: 16000,
-  analytics: 10000,
-  personal: 12000,
-  developer: 14000,
+  enterprise: 22000,
+  personal: 16000,
+  developer: 20000,
   closing: 6000,
 };
 
 const accentPositions = [
   { x: '45vw', y: '40vh', scale: 2.5, opacity: 0.15 },
   { x: '8vw', y: '15vh', scale: 1.5, opacity: 0.2 },
-  { x: '75vw', y: '50vh', scale: 1.8, opacity: 0.12 },
   { x: '30vw', y: '60vh', scale: 1.2, opacity: 0.18 },
   { x: '20vw', y: '25vh', scale: 1, opacity: 0.15 },
   { x: '60vw', y: '35vh', scale: 2, opacity: 0.1 },
@@ -53,8 +50,8 @@ export default function VideoTemplate() {
           backgroundSize: '4vw 4vw',
         }}
         animate={{
-          opacity: currentScene >= 1 && currentScene <= 4 ? 0.3 : 0.05,
-          scale: currentScene >= 1 && currentScene <= 4 ? 1.1 : 1,
+          opacity: currentScene >= 1 && currentScene <= 3 ? 0.3 : 0.05,
+          scale: currentScene >= 1 && currentScene <= 3 ? 1.1 : 1,
         }}
         transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
       />
@@ -70,10 +67,10 @@ export default function VideoTemplate() {
         className="absolute h-[2px]"
         style={{ background: 'linear-gradient(90deg, transparent, #06B6D4, transparent)' }}
         animate={{
-          left: ['20%', '5%', '40%', '10%', '60%', '30%'][currentScene],
-          width: ['60%', '90%', '30%', '50%', '40%', '50%'][currentScene],
-          top: ['50%', '8%', '85%', '40%', '15%', '60%'][currentScene],
-          opacity: [0.3, 0.6, 0.4, 0.5, 0.6, 0.3][currentScene],
+          left: ['20%', '5%', '40%', '60%', '30%'][currentScene],
+          width: ['60%', '90%', '50%', '40%', '50%'][currentScene],
+          top: ['50%', '8%', '40%', '15%', '60%'][currentScene],
+          opacity: [0.3, 0.6, 0.5, 0.6, 0.3][currentScene],
         }}
         transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
       />
@@ -81,10 +78,9 @@ export default function VideoTemplate() {
       <AnimatePresence mode="popLayout">
         {currentScene === 0 && <Scene1 key="intro" />}
         {currentScene === 1 && <Scene2 key="enterprise" />}
-        {currentScene === 2 && <Scene3 key="analytics" />}
-        {currentScene === 3 && <Scene4 key="personal" />}
-        {currentScene === 4 && <Scene5 key="developer" />}
-        {currentScene === 5 && <Scene6 key="closing" />}
+        {currentScene === 2 && <Scene3 key="personal" />}
+        {currentScene === 3 && <Scene4 key="developer" />}
+        {currentScene === 4 && <Scene5 key="closing" />}
       </AnimatePresence>
     </div>
   );

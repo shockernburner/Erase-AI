@@ -1,147 +1,115 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export function Scene5() {
   const [phase, setPhase] = useState(0);
-  const videoRef1 = useRef<HTMLVideoElement>(null);
-  const videoRef2 = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 300),
-      setTimeout(() => setPhase(2), 1200),
-      setTimeout(() => setPhase(3), 3000),
-      setTimeout(() => setPhase(4), 5000),
-      setTimeout(() => setPhase(5), 7000),
-      setTimeout(() => setPhase(6), 9000),
-      setTimeout(() => setPhase(7), 12000),
+      setTimeout(() => setPhase(1), 200),
+      setTimeout(() => setPhase(2), 800),
+      setTimeout(() => setPhase(3), 1600),
+      setTimeout(() => setPhase(4), 2800),
+      setTimeout(() => setPhase(5), 4000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
-  useEffect(() => {
-    if (phase >= 2 && videoRef1.current) {
-      videoRef1.current.play().catch(() => {});
-    }
-    if (phase >= 5 && videoRef2.current) {
-      videoRef2.current.play().catch(() => {});
-    }
-  }, [phase]);
-
   return (
     <motion.div
-      className="absolute inset-0 z-10"
-      initial={{ opacity: 0, scale: 1.15 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, y: '-50%', scale: 0.9 }}
-      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute inset-0 flex flex-col items-center justify-center z-10"
+      initial={{ opacity: 0, filter: 'blur(20px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 1 }}
     >
-      <div className="absolute top-[5vh] right-[4vw] z-20 text-right">
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0 }}
+        animate={phase >= 1 ? { opacity: 1 } : { opacity: 0 }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#06B6D4]/5 to-transparent" />
         <motion.div
-          className="flex items-center justify-end gap-[1vw] mb-[1vh]"
-          initial={{ opacity: 0, x: 40 }}
-          animate={phase >= 1 ? { opacity: 1, x: 0 } : { opacity: 0, x: 40 }}
-          transition={{ duration: 0.6 }}
+          className="absolute top-[20vh] left-1/2 -translate-x-1/2 w-[40vw] h-[40vw] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.15), transparent)' }}
+          animate={{ scale: [0.9, 1.1, 0.9] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      </motion.div>
+
+      <div className="relative flex flex-col items-center z-10">
+        <motion.div
+          className="relative w-[6vw] h-[6vw] mb-[3vh]"
+          initial={{ scale: 0, rotate: -90 }}
+          animate={phase >= 1 ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -90 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 18 }}
         >
-          <h2 className="text-[2.8vw] font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            Developer Mode
-          </h2>
-          <div className="w-[2.5vw] h-[2.5vw] rounded-lg bg-gradient-to-br from-[#3b82f6] to-[#06B6D4] flex items-center justify-center">
-            <svg className="w-[1.3vw] h-[1.3vw]" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <polyline points="16 18 22 12 16 6" />
-              <polyline points="8 6 2 12 8 18" />
-            </svg>
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#06B6D4] to-[#3b82f6] shadow-[0_0_60px_rgba(6,182,212,0.5)]" />
+          <div className="absolute inset-[4px] rounded-xl bg-[#0a0e1a] flex items-center justify-center">
+            <div className="w-[2.5vw] h-[2.5vw] border-[3px] border-[#06B6D4] rounded-lg rotate-45" />
           </div>
         </motion.div>
-        <motion.div
-          className="h-[3px] bg-gradient-to-l from-[#3b82f6] to-transparent rounded-full ml-auto"
-          initial={{ width: 0 }}
-          animate={phase >= 1 ? { width: '18vw' } : { width: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        />
-        <motion.p
-          className="text-[1.2vw] text-slate-400 mt-[1.5vh] max-w-[28vw] ml-auto"
-          initial={{ opacity: 0 }}
-          animate={phase >= 2 ? { opacity: 1 } : { opacity: 0 }}
+
+        <motion.h2
+          className="text-[4.5vw] font-bold text-white mb-[2vh]"
+          initial={{ opacity: 0, y: 30 }}
+          animate={phase >= 2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.8 }}
+          style={{ fontFamily: 'var(--font-display)' }}
         >
-          AI Firewall, API SDKs, browser extension, and prompt scanning.
+          Erase<span className="text-[#06B6D4]">AI</span>
+        </motion.h2>
+
+        <motion.p
+          className="text-[1.6vw] text-slate-300 text-center max-w-[45vw] mb-[3vh] leading-relaxed"
+          initial={{ opacity: 0, y: 20 }}
+          animate={phase >= 3 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.7 }}
+          style={{ fontFamily: 'var(--font-body)' }}
+        >
+          Your AI data governance layer.
+          <br />
+          Enterprise. Personal. Developer.
         </motion.p>
-      </div>
 
-      <motion.div
-        className="absolute left-[5vw] top-[18vh] w-[50vw] rounded-xl overflow-hidden border border-white/10 shadow-[0_20px_70px_rgba(0,0,0,0.6)] z-10"
-        initial={{ opacity: 0, x: -80, rotateY: -10 }}
-        animate={phase >= 2 ? (phase >= 4 ? { opacity: 0.6, scale: 0.85, x: -30 } : { opacity: 1, x: 0, rotateY: -3, rotateX: 3 }) : { opacity: 0, x: -80, rotateY: -10 }}
-        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-        style={{ transformPerspective: 1200 }}
-      >
-        <video
-          ref={videoRef1}
-          src={`${import.meta.env.BASE_URL}clips/dev_scanner.mp4`}
-          muted
-          playsInline
-          className="w-full h-auto"
-        />
         <motion.div
-          className="absolute left-0 right-0 h-[2px] bg-[#06B6D4] shadow-[0_0_15px_#06B6D4,0_0_30px_#06B6D4] pointer-events-none"
-          initial={{ top: '15%' }}
-          animate={phase >= 3 ? { top: ['15%', '85%', '15%'] } : { top: '15%' }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-        />
-      </motion.div>
-
-      <motion.div
-        className="absolute left-[3vw] bottom-[22vh] z-20"
-        initial={{ opacity: 0 }}
-        animate={phase >= 3 ? (phase >= 4 ? { opacity: 0 } : { opacity: 1 }) : { opacity: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <div className="px-[1.2vw] py-[0.8vh] rounded-lg border border-[#3b82f6]/30 bg-[#0a0e1a]/90 backdrop-blur-sm">
-          <span className="text-[0.8vw] text-[#3b82f6] font-semibold">Scan & Analyze</span>
-          <p className="text-[0.7vw] text-slate-400 mt-[0.3vh]">Detect secrets, PII, injection risks</p>
-        </div>
-      </motion.div>
-
-      <motion.div
-        className="absolute right-[5vw] top-[22vh] w-[52vw] rounded-xl overflow-hidden border border-[#3b82f6]/30 shadow-[0_20px_70px_rgba(59,130,246,0.2)] z-20"
-        initial={{ opacity: 0, y: 80, scale: 0.85 }}
-        animate={phase >= 5 ? { opacity: 1, y: 0, scale: 1, rotateY: -3, rotateX: 2 } : { opacity: 0, y: 80, scale: 0.85 }}
-        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-        style={{ transformPerspective: 1200 }}
-      >
-        <video
-          ref={videoRef2}
-          src={`${import.meta.env.BASE_URL}clips/firewall_overview.mp4`}
-          muted
-          playsInline
-          className="w-full h-auto"
-        />
-      </motion.div>
-
-      <motion.div
-        className="absolute bottom-[6vh] left-[5vw] right-[5vw] flex justify-center gap-[2vw] z-30"
-        initial={{ opacity: 0 }}
-        animate={phase >= 6 ? { opacity: 1 } : { opacity: 0 }}
-      >
-        {[
-          { label: 'Prompt Interception', color: '#3b82f6' },
-          { label: 'Risk Analysis', color: '#06B6D4' },
-          { label: 'Auto-Sanitize', color: '#10B981' },
-          { label: 'API & Webhooks', color: '#F59E0B' },
-          { label: 'Browser Extension', color: '#8b5cf6' },
-        ].map((tag, i) => (
-          <motion.div
-            key={tag.label}
-            className="px-[1vw] py-[0.5vh] rounded-full border bg-[#0a0e1a]/80 backdrop-blur-sm text-[0.8vw] font-medium"
-            style={{ borderColor: `${tag.color}40`, color: tag.color }}
-            initial={{ opacity: 0, y: 15 }}
-            animate={phase >= 6 ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
-            transition={{ delay: i * 0.08 }}
+          className="flex items-center gap-[3vw] mb-[4vh]"
+          initial={{ opacity: 0 }}
+          animate={phase >= 4 ? { opacity: 1 } : { opacity: 0 }}
+        >
+          <motion.span
+            className="text-[1.4vw] font-bold text-[#06B6D4] tracking-wide"
+            initial={{ opacity: 0, x: -20 }}
+            animate={phase >= 4 ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+            transition={{ delay: 0.1 }}
           >
-            {tag.label}
-          </motion.div>
-        ))}
-      </motion.div>
+            eraseai.ai
+          </motion.span>
+          <motion.div
+            className="w-[1px] h-[2vw] bg-slate-600"
+            initial={{ scaleY: 0 }}
+            animate={phase >= 4 ? { scaleY: 1 } : { scaleY: 0 }}
+          />
+          <motion.span
+            className="text-[1vw] text-slate-400"
+            initial={{ opacity: 0, x: 20 }}
+            animate={phase >= 4 ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
+            transition={{ delay: 0.2 }}
+          >
+            Singapore
+          </motion.span>
+        </motion.div>
+
+        <motion.div
+          className="flex gap-[2vw]"
+          initial={{ opacity: 0 }}
+          animate={phase >= 4 ? { opacity: 0.5 } : { opacity: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <span className="text-[0.75vw] text-slate-500 uppercase tracking-wider">director@futureonward.com</span>
+          <span className="text-[0.75vw] text-slate-500 uppercase tracking-wider">wa.me/85290576851</span>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }
