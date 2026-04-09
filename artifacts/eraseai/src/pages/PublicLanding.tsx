@@ -14,6 +14,8 @@ import {
   MessageCircle,
   Mail,
   LogIn,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -31,7 +33,9 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   });
   const [showVideo, setShowVideo] = useState(!videoFinished);
   const [videoReady, setVideoReady] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hasUnmutedRef = useRef(false);
 
   const handleSkip = useCallback(() => {
     if (videoRef.current) {
@@ -52,7 +56,10 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     localStorage.removeItem(VIDEO_SEEN_KEY);
     setVideoFinished(false);
     setShowVideo(true);
+    setIsMuted(true);
+    hasUnmutedRef.current = false;
     if (videoRef.current) {
+      videoRef.current.muted = true;
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {});
     }
@@ -68,6 +75,22 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
 
   const handlePlaying = useCallback(() => {
     setVideoReady(true);
+    if (!hasUnmutedRef.current && videoRef.current) {
+      hasUnmutedRef.current = true;
+      try {
+        videoRef.current.muted = false;
+        setIsMuted(false);
+      } catch {
+      }
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (videoRef.current) {
+      const next = !videoRef.current.muted;
+      videoRef.current.muted = next;
+      setIsMuted(next);
+    }
   }, []);
 
   return (
@@ -109,6 +132,12 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           className={`w-full h-full object-contain transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
           src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
         />
+        <button
+          onClick={toggleMute}
+          className={`absolute bottom-8 left-8 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all z-20 ${showVideo ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
+          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </button>
         <button
           onClick={handleSkip}
           className={`absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all z-20 ${showVideo ? "opacity-100" : "opacity-0 pointer-events-none"}`}

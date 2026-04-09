@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
 import {
@@ -24,6 +24,8 @@ import {
   Database,
   ChevronDown,
   ChevronUp,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -263,6 +265,29 @@ function VideoModal({ onClose }: { onClose: () => void }) {
 }
 
 function FounderPitchModal({ onClose }: { onClose: () => void }) {
+  const pitchRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const hasUnmuted = useRef(false);
+
+  const handlePlaying = useCallback(() => {
+    if (!hasUnmuted.current && pitchRef.current) {
+      hasUnmuted.current = true;
+      try {
+        pitchRef.current.muted = false;
+        setIsMuted(false);
+      } catch {
+      }
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (pitchRef.current) {
+      const next = !pitchRef.current.muted;
+      pitchRef.current.muted = next;
+      setIsMuted(next);
+    }
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -285,13 +310,21 @@ function FounderPitchModal({ onClose }: { onClose: () => void }) {
         >
           <X className="w-5 h-5" />
         </button>
+        <button
+          onClick={toggleMute}
+          className="absolute bottom-3 left-3 z-10 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+        >
+          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </button>
         <video
+          ref={pitchRef}
           autoPlay
           playsInline
           muted
-          preload="metadata"
+          preload="auto"
           className="w-full h-full object-contain"
           src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
+          onPlaying={handlePlaying}
           onEnded={onClose}
         />
       </motion.div>
