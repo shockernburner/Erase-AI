@@ -130,3 +130,7 @@ export async function getPaymentIntent(
 export function isConfigured(): boolean {
   return !!(AIRWALLEX_API_KEY && AIRWALLEX_CLIENT_ID);
 }
+
+export function getSdkEnv(): "prod" | "demo" {
+  return AIRWALLEX_ENV === "production" ? "prod" : "demo";
+}

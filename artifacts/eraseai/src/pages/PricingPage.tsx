@@ -161,13 +161,14 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const handleCheckout = async (plan: string) => {
     setCheckoutLoading(plan);
     try {
+      const successUrl = window.location.origin + import.meta.env.BASE_URL + "?checkout=success";
       const res = await fetch(`${import.meta.env.BASE_URL}api/billing/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           plan,
-          returnUrl: window.location.origin + import.meta.env.BASE_URL + "?checkout=success",
+          returnUrl: successUrl,
         }),
       });
       const data = await res.json();
@@ -176,9 +177,31 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         return;
       }
 
-      if (data.checkoutUrl && data.intentId) {
+      if (data.intentId && data.clientSecret) {
         sessionStorage.setItem("eraseai_checkout_intent", data.intentId);
-        window.location.href = data.checkoutUrl;
+
+        try {
+          const { init } = await import("@airwallex/components-sdk");
+          const sdkEnv = data.airwallexEnv || "prod";
+          const { payments } = await init({
+            env: sdkEnv,
+            enabledElements: ["payments"],
+          });
+          await payments.redirectToCheckout({
+            intent_id: data.intentId,
+            client_secret: data.clientSecret,
+            currency: data.currency || "USD",
+            country_code: "SG",
+            successUrl,
+          });
+        } catch (sdkErr) {
+          console.error("Airwallex SDK redirect failed:", sdkErr);
+          if (data.checkoutUrl) {
+            window.location.href = data.checkoutUrl;
+          } else {
+            alert(t("pricing.somethingWrong"));
+          }
+        }
         return;
       }
 

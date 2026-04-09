@@ -11,6 +11,7 @@ import {
   createCheckoutSession,
   getPaymentIntent,
   isConfigured,
+  getSdkEnv,
 } from "../lib/airwallex";
 
 const router: IRouter = Router();
@@ -199,7 +200,9 @@ router.post("/checkout", async (req: Request, res: Response) => {
     res.json({
       checkoutUrl: result.checkoutUrl,
       intentId: result.intentId,
+      clientSecret: result.clientSecret,
       provider: "airwallex",
+      airwallexEnv: getSdkEnv(),
       amount: pricing.price,
       currency: pricing.currency,
       plan,

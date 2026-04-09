@@ -239,6 +239,9 @@ importers:
 
   artifacts/eraseai:
     dependencies:
+      '@airwallex/components-sdk':
+        specifier: ^1.28.3
+        version: 1.28.3
       i18next:
         specifier: ^26.0.3
         version: 26.0.3(typescript@5.9.3)
@@ -853,6 +856,12 @@ importers:
         version: 4.21.0
 
 packages:
+
+  '@airwallex/airtracker@3.2.0':
+    resolution: {integrity: sha512-PKE5N38ajTVg6ph9JzLpWsICNjqLtf/wWudNVU3UPX9SVy2I5s5ITc281sMSD8+LIE6RJoGjGTO+VYP/io5kig==}
+
+  '@airwallex/components-sdk@1.28.3':
+    resolution: {integrity: sha512-W/f2eMx4Vt0k6HiZB0atzSnKVUcCk7l2VG9JKm/aJk6i832MMzeIqGiRBC1Ig2uA/HHF7d9Zy7ca8YqeXdFI/w==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -3796,6 +3805,12 @@ packages:
         optional: true
 
 snapshots:
+
+  '@airwallex/airtracker@3.2.0': {}
+
+  '@airwallex/components-sdk@1.28.3':
+    dependencies:
+      '@airwallex/airtracker': 3.2.0
 
   '@babel/code-frame@7.29.0':
     dependencies:
