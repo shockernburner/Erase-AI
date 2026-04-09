@@ -230,7 +230,7 @@ function VideoModal({ onClose }: { onClose: () => void }) {
           <X className="w-5 h-5" />
         </button>
         <iframe
-          src="/eraseai-video/"
+          src="/how-it-works-video/"
           className="w-full h-full border-0"
           allow="autoplay"
           title={t("home.systemExplainer")}
