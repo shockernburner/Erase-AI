@@ -111,8 +111,11 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => window.open("/pitch-deck/", "_blank")}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
+                  onClick={() => {
+                    localStorage.removeItem(VIDEO_SEEN_KEY);
+                    setVideoFinished(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/30 transition-all group"
                 >
                   <Film className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   {t("nav.founderPitch")}
