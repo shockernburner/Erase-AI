@@ -65,3 +65,4 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
+AIRWALLEX_ENV = "production"
