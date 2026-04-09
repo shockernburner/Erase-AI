@@ -62,6 +62,14 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     setVideoReady(true);
   }, []);
 
+  const handleWaiting = useCallback(() => {
+    setVideoReady(false);
+  }, []);
+
+  const handlePlaying = useCallback(() => {
+    setVideoReady(true);
+  }, []);
+
   return (
     <div className="min-h-screen w-full relative">
       <div
@@ -95,6 +103,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           muted
           preload="auto"
           onCanPlay={handleCanPlay}
+          onWaiting={handleWaiting}
+          onPlaying={handlePlaying}
           onEnded={handleVideoEnd}
           className={`w-full h-full object-contain transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
           src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
