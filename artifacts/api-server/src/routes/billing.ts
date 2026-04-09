@@ -416,7 +416,6 @@ router.post("/webhook", async (req: Request, res: Response) => {
         }).where(eq(usersTable.id, userId));
         break;
       }
-      case "payment_intent.payment_failed":
       case "payment_intent.cancelled": {
         if (user.subscriptionStatus === "pending" && (!user.subscriptionId || user.subscriptionId === intentData.id)) {
           await db.update(usersTable).set({
