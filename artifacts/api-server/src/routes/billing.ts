@@ -419,6 +419,14 @@ router.post("/webhook", async (req: Request, res: Response) => {
           break;
         }
 
+        const isCorrelated =
+          !user.subscriptionId ||
+          user.subscriptionId === intentData.id ||
+          user.subscriptionId.startsWith("plink_");
+        if (!isCorrelated) {
+          break;
+        }
+
         const now = new Date();
         const endDate = new Date(now);
         endDate.setMonth(endDate.getMonth() + 1);
@@ -434,11 +442,14 @@ router.post("/webhook", async (req: Request, res: Response) => {
       }
       case "payment_intent.payment_failed":
       case "payment_intent.cancelled": {
-        if (user.subscriptionStatus === "pending") {
-          await db.update(usersTable).set({
-            subscriptionStatus: "failed",
-          }).where(eq(usersTable.id, userId));
-        }
+        if (user.subscriptionStatus !== "pending") break;
+        const failCorrelated =
+          !user.subscriptionId ||
+          user.subscriptionId === intentData.id;
+        if (!failCorrelated) break;
+        await db.update(usersTable).set({
+          subscriptionStatus: "failed",
+        }).where(eq(usersTable.id, userId));
         break;
       }
       default:
