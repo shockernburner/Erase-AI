@@ -226,7 +226,55 @@ const SEVERITY_COLORS: Record<string, string> = {
   low: "#10B981",
 };
 
-export default function AnalyticsDashboard({ onBack, onUpgrade }: { onBack: () => void; onUpgrade: () => void }) {
+const DEMO_ANALYTICS: AnalyticsData = {
+  overview: { totalDatasets: 24, totalVersions: 67, totalRows: 184320, datasetsAnalyzed: 18, activeDatasets: 20, erasedDatasets: 4 },
+  processingActivity: {
+    operationsByType: [
+      { type: "analyze", count: 156, totalAffected: 45000 },
+      { type: "redact", count: 89, totalAffected: 12400 },
+      { type: "delete", count: 34, totalAffected: 8700 },
+    ],
+    dailyActivity: Array.from({ length: 7 }, (_, i) => ({
+      date: new Date(Date.now() - (6 - i) * 86400000).toISOString().split("T")[0],
+      operations: Math.floor(20 + Math.random() * 40),
+    })),
+    dailyByType: [],
+  },
+  qualityInsights: {
+    issuesByType: [
+      { type: "pii", count: 913 },
+      { type: "bias", count: 167 },
+      { type: "toxic", count: 42 },
+      { type: "duplicate", count: 234 },
+      { type: "quality", count: 89 },
+    ],
+    issuesBySeverity: [
+      { severity: "critical", count: 45 },
+      { severity: "high", count: 312 },
+      { severity: "medium", count: 567 },
+      { severity: "low", count: 321 },
+    ],
+    totalIssues: 1245,
+  },
+  erasureMetrics: { totalOperations: 123, totalAffectedRows: 21100, removedRows: 8700, redactedRows: 12400, forgetScore: 91 },
+  apiUsage: {
+    byEndpoint: [
+      { endpoint: "/analyze", requests: 3200 },
+      { endpoint: "/redact", requests: 2100 },
+      { endpoint: "/datasets", requests: 1800 },
+      { endpoint: "/reports", requests: 1291 },
+    ],
+    dailyTrend: Array.from({ length: 7 }, (_, i) => ({
+      date: new Date(Date.now() - (6 - i) * 86400000).toISOString().split("T")[0],
+      requests: Math.floor(800 + Math.random() * 600),
+    })),
+    totalRequests: 8391,
+    totalErrors: 127,
+    errorRate: 1.5,
+  },
+};
+
+export default function AnalyticsDashboard({ onBack, onUpgrade, previewMode }: { onBack: () => void; onUpgrade: () => void; previewMode?: boolean }) {
   const { t } = useTranslation();
 
   const ISSUE_TYPE_LABELS: Record<string, string> = {
@@ -237,14 +285,15 @@ export default function AnalyticsDashboard({ onBack, onUpgrade }: { onBack: () =
     quality: t("analytics.issueQuality"),
   };
   const { user } = useAuth();
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<AnalyticsData | null>(previewMode ? DEMO_ANALYTICS : null);
+  const [loading, setLoading] = useState(!previewMode);
   const [error, setError] = useState<string | null>(null);
 
-  const plan = user?.planType || "free";
-  const hasAccess = plan === "business" || plan === "enterprise";
+  const plan = previewMode ? "business" : (user?.planType || "free");
+  const hasAccess = previewMode || plan === "business" || plan === "enterprise";
 
   useEffect(() => {
+    if (previewMode) return;
     if (!hasAccess) {
       setLoading(false);
       return;
@@ -265,7 +314,7 @@ export default function AnalyticsDashboard({ onBack, onUpgrade }: { onBack: () =
         setLoading(false);
       }
     })();
-  }, [hasAccess]);
+  }, [previewMode, hasAccess]);
 
   if (!hasAccess) {
     return (

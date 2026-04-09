@@ -11,6 +11,7 @@ import {
   Shield,
   MessageCircle,
   Mail,
+  LogIn,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -123,6 +124,13 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 </div>
                 <LanguageSelector />
                 <FeedbackButton />
+                <button
+                  onClick={() => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" })}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all"
+                >
+                  <LogIn className="w-4 h-4" />
+                  {t("landing.logIn")}
+                </button>
               </div>
             </motion.header>
 
@@ -200,10 +208,11 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               </motion.div>
 
               <motion.div
+                id="auth-section"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="max-w-md mx-auto mb-16"
+                className="max-w-md mx-auto mb-16 scroll-mt-24"
               >
                 <h3 className="text-center text-xl font-display font-bold text-foreground mb-2">
                   {t("landing.joinWhenYouWant")}

@@ -480,23 +480,39 @@ function EndpointDoc() {
   );
 }
 
-export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () => void; onUpgrade?: () => void }) {
+export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: { onBack: () => void; onUpgrade?: () => void; previewMode?: boolean }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [keys, setKeys] = useState<ApiKeyInfo[]>(previewMode ? [
+    { id: "demo-1", prefix: "era_demo", name: "Production API", createdAt: new Date().toISOString(), lastUsedAt: new Date().toISOString(), revokedAt: null, active: true },
+    { id: "demo-2", prefix: "era_test", name: "Staging", createdAt: new Date().toISOString(), lastUsedAt: null, revokedAt: null, active: true },
+  ] : []);
+  const [loading, setLoading] = useState(!previewMode);
   const [creating, setCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [usage, setUsage] = useState<UsageData | null>(null);
+  const [usage, setUsage] = useState<UsageData | null>(previewMode ? {
+    used: 2847,
+    limit: 10000,
+    unlimited: false,
+    remaining: 7153,
+    percentUsed: 28.47,
+    periodStart: new Date().toISOString(),
+    periodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),
+    dailyBreakdown: Array.from({ length: 7 }, (_, i) => ({
+      date: new Date(Date.now() - (6 - i) * 86400000).toISOString().split("T")[0],
+      requests: Math.floor(300 + Math.random() * 500),
+    })),
+  } : null);
 
-  const plan = user?.planType || "free";
-  const hasAccess = plan !== "free";
+  const plan = previewMode ? "pro" : (user?.planType || "free");
+  const hasAccess = previewMode || plan !== "free";
 
   const fetchKeys = useCallback(async () => {
+    if (previewMode) return;
     try {
       const res = await fetch(`${API_BASE}/developer/keys`, { credentials: "include" });
       if (res.ok) {
@@ -505,9 +521,10 @@ export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () =
       }
     } catch {
     }
-  }, []);
+  }, [previewMode]);
 
   const fetchUsage = useCallback(async () => {
+    if (previewMode) return;
     try {
       const res = await fetch(`${API_BASE}/developer/usage`, { credentials: "include" });
       if (res.ok) {
@@ -516,19 +533,20 @@ export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () =
       }
     } catch {
     }
-  }, []);
+  }, [previewMode]);
 
   useEffect(() => {
+    if (previewMode) return;
     if (hasAccess) {
       fetchKeys().finally(() => setLoading(false));
       fetchUsage();
     } else {
       setLoading(false);
     }
-  }, [hasAccess, fetchKeys, fetchUsage]);
+  }, [previewMode, hasAccess, fetchKeys, fetchUsage]);
 
   const createKey = async () => {
-    if (!newKeyName.trim()) return;
+    if (previewMode || !newKeyName.trim()) return;
     setCreating(true);
     setError(null);
     try {
@@ -554,6 +572,7 @@ export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () =
   };
 
   const revokeKey = async (keyId: string) => {
+    if (previewMode) return;
     try {
       const res = await fetch(`${API_BASE}/developer/keys/${keyId}`, {
         method: "DELETE",
@@ -563,7 +582,6 @@ export default function DeveloperDashboard({ onBack, onUpgrade }: { onBack: () =
         fetchKeys();
       }
     } catch {
-      // ignore
     }
   };
 

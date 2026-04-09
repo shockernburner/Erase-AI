@@ -1127,27 +1127,63 @@ function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (resul
 
 const HISTORY_PAGE_SIZE = 10;
 
+const DEMO_SCAN_RESULT: ScanResult = {
+  id: 1,
+  riskScore: 72,
+  level: "high",
+  breakdown: { toxicity: 0.1, hateSpeech: 0.05, pii: 0.85, bias: 0.3 },
+  flags: [
+    { type: "pii", severity: "high", detail: "Email address detected", matchedText: "john.doe@company.com", position: { start: 85, end: 107 } },
+    { type: "pii", severity: "high", detail: "Phone number found", matchedText: "555-0123", position: { start: 117, end: 125 } },
+  ],
+  suggestions: [
+    { type: "pii", message: "Remove personal email address before posting", original: "john.doe@company.com", suggested: "[REDACTED_EMAIL]" },
+    { type: "bias", message: "Consider rephrasing to avoid potential bias", original: "database credentials", suggested: "sensitive configuration" },
+    { type: "pii", message: "Review phone number for PII exposure", original: "555-0123", suggested: "[REDACTED_PHONE]" },
+  ],
+  createdAt: new Date().toISOString(),
+};
+
+const DEMO_HISTORY_DATA = {
+  scans: [
+    { id: 1, content: "Just deployed my new API with the database credentials...", riskScore: 85, level: "high", flags: [], suggestions: [], createdAt: new Date().toISOString() },
+    { id: 2, content: "Check out our Q3 revenue numbers from the board meeting!", riskScore: 55, level: "medium", flags: [], suggestions: [], createdAt: new Date(Date.now() - 3600000).toISOString() },
+    { id: 3, content: "Had a great weekend hiking in the mountains!", riskScore: 12, level: "low", flags: [], suggestions: [], createdAt: new Date(Date.now() - 7200000).toISOString() },
+  ] as HistoryScan[],
+  total: 47,
+  totalUsed: 47,
+  lifetimeLimit: null,
+  trend: Array.from({ length: 7 }, (_, i) => ({
+    date: new Date(Date.now() - (6 - i) * 86400000).toISOString().split("T")[0],
+    count: Math.floor(3 + Math.random() * 10),
+    avgScore: Math.random() * 0.6 + 0.2,
+  })) as TrendPoint[],
+};
+
 export default function PersonalMode({
   onBack,
   onUpgrade,
+  previewMode,
 }: {
   onBack: () => void;
   onUpgrade: () => void;
+  previewMode?: boolean;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [text, setText] = useState("");
-  const [result, setResult] = useState<ScanResult | null>(null);
+  const [text, setText] = useState(previewMode ? "Just deployed my new API with the database credentials in the config file. Contact me at john.doe@company.com or call 555-0123." : "");
+  const [result, setResult] = useState<ScanResult | null>(previewMode ? DEMO_SCAN_RESULT : null);
   const [latestPromptResult, setLatestPromptResult] = useState<FirewallResult | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [limitError, setLimitError] = useState<{ used: number; limit: number } | null>(null);
   const [historyPage, setHistoryPage] = useState(0);
   const [levelFilter, setLevelFilter] = useState<string>("");
-  const [analysisText, setAnalysisText] = useState<string>("");
+  const [analysisText, setAnalysisText] = useState<string>(previewMode ? "Just deployed my new API with the database credentials in the config file. Contact me at john.doe@company.com or call 555-0123." : "");
 
   const analyzeMutation = useMutation({
     mutationFn: async (inputText: string) => {
+      if (previewMode) return null;
       setLimitError(null);
       const res = await fetch(`${API_BASE}/personal/analyze`, {
         method: "POST",
@@ -1167,8 +1203,8 @@ export default function PersonalMode({
         }
         throw new Error(data.error || "Analysis failed");
       }
-      const result = await res.json() as ScanResult;
-      return { result, sourceText: inputText };
+      const scanResult = await res.json() as ScanResult;
+      return { result: scanResult, sourceText: inputText };
     },
     onSuccess: (data) => {
       if (data) {
@@ -1184,6 +1220,7 @@ export default function PersonalMode({
   const historyQuery = useQuery({
     queryKey: ["personal-history", historyPage, levelFilter],
     queryFn: async () => {
+      if (previewMode) return DEMO_HISTORY_DATA;
       const params = new URLSearchParams({
         limit: String(HISTORY_PAGE_SIZE),
         offset: String(historyPage * HISTORY_PAGE_SIZE),
@@ -1201,6 +1238,7 @@ export default function PersonalMode({
         trend: TrendPoint[];
       }>;
     },
+    enabled: !previewMode || true,
   });
 
   const handleAnalyze = () => {
