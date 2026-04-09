@@ -23,8 +23,10 @@ type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const { t } = useTranslation();
-  const alreadySeen = localStorage.getItem(VIDEO_SEEN_KEY) === "1";
-  const [videoFinished, setVideoFinished] = useState(alreadySeen);
+  const [videoFinished, setVideoFinished] = useState(() => {
+    try { return typeof window !== "undefined" && localStorage.getItem(VIDEO_SEEN_KEY) === "1"; }
+    catch { return false; }
+  });
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleSkip = useCallback(() => {

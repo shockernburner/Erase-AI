@@ -1275,7 +1275,6 @@ export default function PersonalMode({
         trend: TrendPoint[];
       }>;
     },
-    enabled: !previewMode || true,
   });
 
   const handleAnalyze = () => {

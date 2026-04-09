@@ -364,6 +364,17 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-emerald-500/30",
       bgColor: "bg-emerald-500/5",
       view: "personal",
+      content: (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-emerald-400">{t("home.personalStat1Val")}</p><p className="text-xs text-muted-foreground">{t("home.personalStat1")}</p></div>
+            <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-yellow-400">{t("home.personalStat2Val")}</p><p className="text-xs text-muted-foreground">{t("home.personalStat2")}</p></div>
+            <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-red-400">{t("home.personalStat3Val")}</p><p className="text-xs text-muted-foreground">{t("home.personalStat3")}</p></div>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("home.personalExpandedDesc")}</p>
+          <button onClick={() => onNavigate("personal")} className="px-6 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
     {
       id: "developer",
@@ -374,6 +385,17 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-amber-500/30",
       bgColor: "bg-amber-500/5",
       view: "developer",
+      content: (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-amber-400">{t("home.devStat1Val")}</p><p className="text-xs text-muted-foreground">{t("home.devStat1")}</p></div>
+            <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-primary">{t("home.devStat2Val")}</p><p className="text-xs text-muted-foreground">{t("home.devStat2")}</p></div>
+            <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-emerald-400">{t("home.devStat3Val")}</p><p className="text-xs text-muted-foreground">{t("home.devStat3")}</p></div>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("home.devExpandedDesc")}</p>
+          <button onClick={() => onNavigate("developer")} className="px-6 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium hover:bg-amber-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
     ...(plan === "business" || plan === "enterprise"
       ? [
@@ -386,6 +408,17 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
             borderColor: "border-violet-500/30",
             bgColor: "bg-violet-500/5",
             view: "analytics" as AppView,
+            content: (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-violet-400">{t("home.analyticsStat1Val")}</p><p className="text-xs text-muted-foreground">{t("home.analyticsStat1")}</p></div>
+                  <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-primary">{t("home.analyticsStat2Val")}</p><p className="text-xs text-muted-foreground">{t("home.analyticsStat2")}</p></div>
+                  <div className="bg-background/40 rounded-lg p-3 text-center"><p className="text-lg font-bold text-emerald-400">{t("home.analyticsStat3Val")}</p><p className="text-xs text-muted-foreground">{t("home.analyticsStat3")}</p></div>
+                </div>
+                <p className="text-xs text-muted-foreground">{t("home.analyticsExpandedDesc")}</p>
+                <button onClick={() => onNavigate("analytics")} className="px-6 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-400 text-sm font-medium hover:bg-violet-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+              </div>
+            ),
           },
         ]
       : []),
@@ -398,6 +431,12 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-amber-500/30",
       bgColor: "bg-amber-500/5",
       view: "devMode",
+      content: (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("home.devModeExpandedDesc")}</p>
+          <button onClick={() => onNavigate("devMode")} className="px-6 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium hover:bg-amber-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
     {
       id: "firewallDocs",
@@ -408,6 +447,12 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-red-500/30",
       bgColor: "bg-red-500/5",
       view: "firewallDocs",
+      content: (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("home.firewallExpandedDesc")}</p>
+          <button onClick={() => onNavigate("firewallDocs")} className="px-6 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
     {
       id: "docs",
@@ -418,6 +463,12 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-blue-500/30",
       bgColor: "bg-blue-500/5",
       view: "docs",
+      content: (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("home.docsExpandedDesc")}</p>
+          <button onClick={() => onNavigate("docs")} className="px-6 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-medium hover:bg-blue-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
     {
       id: "certifications",
@@ -428,6 +479,12 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-emerald-500/30",
       bgColor: "bg-emerald-500/5",
       view: "certifications",
+      content: (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("home.certsExpandedDesc")}</p>
+          <button onClick={() => onNavigate("certifications")} className="px-6 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
     {
       id: "pricing",
@@ -438,6 +495,12 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
       borderColor: "border-primary/30",
       bgColor: "bg-primary/5",
       view: "pricing",
+      content: (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("home.pricingExpandedDesc")}</p>
+          <button onClick={() => onNavigate("pricing")} className="px-6 py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all flex items-center gap-2"><ExternalLink className="w-4 h-4" />{t("home.openSection")}</button>
+        </div>
+      ),
     },
   ];
 
