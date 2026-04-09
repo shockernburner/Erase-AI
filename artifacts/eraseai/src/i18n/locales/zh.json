@@ -19,7 +19,8 @@
     "apiDocs": "API文档",
     "devMode": "开发者模式",
     "certifications": "合规路线图",
-    "firewallDocs": "扩展设置"
+    "firewallDocs": "扩展设置",
+    "founderPitch": "创始人介绍"
   },
   "landing": {
     "heroBadge": "AI数据治理",

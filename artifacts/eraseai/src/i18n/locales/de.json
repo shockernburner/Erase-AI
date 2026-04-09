@@ -19,7 +19,8 @@
     "apiDocs": "API-Dokumentation",
     "devMode": "Entwicklermodus",
     "certifications": "Compliance-Roadmap",
-    "firewallDocs": "Erweiterung einrichten"
+    "firewallDocs": "Erweiterung einrichten",
+    "founderPitch": "Gründer-Pitch"
   },
   "landing": {
     "heroBadge": "KI-Daten-Governance",

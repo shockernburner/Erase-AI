@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldX,
   Globe,
+  Film,
   Play,
   SkipForward,
   Code2,
@@ -110,10 +111,14 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    localStorage.removeItem(VIDEO_SEEN_KEY);
-                    setVideoFinished(false);
-                  }}
+                  onClick={() => window.open("/pitch-deck/", "_blank")}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
+                >
+                  <Film className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  {t("nav.founderPitch")}
+                </button>
+                <button
+                  onClick={() => window.open("/how-it-works-video/", "_blank")}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
                 >
                   <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />

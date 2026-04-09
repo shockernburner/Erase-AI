@@ -19,7 +19,8 @@
     "apiDocs": "API Docs",
     "devMode": "Developer Mode",
     "certifications": "Compliance Roadmap",
-    "firewallDocs": "Extension Setup"
+    "firewallDocs": "Extension Setup",
+    "founderPitch": "Founder's Pitch"
   },
   "landing": {
     "heroBadge": "AI Data Governance",

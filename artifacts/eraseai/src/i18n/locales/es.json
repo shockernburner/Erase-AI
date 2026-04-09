@@ -19,7 +19,8 @@
     "apiDocs": "Documentación API",
     "devMode": "Modo Desarrollador",
     "certifications": "Hoja de ruta de cumplimiento",
-    "firewallDocs": "Configurar Extensión"
+    "firewallDocs": "Configurar Extensión",
+    "founderPitch": "Pitch del fundador"
   },
   "landing": {
     "heroBadge": "Gobernanza de datos IA",

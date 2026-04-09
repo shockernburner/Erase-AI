@@ -19,7 +19,8 @@
     "apiDocs": "APIドキュメント",
     "devMode": "開発者モード",
     "certifications": "コンプライアンスロードマップ",
-    "firewallDocs": "拡張機能設定"
+    "firewallDocs": "拡張機能設定",
+    "founderPitch": "創業者のピッチ"
   },
   "landing": {
     "heroBadge": "AIデータガバナンス",
