@@ -5,6 +5,7 @@ import {
   ShieldX,
   Globe,
   Film,
+  Loader2,
   Play,
   SkipForward,
   Code2,
@@ -28,6 +29,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     try { return typeof window !== "undefined" && localStorage.getItem(VIDEO_SEEN_KEY) === "1"; }
     catch { return false; }
   });
+  const [showVideo, setShowVideo] = useState(!videoFinished);
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleSkip = useCallback(() => {
@@ -36,11 +39,27 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     }
     localStorage.setItem(VIDEO_SEEN_KEY, "1");
     setVideoFinished(true);
+    setShowVideo(false);
   }, []);
 
   const handleVideoEnd = useCallback(() => {
     localStorage.setItem(VIDEO_SEEN_KEY, "1");
     setVideoFinished(true);
+    setShowVideo(false);
+  }, []);
+
+  const handleReplay = useCallback(() => {
+    localStorage.removeItem(VIDEO_SEEN_KEY);
+    setVideoFinished(false);
+    setShowVideo(true);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
+
+  const handleCanPlay = useCallback(() => {
+    setVideoReady(true);
   }, []);
 
   return (
@@ -55,34 +74,42 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
         }}
       />
 
+      <div
+        className={`fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-500 ${showVideo ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+      >
+        {!videoReady && showVideo && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
+            <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.6)] animate-pulse">
+              <ShieldX className="w-10 h-10" />
+            </div>
+            <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {t("app.loading")}
+            </div>
+          </div>
+        )}
+        <video
+          ref={videoRef}
+          autoPlay={!videoFinished}
+          playsInline
+          muted
+          preload="auto"
+          onCanPlay={handleCanPlay}
+          onEnded={handleVideoEnd}
+          className={`w-full h-full object-contain transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
+          src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
+        />
+        <button
+          onClick={handleSkip}
+          className={`absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all z-20 ${showVideo ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
+          <SkipForward className="w-4 h-4" />
+          {t("landing.skip")}
+        </button>
+      </div>
+
       <AnimatePresence mode="wait">
-        {!videoFinished ? (
-          <motion.div
-            key="video"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-          >
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              onEnded={handleVideoEnd}
-              className="w-full h-full object-contain"
-              src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
-            />
-            <button
-              onClick={handleSkip}
-              className="absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all"
-            >
-              <SkipForward className="w-4 h-4" />
-              {t("landing.skip")}
-            </button>
-          </motion.div>
-        ) : (
+        {videoFinished && (
           <motion.div
             key="landing"
             initial={{ opacity: 0 }}
@@ -111,10 +138,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    localStorage.removeItem(VIDEO_SEEN_KEY);
-                    setVideoFinished(false);
-                  }}
+                  onClick={handleReplay}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/30 transition-all group"
                 >
                   <Film className="w-4 h-4 group-hover:scale-110 transition-transform" />
