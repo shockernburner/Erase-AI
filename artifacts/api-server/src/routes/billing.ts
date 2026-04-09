@@ -8,8 +8,9 @@ import {
   updateSession,
 } from "../lib/auth";
 import {
-  createPaymentIntent,
+  createCheckoutSession,
   getPaymentIntent,
+  getPaymentLink,
   isConfigured,
 } from "../lib/airwallex";
 
@@ -182,7 +183,7 @@ router.post("/checkout", async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await createPaymentIntent({
+    const result = await createCheckoutSession({
       amount: pricing.price,
       currency: pricing.currency,
       userId: req.user!.id,
@@ -220,23 +221,11 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
   }
 
   try {
-    const intent = await getPaymentIntent(intentId);
-
-    const userId = intent.metadata?.user_id;
-    if (userId !== req.user!.id) {
-      res.status(403).json({ error: "Access denied" });
-      return;
-    }
-
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
     }
-
-    const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
-    const rawPlan = intent.metadata?.plan || "pro";
-    const targetPlan = VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro";
 
     if ((user.planType === "personal" || user.planType === "pro" || user.planType === "business") && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
       res.json({ status: "succeeded", planType: user.planType });
@@ -248,7 +237,37 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       return;
     }
 
-    if (intent.status === "SUCCEEDED") {
+    let resolvedStatus = "UNKNOWN";
+    let metadata: Record<string, string> = {};
+
+    const isPaymentLink = intentId.startsWith("plink_");
+    if (isPaymentLink) {
+      const link = await getPaymentLink(intentId);
+      metadata = link.metadata || {};
+      if (metadata.user_id && metadata.user_id !== req.user!.id) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+      const paidIntent = link.payment_intents?.find(
+        (pi) => pi.status === "SUCCEEDED",
+      );
+      resolvedStatus = paidIntent ? "SUCCEEDED" : link.status === "ACTIVE" ? "PENDING" : link.status;
+    } else {
+      const intent = await getPaymentIntent(intentId);
+      const userId = intent.metadata?.user_id;
+      if (userId !== req.user!.id) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+      metadata = intent.metadata || {};
+      resolvedStatus = intent.status;
+    }
+
+    const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
+    const rawPlan = metadata.plan || "pro";
+    const targetPlan = VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro";
+
+    if (resolvedStatus === "SUCCEEDED") {
       const now = new Date();
       const endDate = new Date(now);
       endDate.setMonth(endDate.getMonth() + 1);
@@ -271,10 +290,10 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       }
 
       res.json({ status: "succeeded", planType: targetPlan });
-    } else if (intent.status === "REQUIRES_PAYMENT_METHOD" || intent.status === "REQUIRES_CUSTOMER_ACTION") {
+    } else if (resolvedStatus === "PENDING" || resolvedStatus === "REQUIRES_PAYMENT_METHOD" || resolvedStatus === "REQUIRES_CUSTOMER_ACTION" || resolvedStatus === "ACTIVE") {
       res.json({ status: "pending" });
     } else {
-      res.json({ status: intent.status.toLowerCase() });
+      res.json({ status: resolvedStatus.toLowerCase() });
     }
   } catch (err) {
     console.error("Checkout status check error:", err);
@@ -392,11 +411,11 @@ router.post("/webhook", async (req: Request, res: Response) => {
         const VALID_PLANS = ["personal", "pro", "business"];
         const rawWebhookPlan = intentData.metadata?.plan || "pro";
         const webhookPlan = VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro";
-        if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
+        if ((user.planType === webhookPlan) && user.subscriptionStatus === "active") {
           break;
         }
 
-        if (user.subscriptionId && user.subscriptionId !== intentData.id) {
+        if (user.subscriptionStatus !== "pending") {
           break;
         }
 
@@ -407,7 +426,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         await db.update(usersTable).set({
           planType: webhookPlan,
           subscriptionStatus: "active",
-          subscriptionId: intentData.id || null,
+          subscriptionId: user.subscriptionId || intentData.id || null,
           planStartDate: now,
           planEndDate: endDate,
         }).where(eq(usersTable.id, userId));
@@ -415,7 +434,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
       }
       case "payment_intent.payment_failed":
       case "payment_intent.cancelled": {
-        if (user.subscriptionStatus === "pending" && (!user.subscriptionId || user.subscriptionId === intentData.id)) {
+        if (user.subscriptionStatus === "pending") {
           await db.update(usersTable).set({
             subscriptionStatus: "failed",
           }).where(eq(usersTable.id, userId));
