@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/how-it-works-video/"
+title = "EraseAI — How It Works"
+version = "1.0.0"
+id = "artifacts/how-it-works-video"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/how-it-works-video/" ]
+localPort = 19402
+
+[services.development]
+run = "pnpm --filter @workspace/how-it-works-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/how-it-works-video", "run", "build" ]
+publicDir = "artifacts/how-it-works-video/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19402"
+BASE_PATH = "/how-it-works-video/"
