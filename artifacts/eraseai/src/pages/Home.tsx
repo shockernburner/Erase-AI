@@ -288,6 +288,8 @@ function FounderPitchModal({ onClose }: { onClose: () => void }) {
         <video
           autoPlay
           playsInline
+          muted
+          preload="metadata"
           className="w-full h-full object-contain"
           src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
           onEnded={onClose}
