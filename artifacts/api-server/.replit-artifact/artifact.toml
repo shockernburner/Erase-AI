@@ -1,0 +1,20 @@
+previewPath = "/api/"
+title = "EraseAI API Server"
+id = "artifacts/api-server"
+router = "path"
+
+[[services]]
+name = "api"
+paths = [ "/api/" ]
+localPort = 3000
+
+[services.development]
+run = "PORT=3000 pnpm --filter @workspace/api-server run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/api-server", "run", "build" ]
+run = "PORT=3000 node artifacts/api-server/dist/index.mjs"
+
+[services.env]
+PORT = "3000"
+BASE_PATH = "/"

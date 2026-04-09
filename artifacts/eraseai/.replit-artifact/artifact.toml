@@ -1,0 +1,25 @@
+previewPath = "/"
+title = "EraseAI"
+id = "artifacts/eraseai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 5173
+
+[services.development]
+run = "pnpm --filter @workspace/eraseai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/eraseai", "run", "build" ]
+publicDir = "artifacts/eraseai/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "5173"
+BASE_PATH = "/"
