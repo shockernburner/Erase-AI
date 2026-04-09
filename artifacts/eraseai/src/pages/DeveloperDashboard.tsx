@@ -165,18 +165,27 @@ interface WebhookDelivery {
   deliveredAt: string;
 }
 
-function WebhookSection() {
+function WebhookSection({ previewMode }: { previewMode?: boolean }) {
   const { t } = useTranslation();
-  const [webhook, setWebhook] = useState<WebhookInfo | null>(null);
-  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhook, setWebhook] = useState<WebhookInfo | null>(previewMode ? {
+    id: "demo-wh",
+    url: "https://api.example.com/webhook",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  } : null);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>(previewMode ? [
+    { id: "del-1", event: "dataset.analyzed", responseStatus: 200, attempt: 1, success: true, deliveredAt: new Date().toISOString() },
+    { id: "del-2", event: "alert.triggered", responseStatus: 200, attempt: 1, success: true, deliveredAt: new Date(Date.now() - 3600000).toISOString() },
+  ] : []);
+  const [loading, setLoading] = useState(!previewMode);
+  const [webhookUrl, setWebhookUrl] = useState(previewMode ? "https://api.example.com/webhook" : "");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchWebhook = useCallback(async () => {
+    if (previewMode) { setLoading(false); return; }
     try {
       const res = await fetch(`${API_BASE}/developer/webhooks`, { credentials: "include" });
       if (res.ok) {
@@ -193,6 +202,7 @@ function WebhookSection() {
   }, []);
 
   const fetchDeliveries = async (webhookId: string) => {
+    if (previewMode) return;
     try {
       const res = await fetch(`${API_BASE}/developer/webhooks/${webhookId}/deliveries`, { credentials: "include" });
       if (res.ok) {
@@ -202,10 +212,10 @@ function WebhookSection() {
     } catch {}
   };
 
-  useEffect(() => { fetchWebhook(); }, [fetchWebhook]);
+  useEffect(() => { if (!previewMode) fetchWebhook(); }, [previewMode, fetchWebhook]);
 
   const saveWebhook = async () => {
-    if (!webhookUrl.trim()) return;
+    if (previewMode || !webhookUrl.trim()) return;
     setSaving(true);
     setError(null);
     setTestResult(null);
@@ -239,7 +249,7 @@ function WebhookSection() {
   };
 
   const toggleActive = async () => {
-    if (!webhook) return;
+    if (previewMode || !webhook) return;
     setSaving(true);
     try {
       const res = await fetch(`${API_BASE}/developer/webhooks/${webhook.id}`, {
@@ -258,7 +268,7 @@ function WebhookSection() {
   };
 
   const deleteWebhook = async () => {
-    if (!webhook) return;
+    if (previewMode || !webhook) return;
     try {
       const res = await fetch(`${API_BASE}/developer/webhooks/${webhook.id}`, {
         method: "DELETE",
@@ -274,7 +284,7 @@ function WebhookSection() {
   };
 
   const sendTest = async () => {
-    if (!webhook) return;
+    if (previewMode || !webhook) return;
     setTesting(true);
     setTestResult(null);
     try {
@@ -797,7 +807,7 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
               <Webhook className="w-5 h-5 text-primary" />
               {t("developer.webhooks")}
             </h3>
-            <WebhookSection />
+            <WebhookSection previewMode={previewMode} />
           </div>
 
           <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">

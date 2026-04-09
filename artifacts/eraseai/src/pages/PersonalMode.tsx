@@ -183,10 +183,12 @@ function RewritePanel({
   text,
   flags,
   onUpgrade,
+  previewMode,
 }: {
   text: string;
   flags: AnalysisFlag[];
   onUpgrade: () => void;
+  previewMode?: boolean;
 }) {
   const { t } = useTranslation();
   const [rewritten, setRewritten] = useState<string | null>(null);
@@ -194,6 +196,7 @@ function RewritePanel({
 
   const rewriteMutation = useMutation({
     mutationFn: async () => {
+      if (previewMode) return null;
       const res = await fetch(`${API_BASE}/personal/rewrite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -211,7 +214,7 @@ function RewritePanel({
       return res.json() as Promise<{ rewritten: string }>;
     },
     onSuccess: (data) => {
-      setRewritten(data.rewritten);
+      if (data) setRewritten(data.rewritten);
     },
   });
 
@@ -460,13 +463,22 @@ const CATEGORY_I18N_KEYS: Record<string, string> = {
   bias: "personal.flagType.bias",
 };
 
-function AlertsPanel({ onUpgrade }: { onUpgrade: () => void }) {
+const DEMO_ALERTS = {
+  alerts: [
+    { id: 1, alertType: "high_risk", message: "High-risk PII detected in recent scan", severity: "high", relatedScanId: 1, isRead: false, createdAt: new Date().toISOString() },
+    { id: 2, alertType: "weekly_summary", message: "Weekly summary: 12 scans, 3 high risk", severity: "info", relatedScanId: null, isRead: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
+  ] as PersonalAlert[],
+  unreadCount: 1,
+};
+
+function AlertsPanel({ onUpgrade, previewMode }: { onUpgrade: () => void; previewMode?: boolean }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const alertsQuery = useQuery({
     queryKey: ["personal-alerts"],
     queryFn: async () => {
+      if (previewMode) return DEMO_ALERTS;
       const res = await fetch(`${API_BASE}/personal/alerts?limit=20`, { credentials: "include" });
       if (res.status === 403) return null;
       if (!res.ok) throw new Error("Failed to fetch alerts");
@@ -477,6 +489,7 @@ function AlertsPanel({ onUpgrade }: { onUpgrade: () => void }) {
 
   const markRead = useMutation({
     mutationFn: async (id: number) => {
+      if (previewMode) return;
       const res = await fetch(`${API_BASE}/personal/alerts/${id}/read`, {
         method: "POST",
         credentials: "include",
@@ -488,6 +501,7 @@ function AlertsPanel({ onUpgrade }: { onUpgrade: () => void }) {
 
   const markAllRead = useMutation({
     mutationFn: async () => {
+      if (previewMode) return;
       const res = await fetch(`${API_BASE}/personal/alerts/read-all`, {
         method: "POST",
         credentials: "include",
@@ -607,12 +621,31 @@ function AlertsPanel({ onUpgrade }: { onUpgrade: () => void }) {
   );
 }
 
-function TrendsPanel({ onUpgrade }: { onUpgrade: () => void }) {
+const DEMO_TRENDS: TrendsData = {
+  dailyTrend: Array.from({ length: 14 }, (_, i) => ({
+    date: new Date(Date.now() - (13 - i) * 86400000).toISOString().split("T")[0],
+    avgScore: 30 + Math.random() * 40,
+    count: Math.floor(3 + Math.random() * 8),
+  })),
+  rollingAvgSeries: Array.from({ length: 14 }, (_, i) => ({
+    date: new Date(Date.now() - (13 - i) * 86400000).toISOString().split("T")[0],
+    rollingAvg: 35 + Math.random() * 20,
+  })),
+  categoryBreakdown: { pii: 45, bias: 22, toxicity: 18, hate_speech: 5 },
+  categoryTimeSeries: [],
+  comparison: {
+    current: { avgScore: 42.5, scanCount: 31 },
+    previous: { avgScore: 48.2, scanCount: 28 },
+  },
+};
+
+function TrendsPanel({ onUpgrade, previewMode }: { onUpgrade: () => void; previewMode?: boolean }) {
   const { t } = useTranslation();
 
   const trendsQuery = useQuery({
     queryKey: ["personal-trends"],
     queryFn: async () => {
+      if (previewMode) return DEMO_TRENDS;
       const res = await fetch(`${API_BASE}/personal/trends`, { credentials: "include" });
       if (res.status === 403) return null;
       if (!res.ok) throw new Error("Failed to fetch trends");
@@ -947,7 +980,7 @@ function RiskReportPanel({ contentResult, historyData, promptResult }: {
   );
 }
 
-function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (result: FirewallResult | null) => void }) {
+function PromptProtectionPanel({ onFirewallResult, previewMode }: { onFirewallResult?: (result: FirewallResult | null) => void; previewMode?: boolean }) {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
   const [firewallResult, setFirewallResult] = useState<FirewallResult | null>(null);
@@ -956,6 +989,7 @@ function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (resul
 
   const analyzeMutation = useMutation({
     mutationFn: async (text: string) => {
+      if (previewMode) return null;
       const res = await fetch(`${API_BASE}/dev/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -966,14 +1000,17 @@ function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (resul
       return res.json() as Promise<FirewallResult>;
     },
     onSuccess: (data) => {
-      setFirewallResult(data);
-      setSanitizedResult(null);
-      onFirewallResult?.(data);
+      if (data) {
+        setFirewallResult(data);
+        setSanitizedResult(null);
+        onFirewallResult?.(data);
+      }
     },
   });
 
   const sanitizeMutation = useMutation({
     mutationFn: async (text: string) => {
+      if (previewMode) return null;
       const res = await fetch(`${API_BASE}/dev/sanitize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -984,7 +1021,7 @@ function PromptProtectionPanel({ onFirewallResult }: { onFirewallResult?: (resul
       return res.json() as Promise<SanitizeResult>;
     },
     onSuccess: (data) => {
-      setSanitizedResult(data);
+      if (data) setSanitizedResult(data);
     },
   });
 
@@ -1384,9 +1421,9 @@ export default function PersonalMode({
           </div>
         </motion.div>
 
-        <AlertsPanel onUpgrade={onUpgrade} />
+        <AlertsPanel onUpgrade={onUpgrade} previewMode={previewMode} />
 
-        <PromptProtectionPanel onFirewallResult={setLatestPromptResult} />
+        <PromptProtectionPanel onFirewallResult={setLatestPromptResult} previewMode={previewMode} />
 
         <RiskReportPanel contentResult={result} historyData={historyQuery.data} promptResult={latestPromptResult} />
 
@@ -1552,7 +1589,7 @@ export default function PersonalMode({
               )}
 
               {result.flags.length > 0 && (
-                <RewritePanel text={analysisText} flags={result.flags} onUpgrade={onUpgrade} />
+                <RewritePanel text={analysisText} flags={result.flags} onUpgrade={onUpgrade} previewMode={previewMode} />
               )}
 
               {result.suggestions.length > 0 && (
@@ -1580,7 +1617,7 @@ export default function PersonalMode({
           )}
         </AnimatePresence>
 
-        <TrendsPanel onUpgrade={onUpgrade} />
+        <TrendsPanel onUpgrade={onUpgrade} previewMode={previewMode} />
 
         {historyQuery.data?.trend && historyQuery.data.trend.length >= 2 && (
           <motion.div
