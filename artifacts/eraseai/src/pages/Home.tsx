@@ -110,7 +110,7 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
             ? "bg-destructive/10 border-destructive/30 text-destructive"
             : trialDays <= 2
               ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
-              : "bg-primary/10 border-primary/30 text-primary"
+              : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
         }`}>
           <Clock className="w-3 h-3" />
           {trialDays === 0 ? t("trial.expiredShort") : t("trial.daysLeftShort", { count: trialDays })}
