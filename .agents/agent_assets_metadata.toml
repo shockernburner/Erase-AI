@@ -18,6 +18,24 @@ uri = "file://EraseAI_Project_Hero.png"
 type = "image"
 title = "EraseAI hero shield image"
 
+[[generated]]
+id = "TVe5B_Oiyny4Qip9QdXWM"
+uri = "file://attached_assets/eraseai_thumbnail_v1.png"
+type = "image"
+title = "EraseAI dark shield thumbnail"
+
+[[generated]]
+id = "xaP3fVaCgmWkHHMy1LyCe"
+uri = "file://attached_assets/eraseai_thumbnail_v2.png"
+type = "image"
+title = "EraseAI purple shield thumbnail"
+
+[[generated]]
+id = "0QcwP6sX1WkZb7c6kHpOT"
+uri = "file://attached_assets/eraseai_thumbnail_v3.png"
+type = "image"
+title = "EraseAI light clean thumbnail"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -65,3 +83,21 @@ id = "VRxAcjCrsz3r1EpHYHfbM"
 uri = "file://EraseAI_Project_Hero.png"
 type = "image"
 title = "EraseAI Project Hero Image"
+
+[[outputs]]
+id = "a-R6M0jLix0o5kLkzq9zH"
+uri = "file://attached_assets/eraseai_thumbnail_v1.png"
+type = "image"
+title = "Option 1: Dark Shield (Navy/Teal)"
+
+[[outputs]]
+id = "6o_FJMiqTZHKXNoZgmXDZ"
+uri = "file://attached_assets/eraseai_thumbnail_v2.png"
+type = "image"
+title = "Option 2: Purple Shield (Purple/Blue)"
+
+[[outputs]]
+id = "geOcFAKBQnDeWQh6RtCsO"
+uri = "file://attached_assets/eraseai_thumbnail_v3.png"
+type = "image"
+title = "Option 3: Light Clean (White/Blue)"
