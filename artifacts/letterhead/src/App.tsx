@@ -170,11 +170,43 @@ function Letterhead() {
   );
 }
 
+function LetterheadClean() {
+  return (
+    <div style={{ background: "#fff", width: "210mm", minHeight: "297mm", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+      <div style={{ height: 6, background: "linear-gradient(90deg, #162a47 0%, #162a47 60%, #28a868 60%, #28a868 100%)" }} />
+      <div style={{ padding: "28px 48px 20px 48px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1.5px solid #e2e6ec" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Vantward Solutions" style={{ height: 62, width: "auto", objectFit: "contain" }} />
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#162a47", letterSpacing: "1.5px", lineHeight: 1.15, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>VANTWARD SOLUTIONS</div>
+            <div style={{ fontSize: 11, color: "#28a868", letterSpacing: "3px", fontWeight: 500, marginTop: 2, fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>PTE. LTD.</div>
+          </div>
+        </div>
+        <div style={{ textAlign: "right", fontSize: 10, color: "#555", lineHeight: 1.7, fontFamily: "'Inter', 'Helvetica Neue', sans-serif", paddingTop: 8 }}>
+          <div>68 Circular Road, #02-01</div>
+          <div>Singapore 049422</div>
+          <div style={{ marginTop: 4 }}><span style={{ color: "#162a47", fontWeight: 600 }}>W</span> +852 9057 6851</div>
+          <div><span style={{ color: "#162a47", fontWeight: 600 }}>E</span> director@vantward.com</div>
+          <div style={{ marginTop: 4, color: "#999", fontSize: 9 }}>Reg. No. 202606980C</div>
+        </div>
+      </div>
+      <div style={{ flex: 1 }} />
+      <div style={{ borderTop: "1px solid #e2e6ec", padding: "14px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 9, color: "#999", fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
+        <span>Vantward Solutions Pte. Ltd. | Reg. No. 202606980C</span>
+        <span>68 Circular Road, #02-01, Singapore 049422</span>
+        <span>director@vantward.com</span>
+      </div>
+      <div style={{ height: 5, background: "linear-gradient(90deg, #28a868 0%, #28a868 40%, #162a47 40%, #162a47 100%)" }} />
+    </div>
+  );
+}
+
 function App() {
   return (
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Switch>
         <Route path="/" component={Letterhead} />
+        <Route path="/clean" component={LetterheadClean} />
         <Route path="/pitch-akij" component={PitchAkij} />
         <Route>
           <div style={{ padding: 40, textAlign: "center" }}>Page not found</div>

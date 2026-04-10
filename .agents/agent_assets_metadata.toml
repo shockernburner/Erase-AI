@@ -125,3 +125,15 @@ id = "URwqqBqo1oAsQLvvy4dYv"
 uri = "file://attached_assets/eraseai_linkedin_post.md"
 type = "text"
 title = "LinkedIn Post — \"Tell Your Network\" Blurb"
+
+[[outputs]]
+id = "-58n82cyVYfHpLJ49vJcM"
+uri = "file://outputs/vantward-letterhead.jpg"
+type = "image"
+title = "Vantward Solutions Letterhead (Image)"
+
+[[outputs]]
+id = "taJw0DAxLyQdEgz1aiA6O"
+uri = "file://outputs/akij-pitch-letter.md"
+type = "text"
+title = "Akij Ventures Pitch Letter (Markdown)"
