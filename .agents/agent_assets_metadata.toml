@@ -36,6 +36,12 @@ uri = "file://attached_assets/eraseai_thumbnail_v3.png"
 type = "image"
 title = "EraseAI light clean thumbnail"
 
+[[generated]]
+id = "g81ZXiWfSz96MSLal7zzr"
+uri = "file://attached_assets/eraseai_linkedin_cover.png"
+type = "image"
+title = "EraseAI LinkedIn cover"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -101,3 +107,15 @@ id = "geOcFAKBQnDeWQh6RtCsO"
 uri = "file://attached_assets/eraseai_thumbnail_v3.png"
 type = "image"
 title = "Option 3: Light Clean (White/Blue)"
+
+[[outputs]]
+id = "5Rwifi_O3Gc54-WdrYQPv"
+uri = "file://attached_assets/eraseai_linkedin_cover.png"
+type = "image"
+title = "EraseAI LinkedIn Article Cover Image"
+
+[[outputs]]
+id = "rYnKGW9dw6VlGRE1csLLh"
+uri = "file://attached_assets/eraseai_linkedin_article.md"
+type = "text"
+title = "EraseAI LinkedIn Article — Full Text"
