@@ -158,7 +158,10 @@
     "demoRewritten": "書き換え投稿",
     "demoRiskScore": "平均リスクスコア",
     "signUpToUnlock": "サインアップして全機能にアクセス",
-    "contactUs": "お問い合わせ"
+    "contactUs": "お問い合わせ",
+    "scansPerformed": "スキャン実行数",
+    "usersProtected": "保護されたユーザー",
+    "uptime": "稼働率"
   },
   "home": {
     "userInitial": "ユ",

@@ -158,7 +158,10 @@
     "demoRewritten": "重写帖子",
     "demoRiskScore": "平均风险分数",
     "signUpToUnlock": "注册以解锁完整访问",
-    "contactUs": "联系我们"
+    "contactUs": "联系我们",
+    "scansPerformed": "扫描次数",
+    "usersProtected": "受保护用户",
+    "uptime": "正常运行时间"
   },
   "home": {
     "userInitial": "用",

@@ -47,6 +47,24 @@ router.post("/track-visit", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/public/stats", async (_req: Request, res: Response) => {
+  try {
+    const [scanResult, [users]] = await Promise.all([
+      db.execute(sql`SELECT (SELECT count(*) FROM personal_scans) + (SELECT count(*) FROM dev_scans) AS total`),
+      db.select({ total: count() }).from(usersTable),
+    ]);
+    const scanRows = scanResult.rows ?? scanResult;
+    const totalScans = Number(Array.isArray(scanRows) && scanRows[0] ? scanRows[0].total : 0) || 0;
+    res.json({
+      totalScans,
+      totalUsers: users.total,
+    });
+  } catch (err) {
+    console.error("Public stats error:", err);
+    res.json({ totalScans: 0, totalUsers: 0 });
+  }
+});
+
 router.get("/admin/stats", async (req: Request, res: Response) => {
   try {
     if (!requireAdmin(req, res)) return;

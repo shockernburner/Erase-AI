@@ -158,7 +158,10 @@
     "demoRewritten": "Posts Rewritten",
     "demoRiskScore": "Avg Risk Score",
     "signUpToUnlock": "Sign up to unlock full access",
-    "contactUs": "Contact Us"
+    "contactUs": "Contact Us",
+    "scansPerformed": "Scans Performed",
+    "usersProtected": "Users Protected",
+    "uptime": "Uptime"
   },
   "home": {
     "userInitial": "U",

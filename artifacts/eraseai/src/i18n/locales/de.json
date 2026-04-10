@@ -158,7 +158,10 @@
     "demoRewritten": "Umgeschriebene Beiträge",
     "demoRiskScore": "Durchschn. Risiko-Score",
     "signUpToUnlock": "Registrieren für vollen Zugang",
-    "contactUs": "Kontaktieren Sie uns"
+    "contactUs": "Kontaktieren Sie uns",
+    "scansPerformed": "Durchgeführte Scans",
+    "usersProtected": "Geschützte Nutzer",
+    "uptime": "Verfügbarkeit"
   },
   "home": {
     "userInitial": "B",

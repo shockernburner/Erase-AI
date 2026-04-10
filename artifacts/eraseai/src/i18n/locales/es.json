@@ -158,7 +158,10 @@
     "demoRewritten": "Publicaciones reescritas",
     "demoRiskScore": "Puntuación de riesgo promedio",
     "signUpToUnlock": "Regístrate para acceso completo",
-    "contactUs": "Contáctanos"
+    "contactUs": "Contáctanos",
+    "scansPerformed": "Escaneos Realizados",
+    "usersProtected": "Usuarios Protegidos",
+    "uptime": "Disponibilidad"
   },
   "home": {
     "userInitial": "U",

@@ -16,17 +16,47 @@ import {
   LogIn,
   Volume2,
   VolumeX,
+  ScanSearch,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import AuthForm from "@/components/AuthForm";
 
 const VIDEO_SEEN_KEY = "eraseai_video_seen";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
+function AnimatedNumber({ value }: { value: number }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    if (value === 0) return;
+    const duration = 1200;
+    const start = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.floor(eased * value));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [value]);
+  return <>{display.toLocaleString()}</>;
+}
 
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const { t } = useTranslation();
+  const [stats, setStats] = useState({ totalScans: 0, totalUsers: 0 });
+
+  useEffect(() => {
+    fetch(`${API_BASE}/public/stats`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setStats(d))
+      .catch(() => {});
+  }, []);
+
   const [videoFinished, setVideoFinished] = useState(() => {
     try { return typeof window !== "undefined" && localStorage.getItem(VIDEO_SEEN_KEY) === "1"; }
     catch { return false; }
@@ -208,6 +238,47 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
             </motion.header>
 
             <div className="max-w-5xl mx-auto px-4 pt-8 pb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mb-10 py-4 px-6 rounded-2xl border border-border/20 bg-card/30 backdrop-blur-sm"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <ScanSearch className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-foreground leading-none">
+                      <AnimatedNumber value={stats.totalScans} />
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.scansPerformed")}</p>
+                  </div>
+                </div>
+                <div className="w-px h-8 bg-border/30 hidden sm:block" />
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-foreground leading-none">
+                      <AnimatedNumber value={stats.totalUsers} />
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.usersProtected")}</p>
+                  </div>
+                </div>
+                <div className="w-px h-8 bg-border/30 hidden sm:block" />
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-violet-500/10">
+                    <ShieldCheck className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-foreground leading-none">99.9%</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.uptime")}</p>
+                  </div>
+                </div>
+              </motion.div>
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
