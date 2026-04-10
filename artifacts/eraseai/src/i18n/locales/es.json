@@ -122,7 +122,7 @@
     "contactWhatsapp": "WhatsApp",
     "contactEmail": "Correo electrónico",
     "contactWhatsappNumber": "+852 9057 6851",
-    "contactEmailAddress": "director@futureonward.com",
+    "contactEmailAddress": "director@vantward.com",
     "skip": "Omitir",
     "whatBringsYou": "¿Qué te trae por aquí?",
     "tryOnce": "Prueba cualquier modo — sin necesidad de cuenta",
@@ -159,8 +159,8 @@
     "demoRiskScore": "Puntuación de riesgo promedio",
     "signUpToUnlock": "Regístrate para acceso completo",
     "contactUs": "Contáctanos",
-    "scansPerformed": "Escaneos Realizados",
-    "usersProtected": "Usuarios Protegidos",
+    "rowsSanitized": "Filas Sanitizadas",
+    "postsCleaned": "Posts Limpiados",
     "uptime": "Disponibilidad"
   },
   "home": {

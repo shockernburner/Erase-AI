@@ -122,7 +122,7 @@
     "contactWhatsapp": "WhatsApp",
     "contactEmail": "メール",
     "contactWhatsappNumber": "+852 9057 6851",
-    "contactEmailAddress": "director@futureonward.com",
+    "contactEmailAddress": "director@vantward.com",
     "skip": "スキップ",
     "whatBringsYou": "どのようなご用件ですか？",
     "tryOnce": "どのモードも一度お試し — アカウント不要",
@@ -159,8 +159,8 @@
     "demoRiskScore": "平均リスクスコア",
     "signUpToUnlock": "サインアップして全機能にアクセス",
     "contactUs": "お問い合わせ",
-    "scansPerformed": "スキャン実行数",
-    "usersProtected": "保護されたユーザー",
+    "rowsSanitized": "サニタイズ済み行数",
+    "postsCleaned": "クリーニング済み投稿",
     "uptime": "稼働率"
   },
   "home": {

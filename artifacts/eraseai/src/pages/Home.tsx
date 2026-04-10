@@ -707,13 +707,13 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               </div>
             </a>
             <a
-              href="mailto:director@futureonward.com"
+              href="mailto:director@vantward.com"
               className="flex items-center gap-3 px-6 py-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all"
             >
               <Mail className="w-6 h-6 text-primary" />
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">Email</p>
-                <p className="text-sm font-semibold text-foreground">director@futureonward.com</p>
+                <p className="text-sm font-semibold text-foreground">director@vantward.com</p>
               </div>
             </a>
           </div>

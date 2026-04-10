@@ -67,11 +67,11 @@ export function SeoFooter() {
                 +852 9057 6851
               </a>
               <a
-                href="mailto:director@futureonward.com"
+                href="mailto:director@vantward.com"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 <Mail className="w-4 h-4 text-primary" />
-                director@futureonward.com
+                director@vantward.com
               </a>
             </div>
           </div>

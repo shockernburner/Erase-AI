@@ -121,7 +121,7 @@
     "contactWhatsapp": "WhatsApp",
     "contactEmail": "Email",
     "contactWhatsappNumber": "+852 9057 6851",
-    "contactEmailAddress": "director@futureonward.com",
+    "contactEmailAddress": "director@vantward.com",
     "finalTagline": "Make AI forget. Make AI fair. Make AI yours.",
     "skip": "Skip",
     "whatBringsYou": "What brings you here?",
@@ -159,8 +159,8 @@
     "demoRiskScore": "Avg Risk Score",
     "signUpToUnlock": "Sign up to unlock full access",
     "contactUs": "Contact Us",
-    "scansPerformed": "Scans Performed",
-    "usersProtected": "Users Protected",
+    "rowsSanitized": "Rows Sanitized",
+    "postsCleaned": "Posts Cleaned",
     "uptime": "Uptime"
   },
   "home": {

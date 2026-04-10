@@ -49,19 +49,18 @@ router.post("/track-visit", async (req: Request, res: Response) => {
 
 router.get("/public/stats", async (_req: Request, res: Response) => {
   try {
-    const [scanResult, [users]] = await Promise.all([
-      db.execute(sql`SELECT (SELECT count(*) FROM personal_scans) + (SELECT count(*) FROM dev_scans) AS total`),
-      db.select({ total: count() }).from(usersTable),
+    const [sanitizedResult, cleanedResult] = await Promise.all([
+      db.execute(sql`SELECT COALESCE(SUM(CASE WHEN sanitized_text IS NOT NULL AND sanitized_text <> '' THEN 1 ELSE 0 END), 0) AS total FROM dev_scans`),
+      db.execute(sql`SELECT count(*) AS total FROM personal_scans`),
     ]);
-    const scanRows = scanResult.rows ?? scanResult;
-    const totalScans = Number(Array.isArray(scanRows) && scanRows[0] ? scanRows[0].total : 0) || 0;
-    res.json({
-      totalScans,
-      totalUsers: users.total,
-    });
+    const sanitizedRows = sanitizedResult.rows ?? sanitizedResult;
+    const cleanedRows = cleanedResult.rows ?? cleanedResult;
+    const rowsSanitized = Number(Array.isArray(sanitizedRows) && sanitizedRows[0] ? sanitizedRows[0].total : 0) || 0;
+    const postsCleaned = Number(Array.isArray(cleanedRows) && cleanedRows[0] ? cleanedRows[0].total : 0) || 0;
+    res.json({ rowsSanitized, postsCleaned });
   } catch (err) {
     console.error("Public stats error:", err);
-    res.json({ totalScans: 0, totalUsers: 0 });
+    res.json({ rowsSanitized: 0, postsCleaned: 0 });
   }
 });
 

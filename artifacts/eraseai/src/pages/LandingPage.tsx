@@ -471,7 +471,7 @@ export default function LandingPage({
               </div>
             </a>
             <a
-              href="mailto:director@futureonward.com"
+              href="mailto:director@vantward.com"
               className="flex items-center gap-3 px-6 py-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all"
             >
               <Mail className="w-6 h-6 text-primary" />

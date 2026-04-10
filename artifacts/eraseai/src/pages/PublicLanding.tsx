@@ -16,8 +16,8 @@ import {
   LogIn,
   Volume2,
   VolumeX,
-  ScanSearch,
-  Users,
+  Database,
+  FileCheck,
   ShieldCheck,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -48,7 +48,7 @@ type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const { t } = useTranslation();
-  const [stats, setStats] = useState({ totalScans: 0, totalUsers: 0 });
+  const [stats, setStats] = useState({ rowsSanitized: 0, postsCleaned: 0 });
 
   useEffect(() => {
     fetch(`${API_BASE}/public/stats`, { credentials: "include" })
@@ -246,25 +246,25 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               >
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 rounded-lg bg-primary/10">
-                    <ScanSearch className="w-4 h-4 text-primary" />
+                    <Database className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xl font-bold text-foreground leading-none">
-                      <AnimatedNumber value={stats.totalScans} />
+                      <AnimatedNumber value={stats.rowsSanitized} />
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.scansPerformed")}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.rowsSanitized")}</p>
                   </div>
                 </div>
                 <div className="w-px h-8 bg-border/30 hidden sm:block" />
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                    <Users className="w-4 h-4 text-emerald-400" />
+                    <FileCheck className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div>
                     <p className="text-xl font-bold text-foreground leading-none">
-                      <AnimatedNumber value={stats.totalUsers} />
+                      <AnimatedNumber value={stats.postsCleaned} />
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.usersProtected")}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.postsCleaned")}</p>
                   </div>
                 </div>
                 <div className="w-px h-8 bg-border/30 hidden sm:block" />
@@ -400,11 +400,11 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                     +852 9057 6851
                   </a>
                   <a
-                    href="mailto:director@futureonward.com"
+                    href="mailto:director@vantward.com"
                     className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     <Mail className="w-4 h-4 text-primary" />
-                    director@futureonward.com
+                    director@vantward.com
                   </a>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/60">

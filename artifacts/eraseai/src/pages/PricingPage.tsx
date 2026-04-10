@@ -493,13 +493,13 @@ export default function PricingPage({ onBack }: PricingPageProps) {
               </p>
               <div className="space-y-3 mb-6">
                 <a
-                  href="mailto:director@futureonward.com"
+                  href="mailto:director@vantward.com"
                   className="flex items-center gap-3 bg-muted/20 rounded-xl p-4 border border-border/30 hover:bg-muted/30 transition-colors"
                 >
                   <Mail className="w-5 h-5 text-primary shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground mb-0.5">{t("admin.email")}</p>
-                    <p className="text-sm font-mono text-foreground">director@futureonward.com</p>
+                    <p className="text-sm font-mono text-foreground">director@vantward.com</p>
                   </div>
                 </a>
                 <a

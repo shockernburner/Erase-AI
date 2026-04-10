@@ -16,6 +16,6 @@ Slides (9 total):
 6. Developer Tools — SDK, dataset sanitizer (250K rows), API keys, webhooks, ML feedback
 7. Pricing — Free/$5/$49/$149/Enterprise with full feature comparison
 8. Trust & Tech Stack — SOC 2, ISO 27001, ISO 42001, GDPR + TypeScript, React, Express, PostgreSQL
-9. Closing — Full feature list, contact info (director@futureonward.com, eraseai.ai)
+9. Closing — Full feature list, contact info (director@vantward.com, eraseai.ai)
 
 Verification: Pitch deck confirmed live and accessible (HTTP 200, all 9 slides rendering correctly).
