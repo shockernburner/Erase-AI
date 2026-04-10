@@ -219,7 +219,17 @@
   "trial": {
     "expired": "Essai expiré",
     "daysLeft": "{{count}} jour restant",
-    "daysLeft_other": "{{count}} jours restants"
+    "daysLeft_other": "{{count}} jours restants",
+    "daysLeftShort": "{{count}}j restant",
+    "expiredShort": "Expiré",
+    "upgradeNow": "Mettre à niveau",
+    "expiredModalTitle": "Votre essai gratuit est terminé",
+    "expiredModalDesc": "Votre essai gratuit de 7 jours a expiré. Abonnez-vous à un plan pour continuer à utiliser toutes les fonctionnalités d'EraseAI.",
+    "expiredModalCta": "Choisir un plan",
+    "expiredModalLogout": "Se déconnecter",
+    "freeTrialBadge": "Essai gratuit de 7 jours inclus",
+    "startFreeTrialCta": "Commencez avec 7 jours gratuits",
+    "heroTrialCallout": "Démarrez votre essai gratuit de 7 jours — sans carte bancaire"
   },
   "plan": {
     "free": "GRATUIT",

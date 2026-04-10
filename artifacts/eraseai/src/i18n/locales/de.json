@@ -219,7 +219,17 @@
   "trial": {
     "expired": "Testphase abgelaufen",
     "daysLeft": "{{count}} Tag verbleibend",
-    "daysLeft_other": "{{count}} Tage verbleibend"
+    "daysLeft_other": "{{count}} Tage verbleibend",
+    "daysLeftShort": "{{count}}T übrig",
+    "expiredShort": "Abgelaufen",
+    "upgradeNow": "Jetzt upgraden",
+    "expiredModalTitle": "Ihre Testphase ist beendet",
+    "expiredModalDesc": "Ihre 7-tägige Testphase ist abgelaufen. Abonnieren Sie einen Plan, um EraseAI weiterhin nutzen zu können.",
+    "expiredModalCta": "Plan wählen",
+    "expiredModalLogout": "Abmelden",
+    "freeTrialBadge": "7-Tage-Testversion inklusive",
+    "startFreeTrialCta": "7 Tage kostenlos starten",
+    "heroTrialCallout": "Starten Sie Ihre 7-tägige Testversion — keine Kreditkarte erforderlich"
   },
   "plan": {
     "free": "KOSTENLOS",

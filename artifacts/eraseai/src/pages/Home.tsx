@@ -103,7 +103,19 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || t("home.userFallback");
 
   return (
-    <div className="relative">
+    <div className="relative flex items-center gap-2">
+      {trialDays !== null && (
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+          trialDays === 0
+            ? "bg-destructive/10 border-destructive/30 text-destructive"
+            : trialDays <= 2
+              ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+              : "bg-primary/10 border-primary/30 text-primary"
+        }`}>
+          <Clock className="w-3 h-3" />
+          {trialDays === 0 ? t("trial.expiredShort") : t("trial.daysLeftShort", { count: trialDays })}
+        </div>
+      )}
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 bg-card/50 backdrop-blur-md hover:bg-muted/40 transition-all"

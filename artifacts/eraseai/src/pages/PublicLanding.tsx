@@ -288,9 +288,13 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-3">
                   {t("landing.whatBringsYou")}
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground mb-3">
                   {t("landing.tryOnce")}
                 </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-semibold">
+                  <ShieldCheck className="w-4 h-4" />
+                  {t("trial.heroTrialCallout")}
+                </div>
               </motion.div>
 
               <motion.div

@@ -18,10 +18,86 @@ import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
-import { ArrowLeft, Loader2, ShieldX, Globe } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { motion } from "framer-motion";
+
+function isTrialExpiredFrontend(user: { planType?: string; planEndDate?: string | null; role?: string } | null): boolean {
+  if (!user) return false;
+  const plan = user.planType || "free";
+  if (plan !== "free") return false;
+  if (user.role === "admin") return false;
+  if (!user.planEndDate) return false;
+  return new Date(user.planEndDate) < new Date();
+}
+
+function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => void; onLogout: () => void }) {
+  const { t } = useTranslation();
+
+  const plans = [
+    { id: "personal", name: "Personal", price: "$5", icon: <Shield className="w-5 h-5" />, color: "emerald" },
+    { id: "pro", name: "Pro", price: "$49", icon: <Crown className="w-5 h-5" />, color: "cyan" },
+    { id: "business", name: "Business", price: "$149", icon: <Briefcase className="w-5 h-5" />, color: "violet" },
+    { id: "enterprise", name: "Enterprise", price: "Custom", icon: <Building2 className="w-5 h-5" />, color: "amber" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="bg-card border border-border rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl text-center"
+      >
+        <div className="bg-destructive/10 p-3 rounded-full w-fit mx-auto mb-4">
+          <ShieldX className="w-8 h-8 text-destructive" />
+        </div>
+        <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+          {t("trial.expiredModalTitle")}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          {t("trial.expiredModalDesc")}
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {plans.map((p) => (
+            <div
+              key={p.id}
+              className={`rounded-xl border border-border/50 bg-muted/10 p-3 text-left`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-muted-foreground">{p.icon}</span>
+                <span className="text-sm font-semibold text-foreground">{p.name}</span>
+              </div>
+              <span className="text-lg font-bold text-foreground">{p.price}</span>
+              {p.price !== "Custom" && <span className="text-xs text-muted-foreground">/mo</span>}
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={onChoosePlan}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-cyan-400 text-black font-bold text-sm hover:from-primary/90 hover:to-cyan-400/90 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] mb-3"
+        >
+          <Crown className="w-4 h-4 inline mr-2" />
+          {t("trial.expiredModalCta")}
+        </button>
+        <button
+          onClick={onLogout}
+          className="w-full py-2.5 rounded-xl border border-border/50 text-sm text-muted-foreground hover:bg-muted/20 transition-all flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          {t("trial.expiredModalLogout")}
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 const AiFirewallPage = lazy(() => import("@/pages/seo/AiFirewallPage"));
 const ChatgptDataLeakPage = lazy(() => import("@/pages/seo/ChatgptDataLeakPage"));
@@ -137,7 +213,7 @@ function getDefaultViewForPlan(planType: string | undefined): AppView {
 
 function AuthGate() {
   const { t } = useTranslation();
-  const { isLoading, isAuthenticated, user } = useAuth();
+  const { isLoading, isAuthenticated, user, logout } = useAuth();
   const [previewMode, setPreviewMode] = useState<PreviewMode>(null);
   const [view, setView] = useState<AppView>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -189,6 +265,8 @@ function AuthGate() {
     return <PublicLanding onPreview={setPreviewMode} />;
   }
 
+  const trialExpired = isTrialExpiredFrontend(user);
+
   if (view === "admin" && user?.role !== "admin") {
     return <Home onNavigate={setView} />;
   }
@@ -199,6 +277,15 @@ function AuthGate() {
 
   if (view === "pricing") {
     return <PricingPage onBack={() => setView("home")} />;
+  }
+
+  if (trialExpired) {
+    return (
+      <>
+        <Home onNavigate={setView} />
+        <TrialExpiredModal onChoosePlan={() => setView("pricing")} onLogout={logout} />
+      </>
+    );
   }
 
   if (view === "admin") {
