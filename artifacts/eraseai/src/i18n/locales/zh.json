@@ -159,8 +159,8 @@
     "demoRiskScore": "平均风险分数",
     "signUpToUnlock": "注册以解锁完整访问",
     "contactUs": "联系我们",
-    "rowsSanitized": "已清洗行数",
-    "postsCleaned": "已清理帖子",
+    "dataPointsScanned": "已扫描数据点",
+    "threatsDetected": "已检测威胁",
     "uptime": "正常运行时间"
   },
   "home": {

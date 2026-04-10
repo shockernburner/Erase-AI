@@ -49,18 +49,18 @@ router.post("/track-visit", async (req: Request, res: Response) => {
 
 router.get("/public/stats", async (_req: Request, res: Response) => {
   try {
-    const [sanitizedResult, cleanedResult] = await Promise.all([
-      db.execute(sql`SELECT COALESCE(SUM(CASE WHEN sanitized_text IS NOT NULL AND sanitized_text <> '' THEN 1 ELSE 0 END), 0) AS total FROM dev_scans`),
-      db.execute(sql`SELECT count(*) AS total FROM personal_scans`),
+    const [scannedResult, threatsResult] = await Promise.all([
+      db.execute(sql`SELECT (SELECT count(*) FROM dataset_rows) + (SELECT count(*) FROM personal_scans) + (SELECT count(*) FROM dev_scans) AS total`),
+      db.execute(sql`SELECT count(*) AS total FROM analysis_results`),
     ]);
-    const sanitizedRows = sanitizedResult.rows ?? sanitizedResult;
-    const cleanedRows = cleanedResult.rows ?? cleanedResult;
-    const rowsSanitized = Number(Array.isArray(sanitizedRows) && sanitizedRows[0] ? sanitizedRows[0].total : 0) || 0;
-    const postsCleaned = Number(Array.isArray(cleanedRows) && cleanedRows[0] ? cleanedRows[0].total : 0) || 0;
-    res.json({ rowsSanitized, postsCleaned });
+    const scannedRows = scannedResult.rows ?? scannedResult;
+    const threatsRows = threatsResult.rows ?? threatsResult;
+    const dataPointsScanned = Number(Array.isArray(scannedRows) && scannedRows[0] ? scannedRows[0].total : 0) || 0;
+    const threatsDetected = Number(Array.isArray(threatsRows) && threatsRows[0] ? threatsRows[0].total : 0) || 0;
+    res.json({ dataPointsScanned, threatsDetected });
   } catch (err) {
     console.error("Public stats error:", err);
-    res.json({ rowsSanitized: 0, postsCleaned: 0 });
+    res.json({ dataPointsScanned: 0, threatsDetected: 0 });
   }
 });
 

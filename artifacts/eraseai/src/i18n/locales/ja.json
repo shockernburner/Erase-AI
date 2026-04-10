@@ -159,8 +159,8 @@
     "demoRiskScore": "平均リスクスコア",
     "signUpToUnlock": "サインアップして全機能にアクセス",
     "contactUs": "お問い合わせ",
-    "rowsSanitized": "サニタイズ済み行数",
-    "postsCleaned": "クリーニング済み投稿",
+    "dataPointsScanned": "スキャン済みデータポイント",
+    "threatsDetected": "検出された脅威",
     "uptime": "稼働率"
   },
   "home": {

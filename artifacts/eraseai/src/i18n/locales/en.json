@@ -159,8 +159,8 @@
     "demoRiskScore": "Avg Risk Score",
     "signUpToUnlock": "Sign up to unlock full access",
     "contactUs": "Contact Us",
-    "rowsSanitized": "Rows Sanitized",
-    "postsCleaned": "Posts Cleaned",
+    "dataPointsScanned": "Data Points Scanned",
+    "threatsDetected": "Threats Detected",
     "uptime": "Uptime"
   },
   "home": {

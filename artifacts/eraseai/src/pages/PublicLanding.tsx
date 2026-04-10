@@ -16,8 +16,8 @@ import {
   LogIn,
   Volume2,
   VolumeX,
-  Database,
-  FileCheck,
+  ScanSearch,
+  ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -48,7 +48,7 @@ type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const { t } = useTranslation();
-  const [stats, setStats] = useState({ rowsSanitized: 0, postsCleaned: 0 });
+  const [stats, setStats] = useState({ dataPointsScanned: 0, threatsDetected: 0 });
 
   useEffect(() => {
     fetch(`${API_BASE}/public/stats`, { credentials: "include" })
@@ -246,25 +246,25 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               >
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 rounded-lg bg-primary/10">
-                    <Database className="w-4 h-4 text-primary" />
+                    <ScanSearch className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xl font-bold text-foreground leading-none">
-                      <AnimatedNumber value={stats.rowsSanitized} />
+                      <AnimatedNumber value={stats.dataPointsScanned} />
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.rowsSanitized")}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.dataPointsScanned")}</p>
                   </div>
                 </div>
                 <div className="w-px h-8 bg-border/30 hidden sm:block" />
                 <div className="flex items-center gap-2.5">
                   <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                    <FileCheck className="w-4 h-4 text-emerald-400" />
+                    <ShieldAlert className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div>
                     <p className="text-xl font-bold text-foreground leading-none">
-                      <AnimatedNumber value={stats.postsCleaned} />
+                      <AnimatedNumber value={stats.threatsDetected} />
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.postsCleaned")}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("landing.threatsDetected")}</p>
                   </div>
                 </div>
                 <div className="w-px h-8 bg-border/30 hidden sm:block" />

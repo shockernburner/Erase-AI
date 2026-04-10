@@ -159,8 +159,8 @@
     "demoRiskScore": "Score de risque moyen",
     "signUpToUnlock": "Inscrivez-vous pour un accès complet",
     "contactUs": "Contactez-nous",
-    "rowsSanitized": "Lignes Assainies",
-    "postsCleaned": "Posts Nettoyés",
+    "dataPointsScanned": "Points de Données Analysés",
+    "threatsDetected": "Menaces Détectées",
     "uptime": "Disponibilité"
   },
   "home": {
