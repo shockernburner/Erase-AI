@@ -78,7 +78,7 @@ export function SeoFooter() {
         </div>
         <div className="border-t border-border/20 pt-6 text-center">
           <p className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} EraseAI by FutureOnward. All rights reserved.
+            &copy; {new Date().getFullYear()} EraseAI &mdash; A product of Vantward Solutions Pte. Ltd. | 68 Circular Road #02-01, Singapore 049422 | Reg. No. 202606980C
           </p>
         </div>
       </div>
