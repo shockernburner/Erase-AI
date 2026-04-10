@@ -348,47 +348,57 @@ function PitchAkij() {
           </p>
 
           <p style={{ marginBottom: 14 }}>
-            <strong>EraseAI addresses these risks through three core capabilities:</strong>
+            <strong>EraseAI addresses these risks through four core capabilities:</strong>
           </p>
 
           <div style={{ paddingLeft: 20, marginBottom: 14 }}>
             <p style={{ marginBottom: 8 }}>
-              <strong>1. Real-Time Prompt Scanning &amp; Threat Detection</strong> — Every prompt
-              submitted to your AI systems is scanned in real time for PII, financial data, trade
-              secrets, and sensitive patterns before it reaches the model. Threats are flagged and
-              blocked instantly.
+              <strong>1. AI Firewall Browser Extension</strong> — A lightweight browser extension
+              that integrates with ChatGPT, Google Gemini, Claude, and other major AI platforms,
+              scanning every prompt in real time for PII, financial data, trade secrets, and
+              API keys before they leave your organisation. Threats are flagged and blocked
+              instantly.
             </p>
             <p style={{ marginBottom: 8 }}>
-              <strong>2. Automatic Data Sanitisation</strong> — Detected sensitive information is
-              automatically redacted or anonymised, ensuring compliance with data protection
-              regulations including Bangladesh's forthcoming Digital Security frameworks and
+              <strong>2. API Integration &amp; Auto-Sanitisation</strong> — For internal tools and
+              custom AI workflows, EraseAI provides a REST API that intercepts and sanitises
+              prompts programmatically. Detected sensitive information is automatically redacted or
+              anonymised, ensuring compliance with Bangladesh's Digital Security Act and
               international standards (GDPR, PDPA).
             </p>
             <p style={{ marginBottom: 8 }}>
               <strong>3. Dataset Governance &amp; Machine Unlearning</strong> — For organisations
-              training proprietary models, EraseAI provides full dataset sanitisation and verified
-              machine unlearning — the ability to provably remove specific data from trained models
-              upon request.
+              training proprietary models, EraseAI provides full dataset sanitisation — scanning
+              for PII, bias, and toxic content — along with verified machine unlearning, the
+              ability to provably remove specific data from trained models upon request.
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>4. Real-Time Dashboards &amp; Compliance Reporting</strong> — Centralised
+              visibility across all AI interactions with threat analytics, usage tracking, and
+              audit-ready compliance reports for internal governance and regulatory submissions.
             </p>
           </div>
 
           <p style={{ marginBottom: 14 }}>
-            Our platform is cloud-native, deploys via API integration, and supports enterprise
-            single-tenant configurations for maximum security. Current traction includes{" "}
-            <strong>748+ data points scanned</strong> and real-time threat detection across active
-            deployments.
+            For a diversified conglomerate such as Akij Group, the exposure is considerable:
+            finance teams handling sensitive transactions, manufacturing divisions managing
+            proprietary formulations, and consumer goods units processing customer data — each
+            interacting with AI tools daily. EraseAI provides a unified security layer across all
+            divisions, with <strong>748+ data points scanned</strong> and real-time threat detection
+            across active deployments to date.
           </p>
 
           <p style={{ marginBottom: 14 }}>
-            We believe a strategic deployment of EraseAI across Akij Ventures' digital infrastructure
-            would position your group as a regional leader in responsible AI governance — a
-            competitive differentiator as regulatory scrutiny increases across South and Southeast
-            Asia.
+            We propose an <strong>enterprise pilot programme</strong> tailored to Akij Ventures,
+            including dedicated onboarding, priority support, and a custom deployment configured
+            for your security requirements. This would position your group as a regional leader
+            in responsible AI governance — a competitive differentiator as regulatory scrutiny
+            increases across South and Southeast Asia.
           </p>
 
           <p style={{ marginBottom: 14 }}>
-            I would welcome the opportunity to arrange a 30-minute virtual demonstration at your
-            convenience. Please feel free to reach me directly via the contact details above.
+            I would welcome the opportunity to arrange a demonstration or introductory meeting at
+            your convenience. Please feel free to reach me directly via the contact details above.
           </p>
 
           <p style={{ marginBottom: 28 }}>
