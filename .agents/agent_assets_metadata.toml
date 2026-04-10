@@ -119,3 +119,9 @@ id = "rYnKGW9dw6VlGRE1csLLh"
 uri = "file://attached_assets/eraseai_linkedin_article.md"
 type = "text"
 title = "EraseAI LinkedIn Article — Full Text"
+
+[[outputs]]
+id = "URwqqBqo1oAsQLvvy4dYv"
+uri = "file://attached_assets/eraseai_linkedin_post.md"
+type = "text"
+title = "LinkedIn Post — \"Tell Your Network\" Blurb"
