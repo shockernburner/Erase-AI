@@ -154,7 +154,7 @@ function Letterhead() {
             fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
           }}
         >
-          <span>Vantward Solutions Pte. Ltd.</span>
+          <span>Vantward Solutions Pte. Ltd. | Reg. No. 202606980C</span>
           <span>68 Circular Road, #02-01, Singapore 049422</span>
           <span>director@vantward.com</span>
         </div>
@@ -420,7 +420,7 @@ function PitchAkij() {
             fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
           }}
         >
-          <span>Vantward Solutions Pte. Ltd.</span>
+          <span>Vantward Solutions Pte. Ltd. | Reg. No. 202606980C</span>
           <span>68 Circular Road, #02-01, Singapore 049422</span>
           <span>director@vantward.com</span>
         </div>
