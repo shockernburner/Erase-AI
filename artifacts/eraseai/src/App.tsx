@@ -36,10 +36,10 @@ function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => voi
   const { t } = useTranslation();
 
   const plans = [
-    { id: "personal", name: "Personal", price: "$5", icon: <Shield className="w-5 h-5" />, color: "emerald" },
-    { id: "pro", name: "Pro", price: "$49", icon: <Crown className="w-5 h-5" />, color: "cyan" },
-    { id: "business", name: "Business", price: "$149", icon: <Briefcase className="w-5 h-5" />, color: "violet" },
-    { id: "enterprise", name: "Enterprise", price: "Custom", icon: <Building2 className="w-5 h-5" />, color: "amber" },
+    { id: "personal", nameKey: "plan.personal", price: "$5", icon: <Shield className="w-5 h-5" />, showUnit: true },
+    { id: "pro", nameKey: "plan.pro", price: "$49", icon: <Crown className="w-5 h-5" />, showUnit: true },
+    { id: "business", nameKey: "plan.business", price: "$149", icon: <Briefcase className="w-5 h-5" />, showUnit: true },
+    { id: "enterprise", nameKey: "plan.enterprise", price: "", icon: <Building2 className="w-5 h-5" />, showUnit: false },
   ];
 
   return (
@@ -72,10 +72,16 @@ function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => voi
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-muted-foreground">{p.icon}</span>
-                <span className="text-sm font-semibold text-foreground">{p.name}</span>
+                <span className="text-sm font-semibold text-foreground">{t(p.nameKey)}</span>
               </div>
-              <span className="text-lg font-bold text-foreground">{p.price}</span>
-              {p.price !== "Custom" && <span className="text-xs text-muted-foreground">/mo</span>}
+              {p.showUnit ? (
+                <>
+                  <span className="text-lg font-bold text-foreground">{p.price}</span>
+                  <span className="text-xs text-muted-foreground">{t("pricing.month")}</span>
+                </>
+              ) : (
+                <span className="text-lg font-bold text-foreground">{t("pricing.customPricing")}</span>
+              )}
             </div>
           ))}
         </div>

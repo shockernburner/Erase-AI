@@ -308,7 +308,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                       <span className="text-2xl font-bold text-foreground">{t("pricing.customPricing")}</span>
                     </div>
                   )}
-                  {tier.price > 0 && currentPlan === "free" && (
+                  {tier.price > 0 && (
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold">
                       <Calendar className="w-3 h-3" />
                       {t("trial.freeTrialBadge")}

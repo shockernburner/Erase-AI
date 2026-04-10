@@ -365,9 +365,15 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 <h3 className="text-center text-xl font-display font-bold text-foreground mb-2">
                   {t("landing.joinWhenYouWant")}
                 </h3>
-                <p className="text-center text-sm text-muted-foreground mb-6">
+                <p className="text-center text-sm text-muted-foreground mb-4">
                   {t("login.subtitle")}
                 </p>
+                <div className="text-center mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    {t("trial.startFreeTrialCta")}
+                  </span>
+                </div>
                 <AuthForm />
                 <p className="text-center text-xs text-muted-foreground/50 mt-4 font-mono">
                   {t("app.copyright")}
