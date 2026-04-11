@@ -959,7 +959,6 @@ eraseai.ai
 type TabId = "google" | "linkedin" | "viral";
 
 export default function AdContent({ onBack }: { onBack: () => void }) {
-  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("google");
 
   const tabs: { id: TabId; label: string; icon: React.ComponentType<LucideProps>; color: string; bgColor: string; borderColor: string }[] = [
