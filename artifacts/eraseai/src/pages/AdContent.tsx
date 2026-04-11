@@ -159,14 +159,14 @@ const GOOGLE_ADS = {
             "Block Sensitive Data Leaks",
           ],
           descriptions: [
-            "EraseAI scans every prompt before it reaches ChatGPT, Gemini, or Claude. 99% injection detection. Try free.",
-            "Stop employees from leaking passwords, API keys, and customer data to AI tools. Real-time firewall protection.",
-            "Samsung banned ChatGPT after source code leaks. EraseAI prevents this — scan, block, or rewrite in milliseconds.",
-            "Browser extension + REST API. Protect every AI interaction across your organization. Start your free trial today.",
+            "EraseAI scans prompts before they reach ChatGPT or Claude. 99% injection detection.",
+            "Stop employees leaking passwords and API keys to AI. Real-time firewall. Try free.",
+            "Samsung banned ChatGPT after code leaks. EraseAI prevents this. Start free today.",
+            "Browser extension + REST API. Protect every AI interaction. Free trial at eraseai.ai.",
           ],
           descriptionsB: [
-            "Your team pasted 847 passwords into ChatGPT last month. EraseAI catches it before it's sent. 99% detection rate.",
-            "AI Firewall blocks PII, credentials, and source code from reaching AI models. Deploy in 30 seconds. Try free now.",
+            "Your team pasted 847 passwords into ChatGPT last month. EraseAI stops it. Try free.",
+            "AI Firewall blocks PII and credentials from reaching AI models. Deploy in 30 seconds.",
           ],
           keywords: [
             "ai firewall", "chatgpt data leak prevention", "ai data loss prevention", "prompt injection protection",
@@ -186,12 +186,12 @@ const GOOGLE_ADS = {
             "Block Malicious AI Prompts",
           ],
           descriptions: [
-            "Detect and block prompt injection attacks with 99% accuracy. EraseAI analyzes every input before it reaches AI models.",
-            "Real-time prompt scanning for PII, toxicity, and injection attacks. Browser extension + API. Free to start at eraseai.ai.",
+            "Block prompt injection attacks with 99% accuracy. Real-time AI input scanning. Try free.",
+            "Prompt scanning for PII, toxicity, and injections. Extension + API. Free at eraseai.ai.",
           ],
           descriptionsB: [
-            "Prompt injection attacks are up 340% YoY. EraseAI stops 99% of them before they reach your AI models. Try free.",
-            "Scan every prompt in real-time. Block injections. Rewrite risky content. Full audit trail. Free tier at eraseai.ai.",
+            "Prompt injection attacks up 340% YoY. EraseAI stops 99% of them. Try free today.",
+            "Scan prompts in real-time. Block injections. Rewrite risky content. Full audit trail.",
           ],
           keywords: [
             "prompt injection prevention", "prompt injection detection", "ai prompt security",
@@ -210,12 +210,12 @@ const GOOGLE_ADS = {
             "SSO AI Security Platform",
           ],
           descriptions: [
-            "Business plan: $149/mo. 20 API keys, 10K rows/dataset, webhooks, advanced analytics. Protect your entire organization.",
-            "Enterprise-grade AI firewall with SSO, custom rules, and SLA. Dedicated account manager. Contact us at eraseai.ai.",
+            "Business: $149/mo. 20 API keys, webhooks, advanced analytics. Protect your org.",
+            "Enterprise AI firewall with SSO, custom rules, and SLA. Contact eraseai.ai.",
           ],
           descriptionsB: [
-            "From $5 Personal to $149 Business — scale AI protection across your entire org. Free trial. No credit card required.",
-            "73% of enterprises use AI tools with no governance layer. EraseAI deploys in minutes. Business plan from $149/month.",
+            "$5 Personal to $149 Business — scale AI protection across your org. Try free.",
+            "73% of enterprises lack AI governance. EraseAI deploys in minutes. From $149/mo.",
           ],
           keywords: [
             "enterprise ai security", "corporate ai governance", "business ai protection",
@@ -248,13 +248,13 @@ const GOOGLE_ADS = {
             "PII Detection in Datasets",
           ],
           descriptions: [
-            "Detect PII, bias, and toxic content in AI training datasets. Clean with one click. Full audit trail for GDPR compliance.",
-            "Machine unlearning made simple. Upload CSV/JSON datasets, detect issues, erase data, and verify removal. Try free.",
-            "GDPR requires the right to be forgotten — even from AI models. EraseAI provides verified, auditable data erasure.",
+            "Detect PII, bias, and toxic content in AI datasets. One-click cleanup. GDPR audit trail.",
+            "Machine unlearning made simple. Upload CSV/JSON, detect issues, verify erasure. Free.",
+            "GDPR right to be forgotten for AI models. EraseAI: verified, auditable erasure.",
           ],
           descriptionsB: [
-            "Forget Score verification proves data was erased. Audit-ready reports for GDPR, CCPA, and PDPA. Pro plan from $49/mo.",
-            "AI compliance in 3 steps: upload dataset, detect issues, erase with audit trail. Version-controlled. Free to start.",
+            "Forget Score proves data was erased. Audit-ready reports for GDPR/CCPA/PDPA. $49/mo.",
+            "AI compliance in 3 steps: upload, detect, erase with audit trail. Free to start.",
           ],
           keywords: [
             "gdpr ai compliance", "ai data governance", "machine unlearning tool", "pii detection dataset",
@@ -274,12 +274,12 @@ const GOOGLE_ADS = {
             "Remove Bias from AI Models",
           ],
           descriptions: [
-            "Scan datasets for proxy bias, class imbalance, and underrepresented groups. ML pipeline recommendations included.",
-            "Detect hate speech, profanity, and harmful content in training data. Version-controlled cleanup with Forget Score verification.",
+            "Scan datasets for proxy bias, class imbalance, and more. ML pipeline tips included.",
+            "Detect hate speech and toxic content in training data. Forget Score verification.",
           ],
           descriptionsB: [
-            "AI fairness starts with clean data. Scan for 10+ bias types including proxy bias and class imbalance. Try EraseAI free.",
-            "Responsible AI requires auditable bias detection. EraseAI scans, flags, and fixes — with ML pipeline recommendations.",
+            "AI fairness starts with clean data. Scan 10+ bias types. Try EraseAI free today.",
+            "Auditable bias detection. EraseAI scans, flags, and fixes with ML recommendations.",
           ],
           keywords: [
             "ai bias detection", "toxic data detection", "fair ai training", "dataset bias scanner",
@@ -298,12 +298,12 @@ const GOOGLE_ADS = {
             "Verified AI Unlearning",
           ],
           descriptions: [
-            "Upload datasets, erase sensitive data, verify removal with Forget Score. Full version history and audit trail. Try free.",
-            "Machine unlearning for AI compliance. Before/after comparison, keyword verification, and ML pipeline feedback. From $49/mo.",
+            "Upload datasets, erase data, verify with Forget Score. Full audit trail. Try free.",
+            "Machine unlearning for compliance. Before/after comparison and ML feedback. $49/mo.",
           ],
           descriptionsB: [
-            "Can you prove your AI forgot the data? EraseAI's Forget Score gives you auditable verification. GDPR/PDPA compliant.",
-            "Version-controlled data erasure with before/after comparison. Clean datasets for safe AI retraining. Free tier available.",
+            "Prove your AI forgot the data. Forget Score gives auditable verification. GDPR/PDPA.",
+            "Version-controlled erasure with before/after comparison. Safe retraining. Free tier.",
           ],
           keywords: [
             "machine unlearning", "data erasure verification", "forget score", "ai data removal tool",
@@ -322,12 +322,12 @@ const GOOGLE_ADS = {
             "SG Data Protection for AI",
           ],
           descriptions: [
-            "PDPA-compliant AI data governance for Singapore and APAC businesses. Detect PII, audit data flows, verify erasure.",
-            "Built for APAC: PDPA, GDPR, and CCPA compliance in one platform. Dataset sanitization from $49/mo. Business plan $149/mo.",
+            "PDPA-compliant AI governance for Singapore and APAC. Detect PII, verify erasure.",
+            "PDPA, GDPR, CCPA in one platform. Sanitization from $49/mo. Business $149/mo.",
           ],
           descriptionsB: [
-            "Singapore's PDPA requires data protection in AI. EraseAI provides automated PII detection and auditable erasure workflows.",
-            "APAC AI security market: $6.5B and growing 32%. Stay compliant with EraseAI's governance platform. Free to start.",
+            "Singapore PDPA requires AI data protection. EraseAI: automated PII detection.",
+            "APAC AI security: $6.5B market, 32% growth. Stay compliant. Free to start.",
           ],
           keywords: [
             "pdpa compliance tool", "singapore ai governance", "apac data protection ai",
@@ -358,13 +358,13 @@ const GOOGLE_ADS = {
             "CI/CD AI Security Hook",
           ],
           descriptions: [
-            "One API call to scan content, block injections, and clean datasets. TypeScript SDK, webhooks, and pre-commit hooks. Free tier.",
-            "Integrate AI data governance into your CI/CD pipeline. REST API with Bearer auth. Up to 50K rows per dataset on Pro plan.",
-            "Build responsible AI apps with EraseAI SDK. Content scanning, prompt injection detection, and dataset sanitization via API.",
+            "One API call: scan content, block injections, clean datasets. SDK + webhooks. Free.",
+            "AI governance in your CI/CD pipeline. REST API with Bearer auth. Pro from $49/mo.",
+            "Build responsible AI apps with EraseAI SDK. Scanning + sanitization via API. Free.",
           ],
           descriptionsB: [
-            "3 lines of code = full AI governance. EraseAI SDK: analyze, sanitize, verify. Free tier available. Pro from $49/month.",
-            "Ship safer AI features. Pre-commit hooks catch PII before it hits your repo. Webhooks notify on every scan. Try free.",
+            "3 lines of code = full AI governance. Analyze, sanitize, verify. Pro from $49/mo.",
+            "Pre-commit hooks catch PII before it hits your repo. Webhooks on every scan. Free.",
           ],
           keywords: [
             "ai governance api", "ai security sdk", "ai data scanning api", "content moderation api",
@@ -384,12 +384,12 @@ const GOOGLE_ADS = {
             "Real-Time Content Scanner",
           ],
           descriptions: [
-            "REST API for content moderation: PII detection, toxicity scoring, bias analysis, and defamation flagging. Free tier available.",
-            "Scan user-generated content for 10+ risk dimensions via API. Real-time responses. TypeScript and Python SDKs.",
+            "Content moderation API: PII, toxicity, bias, defamation detection. Free tier.",
+            "Scan content for 10+ risk dimensions via API. Real-time. TypeScript SDK included.",
           ],
           descriptionsB: [
-            "AI-powered content scanning API. Detect PII, hate speech, bias, and sensitive data in milliseconds. Try free at eraseai.ai.",
-            "Content safety at API speed. Integrate PII detection and toxicity scoring into your app. Pro: $49/mo with 5 API keys.",
+            "AI content scanning API. Detect PII, hate speech, bias in milliseconds. Try free.",
+            "Content safety at API speed. PII + toxicity scoring. Pro: $49/mo, 5 API keys.",
           ],
           keywords: [
             "content moderation api", "pii detection api", "toxicity detection api",
@@ -408,12 +408,12 @@ const GOOGLE_ADS = {
             "Business: $149/mo 20 Keys",
           ],
           descriptions: [
-            "Upload CSV, JSON, JSONL datasets via API. Automated PII removal, bias detection, and ML pipeline recommendations.",
-            "Clean datasets programmatically. Pro: $49/mo (5 API keys, 50K rows). Business: $149/mo (20 keys, 10K rows). Try free.",
+            "Upload CSV/JSON/JSONL via API. Automated PII removal and bias detection. Try free.",
+            "Clean datasets via API. Pro: $49/mo (5 keys). Business: $149/mo (20 keys). Free.",
           ],
           descriptionsB: [
-            "Automate dataset governance in your ML pipeline. Version-controlled sanitization with Forget Score verification. Free tier.",
-            "From prototype to production: Free → Pro ($49) → Business ($149). Scale your AI data governance with EraseAI SDK.",
+            "Automate dataset governance in your ML pipeline. Forget Score verification. Free.",
+            "Free to Pro ($49) to Business ($149). Scale AI data governance with EraseAI SDK.",
           ],
           keywords: [
             "dataset cleaning api", "data sanitization sdk", "ml data pipeline tool",
@@ -446,14 +446,14 @@ const GOOGLE_ADS = {
             "AI Content Risk Scanner",
           ],
           descriptions: [
-            "EraseAI Personal: unlimited content scanning, AI rewriting, and risk trend monitoring — all for $5/month. Try free.",
-            "Scan every prompt for PII, toxicity, and sensitive data before it reaches ChatGPT or Claude. Browser extension included.",
-            "Your data never needs to reach AI unprotected. Scan, rewrite, and monitor your AI interactions for $5/month at eraseai.ai.",
-            "7-day free trial. No credit card required. Protect every AI interaction with real-time scanning and smart rewriting.",
+            "EraseAI Personal: unlimited scanning, AI rewriting, risk monitoring. $5/mo. Free.",
+            "Scan prompts for PII and toxicity before reaching ChatGPT. Extension included.",
+            "Protect your AI interactions. Scan, rewrite, monitor for $5/mo at eraseai.ai.",
+            "7-day free trial. No credit card. Real-time scanning and smart rewriting.",
           ],
           descriptionsB: [
-            "Would you send an email without spell-check? Then don't send a prompt without safety-check. EraseAI Personal — $5/mo.",
-            "AI Firewall + unlimited scanning + smart rewriting + risk alerts. Everything you need for $5/month. Free 7-day trial.",
+            "Don't send a prompt without safety-check. EraseAI Personal for just $5/month.",
+            "AI Firewall + scanning + rewriting + risk alerts. $5/month. Free 7-day trial.",
           ],
           keywords: [
             "ai privacy protection", "chatgpt privacy tool", "personal ai security", "protect data chatgpt",
@@ -473,12 +473,12 @@ const GOOGLE_ADS = {
             "Fix Risky AI Inputs Fast",
           ],
           descriptions: [
-            "EraseAI rewrites risky prompts into safe versions while keeping your meaning. Same intent, no data exposure. $5/month.",
-            "AI-powered content rewriting: removes PII, fixes toxicity, preserves meaning. Part of EraseAI Personal at $5/month.",
+            "EraseAI rewrites risky prompts into safe versions. Same intent, no exposure. $5/mo.",
+            "AI content rewriting: removes PII, fixes toxicity, keeps meaning. $5/mo Personal.",
           ],
           descriptionsB: [
-            "Don't censor your prompts — rewrite them. EraseAI transforms risky inputs into safe versions automatically. Try free.",
-            "Your prompt, but safe. AI rewriting that strips PII and sensitive data while keeping your intent. Free 7-day trial.",
+            "Don't censor prompts — rewrite them. EraseAI makes inputs safe automatically. Free.",
+            "Your prompt, but safe. Strips PII and sensitive data, keeps intent. Free 7-day trial.",
           ],
           keywords: [
             "ai content rewriter", "safe prompt rewriter", "ai rewrite tool",
@@ -497,12 +497,12 @@ const GOOGLE_ADS = {
             "AI Extension — Free Trial",
           ],
           descriptions: [
-            "Browser extension scans every AI prompt in real-time. Works with ChatGPT, Gemini, Claude, and more. Install free.",
-            "One extension, total AI protection. Scans prompts, blocks sensitive data, rewrites risky content. Part of $5/mo Personal.",
+            "Browser extension scans AI prompts in real-time. ChatGPT, Gemini, Claude. Free.",
+            "One extension, total AI protection. Block sensitive data, rewrite prompts. $5/mo.",
           ],
           descriptionsB: [
-            "Install EraseAI extension → every prompt auto-scanned → PII blocked → safe version suggested. Takes 30 seconds.",
-            "ChatGPT, Gemini, Claude — protected in one click. EraseAI browser extension. Free trial at eraseai.ai.",
+            "Install EraseAI extension. Every prompt auto-scanned, PII blocked. 30 seconds.",
+            "ChatGPT, Gemini, Claude — protected in one click. Free trial at eraseai.ai.",
           ],
           keywords: [
             "ai firewall browser extension", "chatgpt chrome extension security", "ai privacy browser plugin",
@@ -527,8 +527,8 @@ const GOOGLE_ADS = {
       "From $5/Month Personal to $149/Month Business: AI Governance That Scales With Your Organization",
     ],
     descriptions: [
-      "AI firewall, content scanning, and dataset sanitization in one platform. Personal $5/mo, Pro $49/mo, Business $149/mo.",
-      "Detect PII, bias, and toxic content. Clean datasets with full audit trail. GDPR-compliant machine unlearning. Try EraseAI.",
+      "AI firewall + dataset sanitization. Personal $5, Pro $49, Business $149. Try free.",
+      "Detect PII, bias, toxic content. Clean datasets with audit trail. GDPR compliant.",
     ],
     callToAction: "Start Free Trial",
     finalUrl: "https://eraseai.ai",
