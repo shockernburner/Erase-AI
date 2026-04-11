@@ -5,6 +5,7 @@ import eraseaiRouter from "./eraseai";
 import datasetsRouter from "./datasets";
 import billingRouter from "./billing";
 import feedbackRouter from "./feedback";
+import contactRouter from "./contact";
 import adminRouter from "./admin";
 import developerRouter from "./developer";
 import v1Router from "./v1";
@@ -29,6 +30,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(contactRouter);
 router.use(requireTermsAcceptance);
 router.use(eraseaiRouter);
 router.use("/datasets", datasetsRouter);

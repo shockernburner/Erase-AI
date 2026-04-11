@@ -417,6 +417,10 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                   <a href={`${import.meta.env.BASE_URL}terms`} className="hover:text-primary transition-colors">{t("legal.tosTitle")}</a>
                   <span className="text-border/30">·</span>
                   <a href={`${import.meta.env.BASE_URL}license`} className="hover:text-primary transition-colors">{t("legal.licenseTitle")}</a>
+                  <span className="text-border/30">·</span>
+                  <a href={`${import.meta.env.BASE_URL}privacy`} className="hover:text-primary transition-colors">{t("privacy.title")}</a>
+                  <span className="text-border/30">·</span>
+                  <a href={`${import.meta.env.BASE_URL}contact`} className="hover:text-primary transition-colors">{t("contact.title")}</a>
                 </div>
               </motion.div>
             </div>

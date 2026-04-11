@@ -117,3 +117,12 @@ export type DatasetOperation = typeof datasetOperationsTable.$inferSelect;
 export type AnalysisResult = typeof analysisResultsTable.$inferSelect;
 export type PersonalScan = typeof personalScansTable.$inferSelect;
 export type PersonalAlert = typeof personalAlertsTable.$inferSelect;
+
+export const contactInquiriesTable = pgTable("contact_inquiries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});

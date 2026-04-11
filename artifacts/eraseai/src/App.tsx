@@ -20,6 +20,8 @@ import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
 import TermsOfService from "@/pages/TermsOfService";
 import LicenseAgreement from "@/pages/LicenseAgreement";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import ContactPage from "@/pages/ContactPage";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -126,7 +128,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 function SeoLoadingFallback() {
@@ -295,6 +297,14 @@ function AuthGate() {
     return <LicenseAgreement onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
   }
 
+  if (view === "privacy") {
+    return <PrivacyPolicy onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
+  }
+
+  if (view === "contact") {
+    return <ContactPage onBack={() => setView("home")} />;
+  }
+
   if (termsAccepted === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -406,6 +416,12 @@ function App() {
               </Route>
               <Route path="/license">
                 <LicenseAgreement onBack={() => window.history.back()} />
+              </Route>
+              <Route path="/privacy">
+                <PrivacyPolicy onBack={() => window.history.back()} />
+              </Route>
+              <Route path="/contact">
+                <ContactPage onBack={() => window.history.back()} />
               </Route>
               <Route>
                 <AuthGate />

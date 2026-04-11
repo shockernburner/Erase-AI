@@ -27,13 +27,15 @@ import {
   Volume2,
   VolumeX,
   ScrollText,
+  ShieldCheck,
+  Phone,
 } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
@@ -227,6 +229,20 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
             >
               <ScrollText className="w-4 h-4" />
               {t("nav.termsLegal")}
+            </button>
+            <button
+              onClick={() => { setOpen(false); onNavigate("privacy"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              {t("nav.privacyPolicy")}
+            </button>
+            <button
+              onClick={() => { setOpen(false); onNavigate("contact"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
+            >
+              <Phone className="w-4 h-4" />
+              {t("nav.contact")}
             </button>
             <button
               onClick={() => { setOpen(false); onNavigate("pricing"); }}
@@ -756,6 +772,10 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
             <button onClick={() => onNavigate("terms")} className="hover:text-primary transition-colors">{t("legal.tosTitle")}</button>
             <span className="text-border/30">·</span>
             <button onClick={() => onNavigate("license")} className="hover:text-primary transition-colors">{t("legal.licenseTitle")}</button>
+            <span className="text-border/30">·</span>
+            <button onClick={() => onNavigate("privacy")} className="hover:text-primary transition-colors">{t("privacy.title")}</button>
+            <span className="text-border/30">·</span>
+            <button onClick={() => onNavigate("contact")} className="hover:text-primary transition-colors">{t("contact.title")}</button>
           </div>
           <p className="text-xs font-mono text-muted-foreground/60 text-center mt-3">
             {t("app.copyright")}

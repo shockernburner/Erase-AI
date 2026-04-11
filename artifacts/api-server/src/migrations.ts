@@ -151,6 +151,24 @@ async function ensureDevScansTable() {
   }
 }
 
+async function ensureContactInquiriesTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS contact_inquiries (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    logger.info("Startup migration: contact_inquiries table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: contact_inquiries table warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
@@ -159,6 +177,7 @@ export async function runStartupMigrations() {
   await ensurePersonalScansTable();
   await ensurePersonalAlertsTable();
   await ensureDevScansTable();
+  await ensureContactInquiriesTable();
   try {
     const demoDatasets = await db.execute(sql`
       SELECT id FROM datasets WHERE user_id = 'system-demo-user'

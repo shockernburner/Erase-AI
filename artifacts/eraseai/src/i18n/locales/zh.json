@@ -21,7 +21,9 @@
     "certifications": "合规路线图",
     "firewallDocs": "扩展设置",
     "founderPitch": "创始人介绍",
-    "termsLegal": "法律条款"
+    "termsLegal": "法律条款",
+    "privacyPolicy": "Privacy Policy",
+    "contact": "Contact Us"
   },
   "landing": {
     "heroBadge": "AI数据治理",
@@ -1409,5 +1411,35 @@
     "summaryTerminationDesc": "违约时许可可随时终止。终止后必须立即停止所有使用。",
     "seeAlsoLicense": "See also: License Agreement",
     "seeAlsoTerms": "See also: Terms of Service"
+  },
+  "privacy": {
+    "title": "Privacy Policy"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question, partnership inquiry, or need support? We'd love to hear from you.",
+    "info": "Contact Information",
+    "address": "Office Address",
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "hours": "Business Hours",
+    "weekdays": "Monday - Friday",
+    "weekends": "Saturday - Sunday",
+    "closed": "Closed",
+    "formTitle": "Send Us a Message",
+    "nameLabel": "Your Name",
+    "namePlaceholder": "John Doe",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "john@example.com",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "How can we help?",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tell us about your inquiry...",
+    "sendButton": "Send Message",
+    "sending": "Sending...",
+    "successTitle": "Message Sent!",
+    "successDesc": "Thank you for reaching out. We'll get back to you within 1-2 business days.",
+    "sendAnother": "Send another message",
+    "errorMsg": "Failed to send message. Please try again or email us directly."
   }
 }

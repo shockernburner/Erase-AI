@@ -54,6 +54,8 @@ export function SeoFooter() {
               <li><a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a></li>
               <li><a href={`${BASE}terms`} className="hover:text-primary transition-colors">Terms of Service</a></li>
               <li><a href={`${BASE}license`} className="hover:text-primary transition-colors">License Agreement</a></li>
+              <li><a href={`${BASE}privacy`} className="hover:text-primary transition-colors">Privacy Policy</a></li>
+              <li><a href={`${BASE}contact`} className="hover:text-primary transition-colors">Contact Us</a></li>
             </ul>
           </div>
           <div>
