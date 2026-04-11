@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -17,11 +16,9 @@ import {
   Shield,
   Code2,
   User,
-  Building2,
   TrendingUp,
   Video,
   Image,
-  MessageSquare,
   Mail,
   FileText,
   Hash,
