@@ -292,7 +292,16 @@ function AuthGate() {
     return <LicenseAgreement onBack={() => setView("home")} />;
   }
 
-  const needsTerms = termsAccepted === false;
+  if (termsAccepted === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-sm text-muted-foreground font-mono">{t("app.loading")}</p>
+        </div>
+      </div>
+    );
+  }
 
   const trialExpired = isTrialExpiredFrontend(user);
 
@@ -308,7 +317,7 @@ function AuthGate() {
     return <PricingPage onBack={() => setView("home")} />;
   }
 
-  if (needsTerms) {
+  if (!termsAccepted) {
     return (
       <>
         <Home onNavigate={setView} />

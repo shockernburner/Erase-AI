@@ -7,7 +7,9 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
   clearSession,
   getSessionId,
+  getSession,
   createSession,
+  updateSession,
   deleteSession,
   SESSION_COOKIE,
   SESSION_TTL,
@@ -642,6 +644,16 @@ router.post("/auth/accept-terms", async (req: Request, res: Response) => {
     if (!updated) {
       res.status(404).json({ error: "User not found" });
       return;
+    }
+
+    const sid = getSessionId(req);
+    if (sid) {
+      const session = await getSession(sid);
+      if (session?.user) {
+        session.user.termsAcceptedAt = now.toISOString();
+        session.user.termsVersion = CURRENT_TERMS_VERSION;
+        await updateSession(sid, session);
+      }
     }
 
     res.json({
