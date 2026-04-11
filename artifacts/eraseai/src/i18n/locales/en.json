@@ -1406,6 +1406,8 @@
     "summaryWarranty": "Warranty Disclaimer",
     "summaryWarrantyDesc": "Software provided 'as is' without warranties. No guarantee of uninterrupted or error-free operation.",
     "summaryTermination": "Termination",
-    "summaryTerminationDesc": "License may be terminated at any time for breach. Upon termination, all use must cease immediately."
+    "summaryTerminationDesc": "License may be terminated at any time for breach. Upon termination, all use must cease immediately.",
+    "seeAlsoLicense": "See also: License Agreement",
+    "seeAlsoTerms": "See also: Terms of Service"
   }
 }

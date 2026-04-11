@@ -285,11 +285,11 @@ function AuthGate() {
   }
 
   if (view === "terms") {
-    return <TermsOfService onBack={() => setView("home")} />;
+    return <TermsOfService onBack={() => setView("home")} onViewLicense={() => setView("license")} />;
   }
 
   if (view === "license") {
-    return <LicenseAgreement onBack={() => setView("home")} />;
+    return <LicenseAgreement onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
   }
 
   if (termsAccepted === null) {

@@ -1406,6 +1406,8 @@
     "summaryWarranty": "Descargo de Garantia",
     "summaryWarrantyDesc": "Software proporcionado tal cual sin garantias.",
     "summaryTermination": "Terminacion",
-    "summaryTerminationDesc": "La licencia puede terminarse en cualquier momento por incumplimiento."
+    "summaryTerminationDesc": "La licencia puede terminarse en cualquier momento por incumplimiento.",
+    "seeAlsoLicense": "See also: License Agreement",
+    "seeAlsoTerms": "See also: Terms of Service"
   }
 }

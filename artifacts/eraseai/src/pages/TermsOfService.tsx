@@ -1,7 +1,7 @@
 import { ArrowLeft, ShieldX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-export default function TermsOfService({ onBack }: { onBack: () => void }) {
+export default function TermsOfService({ onBack, onViewLicense }: { onBack: () => void; onViewLicense?: () => void }) {
   const { t } = useTranslation();
 
   return (
@@ -150,6 +150,14 @@ export default function TermsOfService({ onBack }: { onBack: () => void }) {
           </section>
 
           <section className="border-t border-border/30 pt-6 mt-8">
+            {onViewLicense && (
+              <button
+                onClick={onViewLicense}
+                className="text-sm text-primary hover:text-primary/80 font-medium mb-4 block"
+              >
+                {t("legal.seeAlsoLicense")} &rarr;
+              </button>
+            )}
             <p className="text-sm text-muted-foreground">
               <strong className="text-foreground">Vantward Solutions Pte. Ltd.</strong><br />
               68 Circular Road #02-01, Singapore 049422<br />

@@ -1406,6 +1406,8 @@
     "summaryWarranty": "免责声明",
     "summaryWarrantyDesc": "软件按原样提供，不提供任何保证。",
     "summaryTermination": "终止",
-    "summaryTerminationDesc": "违约时许可可随时终止。终止后必须立即停止所有使用。"
+    "summaryTerminationDesc": "违约时许可可随时终止。终止后必须立即停止所有使用。",
+    "seeAlsoLicense": "See also: License Agreement",
+    "seeAlsoTerms": "See also: Terms of Service"
   }
 }

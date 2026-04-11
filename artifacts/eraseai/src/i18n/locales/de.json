@@ -1406,6 +1406,8 @@
     "summaryWarranty": "Gewaehrleistungsausschluss",
     "summaryWarrantyDesc": "Software wird wie besehen ohne Garantien bereitgestellt.",
     "summaryTermination": "Kuendigung",
-    "summaryTerminationDesc": "Die Lizenz kann bei Verstoss jederzeit gekuendigt werden."
+    "summaryTerminationDesc": "Die Lizenz kann bei Verstoss jederzeit gekuendigt werden.",
+    "seeAlsoLicense": "See also: License Agreement",
+    "seeAlsoTerms": "See also: Terms of Service"
   }
 }

@@ -1406,6 +1406,8 @@
     "summaryWarranty": "保証の免責",
     "summaryWarrantyDesc": "ソフトウェアは現状のまま保証なしで提供されます。",
     "summaryTermination": "終了",
-    "summaryTerminationDesc": "違反があった場合、ライセンスはいつでも終了できます。"
+    "summaryTerminationDesc": "違反があった場合、ライセンスはいつでも終了できます。",
+    "seeAlsoLicense": "See also: License Agreement",
+    "seeAlsoTerms": "See also: Terms of Service"
   }
 }

@@ -1406,6 +1406,8 @@
     "summaryWarranty": "Exclusion de Garantie",
     "summaryWarrantyDesc": "Logiciel fourni en l'etat sans garantie.",
     "summaryTermination": "Resiliation",
-    "summaryTerminationDesc": "La licence peut etre resiliee a tout moment en cas de violation."
+    "summaryTerminationDesc": "La licence peut etre resiliee a tout moment en cas de violation.",
+    "seeAlsoLicense": "See also: License Agreement",
+    "seeAlsoTerms": "See also: Terms of Service"
   }
 }
