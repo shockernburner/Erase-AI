@@ -1385,6 +1385,27 @@
     "checkboxLabel": "He leído y acepto los Términos de Servicio y el Acuerdo de Licencia",
     "acceptButton": "Aceptar y Continuar",
     "accepting": "Procesando...",
-    "acceptError": "Error al aceptar los términos. Por favor, inténtelo de nuevo."
+    "acceptError": "Error al aceptar los términos. Por favor, inténtelo de nuevo.",
+    "viewFullDocument": "Haga clic para leer el documento completo",
+    "summaryIP": "Propiedad Intelectual",
+    "summaryIPDesc": "La plataforma, el codigo fuente, los algoritmos y toda la PI son propiedad exclusiva de Vantward Solutions Pte. Ltd.",
+    "summaryProhibited": "Actividades Prohibidas",
+    "summaryProhibitedDesc": "No se permite la ingenieria inversa, scraping, clonacion, uso indebido de la API o replicacion competitiva.",
+    "summaryData": "Procesamiento de Datos",
+    "summaryDataDesc": "Su contenido se procesa unicamente para proporcionar el servicio.",
+    "summaryLiability": "Limitacion de Responsabilidad",
+    "summaryLiabilityDesc": "Responsabilidad maxima limitada a las tarifas pagadas en los ultimos 12 meses.",
+    "summaryGoverning": "Ley Aplicable",
+    "summaryGoverningDesc": "Regido por las leyes de la Republica de Singapur.",
+    "summaryLicense": "Concesion de Licencia",
+    "summaryLicenseDesc": "Licencia limitada, no exclusiva, no transferible, revocable para uso comercial interno o personal.",
+    "summaryRestrictions": "Restricciones",
+    "summaryRestrictionsDesc": "No se permite copiar, modificar, sublicenciar, realizar ingenieria inversa o desarrollar productos competidores.",
+    "summaryConfidentiality": "Confidencialidad",
+    "summaryConfidentialityDesc": "El software contiene secretos comerciales. Debe mantener la confidencialidad.",
+    "summaryWarranty": "Descargo de Garantia",
+    "summaryWarrantyDesc": "Software proporcionado tal cual sin garantias.",
+    "summaryTermination": "Terminacion",
+    "summaryTerminationDesc": "La licencia puede terminarse en cualquier momento por incumplimiento."
   }
 }

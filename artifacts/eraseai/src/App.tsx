@@ -20,7 +20,7 @@ import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
 import TermsOfService from "@/pages/TermsOfService";
 import LicenseAgreement from "@/pages/LicenseAgreement";
-import TermsAcceptanceModal, { CURRENT_TERMS_VERSION } from "@/components/TermsAcceptanceModal";
+import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -259,7 +259,10 @@ function AuthGate() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      setTermsAccepted(user.termsVersion === CURRENT_TERMS_VERSION);
+      fetch("/api/auth/terms-status", { credentials: "include" })
+        .then(r => r.json())
+        .then(data => setTermsAccepted(data.accepted === true))
+        .catch(() => setTermsAccepted(false));
     }
   }, [isAuthenticated, user]);
 

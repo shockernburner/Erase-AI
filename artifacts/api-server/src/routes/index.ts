@@ -1,6 +1,6 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import healthRouter from "./health";
-import authRouter from "./auth";
+import authRouter, { CURRENT_TERMS_VERSION } from "./auth";
 import eraseaiRouter from "./eraseai";
 import datasetsRouter from "./datasets";
 import billingRouter from "./billing";
@@ -12,10 +12,24 @@ import analyticsRouter from "./analytics";
 import personalRouter from "./personal";
 import devRouter from "./dev";
 
+function requireTermsAcceptance(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    next();
+    return;
+  }
+  const user = req.user as { termsVersion?: string | null } | undefined;
+  if (user && user.termsVersion !== CURRENT_TERMS_VERSION) {
+    res.status(403).json({ error: "terms_not_accepted", message: "You must accept the Terms of Service before using this feature." });
+    return;
+  }
+  next();
+}
+
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(requireTermsAcceptance);
 router.use(eraseaiRouter);
 router.use("/datasets", datasetsRouter);
 router.use("/billing", billingRouter);

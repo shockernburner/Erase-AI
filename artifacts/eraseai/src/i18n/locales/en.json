@@ -1385,6 +1385,27 @@
     "checkboxLabel": "I have read and agree to the Terms of Service and License Agreement",
     "acceptButton": "I Agree & Continue",
     "accepting": "Processing...",
-    "acceptError": "Failed to accept terms. Please try again."
+    "acceptError": "Failed to accept terms. Please try again.",
+    "viewFullDocument": "Click to read full document",
+    "summaryIP": "Intellectual Property",
+    "summaryIPDesc": "The platform, source code, algorithms, and all IP are exclusive property of Vantward Solutions Pte. Ltd.",
+    "summaryProhibited": "Prohibited Activities",
+    "summaryProhibitedDesc": "No reverse engineering, scraping, cloning, API misuse, or competitive replication. Automated bulk access prohibited.",
+    "summaryData": "Data Processing",
+    "summaryDataDesc": "Your content is processed solely to provide the service. We do not use your data for training our models.",
+    "summaryLiability": "Limitation of Liability",
+    "summaryLiabilityDesc": "Maximum aggregate liability limited to fees paid in the preceding 12 months. No liability for indirect or consequential damages.",
+    "summaryGoverning": "Governing Law",
+    "summaryGoverningDesc": "Governed by the laws of the Republic of Singapore. Exclusive jurisdiction of Singapore courts.",
+    "summaryLicense": "License Grant",
+    "summaryLicenseDesc": "Limited, non-exclusive, non-transferable, non-sublicensable, revocable license for internal business or personal use.",
+    "summaryRestrictions": "Restrictions",
+    "summaryRestrictionsDesc": "No copying, modifying, sublicensing, reverse engineering, or developing competing products. No sharing of API credentials.",
+    "summaryConfidentiality": "Confidentiality",
+    "summaryConfidentialityDesc": "The software contains trade secrets. You must maintain confidentiality and not disclose to third parties.",
+    "summaryWarranty": "Warranty Disclaimer",
+    "summaryWarrantyDesc": "Software provided 'as is' without warranties. No guarantee of uninterrupted or error-free operation.",
+    "summaryTermination": "Termination",
+    "summaryTerminationDesc": "License may be terminated at any time for breach. Upon termination, all use must cease immediately."
   }
 }

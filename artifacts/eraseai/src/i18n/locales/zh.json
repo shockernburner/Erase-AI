@@ -1385,6 +1385,27 @@
     "checkboxLabel": "我已阅读并同意服务条款和许可协议",
     "acceptButton": "同意并继续",
     "accepting": "处理中...",
-    "acceptError": "接受条款失败，请重试。"
+    "acceptError": "接受条款失败，请重试。",
+    "viewFullDocument": "点击阅读完整文档",
+    "summaryIP": "知识产权",
+    "summaryIPDesc": "平台、源代码、算法和所有知识产权均为Vantward Solutions Pte. Ltd.的专有财产。",
+    "summaryProhibited": "禁止行为",
+    "summaryProhibitedDesc": "禁止逆向工程、抓取、克隆、API滥用或竞争性复制。禁止自动批量访问。",
+    "summaryData": "数据处理",
+    "summaryDataDesc": "您的内容仅用于提供服务。我们不会使用您的数据来训练我们的模型。",
+    "summaryLiability": "责任限制",
+    "summaryLiabilityDesc": "最大总责任限于过去12个月内支付的费用。",
+    "summaryGoverning": "适用法律",
+    "summaryGoverningDesc": "受新加坡共和国法律管辖。新加坡法院享有专属管辖权。",
+    "summaryLicense": "许可授权",
+    "summaryLicenseDesc": "用于内部业务或个人使用的有限、非排他、不可转让、可撤销的许可。",
+    "summaryRestrictions": "限制条款",
+    "summaryRestrictionsDesc": "禁止复制、修改、分许可、逆向工程或开发竞争产品。",
+    "summaryConfidentiality": "保密义务",
+    "summaryConfidentialityDesc": "软件包含商业机密。您必须保持机密性，不得向第三方披露。",
+    "summaryWarranty": "免责声明",
+    "summaryWarrantyDesc": "软件按原样提供，不提供任何保证。",
+    "summaryTermination": "终止",
+    "summaryTerminationDesc": "违约时许可可随时终止。终止后必须立即停止所有使用。"
   }
 }

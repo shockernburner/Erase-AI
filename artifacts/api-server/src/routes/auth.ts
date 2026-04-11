@@ -658,4 +658,34 @@ router.get("/auth/terms-version", (_req: Request, res: Response) => {
   res.json({ currentVersion: CURRENT_TERMS_VERSION });
 });
 
+router.get("/auth/terms-status", async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const [freshUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user!.id));
+
+    if (!freshUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({
+      accepted: freshUser.termsVersion === CURRENT_TERMS_VERSION,
+      termsAcceptedAt: freshUser.termsAcceptedAt?.toISOString() ?? null,
+      userVersion: freshUser.termsVersion ?? null,
+      currentVersion: CURRENT_TERMS_VERSION,
+    });
+  } catch (err) {
+    console.error("Terms status error:", err);
+    res.status(500).json({ error: "Failed to get terms status" });
+  }
+});
+
+export { CURRENT_TERMS_VERSION };
 export default router;

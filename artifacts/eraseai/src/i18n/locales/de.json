@@ -1385,6 +1385,27 @@
     "checkboxLabel": "Ich habe die Nutzungsbedingungen und die Lizenzvereinbarung gelesen und stimme ihnen zu",
     "acceptButton": "Zustimmen & Fortfahren",
     "accepting": "Wird verarbeitet...",
-    "acceptError": "Fehler beim Akzeptieren der Bedingungen. Bitte versuchen Sie es erneut."
+    "acceptError": "Fehler beim Akzeptieren der Bedingungen. Bitte versuchen Sie es erneut.",
+    "viewFullDocument": "Klicken Sie, um das vollstaendige Dokument zu lesen",
+    "summaryIP": "Geistiges Eigentum",
+    "summaryIPDesc": "Die Plattform, der Quellcode, Algorithmen und alle IP-Rechte sind ausschliessliches Eigentum von Vantward Solutions Pte. Ltd.",
+    "summaryProhibited": "Verbotene Aktivitaeten",
+    "summaryProhibitedDesc": "Kein Reverse Engineering, Scraping, Klonen, API-Missbrauch oder wettbewerbswidrige Replikation.",
+    "summaryData": "Datenverarbeitung",
+    "summaryDataDesc": "Ihre Inhalte werden ausschliesslich zur Erbringung des Dienstes verarbeitet.",
+    "summaryLiability": "Haftungsbeschraenkung",
+    "summaryLiabilityDesc": "Maximale Gesamthaftung begrenzt auf die in den letzten 12 Monaten gezahlten Gebuehren.",
+    "summaryGoverning": "Anwendbares Recht",
+    "summaryGoverningDesc": "Es gelten die Gesetze der Republik Singapur.",
+    "summaryLicense": "Lizenzgewaehrung",
+    "summaryLicenseDesc": "Beschraenkte, nicht-exklusive, nicht uebertragbare, widerrufliche Lizenz fuer interne Nutzung.",
+    "summaryRestrictions": "Einschraenkungen",
+    "summaryRestrictionsDesc": "Kein Kopieren, Modifizieren, Unterlizenzieren, Reverse Engineering oder Entwicklung konkurrierender Produkte.",
+    "summaryConfidentiality": "Vertraulichkeit",
+    "summaryConfidentialityDesc": "Die Software enthaelt Geschaeftsgeheimnisse. Sie muessen die Vertraulichkeit wahren.",
+    "summaryWarranty": "Gewaehrleistungsausschluss",
+    "summaryWarrantyDesc": "Software wird wie besehen ohne Garantien bereitgestellt.",
+    "summaryTermination": "Kuendigung",
+    "summaryTerminationDesc": "Die Lizenz kann bei Verstoss jederzeit gekuendigt werden."
   }
 }

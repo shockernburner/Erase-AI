@@ -1385,6 +1385,27 @@
     "checkboxLabel": "利用規約とライセンス契約を読み、同意します",
     "acceptButton": "同意して続ける",
     "accepting": "処理中...",
-    "acceptError": "利用規約の同意に失敗しました。もう一度お試しください。"
+    "acceptError": "利用規約の同意に失敗しました。もう一度お試しください。",
+    "viewFullDocument": "クリックして全文を読む",
+    "summaryIP": "知的財産権",
+    "summaryIPDesc": "プラットフォーム、ソースコード、アルゴリズム、すべての知的財産はVantward Solutions Pte. Ltd.の独占的な所有物です。",
+    "summaryProhibited": "禁止事項",
+    "summaryProhibitedDesc": "リバースエンジニアリング、スクレイピング、クローン作成、API不正使用、競合的複製は禁止されています。",
+    "summaryData": "データ処理",
+    "summaryDataDesc": "お客様のコンテンツはサービス提供のためにのみ処理されます。",
+    "summaryLiability": "責任の制限",
+    "summaryLiabilityDesc": "最大責任額は過去12か月間に支払われた料金に限定されます。",
+    "summaryGoverning": "準拠法",
+    "summaryGoverningDesc": "シンガポール共和国の法律に準拠します。",
+    "summaryLicense": "ライセンスの付与",
+    "summaryLicenseDesc": "内部的な業務または個人使用のための限定的、非独占的、譲渡不可、取り消し可能なライセンス。",
+    "summaryRestrictions": "制限事項",
+    "summaryRestrictionsDesc": "複製、改変、サブライセンス、リバースエンジニアリング、競合製品の開発は禁止されています。",
+    "summaryConfidentiality": "機密保持",
+    "summaryConfidentialityDesc": "ソフトウェアには営業秘密が含まれています。機密を保持する義務があります。",
+    "summaryWarranty": "保証の免責",
+    "summaryWarrantyDesc": "ソフトウェアは現状のまま保証なしで提供されます。",
+    "summaryTermination": "終了",
+    "summaryTerminationDesc": "違反があった場合、ライセンスはいつでも終了できます。"
   }
 }

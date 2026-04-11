@@ -1,9 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ShieldX, ScrollText, FileCheck, Loader2, ExternalLink } from "lucide-react";
-
-const CURRENT_TERMS_VERSION = "1.0";
 
 interface TermsAcceptanceModalProps {
   onAccepted: () => void;
@@ -16,6 +14,16 @@ export default function TermsAcceptanceModal({ onAccepted, onViewTerms, onViewLi
   const [checked, setChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentVersion, setCurrentVersion] = useState<string>("1.0");
+
+  useEffect(() => {
+    fetch("/api/auth/terms-version", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        if (data.currentVersion) setCurrentVersion(data.currentVersion);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleAccept = async () => {
     if (!checked) return;
@@ -53,7 +61,7 @@ export default function TermsAcceptanceModal({ onAccepted, onViewTerms, onViewLi
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="bg-card border border-border rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl"
+        className="bg-card border border-border rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="bg-primary/10 p-3 rounded-full w-fit mx-auto mb-4">
           <ShieldX className="w-8 h-8 text-primary" />
@@ -65,34 +73,52 @@ export default function TermsAcceptanceModal({ onAccepted, onViewTerms, onViewLi
           {t("legal.acceptDesc")}
         </p>
 
-        <div className="space-y-3 mb-6">
-          <button
-            onClick={onViewTerms}
-            className="w-full flex items-center gap-3 p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-all text-left group"
-          >
-            <div className="bg-primary/10 p-2 rounded-lg shrink-0">
-              <ScrollText className="w-5 h-5 text-primary" />
+        <div className="space-y-4 mb-6">
+          <div className="rounded-xl border border-border/50 bg-muted/5 overflow-hidden">
+            <button
+              onClick={onViewTerms}
+              className="w-full flex items-center gap-3 p-4 hover:bg-muted/10 transition-all text-left group"
+            >
+              <div className="bg-primary/10 p-2 rounded-lg shrink-0">
+                <ScrollText className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{t("legal.tosTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("legal.viewFullDocument")}</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
+            </button>
+            <div className="border-t border-border/30 px-4 py-3 max-h-40 overflow-y-auto text-xs text-muted-foreground space-y-2 bg-background/50">
+              <p><strong className="text-foreground/80">{t("legal.summaryIP")}:</strong> {t("legal.summaryIPDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryProhibited")}:</strong> {t("legal.summaryProhibitedDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryData")}:</strong> {t("legal.summaryDataDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryLiability")}:</strong> {t("legal.summaryLiabilityDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryGoverning")}:</strong> {t("legal.summaryGoverningDesc")}</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">{t("legal.tosTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("legal.tosSummary")}</p>
-            </div>
-            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
-          </button>
+          </div>
 
-          <button
-            onClick={onViewLicense}
-            className="w-full flex items-center gap-3 p-4 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/20 transition-all text-left group"
-          >
-            <div className="bg-emerald-500/10 p-2 rounded-lg shrink-0">
-              <FileCheck className="w-5 h-5 text-emerald-400" />
+          <div className="rounded-xl border border-border/50 bg-muted/5 overflow-hidden">
+            <button
+              onClick={onViewLicense}
+              className="w-full flex items-center gap-3 p-4 hover:bg-muted/10 transition-all text-left group"
+            >
+              <div className="bg-emerald-500/10 p-2 rounded-lg shrink-0">
+                <FileCheck className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{t("legal.licenseTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("legal.viewFullDocument")}</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
+            </button>
+            <div className="border-t border-border/30 px-4 py-3 max-h-40 overflow-y-auto text-xs text-muted-foreground space-y-2 bg-background/50">
+              <p><strong className="text-foreground/80">{t("legal.summaryLicense")}:</strong> {t("legal.summaryLicenseDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryRestrictions")}:</strong> {t("legal.summaryRestrictionsDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryConfidentiality")}:</strong> {t("legal.summaryConfidentialityDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryWarranty")}:</strong> {t("legal.summaryWarrantyDesc")}</p>
+              <p><strong className="text-foreground/80">{t("legal.summaryTermination")}:</strong> {t("legal.summaryTerminationDesc")}</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">{t("legal.licenseTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("legal.licenseSummary")}</p>
-            </div>
-            <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
-          </button>
+          </div>
         </div>
 
         <label className="flex items-start gap-3 mb-6 cursor-pointer group">
@@ -133,11 +159,9 @@ export default function TermsAcceptanceModal({ onAccepted, onViewTerms, onViewLi
         </button>
 
         <p className="text-[10px] text-muted-foreground/50 text-center mt-4">
-          {t("legal.version")} {CURRENT_TERMS_VERSION}
+          {t("legal.version")} {currentVersion}
         </p>
       </motion.div>
     </motion.div>
   );
 }
-
-export { CURRENT_TERMS_VERSION };

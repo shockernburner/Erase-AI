@@ -1385,6 +1385,27 @@
     "checkboxLabel": "J'ai lu et j'accepte les Conditions d'utilisation et le Contrat de licence",
     "acceptButton": "Accepter et continuer",
     "accepting": "Traitement en cours...",
-    "acceptError": "Échec de l'acceptation des conditions. Veuillez réessayer."
+    "acceptError": "Échec de l'acceptation des conditions. Veuillez réessayer.",
+    "viewFullDocument": "Cliquez pour lire le document complet",
+    "summaryIP": "Propriete Intellectuelle",
+    "summaryIPDesc": "La plateforme, le code source, les algorithmes et toute la PI sont la propriete exclusive de Vantward Solutions Pte. Ltd.",
+    "summaryProhibited": "Activites Interdites",
+    "summaryProhibitedDesc": "Pas de retro-ingenierie, scraping, clonage, abus API ou replication concurrentielle.",
+    "summaryData": "Traitement des Donnees",
+    "summaryDataDesc": "Votre contenu est traite uniquement pour fournir le service.",
+    "summaryLiability": "Limitation de Responsabilite",
+    "summaryLiabilityDesc": "Responsabilite maximale limitee aux frais payes au cours des 12 derniers mois.",
+    "summaryGoverning": "Droit Applicable",
+    "summaryGoverningDesc": "Regi par les lois de la Republique de Singapour.",
+    "summaryLicense": "Concession de Licence",
+    "summaryLicenseDesc": "Licence limitee, non exclusive, non transferable, revocable pour un usage professionnel interne ou personnel.",
+    "summaryRestrictions": "Restrictions",
+    "summaryRestrictionsDesc": "Interdiction de copier, modifier, sous-licencier, faire de la retro-ingenierie ou developper des produits concurrents.",
+    "summaryConfidentiality": "Confidentialite",
+    "summaryConfidentialityDesc": "Le logiciel contient des secrets commerciaux. Vous devez maintenir la confidentialite.",
+    "summaryWarranty": "Exclusion de Garantie",
+    "summaryWarrantyDesc": "Logiciel fourni en l'etat sans garantie.",
+    "summaryTermination": "Resiliation",
+    "summaryTerminationDesc": "La licence peut etre resiliee a tout moment en cas de violation."
   }
 }
