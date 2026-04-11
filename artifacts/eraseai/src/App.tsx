@@ -259,10 +259,13 @@ function AuthGate() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
+      setTermsAccepted(null);
       fetch("/api/auth/terms-status", { credentials: "include" })
         .then(r => r.json())
         .then(data => setTermsAccepted(data.accepted === true))
         .catch(() => setTermsAccepted(false));
+    } else {
+      setTermsAccepted(null);
     }
   }, [isAuthenticated, user]);
 
