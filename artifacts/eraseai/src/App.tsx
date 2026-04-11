@@ -14,6 +14,7 @@ import DeveloperDashboard from "@/pages/DeveloperDashboard";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import PersonalMode from "@/pages/PersonalMode";
 import SocialPosts from "@/pages/SocialPosts";
+import AdContent from "@/pages/AdContent";
 import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
@@ -128,7 +129,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 function SeoLoadingFallback() {
@@ -373,6 +374,13 @@ function AuthGate() {
       return <Home onNavigate={setView} />;
     }
     return <SocialPosts onBack={() => setView("home")} />;
+  }
+
+  if (view === "adContent") {
+    if (user?.email !== "firdous.mahmood26@gmail.com") {
+      return <Home onNavigate={setView} />;
+    }
+    return <AdContent onBack={() => setView("home")} />;
   }
 
   if (view === "docs") {

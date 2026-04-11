@@ -29,13 +29,14 @@ import {
   ScrollText,
   ShieldCheck,
   Phone,
+  TrendingUp,
 } from "lucide-react";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
 
 function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation();
@@ -193,6 +194,13 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               >
                 <Megaphone className="w-4 h-4" />
                 {t("nav.socialPosts")}
+              </button>
+              <button
+                onClick={() => { setOpen(false); onNavigate("adContent"); }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+              >
+                <TrendingUp className="w-4 h-4" />
+                {t("nav.adContent")}
               </button>
             )}
             <button
