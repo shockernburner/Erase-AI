@@ -188,20 +188,22 @@ function UserMenu({ onNavigate }: { onNavigate: (view: AppView) => void }) {
               {t("nav.personalMode")}
             </button>
             {user.email === "firdous.mahmood26@gmail.com" && (
-              <button
-                onClick={() => { setOpen(false); onNavigate("social"); }}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-              >
-                <Megaphone className="w-4 h-4" />
-                {t("nav.socialPosts")}
-              </button>
-              <button
-                onClick={() => { setOpen(false); onNavigate("adContent"); }}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-              >
-                <TrendingUp className="w-4 h-4" />
-                {t("nav.adContent")}
-              </button>
+              <>
+                <button
+                  onClick={() => { setOpen(false); onNavigate("social"); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+                >
+                  <Megaphone className="w-4 h-4" />
+                  {t("nav.socialPosts")}
+                </button>
+                <button
+                  onClick={() => { setOpen(false); onNavigate("adContent"); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  {t("nav.adContent")}
+                </button>
+              </>
             )}
             <button
               onClick={() => { setOpen(false); onNavigate("devMode"); }}
