@@ -52,6 +52,8 @@ export function SeoFooter() {
               <li><a href={`${BASE}ai-prompt-security`} className="hover:text-primary transition-colors">AI Prompt Security</a></li>
               <li><a href={`${BASE}api-key-protection-ai`} className="hover:text-primary transition-colors">API Key Protection</a></li>
               <li><a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a></li>
+              <li><a href={`${BASE}terms`} className="hover:text-primary transition-colors">Terms of Service</a></li>
+              <li><a href={`${BASE}license`} className="hover:text-primary transition-colors">License Agreement</a></li>
             </ul>
           </div>
           <div>

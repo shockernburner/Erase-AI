@@ -20,7 +20,8 @@
     "devMode": "开发者模式",
     "certifications": "合规路线图",
     "firewallDocs": "扩展设置",
-    "founderPitch": "创始人介绍"
+    "founderPitch": "创始人介绍",
+    "termsLegal": "法律条款"
   },
   "landing": {
     "heroBadge": "AI数据治理",
@@ -1370,5 +1371,20 @@
     "firefoxStep3": "扩展将在Firefox重启时被删除。永久安装需要签名。",
     "firefoxStep4": "部分Chrome特有API在Firefox中不可用。核心功能正常运行。",
     "firefoxWarning": "Firefox临时扩展在重启时会被删除。永久安装需要通过Firefox附加组件开发者中心签名。"
+  },
+  "legal": {
+    "tosTitle": "服务条款",
+    "licenseTitle": "许可协议",
+    "effectiveDate": "生效日期",
+    "version": "版本",
+    "back": "返回",
+    "acceptTitle": "服务条款与许可协议",
+    "acceptDesc": "请阅读并接受我们的服务条款和许可协议以继续使用 EraseAI。",
+    "tosSummary": "使用规则、禁止活动和责任条款",
+    "licenseSummary": "软件许可授权、限制和知识产权",
+    "checkboxLabel": "我已阅读并同意服务条款和许可协议",
+    "acceptButton": "同意并继续",
+    "accepting": "处理中...",
+    "acceptError": "接受条款失败，请重试。"
   }
 }

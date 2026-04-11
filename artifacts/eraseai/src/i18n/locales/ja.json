@@ -20,7 +20,8 @@
     "devMode": "開発者モード",
     "certifications": "コンプライアンスロードマップ",
     "firewallDocs": "拡張機能設定",
-    "founderPitch": "創業者のピッチ"
+    "founderPitch": "創業者のピッチ",
+    "termsLegal": "利用規約"
   },
   "landing": {
     "heroBadge": "AIデータガバナンス",
@@ -1370,5 +1371,20 @@
     "firefoxStep3": "拡張機能はFirefox再起動時に削除されます。永続的なインストールには署名が必要です。",
     "firefoxStep4": "一部のChrome固有APIはFirefoxでは利用できません。コア機能は正常に動作します。",
     "firefoxWarning": "Firefoxの一時拡張機能は再起動時に削除されます。永続的なインストールにはFirefoxアドオン開発者ハブでの署名が必要です。"
+  },
+  "legal": {
+    "tosTitle": "利用規約",
+    "licenseTitle": "ライセンス契約",
+    "effectiveDate": "発効日",
+    "version": "バージョン",
+    "back": "戻る",
+    "acceptTitle": "利用規約とライセンス",
+    "acceptDesc": "EraseAIのご利用を続けるには、利用規約とライセンス契約をご確認の上、同意してください。",
+    "tosSummary": "利用ルール、禁止事項、責任条項",
+    "licenseSummary": "ソフトウェアライセンス、制限事項、知的財産権",
+    "checkboxLabel": "利用規約とライセンス契約を読み、同意します",
+    "acceptButton": "同意して続ける",
+    "accepting": "処理中...",
+    "acceptError": "利用規約の同意に失敗しました。もう一度お試しください。"
   }
 }

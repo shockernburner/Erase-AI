@@ -20,7 +20,8 @@
     "devMode": "Entwicklermodus",
     "certifications": "Compliance-Roadmap",
     "firewallDocs": "Erweiterung einrichten",
-    "founderPitch": "Gründer-Pitch"
+    "founderPitch": "Gründer-Pitch",
+    "termsLegal": "Rechtliches"
   },
   "landing": {
     "heroBadge": "KI-Daten-Governance",
@@ -1370,5 +1371,20 @@
     "firefoxStep3": "Die Erweiterung wird beim Neustart von Firefox entfernt. Für dauerhafte Installation muss sie signiert werden.",
     "firefoxStep4": "Einige Chrome-spezifische APIs sind in Firefox nicht verfügbar. Kernfunktionalität funktioniert normal.",
     "firefoxWarning": "Temporäre Firefox-Erweiterungen werden beim Neustart entfernt. Für dauerhafte Installation muss die Erweiterung über den Firefox Add-ons Developer Hub signiert werden."
+  },
+  "legal": {
+    "tosTitle": "Nutzungsbedingungen",
+    "licenseTitle": "Lizenzvereinbarung",
+    "effectiveDate": "Gültig ab",
+    "version": "Version",
+    "back": "Zurück",
+    "acceptTitle": "Nutzungsbedingungen & Lizenz",
+    "acceptDesc": "Bitte lesen und akzeptieren Sie unsere Nutzungsbedingungen und Lizenzvereinbarung, um EraseAI weiter nutzen zu können.",
+    "tosSummary": "Nutzungsregeln, verbotene Aktivitäten und Haftungsbedingungen",
+    "licenseSummary": "Softwarelizenz, Einschränkungen und geistiges Eigentum",
+    "checkboxLabel": "Ich habe die Nutzungsbedingungen und die Lizenzvereinbarung gelesen und stimme ihnen zu",
+    "acceptButton": "Zustimmen & Fortfahren",
+    "accepting": "Wird verarbeitet...",
+    "acceptError": "Fehler beim Akzeptieren der Bedingungen. Bitte versuchen Sie es erneut."
   }
 }

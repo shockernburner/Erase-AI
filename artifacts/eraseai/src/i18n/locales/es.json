@@ -20,7 +20,8 @@
     "devMode": "Modo Desarrollador",
     "certifications": "Hoja de ruta de cumplimiento",
     "firewallDocs": "Configurar Extensión",
-    "founderPitch": "Pitch del fundador"
+    "founderPitch": "Pitch del fundador",
+    "termsLegal": "Términos Legales"
   },
   "landing": {
     "heroBadge": "Gobernanza de datos IA",
@@ -1370,5 +1371,20 @@
     "firefoxStep3": "La extensión se eliminará al reiniciar Firefox. Para instalación permanente, debe ser firmada.",
     "firefoxStep4": "Algunas APIs de Chrome no están disponibles en Firefox. La funcionalidad principal funciona normalmente.",
     "firefoxWarning": "Las extensiones temporales de Firefox se eliminan al reiniciar. Para instalación permanente, la extensión debe ser firmada a través del Hub de Desarrolladores de Firefox."
+  },
+  "legal": {
+    "tosTitle": "Términos de Servicio",
+    "licenseTitle": "Acuerdo de Licencia",
+    "effectiveDate": "Fecha de vigencia",
+    "version": "Versión",
+    "back": "Volver",
+    "acceptTitle": "Términos y Licencia",
+    "acceptDesc": "Revise y acepte nuestros Términos de Servicio y Acuerdo de Licencia para continuar usando EraseAI.",
+    "tosSummary": "Reglas de uso, actividades prohibidas y términos de responsabilidad",
+    "licenseSummary": "Licencia de software, restricciones y derechos de propiedad intelectual",
+    "checkboxLabel": "He leído y acepto los Términos de Servicio y el Acuerdo de Licencia",
+    "acceptButton": "Aceptar y Continuar",
+    "accepting": "Procesando...",
+    "acceptError": "Error al aceptar los términos. Por favor, inténtelo de nuevo."
   }
 }

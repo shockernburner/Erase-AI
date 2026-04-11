@@ -413,6 +413,10 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                   <a href={`${import.meta.env.BASE_URL}chatgpt-data-leak`} className="hover:text-primary transition-colors">Prevent Data Leaks</a>
                   <span className="text-border/30">·</span>
                   <a href={`${import.meta.env.BASE_URL}blog`} className="hover:text-primary transition-colors">Blog</a>
+                  <span className="text-border/30">·</span>
+                  <a href={`${import.meta.env.BASE_URL}terms`} className="hover:text-primary transition-colors">{t("legal.tosTitle")}</a>
+                  <span className="text-border/30">·</span>
+                  <a href={`${import.meta.env.BASE_URL}license`} className="hover:text-primary transition-colors">{t("legal.licenseTitle")}</a>
                 </div>
               </motion.div>
             </div>

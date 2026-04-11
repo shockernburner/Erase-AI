@@ -46,6 +46,8 @@ function setSessionCookie(res: Response, sid: string) {
   });
 }
 
+const CURRENT_TERMS_VERSION = "1.0";
+
 function buildSessionUser(dbUser: {
   id: string;
   email: string | null;
@@ -56,6 +58,8 @@ function buildSessionUser(dbUser: {
   role: string;
   planStartDate?: Date | null;
   planEndDate?: Date | null;
+  termsAcceptedAt?: Date | null;
+  termsVersion?: string | null;
 }) {
   return {
     id: dbUser.id,
@@ -67,6 +71,8 @@ function buildSessionUser(dbUser: {
     role: (dbUser.role as "user" | "admin") || "user",
     planStartDate: dbUser.planStartDate?.toISOString() ?? null,
     planEndDate: dbUser.planEndDate?.toISOString() ?? null,
+    termsAcceptedAt: dbUser.termsAcceptedAt?.toISOString() ?? null,
+    termsVersion: dbUser.termsVersion ?? null,
   };
 }
 
@@ -614,6 +620,42 @@ router.post("/auth/logout", async (req: Request, res: Response) => {
     console.error("Logout error:", err);
     res.json({ success: true });
   }
+});
+
+router.post("/auth/accept-terms", async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const now = new Date();
+    const [updated] = await db
+      .update(usersTable)
+      .set({
+        termsAcceptedAt: now,
+        termsVersion: CURRENT_TERMS_VERSION,
+      })
+      .where(eq(usersTable.id, req.user!.id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({
+      termsAcceptedAt: now.toISOString(),
+      termsVersion: CURRENT_TERMS_VERSION,
+    });
+  } catch (err) {
+    console.error("Accept terms error:", err);
+    res.status(500).json({ error: "Failed to accept terms" });
+  }
+});
+
+router.get("/auth/terms-version", (_req: Request, res: Response) => {
+  res.json({ currentVersion: CURRENT_TERMS_VERSION });
 });
 
 export default router;

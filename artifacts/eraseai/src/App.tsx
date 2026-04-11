@@ -18,6 +18,9 @@ import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
+import TermsOfService from "@/pages/TermsOfService";
+import LicenseAgreement from "@/pages/LicenseAgreement";
+import TermsAcceptanceModal, { CURRENT_TERMS_VERSION } from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -123,7 +126,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license";
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 function SeoLoadingFallback() {
@@ -232,6 +235,7 @@ function AuthGate() {
     return "home";
   });
   const [initialViewSet, setInitialViewSet] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -253,6 +257,12 @@ function AuthGate() {
     }
   }, [isAuthenticated, user, initialViewSet, view]);
 
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setTermsAccepted(user.termsVersion === CURRENT_TERMS_VERSION);
+    }
+  }, [isAuthenticated, user]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -271,6 +281,16 @@ function AuthGate() {
     return <PublicLanding onPreview={setPreviewMode} />;
   }
 
+  if (view === "terms") {
+    return <TermsOfService onBack={() => setView("home")} />;
+  }
+
+  if (view === "license") {
+    return <LicenseAgreement onBack={() => setView("home")} />;
+  }
+
+  const needsTerms = termsAccepted === false;
+
   const trialExpired = isTrialExpiredFrontend(user);
 
   if (view === "admin" && user?.role !== "admin") {
@@ -283,6 +303,19 @@ function AuthGate() {
 
   if (view === "pricing") {
     return <PricingPage onBack={() => setView("home")} />;
+  }
+
+  if (needsTerms) {
+    return (
+      <>
+        <Home onNavigate={setView} />
+        <TermsAcceptanceModal
+          onAccepted={() => setTermsAccepted(true)}
+          onViewTerms={() => setView("terms")}
+          onViewLicense={() => setView("license")}
+        />
+      </>
+    );
   }
 
   if (trialExpired) {
@@ -353,6 +386,12 @@ function App() {
               <Route path="/blog/api-keys-chatgpt" component={BlogPost_ApiKeys} />
               <Route path="/blog/what-is-ai-firewall" component={BlogPost_AiFirewall} />
               <Route path="/blog/prevent-data-leaks-ai" component={BlogPost_PreventLeaks} />
+              <Route path="/terms">
+                <TermsOfService onBack={() => window.history.back()} />
+              </Route>
+              <Route path="/license">
+                <LicenseAgreement onBack={() => window.history.back()} />
+              </Route>
               <Route>
                 <AuthGate />
               </Route>

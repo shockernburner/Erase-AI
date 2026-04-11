@@ -26,6 +26,8 @@ export const usersTable = pgTable("users", {
   subscriptionStatus: varchar("subscription_status", { length: 30 }),
   planStartDate: timestamp("plan_start_date", { withTimezone: true }),
   planEndDate: timestamp("plan_end_date", { withTimezone: true }),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  termsVersion: varchar("terms_version", { length: 20 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

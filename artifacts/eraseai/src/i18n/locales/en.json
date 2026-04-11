@@ -20,7 +20,8 @@
     "devMode": "Developer Mode",
     "certifications": "Compliance Roadmap",
     "firewallDocs": "Extension Setup",
-    "founderPitch": "Founder's Pitch"
+    "founderPitch": "Founder's Pitch",
+    "termsLegal": "Terms & Legal"
   },
   "landing": {
     "heroBadge": "AI Data Governance",
@@ -1370,5 +1371,20 @@
     "scoreCautionDesc": "Medium risk — potential issues detected. Extension shows a yellow warning overlay with sanitize option.",
     "scoreSafe": "Safe (71–100)",
     "scoreSafeDesc": "Low risk — no significant issues found. Extension auto-sends the prompt without interruption."
+  },
+  "legal": {
+    "tosTitle": "Terms of Service",
+    "licenseTitle": "License Agreement",
+    "effectiveDate": "Effective Date",
+    "version": "Version",
+    "back": "Back",
+    "acceptTitle": "Terms & License Agreement",
+    "acceptDesc": "Please review and accept our Terms of Service and License Agreement to continue using EraseAI.",
+    "tosSummary": "Usage rules, prohibited activities, and liability terms",
+    "licenseSummary": "Software license grant, restrictions, and IP rights",
+    "checkboxLabel": "I have read and agree to the Terms of Service and License Agreement",
+    "acceptButton": "I Agree & Continue",
+    "accepting": "Processing...",
+    "acceptError": "Failed to accept terms. Please try again."
   }
 }
