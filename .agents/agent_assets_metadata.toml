@@ -66,6 +66,12 @@ uri = "file://attached_assets/vantward_linkedin_banner.png"
 type = "image"
 title = "Vantward LinkedIn banner clean"
 
+[[generated]]
+id = "ZQcY_lYyMe6QVYo4B5NOQ"
+uri = "file://attached_assets/eraseai_linkedin_ad_image.png"
+type = "image"
+title = "EraseAI LinkedIn ad shield image"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -185,3 +191,9 @@ id = "u_Pks_NgMtZ0ignKQJvdB"
 uri = "file://attached_assets/vantward_linkedin_banner.png"
 type = "image"
 title = "LinkedIn Cover Banner"
+
+[[outputs]]
+id = "OEzevJ6jlOUF-FxTav34E"
+uri = "file://attached_assets/eraseai_linkedin_ad_image.png"
+type = "image"
+title = "EraseAI LinkedIn Ad Image"
