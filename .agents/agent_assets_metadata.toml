@@ -42,6 +42,30 @@ uri = "file://attached_assets/eraseai_linkedin_cover.png"
 type = "image"
 title = "EraseAI LinkedIn cover"
 
+[[generated]]
+id = "-Llr5gJDVNBpl0G4n91c9"
+uri = "file://attached_assets/vantward_logo_v1.png"
+type = "image"
+title = "Vantward logo geometric modern"
+
+[[generated]]
+id = "hd4DVAYG4kbKkfmkMpUTZ"
+uri = "file://attached_assets/vantward_logo_v2.png"
+type = "image"
+title = "Vantward logo shield abstract"
+
+[[generated]]
+id = "gAK9kDjY6fCFPbn-vE07-"
+uri = "file://attached_assets/vantward_logo_v3.png"
+type = "image"
+title = "Vantward logo V-shape convergence"
+
+[[generated]]
+id = "vW_l2sgzRu6XukpFiF__-"
+uri = "file://attached_assets/vantward_linkedin_banner.png"
+type = "image"
+title = "Vantward LinkedIn banner clean"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -137,3 +161,27 @@ id = "taJw0DAxLyQdEgz1aiA6O"
 uri = "file://outputs/akij-pitch-letter.md"
 type = "text"
 title = "Akij Ventures Pitch Letter (Markdown)"
+
+[[outputs]]
+id = "X_qNhncpGbVzyZBP028iJ"
+uri = "file://attached_assets/vantward_logo_v1.png"
+type = "image"
+title = "Logo Option A - Shield with Circuit Flow"
+
+[[outputs]]
+id = "X1o52fAUh_R_sLnxnOGkT"
+uri = "file://attached_assets/vantward_logo_v2.png"
+type = "image"
+title = "Logo Option B - Hexagonal Shield with Lightning"
+
+[[outputs]]
+id = "Q46o1nvvjaD0YL3Gne1Xx"
+uri = "file://attached_assets/vantward_logo_v3.png"
+type = "image"
+title = "Logo Option C - V-Shape Circuit Convergence"
+
+[[outputs]]
+id = "u_Pks_NgMtZ0ignKQJvdB"
+uri = "file://attached_assets/vantward_linkedin_banner.png"
+type = "image"
+title = "LinkedIn Cover Banner"
