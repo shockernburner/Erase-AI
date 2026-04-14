@@ -72,6 +72,12 @@ uri = "file://attached_assets/eraseai_linkedin_ad_image.png"
 type = "image"
 title = "EraseAI LinkedIn ad shield image"
 
+[[generated]]
+id = "fJ9Hf8M38js7CPjiEUo-y"
+uri = "file://attached_assets/eraseai_favicon.png"
+type = "image"
+title = "EraseAI favicon brain eraser icon"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
