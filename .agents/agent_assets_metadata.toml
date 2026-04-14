@@ -78,6 +78,12 @@ uri = "file://attached_assets/eraseai_favicon.png"
 type = "image"
 title = "EraseAI favicon brain eraser icon"
 
+[[generated]]
+id = "m7YkBnYKBihdEG1EEqfKL"
+uri = "file://attached_assets/eraseai_favicon_small.png"
+type = "image"
+title = "EraseAI favicon small simple"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
