@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ShieldX,
   Globe,
@@ -63,15 +63,12 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
         }}
       />
 
-      <AnimatePresence mode="wait">
-        {true && (
-          <motion.div
-            key="landing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10"
-          >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="relative z-10"
+      >
             <motion.header
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -303,9 +300,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 </div>
               </motion.div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
