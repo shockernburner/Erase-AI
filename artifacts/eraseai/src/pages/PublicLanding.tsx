@@ -1,21 +1,16 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldX,
   Globe,
-  Film,
-  Loader2,
   Play,
-  SkipForward,
   Code2,
   Building2,
   Shield,
   MessageCircle,
   Mail,
   LogIn,
-  Volume2,
-  VolumeX,
   ScanSearch,
   ShieldAlert,
   ShieldCheck,
@@ -24,7 +19,6 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import AuthForm from "@/components/AuthForm";
 
-const VIDEO_SEEN_KEY = "eraseai_video_seen";
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 function AnimatedNumber({ value }: { value: number }) {
@@ -57,72 +51,6 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
       .catch(() => {});
   }, []);
 
-  const [videoFinished, setVideoFinished] = useState(() => {
-    try { return typeof window !== "undefined" && localStorage.getItem(VIDEO_SEEN_KEY) === "1"; }
-    catch { return false; }
-  });
-  const [showVideo, setShowVideo] = useState(!videoFinished);
-  const [videoReady, setVideoReady] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const hasUnmutedRef = useRef(false);
-
-  const handleSkip = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
-    localStorage.setItem(VIDEO_SEEN_KEY, "1");
-    setVideoFinished(true);
-    setShowVideo(false);
-  }, []);
-
-  const handleVideoEnd = useCallback(() => {
-    localStorage.setItem(VIDEO_SEEN_KEY, "1");
-    setVideoFinished(true);
-    setShowVideo(false);
-  }, []);
-
-  const handleReplay = useCallback(() => {
-    localStorage.removeItem(VIDEO_SEEN_KEY);
-    setVideoFinished(false);
-    setShowVideo(true);
-    setIsMuted(true);
-    hasUnmutedRef.current = false;
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-    }
-  }, []);
-
-  const handleCanPlay = useCallback(() => {
-    setVideoReady(true);
-  }, []);
-
-  const handleWaiting = useCallback(() => {
-    setVideoReady(false);
-  }, []);
-
-  const handlePlaying = useCallback(() => {
-    setVideoReady(true);
-    if (!hasUnmutedRef.current && videoRef.current) {
-      hasUnmutedRef.current = true;
-      try {
-        videoRef.current.muted = false;
-        setIsMuted(false);
-      } catch {
-      }
-    }
-  }, []);
-
-  const toggleMute = useCallback(() => {
-    if (videoRef.current) {
-      const next = !videoRef.current.muted;
-      videoRef.current.muted = next;
-      setIsMuted(next);
-    }
-  }, []);
-
   return (
     <div className="min-h-screen w-full relative">
       <div
@@ -135,50 +63,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
         }}
       />
 
-      <div
-        className={`fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-500 ${showVideo ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-      >
-        {!videoReady && showVideo && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
-            <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.6)] animate-pulse">
-              <ShieldX className="w-10 h-10" />
-            </div>
-            <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              {t("app.loading")}
-            </div>
-          </div>
-        )}
-        <video
-          ref={videoRef}
-          autoPlay={!videoFinished}
-          playsInline
-          muted
-          preload="auto"
-          onCanPlay={handleCanPlay}
-          onWaiting={handleWaiting}
-          onPlaying={handlePlaying}
-          onEnded={handleVideoEnd}
-          className={`w-full h-full object-contain transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
-          src={`${import.meta.env.BASE_URL}videos/landing.mp4`}
-        />
-        <button
-          onClick={toggleMute}
-          className={`absolute bottom-8 left-8 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all z-20 ${showVideo ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        >
-          {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        </button>
-        <button
-          onClick={handleSkip}
-          className={`absolute bottom-8 right-8 flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all z-20 ${showVideo ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        >
-          <SkipForward className="w-4 h-4" />
-          {t("landing.skip")}
-        </button>
-      </div>
-
       <AnimatePresence mode="wait">
-        {videoFinished && (
+        {true && (
           <motion.div
             key="landing"
             initial={{ opacity: 0 }}
@@ -206,13 +92,6 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={handleReplay}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/30 transition-all group"
-                >
-                  <Film className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  {t("nav.founderPitch")}
-                </button>
                 <button
                   onClick={() => window.open("/how-it-works-video/", "_blank")}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-medium hover:bg-primary/20 transition-all group"
