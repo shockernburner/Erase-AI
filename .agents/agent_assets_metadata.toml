@@ -84,6 +84,12 @@ uri = "file://attached_assets/eraseai_favicon_small.png"
 type = "image"
 title = "EraseAI favicon small simple"
 
+[[generated]]
+id = "-fa0edY2QCu0hgpPkV1FQ"
+uri = "file://attached_assets/vantward_article_machine_unlearning.png"
+type = "image"
+title = "Machine unlearning article cover GDPR"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -209,3 +215,9 @@ id = "OEzevJ6jlOUF-FxTav34E"
 uri = "file://attached_assets/eraseai_linkedin_ad_image.png"
 type = "image"
 title = "EraseAI LinkedIn Ad Image"
+
+[[outputs]]
+id = "wBvjRS4AyHSk4G6lNXwdt"
+uri = "file://attached_assets/vantward_article_machine_unlearning.png"
+type = "image"
+title = "LinkedIn Article #3 Cover — Machine Unlearning"
