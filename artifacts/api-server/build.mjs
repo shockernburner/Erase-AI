@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm, mkdir, access } from "node:fs/promises";
+import { rm, mkdir, access, readFile, stat, writeFile } from "node:fs/promises";
 import AdmZip from "adm-zip";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
@@ -18,6 +18,27 @@ async function packExtensionZip(distDir) {
   } catch {
     throw new Error(`[build] extension folder not found at ${extensionDir}. The download endpoint depends on this zip — aborting build.`);
   }
+
+  const manifestPath = path.resolve(extensionDir, "manifest.json");
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  } catch (err) {
+    throw new Error(`[build] failed to read extension manifest at ${manifestPath}: ${err.message}`);
+  }
+  const version = manifest.version;
+  if (!version || typeof version !== "string") {
+    throw new Error(`[build] extension manifest is missing a valid "version" field — aborting build.`);
+  }
+
+  let changelog = { entries: [] };
+  const changelogPath = path.resolve(extensionDir, "CHANGELOG.json");
+  try {
+    changelog = JSON.parse(await readFile(changelogPath, "utf8"));
+  } catch {
+    console.warn(`[build] no CHANGELOG.json found at ${changelogPath} — version metadata will have an empty changelog.`);
+  }
+
   await mkdir(distDir, { recursive: true });
 
   // Skip developer-facing files that should not ship inside the extension
@@ -34,9 +55,11 @@ async function packExtensionZip(distDir) {
   if (manualEntryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty zip — aborting build.`);
   }
-  const manualOutPath = path.resolve(distDir, "eraseai-firewall.zip");
+  const manualFilename = `eraseai-firewall-${version}.zip`;
+  const manualOutPath = path.resolve(distDir, manualFilename);
   manualZip.writeZip(manualOutPath);
-  console.log(`[build] packed manual-install extension to ${manualOutPath} (${manualEntryCount} entries)`);
+  const manualInfo = await stat(manualOutPath);
+  console.log(`[build] packed manual-install extension to ${manualOutPath} (${manualEntryCount} entries, ${manualInfo.size} bytes)`);
 
   // 2) Store-upload zip — flat layout with manifest.json at the zip root.
   //    This is the package shape required by the Chrome Web Store, the Edge
@@ -47,9 +70,24 @@ async function packExtensionZip(distDir) {
   if (storeEntryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty store zip — aborting build.`);
   }
-  const storeOutPath = path.resolve(distDir, "eraseai-firewall-store.zip");
+  const storeFilename = `eraseai-firewall-store-${version}.zip`;
+  const storeOutPath = path.resolve(distDir, storeFilename);
   storeZip.writeZip(storeOutPath);
   console.log(`[build] packed store-upload extension to ${storeOutPath} (${storeEntryCount} entries)`);
+
+  // Metadata sidecar consumed by /api/extension/version and
+  // /api/extension/download. The download route serves the manual-install
+  // zip, so its filename + stats are what we record here.
+  const metadata = {
+    version,
+    filename: manualFilename,
+    sizeBytes: manualInfo.size,
+    lastModified: manualInfo.mtime.toISOString(),
+    changelog: Array.isArray(changelog.entries) ? changelog.entries : [],
+  };
+  const metadataPath = path.resolve(distDir, "extension-metadata.json");
+  await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+  console.log(`[build] wrote extension metadata to ${metadataPath}`);
 }
 
 async function buildAll() {

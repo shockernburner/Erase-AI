@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "version": "1.1.0",
+      "date": "2026-04-20",
+      "changes": [
+        "Added support for Gemini and Claude prompt interception",
+        "Improved overlay rendering performance on long prompts",
+        "Tightened host permissions to *.eraseai.ai and *.replit.app"
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "date": "2026-03-12",
+      "changes": [
+        "Fixed popup not saving custom API URL on Edge",
+        "Resolved race condition when sanitizing very short prompts"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-02-28",
+      "changes": [
+        "Initial release of the EraseAI Firewall extension",
+        "Risk analysis, sanitize, and send-anyway flows for ChatGPT, Claude, Gemini, and Replit"
+      ]
+    }
+  ]
+}

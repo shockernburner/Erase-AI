@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@workspace/replit-auth-web";
 import { motion } from "framer-motion";
@@ -24,6 +24,9 @@ import {
   Laptop,
   Smartphone,
   HelpCircle,
+  Sparkles,
+  Clock,
+  FileArchive,
 } from "lucide-react";
 
 type SectionId = "overview" | "apikey" | "install" | "endpoints" | "extension" | "ratelimits" | "platforms" | "vscode" | "replit" | "xcode" | "troubleshooting";
@@ -115,12 +118,71 @@ function OverviewSection() {
   );
 }
 
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  changes: string[];
+}
+
+interface ExtensionMetadata {
+  version: string;
+  filename: string;
+  sizeBytes: number;
+  lastModified: string;
+  changelog: ChangelogEntry[];
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  return `${value.toFixed(value < 10 && unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
+}
+
+function formatDate(iso: string, locale: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(locale, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 function InstallSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const chromeStoreUrl = (import.meta.env.VITE_CHROME_STORE_URL as string | undefined) || "";
   const edgeStoreUrl = (import.meta.env.VITE_EDGE_STORE_URL as string | undefined) || "";
   const firefoxAddonUrl = (import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined) || "";
   const [showManual, setShowManual] = useState(false);
+  const [metadata, setMetadata] = useState<ExtensionMetadata | null>(null);
+  const [metadataError, setMetadataError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/extension/version", { headers: { Accept: "application/json" } })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as ExtensionMetadata;
+        if (!cancelled) {
+          setMetadata(data);
+          setMetadataError(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMetadataError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const stores: { name: string; url: string; color: string }[] = [
     { name: "Chrome", url: chromeStoreUrl, color: "bg-primary text-primary-foreground" },
@@ -128,6 +190,7 @@ function InstallSection() {
     { name: "Firefox", url: firefoxAddonUrl, color: "bg-orange-500 text-white" },
   ];
   const liveStores = stores.filter((s) => s.url);
+  const downloadFilename = metadata?.filename ?? "eraseai-firewall.zip";
 
   return (
     <div className="space-y-6">
@@ -165,6 +228,30 @@ function InstallSection() {
             <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
             <p className="text-xs text-yellow-300/80">{t("firewallDocs.storeComingSoon")}</p>
           </div>
+        )}
+
+        {metadata && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pt-1" data-testid="extension-version-meta">
+            <span className="inline-flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="font-mono text-foreground" data-testid="extension-version">v{metadata.version}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <FileArchive className="w-3.5 h-3.5" />
+              <span data-testid="extension-size">{formatBytes(metadata.sizeBytes)}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span data-testid="extension-last-updated">
+                {t("firewallDocs.lastUpdated")}: {formatDate(metadata.lastModified, i18n.language)}
+              </span>
+            </span>
+          </div>
+        )}
+        {metadataError && !metadata && (
+          <p className="text-xs text-muted-foreground" data-testid="extension-version-error">
+            {t("firewallDocs.versionUnavailable")}
+          </p>
         )}
       </div>
 
@@ -313,6 +400,46 @@ function InstallSection() {
         <p className="text-xs text-yellow-300/80">{t("firewallDocs.installWarning")}</p>
       </div>
         </>
+      )}
+
+      {metadata && metadata.changelog.length > 0 && (
+        <div className="space-y-3" data-testid="extension-changelog">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.whatsNewTitle")}</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("firewallDocs.whatsNewDesc")}</p>
+          <div className="space-y-3">
+            {metadata.changelog.slice(0, 5).map((entry) => {
+              const isCurrent = entry.version === metadata.version;
+              return (
+                <div
+                  key={entry.version}
+                  className="bg-card/40 border border-border/20 rounded-xl p-4 space-y-2"
+                  data-testid={`changelog-entry-${entry.version}`}
+                >
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-mono text-sm font-bold text-foreground">v{entry.version}</span>
+                    {isCurrent && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                        {t("firewallDocs.currentVersionBadge")}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">{formatDate(entry.date, i18n.language)}</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {entry.changes.map((change, i) => (
+                      <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>{change}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
