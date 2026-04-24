@@ -34,6 +34,10 @@ args = "artifacts/eraseai: web"
 task = "workflow.run"
 args = "extension-tests"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "api-server-tests"
+
 [[workflows.workflow]]
 name = "artifacts/api-server: api"
 author = "agent"
@@ -65,6 +69,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/extension test"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "api-server-tests"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test"
 
 [workflows.workflow.metadata]
 isValidation = true
