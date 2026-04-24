@@ -9,7 +9,7 @@
 
     body {
       width: 360px;
-      min-height: 400px;
+      min-height: 420px;
       background: #0f1017;
       color: #e4e4e7;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -65,39 +65,98 @@
       margin-bottom: 12px;
     }
 
-    .status-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      background: rgba(255,255,255,0.03);
+    /* Diagnosis card — colored by state */
+    .diag {
+      border-radius: 12px;
+      padding: 14px;
       border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
       margin-bottom: 8px;
     }
 
-    .status-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: #d4d4d8;
+    .diag.connected {
+      border-color: rgba(34,197,94,0.35);
+      background: rgba(34,197,94,0.08);
     }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
+    .diag.invalid_key {
+      border-color: rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.06);
+    }
+
+    .diag.no_key {
+      border-color: rgba(99,102,241,0.35);
+      background: rgba(99,102,241,0.07);
+    }
+
+    .diag.server_unreachable {
+      border-color: rgba(245,158,11,0.4);
+      background: rgba(245,158,11,0.06);
+    }
+
+    .diag-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .diag-dot {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
     }
 
-    .status-dot.connected { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.4); }
-    .status-dot.disconnected { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4); }
-    .status-dot.checking { background: #f59e0b; animation: pulse 1s infinite; }
+    .diag.connected .diag-dot { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+    .diag.invalid_key .diag-dot { background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+    .diag.no_key .diag-dot { background: #6366f1; box-shadow: 0 0 8px rgba(99,102,241,0.5); }
+    .diag.server_unreachable .diag-dot { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.5); }
+    .diag.checking .diag-dot { background: #f59e0b; animation: pulse 1s infinite; }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
+    }
+
+    .diag-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f4f4f5;
+    }
+
+    .diag-detail {
+      font-size: 11px;
+      color: #a1a1aa;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .diag-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .diag-meta {
+      font-size: 10px;
+      color: #71717a;
+      margin-top: 8px;
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .plan-pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.18);
+      color: #4ade80;
+      margin-left: 4px;
     }
 
     .toggle-switch {
@@ -105,6 +164,7 @@
       width: 40px;
       height: 22px;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .toggle-switch input {
@@ -142,6 +202,21 @@
       background: white;
     }
 
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+    }
+
+    .toggle-row .label {
+      font-size: 13px;
+      color: #d4d4d8;
+    }
+
     .input-group {
       margin-bottom: 12px;
     }
@@ -170,6 +245,7 @@
       font-family: monospace;
       outline: none;
       transition: border 0.15s;
+      min-width: 0;
     }
 
     .input-field:focus {
@@ -181,13 +257,17 @@
     }
 
     .btn {
-      padding: 9px 16px;
+      padding: 8px 14px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
       border: none;
       cursor: pointer;
       transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
 
     .btn-primary {
@@ -201,13 +281,17 @@
 
     .btn-secondary {
       background: rgba(255,255,255,0.06);
-      color: #a1a1aa;
-      border: 1px solid rgba(255,255,255,0.1);
+      color: #d4d4d8;
+      border: 1px solid rgba(255,255,255,0.12);
     }
 
     .btn-secondary:hover {
-      background: rgba(255,255,255,0.1);
-      color: #e4e4e7;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .btn-tiny {
+      padding: 4px 10px;
+      font-size: 11px;
     }
 
     .btn:disabled {
@@ -266,7 +350,7 @@
     }
 
     .footer {
-      padding: 16px 20px;
+      padding: 14px 20px 18px;
       text-align: center;
     }
 
@@ -324,6 +408,19 @@
       color: #ef4444;
       background: rgba(239,68,68,0.08);
     }
+
+    .reset-link {
+      font-size: 11px;
+      color: #f59e0b;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      margin-left: 6px;
+      text-decoration: underline;
+    }
+
+    .reset-link:hover { color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -337,11 +434,17 @@
 
   <div class="section">
     <div class="section-title">Status</div>
-    <div class="status-row">
-      <div class="status-label">
-        <span class="status-dot checking" id="connection-dot"></span>
-        <span id="connection-text">Checking...</span>
+    <div class="diag checking" id="diag-card">
+      <div class="diag-head">
+        <span class="diag-dot"></span>
+        <span class="diag-title" id="diag-title">Checking…</span>
       </div>
+      <div class="diag-detail" id="diag-detail">Probing the EraseAI API.</div>
+      <div class="diag-actions" id="diag-actions"></div>
+      <div class="diag-meta" id="diag-meta" style="display:none"></div>
+    </div>
+    <div class="toggle-row">
+      <span class="label">Firewall enabled</span>
       <label class="toggle-switch">
         <input type="checkbox" id="toggle-enabled" checked>
         <span class="toggle-slider"></span>

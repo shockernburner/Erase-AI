@@ -10,6 +10,7 @@ async function getConfig() {
     apiKey: result.apiKey || "",
     apiUrl,
     enabled: result.enabled !== false,
+    isCustomUrl: apiUrl !== DEFAULT_API_URL,
   };
 }
 
@@ -70,28 +71,144 @@ async function sanitizePrompt(text) {
   }
 }
 
+// Self-diagnostic probe used by the popup. We hit the public /ping endpoint
+// (which now accepts an optional Bearer token) so that we can disambiguate the
+// three failure modes the user actually cares about:
+//   1. server_unreachable — DNS/network/proxy/down. Reset URL.
+//   2. no_key             — server is healthy, user just hasn't set a key.
+//   3. invalid_key        — server is healthy, key is wrong/revoked.
+// Anything else is a successful "connected" with the user's plan.
 async function testConnection() {
   const config = await getConfig();
-  if (!config.apiKey) {
-    return { connected: false, error: "No API key configured" };
+
+  // Step 1: reachability — unauthenticated probe always returns 200 if the
+  // server is healthy, regardless of whether the user has a key set.
+  // We don't trust HTTP 200 alone — a misconfigured custom URL might point at
+  // an unrelated server that happens to return 200 HTML. We additionally
+  // require the response to be JSON shaped like our /ping contract.
+  let reachableServerVersion = null;
+  try {
+    const probe = await fetch(`${config.apiUrl}/api/dev/ping`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (!probe.ok) {
+      return {
+        connected: false,
+        state: "server_unreachable",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        error: `Server responded with HTTP ${probe.status}. Check the API URL.`,
+      };
+    }
+    const contentType = probe.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return {
+        connected: false,
+        state: "server_unreachable",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        error: "Endpoint did not return JSON. This does not look like an EraseAI server.",
+      };
+    }
+    const data = await probe.json().catch(() => null);
+    if (!data || data.ok !== true || typeof data.version !== "string") {
+      return {
+        connected: false,
+        state: "server_unreachable",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        error: "Endpoint returned unexpected payload. This does not look like an EraseAI server.",
+      };
+    }
+    reachableServerVersion = data.version;
+  } catch (err) {
+    return {
+      connected: false,
+      state: "server_unreachable",
+      apiUrl: config.apiUrl,
+      isCustomUrl: config.isCustomUrl,
+      error: `Cannot reach ${config.apiUrl}: ${err.message}`,
+    };
   }
 
+  // Step 2: do we even have a key?
+  if (!config.apiKey) {
+    return {
+      connected: false,
+      state: "no_key",
+      apiUrl: config.apiUrl,
+      isCustomUrl: config.isCustomUrl,
+      serverVersion: reachableServerVersion,
+    };
+  }
+
+  // Step 3: validate the key. Same /ping, but with Authorization.
   try {
-    const response = await fetch(`${config.apiUrl}/api/dev/ping`, {
+    const auth = await fetch(`${config.apiUrl}/api/dev/ping`, {
       method: "GET",
-      headers: {
-        "Authorization": `Bearer ${config.apiKey}`,
-      },
+      headers: { "Authorization": `Bearer ${config.apiKey}` },
     });
-
-    if (response.ok) {
-      return { connected: true };
+    if (auth.status === 401) {
+      const err = await auth.json().catch(() => ({}));
+      return {
+        connected: false,
+        state: "invalid_key",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        serverVersion: reachableServerVersion,
+        error: err.error || "Invalid API key",
+      };
     }
-
-    const err = await response.json().catch(() => ({}));
-    return { connected: false, error: err.error || `HTTP ${response.status}` };
+    if (!auth.ok) {
+      return {
+        connected: false,
+        state: "server_unreachable",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        error: `Authenticated probe failed: HTTP ${auth.status}`,
+      };
+    }
+    const authContentType = auth.headers.get("content-type") || "";
+    if (!authContentType.toLowerCase().includes("application/json")) {
+      return {
+        connected: false,
+        state: "server_unreachable",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        error: "Authenticated endpoint did not return JSON.",
+      };
+    }
+    const data = await auth.json().catch(() => null);
+    if (!data || data.ok !== true) {
+      return {
+        connected: false,
+        state: "server_unreachable",
+        apiUrl: config.apiUrl,
+        isCustomUrl: config.isCustomUrl,
+        error: "Authenticated endpoint returned unexpected payload.",
+      };
+    }
+    const allowedPlans = new Set(["free", "personal", "pro", "business", "enterprise"]);
+    const plan = typeof data.plan === "string" && allowedPlans.has(data.plan) ? data.plan : "free";
+    const email = typeof data.email === "string" ? data.email : null;
+    return {
+      connected: true,
+      state: "connected",
+      apiUrl: config.apiUrl,
+      isCustomUrl: config.isCustomUrl,
+      serverVersion: typeof data.version === "string" ? data.version : reachableServerVersion,
+      plan,
+      email,
+    };
   } catch (err) {
-    return { connected: false, error: err.message };
+    return {
+      connected: false,
+      state: "server_unreachable",
+      apiUrl: config.apiUrl,
+      isCustomUrl: config.isCustomUrl,
+      error: err.message,
+    };
   }
 }
 
@@ -119,12 +236,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "TEST_CONNECTION") {
-    testConnection().then(sendResponse).catch(() => sendResponse({ connected: false, error: "Test failed" }));
+    testConnection().then(sendResponse).catch((err) => sendResponse({
+      connected: false,
+      state: "server_unreachable",
+      error: err && err.message ? err.message : "Test failed",
+    }));
     return true;
   }
 
   if (message.type === "GET_CONFIG") {
-    getConfig().then(sendResponse).catch(() => sendResponse({ apiKey: "", apiUrl: DEFAULT_API_URL, enabled: true }));
+    getConfig().then(sendResponse).catch(() => sendResponse({ apiKey: "", apiUrl: DEFAULT_API_URL, enabled: true, isCustomUrl: false }));
+    return true;
+  }
+
+  if (message.type === "RESET_API_URL") {
+    chrome.storage.local.remove("apiUrl").then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
     return true;
   }
 });

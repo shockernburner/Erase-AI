@@ -156,8 +156,279 @@ function formatDate(iso: string, locale: string): string {
   }
 }
 
+interface InstallApiKey {
+  id: string;
+  prefix: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  active: boolean;
+}
+
+function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const plan = user?.planType || "free";
+  const apiAccessAllowed = plan !== "free";
+  const [keys, setKeys] = useState<InstallApiKey[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!apiAccessAllowed) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${apiBase}/developer/keys`, { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as { keys: InstallApiKey[] };
+        if (!cancelled) setKeys(data.keys);
+      })
+      .catch(() => {
+        if (!cancelled) setKeys([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiAccessAllowed, apiBase]);
+
+  const createKey = async () => {
+    const name = newKeyName.trim();
+    if (!name) {
+      setError(t("firewallDocs.installKeyNameRequired"));
+      return;
+    }
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/developer/keys`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || t("firewallDocs.installKeyCreateFailed"));
+        return;
+      }
+      setRevealedKey(data.key as string);
+      setNewKeyName("");
+      const listRes = await fetch(`${apiBase}/developer/keys`, { credentials: "include" });
+      if (listRes.ok) {
+        const list = (await listRes.json()) as { keys: InstallApiKey[] };
+        setKeys(list.keys);
+      }
+    } catch {
+      setError(t("firewallDocs.installKeyCreateFailed"));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const copyRevealed = () => {
+    if (!revealedKey) return;
+    navigator.clipboard.writeText(revealedKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!user) {
+    return (
+      <div className="bg-card/40 border border-border/20 rounded-xl p-5 space-y-2" data-testid="install-apikey-signedout">
+        <div className="flex items-start gap-3">
+          <Key className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.installKeyTitle")}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t("firewallDocs.installKeySignedOut")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!apiAccessAllowed) {
+    return (
+      <div className="bg-card/40 border border-border/20 rounded-xl p-5 space-y-2" data-testid="install-apikey-upgrade">
+        <div className="flex items-start gap-3">
+          <Key className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.installKeyTitle")}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t("firewallDocs.installKeyUpgrade")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const activeKeys = (keys || []).filter((k) => k.active);
+
+  return (
+    <div className="bg-card/40 border border-border/20 rounded-xl p-5 space-y-4" data-testid="install-apikey-card">
+      <div className="flex items-start gap-3">
+        <Key className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+        <div>
+          <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.installKeyTitle")}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{t("firewallDocs.installKeyDesc")}</p>
+        </div>
+      </div>
+
+      {loading && (
+        <p className="text-xs text-muted-foreground">{t("firewallDocs.installKeyLoading")}</p>
+      )}
+
+      {!loading && activeKeys.length > 0 && (
+        <div className="space-y-2" data-testid="install-apikey-existing">
+          <p className="text-xs text-muted-foreground">{t("firewallDocs.installKeyExisting", { count: activeKeys.length })}</p>
+          <ul className="space-y-1.5">
+            {activeKeys.slice(0, 3).map((k) => (
+              <li key={k.id} className="flex items-center gap-2 text-xs">
+                <code className="font-mono text-foreground bg-black/30 px-2 py-0.5 rounded">{k.prefix}…</code>
+                <span className="text-muted-foreground truncate">{k.name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!loading && !revealedKey && (
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {t("firewallDocs.installKeyCreateLabel")}
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder={t("firewallDocs.installKeyNamePlaceholder")}
+              className="flex-1 px-3 py-2 bg-black/30 border border-border/30 rounded-lg text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:border-primary outline-none"
+              data-testid="install-apikey-name-input"
+            />
+            <button
+              type="button"
+              onClick={createKey}
+              disabled={creating || !newKeyName.trim()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              data-testid="install-apikey-create-btn"
+            >
+              {creating ? t("firewallDocs.installKeyCreating") : t("firewallDocs.installKeyCreate")}
+            </button>
+          </div>
+          {error && <p className="text-xs text-red-400" data-testid="install-apikey-error">{error}</p>}
+        </div>
+      )}
+
+      {revealedKey && (
+        <div className="bg-green-500/5 border border-green-500/30 rounded-lg p-3 space-y-2" data-testid="install-apikey-reveal">
+          <p className="text-xs font-semibold text-green-400">{t("firewallDocs.installKeyCreated")}</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs font-mono text-foreground bg-black/40 px-3 py-2 rounded break-all">{revealedKey}</code>
+            <button
+              type="button"
+              onClick={copyRevealed}
+              className="p-2 bg-white/5 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              data-testid="install-apikey-copy-btn"
+              aria-label={t("firewallDocs.installKeyCopy")}
+            >
+              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+          <p className="text-[11px] text-yellow-300/80">{t("firewallDocs.installKeyOnceWarning")}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface GoLiveProbe {
+  ok: boolean;
+  version?: string;
+  error?: string;
+}
+
+function GoLiveChecklistCard({ apiBase }: { apiBase: string }) {
+  const { t } = useTranslation();
+  const chromeStoreUrl = (import.meta.env.VITE_CHROME_STORE_URL as string | undefined) || "";
+  const edgeStoreUrl = (import.meta.env.VITE_EDGE_STORE_URL as string | undefined) || "";
+  const firefoxAddonUrl = (import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined) || "";
+  const [probe, setProbe] = useState<GoLiveProbe | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${apiBase}/dev/ping`, { headers: { Accept: "application/json" } })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!cancelled) setProbe({ ok: true, version: data.version });
+      })
+      .catch((err) => {
+        if (!cancelled) setProbe({ ok: false, error: err && err.message ? err.message : "unreachable" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase]);
+
+  const items: { ok: boolean; label: string; hint?: string }[] = [
+    { ok: !!probe?.ok, label: t("firewallDocs.goliveProbe"), hint: probe?.ok ? `v${probe.version || "?"}` : (probe?.error || t("firewallDocs.goliveProbeChecking")) },
+    { ok: !!chromeStoreUrl, label: t("firewallDocs.goliveChrome"), hint: chromeStoreUrl || "VITE_CHROME_STORE_URL" },
+    { ok: !!edgeStoreUrl, label: t("firewallDocs.goliveEdge"), hint: edgeStoreUrl || "VITE_EDGE_STORE_URL" },
+    { ok: !!firefoxAddonUrl, label: t("firewallDocs.goliveFirefox"), hint: firefoxAddonUrl || "VITE_FIREFOX_ADDON_URL" },
+  ];
+
+  return (
+    <div className="bg-card/40 border border-amber-500/20 rounded-xl p-5 space-y-4" data-testid="install-golive-checklist">
+      <div className="flex items-start gap-3">
+        <Settings className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.goliveTitle")}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{t("firewallDocs.goliveDesc")}</p>
+        </div>
+      </div>
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li
+            key={item.label}
+            className="flex items-start gap-2 text-xs"
+            data-testid={`golive-item-${item.ok ? "ok" : "missing"}`}
+          >
+            {item.ok ? (
+              <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            )}
+            <div className="min-w-0">
+              <div className={item.ok ? "text-foreground" : "text-amber-300/90 font-medium"}>{item.label}</div>
+              {item.hint && (
+                <div className="text-[11px] text-muted-foreground font-mono break-all">{item.hint}</div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-muted-foreground">
+        {t("firewallDocs.goliveDocs")} <code className="font-mono">extension/PUBLISHING.md</code>
+      </p>
+    </div>
+  );
+}
+
 function InstallSection() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const apiBase = `${import.meta.env.BASE_URL}api`;
   const chromeStoreUrl = (import.meta.env.VITE_CHROME_STORE_URL as string | undefined) || "";
   const edgeStoreUrl = (import.meta.env.VITE_EDGE_STORE_URL as string | undefined) || "";
   const firefoxAddonUrl = (import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined) || "";
@@ -271,6 +542,8 @@ function InstallSection() {
           ))}
         </div>
       </div>
+
+      <InstallApiKeyMini apiBase={apiBase} />
 
       <div className="space-y-3">
         <button
@@ -441,6 +714,8 @@ function InstallSection() {
           </div>
         </div>
       )}
+
+      {isAdmin && <GoLiveChecklistCard apiBase={apiBase} />}
     </div>
   );
 }

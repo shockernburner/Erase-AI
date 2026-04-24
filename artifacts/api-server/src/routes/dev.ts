@@ -89,8 +89,6 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
   });
 }
 
-router.use(sessionOrApiKeyAuth);
-
 const API_VERSION = "1.0";
 
 function buildMeta() {
@@ -101,9 +99,78 @@ function buildMeta() {
   };
 }
 
-router.get("/ping", (_req, res) => {
-  res.json({ ok: true, meta: buildMeta() });
+// Public, auth-optional health probe. The browser extension and external
+// monitors hit this without credentials to verify the server is reachable.
+// When a Bearer token is provided we validate it so the popup can also
+// distinguish "key invalid" from "server unreachable" with a single call.
+router.get("/ping", async (req, res) => {
+  const meta = buildMeta();
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    res.json({ ok: true, version: API_VERSION, timestamp: meta.timestamp, meta });
+    return;
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    res.status(401).json({
+      error: "Invalid Authorization header. Use: Bearer <API_KEY>",
+      code: "AUTH_INVALID_HEADER",
+      meta,
+    });
+    return;
+  }
+
+  const token = authHeader.slice(7).trim();
+  if (!token) {
+    res.status(401).json({
+      error: "API key is empty",
+      code: "AUTH_INVALID_KEY",
+      meta,
+    });
+    return;
+  }
+
+  const keyHash = hashApiKey(token);
+  const [apiKey] = await db
+    .select()
+    .from(apiKeysTable)
+    .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
+
+  if (!apiKey) {
+    res.status(401).json({
+      error: "Invalid or revoked API key",
+      code: "AUTH_INVALID_KEY",
+      meta,
+    });
+    return;
+  }
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, apiKey.userId));
+
+  if (!user) {
+    res.status(401).json({
+      error: "API key owner not found",
+      code: "AUTH_USER_NOT_FOUND",
+      meta,
+    });
+    return;
+  }
+
+  res.json({
+    ok: true,
+    version: API_VERSION,
+    timestamp: meta.timestamp,
+    plan: (user.planType || "free") as string,
+    email: user.email,
+    meta,
+  });
 });
+
+router.use(sessionOrApiKeyAuth);
 
 const FREE_DAILY_LIMIT = 10;
 

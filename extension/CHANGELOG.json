@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "version": "1.2.0",
+      "date": "2026-04-24",
+      "changes": [
+        "Self-diagnosing popup distinguishes server-unreachable, missing key, and invalid key with one-click recovery",
+        "Reset API URL action restores the default eraseai.ai endpoint when a custom URL is misconfigured",
+        "Get-my-API-key shortcut always opens the canonical eraseai.ai dashboard, bypassing any wrong custom URL",
+        "/api/dev/ping is now a public health probe, returning the user's plan when called with a valid API key"
+      ]
+    },
+    {
       "version": "1.1.0",
       "date": "2026-04-20",
       "changes": [

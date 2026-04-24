@@ -14,7 +14,18 @@ import personalRouter from "./personal";
 import devRouter from "./dev";
 import extensionRouter from "./extension";
 
+// Routes that must remain reachable even when the logged-in user has not yet
+// accepted the latest Terms of Service. /dev/ping is a public health probe
+// hit by the browser extension and the in-app Go-Live checklist; gating it
+// behind terms acceptance would make the popup report a "server unreachable"
+// state for fully signed-in users.
+const TERMS_BYPASS_PATHS = new Set<string>(["/dev/ping"]);
+
 function requireTermsAcceptance(req: Request, res: Response, next: NextFunction) {
+  if (TERMS_BYPASS_PATHS.has(req.path)) {
+    next();
+    return;
+  }
   if (!req.isAuthenticated()) {
     next();
     return;
