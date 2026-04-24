@@ -12,6 +12,7 @@ import v1Router from "./v1";
 import analyticsRouter from "./analytics";
 import personalRouter from "./personal";
 import devRouter from "./dev";
+import extensionRouter from "./extension";
 
 function requireTermsAcceptance(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
@@ -31,6 +32,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 router.use(contactRouter);
+router.use(extensionRouter);
 router.use(requireTermsAcceptance);
 router.use(eraseaiRouter);
 router.use("/datasets", datasetsRouter);

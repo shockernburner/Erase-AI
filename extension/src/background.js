@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "https://eraseai.replit.app";
+const DEFAULT_API_URL = "https://eraseai.ai";
 
 async function getConfig() {
   const result = await chrome.storage.local.get(["apiKey", "apiUrl", "enabled"]);

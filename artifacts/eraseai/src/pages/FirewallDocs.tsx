@@ -124,6 +124,15 @@ function InstallSection() {
         <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.installDesc")}</p>
       </div>
 
+      <a
+        href="/api/extension/download"
+        download
+        className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg hover:opacity-90 transition-opacity"
+      >
+        <Download className="w-4 h-4" />
+        {t("firewallDocs.downloadExtension")}
+      </a>
+
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.installStepsTitle")}</h3>
         <div className="space-y-3">

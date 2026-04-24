@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "https://eraseai.replit.app";
+const DEFAULT_API_URL = "https://eraseai.ai";
 
 const apiKeyInput = document.getElementById("api-key-input");
 const saveKeyBtn = document.getElementById("save-key-btn");
@@ -140,8 +140,9 @@ saveUrlBtn.addEventListener("click", async () => {
   }
   try {
     const hostname = new URL(url).hostname;
-    if (!hostname.endsWith(".replit.app")) {
-      showKeyStatus("Custom URL must be a *.replit.app domain", "error");
+    const allowed = hostname === "eraseai.ai" || hostname.endsWith(".eraseai.ai") || hostname.endsWith(".replit.app");
+    if (!allowed) {
+      showKeyStatus("Custom URL must be eraseai.ai or a *.replit.app domain", "error");
       return;
     }
   } catch {

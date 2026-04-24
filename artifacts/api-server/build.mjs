@@ -3,12 +3,32 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, mkdir, access } from "node:fs/promises";
+import AdmZip from "adm-zip";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+
+async function packExtensionZip(distDir) {
+  const extensionDir = path.resolve(artifactDir, "../../extension");
+  try {
+    await access(extensionDir);
+  } catch {
+    throw new Error(`[build] extension folder not found at ${extensionDir}. The download endpoint depends on this zip — aborting build.`);
+  }
+  await mkdir(distDir, { recursive: true });
+  const zip = new AdmZip();
+  zip.addLocalFolder(extensionDir);
+  const entryCount = zip.getEntries().length;
+  if (entryCount === 0) {
+    throw new Error(`[build] extension folder ${extensionDir} produced an empty zip — aborting build.`);
+  }
+  const outPath = path.resolve(distDir, "eraseai-firewall.zip");
+  zip.writeZip(outPath);
+  console.log(`[build] packed extension to ${outPath} (${entryCount} entries)`);
+}
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
@@ -120,7 +140,13 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   });
 }
 
-buildAll().catch((err) => {
+async function buildAndPack() {
+  await buildAll();
+  const distDir = path.resolve(artifactDir, "dist");
+  await packExtensionZip(distDir);
+}
+
+buildAndPack().catch((err) => {
   console.error(err);
   process.exit(1);
 });
