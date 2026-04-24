@@ -236,6 +236,14 @@ function AuthGate() {
     if (params.get("checkout") === "success") {
       return "checkout-success";
     }
+    // Allow deep-linking from the browser extension popup ("Get my API key"
+    // button) and other external entry points. Only a small whitelist of
+    // user-facing views may be opened this way to keep the surface tiny.
+    const viewParam = params.get("view");
+    const allowedDeepLinks: AppView[] = ["developer", "firewallDocs", "publishingChecklist"];
+    if (viewParam && (allowedDeepLinks as string[]).includes(viewParam)) {
+      return viewParam as AppView;
+    }
     return "home";
   });
   const [initialViewSet, setInitialViewSet] = useState(false);
@@ -243,7 +251,11 @@ function AuthGate() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") === "success" || params.get("admin") === "true") {
+    if (
+      params.get("checkout") === "success" ||
+      params.get("admin") === "true" ||
+      params.get("view")
+    ) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);

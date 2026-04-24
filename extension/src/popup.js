@@ -1,8 +1,17 @@
-// Hard-coded "Get my API key" target. We deliberately do NOT use the user's
-// stored apiUrl here — the whole point is that if they typed a wrong URL into
-// the custom-API-URL field they would never reach the dashboard from the
-// popup. Always send them to the canonical production site.
+// Hard-coded canonical targets. We deliberately do NOT use the user's stored
+// apiUrl here — the whole point is that if they typed a wrong URL into the
+// custom-API-URL field they would never reach the dashboard from the popup.
+// Always send them to the canonical production site.
+//
+// CANONICAL_KEYS_URL deep-links into the eraseai.ai web app's Developer
+// Dashboard via the ?view=developer query parameter (whitelisted in
+// AuthGate). That page is where users actually generate / rotate API keys,
+// so it is the correct target for the "Get my API key" / "Get a new key"
+// CTAs. CANONICAL_DASHBOARD_URL is the public AI-firewall install/docs page
+// that we fall back to when the API itself is unreachable (since at that
+// point the user may not even be logged in).
 const DEFAULT_API_URL = "https://eraseai.ai";
+const CANONICAL_KEYS_URL = "https://eraseai.ai/?view=developer";
 const CANONICAL_DASHBOARD_URL = "https://eraseai.ai/ai-firewall";
 
 const apiKeyInput = document.getElementById("api-key-input");
@@ -88,6 +97,13 @@ function openCanonicalDashboard() {
   chrome.tabs.create({ url: CANONICAL_DASHBOARD_URL });
 }
 
+function openCanonicalKeysDashboard() {
+  // Direct deep-link to the developer keys page on the canonical domain.
+  // Used by the "Get my API key" / "Get a new key" CTAs so the user lands
+  // exactly where they can create or rotate a key, in one click.
+  chrome.tabs.create({ url: CANONICAL_KEYS_URL });
+}
+
 async function resetApiUrlAndRecheck() {
   await chrome.storage.local.remove("apiUrl");
   apiUrlInput.value = "";
@@ -122,14 +138,14 @@ function renderDiagnosis(result) {
     setDiagState("no_key");
     renderDiagTitle("Add your API key");
     diagDetail.textContent = "The EraseAI server is reachable. Enter an API key below, or grab one from your dashboard.";
-    addDiagButton("Get my API key", "primary", openCanonicalDashboard);
+    addDiagButton("Get my API key", "primary", openCanonicalKeysDashboard);
   } else if (result.state === "invalid_key") {
     setDiagState("invalid_key");
     renderDiagTitle("API key not accepted");
     diagDetail.textContent = result.error
       ? `${result.error}. Generate a new key from your dashboard and paste it below.`
       : "Generate a new key from your dashboard and paste it below.";
-    addDiagButton("Get a new key", "primary", openCanonicalDashboard);
+    addDiagButton("Get a new key", "primary", openCanonicalKeysDashboard);
   } else {
     // server_unreachable (default fallback)
     setDiagState("server_unreachable");
