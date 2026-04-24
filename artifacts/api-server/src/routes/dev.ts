@@ -146,7 +146,7 @@ async function resolvePingAuth(req: Request): Promise<PingAuth> {
 }
 
 async function buildAuthedPingPayload(
-  user: { id: string; email: string | null; planType: string | null },
+  user: { id: string; planType: string | null },
   meta: ReturnType<typeof buildMeta>,
 ) {
   const planType = (user.planType || "free") as string;
@@ -167,7 +167,6 @@ async function buildAuthedPingPayload(
     version: API_VERSION,
     timestamp: meta.timestamp,
     plan: planType,
-    email: user.email,
     dailyLimit,
     dailyUsed,
     dailyRemaining,
