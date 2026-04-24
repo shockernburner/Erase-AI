@@ -204,7 +204,15 @@ function renderDiagnosis(result) {
     setDiagState("invalid_key");
     const info = describeInvalidKey(result.code);
     renderDiagTitle(info.title);
-    diagDetail.textContent = info.detail;
+    // Surface the raw server-supplied error alongside the canned guidance so
+    // engineers can see *why* the key was rejected, while keeping the friendly
+    // detail line for end users. Using textContent (not innerHTML) keeps this
+    // XSS-safe even though result.error is server-controlled.
+    let detailText = info.detail;
+    if (typeof result.error === "string" && result.error) {
+      detailText += ` (Server said: ${result.error})`;
+    }
+    diagDetail.textContent = detailText;
     addDiagButton(info.actionLabel, "primary", info.actionHandler);
     if (info.secondaryLabel && info.secondaryHandler) {
       addDiagButton(info.secondaryLabel, "secondary", info.secondaryHandler);

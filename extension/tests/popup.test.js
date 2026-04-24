@@ -173,11 +173,12 @@ describe("popup.renderDiagnosis state machine", () => {
     });
   });
 
-  it("renders invalid_key state and includes the server error in the detail", () => {
+  it("renders invalid_key state with the canned guidance for the code and includes the server error in the detail", () => {
     popup.renderDiagnosis({
       state: "invalid_key",
       apiUrl: DEFAULT_API_URL,
       isCustomUrl: false,
+      code: "AUTH_INVALID_KEY",
       error: "Invalid API key",
     });
 
@@ -185,9 +186,12 @@ describe("popup.renderDiagnosis state machine", () => {
     expect(card.className).toBe("diag invalid_key");
 
     const title = document.getElementById("diag-title");
-    expect(title.textContent).toBe("API key not accepted");
+    expect(title.textContent).toBe("API key not recognized");
 
     const detail = document.getElementById("diag-detail");
+    // The renderer must show both the canned, user-friendly explanation for
+    // the AUTH_INVALID_KEY code and the raw server-supplied error string.
+    expect(detail.textContent).toContain("The server doesn't recognize this key");
     expect(detail.textContent).toContain("Invalid API key");
 
     const buttons = document.getElementById("diag-actions").querySelectorAll("button");

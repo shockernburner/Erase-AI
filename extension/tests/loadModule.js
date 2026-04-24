@@ -31,6 +31,20 @@ export function loadBackgroundModule({ chrome, fetch }) {
     RegExp,
   };
   vm.createContext(sandbox);
+  // Service-worker globals: `self` is the worker's global scope, and
+  // `importScripts(...paths)` synchronously loads and evaluates other scripts
+  // into that scope. We approximate both: `self` aliases the sandbox global,
+  // and `importScripts` resolves each path relative to extension/src and
+  // evaluates the file in this same context so its top-level assignments
+  // (e.g. `self.eraseaiIsApiUrlAllowed = ...`) become visible to background.js.
+  vm.runInContext("var self = globalThis;", sandbox);
+  sandbox.importScripts = (...files) => {
+    for (const file of files) {
+      const fullPath = path.resolve(SRC_DIR, file);
+      const code = fs.readFileSync(fullPath, "utf8");
+      vm.runInContext(code, sandbox, { filename: file });
+    }
+  };
   vm.runInContext(src, sandbox, { filename: "background.js" });
   return vm.runInContext(
     "({ getConfig, analyzePrompt, sanitizePrompt, testConnection })",
