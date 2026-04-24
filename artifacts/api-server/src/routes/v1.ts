@@ -22,7 +22,7 @@ router.use((req: Request, res: Response, next) => {
   const plan = getUserPlan(req);
   if (plan === "free") {
     res.status(403).json({
-      error: "API access requires a Pro, Business, or Enterprise plan",
+      error: "API access requires a Personal, Pro, Business, or Enterprise plan",
       upgrade: true,
     });
     return;

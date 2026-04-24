@@ -11,6 +11,7 @@ const router: IRouter = Router();
 router.use(refreshPlanFromDB);
 
 const API_KEY_LIMITS: Record<string, number> = {
+  personal: 2,
   pro: 5,
   business: 20,
   enterprise: 100,
@@ -28,7 +29,7 @@ function requireApiAccess(req: Request, res: Response): boolean {
   const plan = getUserPlan(req);
   if (plan === "free") {
     res.status(403).json({
-      error: "API access requires a Pro, Business, or Enterprise plan",
+      error: "API access requires a Personal, Pro, Business, or Enterprise plan",
       upgrade: true,
     });
     return false;
