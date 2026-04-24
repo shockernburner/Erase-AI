@@ -99,6 +99,52 @@ function buildMeta() {
   };
 }
 
+type PingAuth =
+  | { kind: "anonymous" }
+  | { kind: "user"; user: { id: string; email: string | null; planType: string | null } }
+  | { kind: "error"; status: number; code: string; error: string };
+
+async function resolvePingAuth(req: Request): Promise<PingAuth> {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    if (!authHeader.startsWith("Bearer ")) {
+      return { kind: "error", status: 401, code: "AUTH_INVALID_HEADER", error: "Invalid Authorization header. Use: Bearer <API_KEY>" };
+    }
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      return { kind: "error", status: 401, code: "AUTH_INVALID_KEY", error: "API key is empty" };
+    }
+    const keyHash = hashApiKey(token);
+    const [apiKey] = await db
+      .select()
+      .from(apiKeysTable)
+      .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
+    if (!apiKey) {
+      return { kind: "error", status: 401, code: "AUTH_INVALID_KEY", error: "Invalid or revoked API key" };
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, apiKey.userId));
+    if (!user) {
+      return { kind: "error", status: 401, code: "AUTH_USER_NOT_FOUND", error: "API key owner not found" };
+    }
+    return { kind: "user", user: { id: user.id, email: user.email, planType: user.planType ?? null } };
+  }
+  const sid = getSessionId(req);
+  if (sid) {
+    try {
+      const session = await getSession(sid);
+      if (session?.user?.id) {
+        const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.user.id));
+        if (user) {
+          return { kind: "user", user: { id: user.id, email: user.email, planType: user.planType ?? null } };
+        }
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  return { kind: "anonymous" };
+}
+
 async function buildAuthedPingPayload(
   user: { id: string; email: string | null; planType: string | null },
   meta: ReturnType<typeof buildMeta>,
@@ -131,62 +177,15 @@ async function buildAuthedPingPayload(
 
 router.get("/ping", async (req, res) => {
   const meta = buildMeta();
-  const authHeader = req.headers.authorization;
-
-  if (authHeader) {
-    if (!authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
-        error: "Invalid Authorization header. Use: Bearer <API_KEY>",
-        code: "AUTH_INVALID_HEADER",
-        meta,
-      });
-      return;
-    }
-    const token = authHeader.slice(7).trim();
-    if (!token) {
-      res.status(401).json({ error: "API key is empty", code: "AUTH_INVALID_KEY", meta });
-      return;
-    }
-    const keyHash = hashApiKey(token);
-    const [apiKey] = await db
-      .select()
-      .from(apiKeysTable)
-      .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
-    if (!apiKey) {
-      res.status(401).json({ error: "Invalid or revoked API key", code: "AUTH_INVALID_KEY", meta });
-      return;
-    }
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, apiKey.userId));
-    if (!user) {
-      res.status(401).json({ error: "API key owner not found", code: "AUTH_USER_NOT_FOUND", meta });
-      return;
-    }
-    res.json(await buildAuthedPingPayload(
-      { id: user.id, email: user.email, planType: user.planType ?? null },
-      meta,
-    ));
+  const auth = await resolvePingAuth(req);
+  if (auth.kind === "error") {
+    res.status(auth.status).json({ error: auth.error, code: auth.code, meta });
     return;
   }
-
-  const sid = getSessionId(req);
-  if (sid) {
-    try {
-      const session = await getSession(sid);
-      if (session?.user?.id) {
-        const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.user.id));
-        if (user) {
-          res.json(await buildAuthedPingPayload(
-            { id: user.id, email: user.email, planType: user.planType ?? null },
-            meta,
-          ));
-          return;
-        }
-      }
-    } catch {
-      /* fall through to anonymous response */
-    }
+  if (auth.kind === "user") {
+    res.json(await buildAuthedPingPayload(auth.user, meta));
+    return;
   }
-
   res.json({ ok: true, version: API_VERSION, timestamp: meta.timestamp, meta });
 });
 
