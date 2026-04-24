@@ -405,7 +405,7 @@ describe("popup.renderDiagnosis auto_reset_to_default", () => {
       state: "auto_reset_to_default",
       apiUrl: DEFAULT_API_URL,
       isCustomUrl: false,
-      previousApiUrl: "https://eraseai.replit.app",
+      previousApiUrl: "https://stale.eraseai.ai",
       previousError: "Server responded with HTTP 404. Check the API URL.",
       serverVersion: "1.3.1",
     });
@@ -417,7 +417,7 @@ describe("popup.renderDiagnosis auto_reset_to_default", () => {
     expect(title.textContent).toBe("Reset to the official EraseAI server");
 
     const detail = document.getElementById("diag-detail");
-    expect(detail.textContent).toContain("https://eraseai.replit.app");
+    expect(detail.textContent).toContain("https://stale.eraseai.ai");
     expect(detail.textContent).toContain("https://eraseai.ai");
 
     const buttons = document.getElementById("diag-actions").querySelectorAll("button");

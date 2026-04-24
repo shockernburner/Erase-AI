@@ -181,22 +181,22 @@ listing goes live, then redeploy.
 
 ---
 
-## 6. Troubleshooting: HTTP 404 from the extension
+## 6. Troubleshooting: stale custom API URL in `chrome.storage.local`
 
-**Symptom.** The popup reports `HTTP 404` when saving an API key, or the
-"Open EraseAI dashboard" link opens `eraseai.replit.app` (and that page is
-itself a 404).
+**Symptom.** A user's popup reports `HTTP 404` when saving an API key, or
+shows "Server unreachable" against an unfamiliar host (e.g. an old
+self-hosted or staging URL they typed into the Custom API URL field
+months ago).
 
-**Cause.** An older install of the extension (pre-1.3.0) wrote
-`apiUrl: "https://eraseai.replit.app"` into `chrome.storage.local`. The
-1.3.0 production lockdown drops that URL on save, but if the extension was
-never re-opened after upgrading, the stale value can still drive the
-service worker for one boot. The 1.3.1 service worker auto-heals this:
-when the stored URL fails to respond but `https://eraseai.ai/api/dev/ping`
-succeeds, it removes the stale `apiUrl` from storage and the popup shows a
-"Reset to the official EraseAI server → Continue" card.
+**Auto-heal (1.3.1 and newer).** When the stored URL fails to respond but
+`https://eraseai.ai/api/dev/ping` succeeds, the service worker drops the
+stale `apiUrl` from storage automatically and the popup shows a
+"Reset to the official EraseAI server → Continue" card. The user clicks
+Continue, the diagnosis re-runs against `eraseai.ai`, and they're back in
+business.
 
-**Manual unblock for users on 1.3.0 or older:**
+**Manual unblock (extensions older than 1.3.1, or if auto-heal can't
+write to storage).**
 
 1. In Chrome, open `chrome://extensions`, find **EraseAI Firewall**, click
    **Service worker**, then in the DevTools console run:
@@ -207,78 +207,6 @@ succeeds, it removes the stale `apiUrl` from storage and the popup shows a
 
 2. Re-open the extension popup. The diagnosis card will switch to
    "Connected" once the API key is verified against `eraseai.ai`.
-
-**Operator side-fix (defense in depth).** The api-server unconditionally
-308-redirects any incoming request whose `Host` header is
-`eraseai.replit.app` (or any `*.eraseai.replit.app` subdomain) to the
-same path on `eraseai.ai` (see `legacyHostRedirect` in
-`artifacts/api-server/src/app.ts`, covered by
-`artifacts/api-server/tests/legacy-host-redirect.test.mjs`). **This only
-helps if the request actually arrives at our Express app.** If Replit's
-edge does not route `eraseai.replit.app` to the production deployment, the
-client never sees our middleware — they see Replit's generic 404 page.
-
-### 6a. Make `eraseai.replit.app` reach the live deployment
-
-Every published autoscale deployment in Replit gets one default
-`<deployment-slug>.replit.app` subdomain assigned by the platform. For
-legacy installs to keep working, that default subdomain on the live
-EraseAI deployment **must resolve to either `eraseai.replit.app` or a
-subdomain that 308-redirects there.** Pick one of these in the
-**Publishing → Domains** panel of the api-server deployment:
-
-1. **Preferred — claim the `eraseai` deployment slug.**
-   - In the Replit dashboard, open the `api-server` autoscale deployment.
-   - Settings → **Deployment name / slug** → set to `eraseai`. The
-     platform will provision `https://eraseai.replit.app` automatically.
-   - Re-publish so the routing takes effect.
-   - This is the cheapest option because the in-app `legacyHostRedirect`
-     middleware then handles the 308 to `eraseai.ai` itself — no extra
-     DNS or external service needed.
-
-2. **Alternative — add `eraseai.replit.app` as a custom domain alias.**
-   - If the deployment slug is already taken or in use elsewhere, open
-     **Publishing → Domains** and add `eraseai.replit.app` as an
-     additional hostname pointing at the same deployment as `eraseai.ai`.
-   - Replit may decline aliasing a `.replit.app` hostname owned by
-     another deployment; if so, fall back to option 1 or 3.
-
-3. **Last resort — external 308 from a redirector.**
-   - Stand up a tiny redirector (Cloudflare Worker, Netlify `_redirects`,
-     Vercel `vercel.json` rewrite, etc.) that listens on
-     `eraseai.replit.app` (via a CNAME) and 308s every path to
-     `https://eraseai.ai$REQUEST_URI`. Document the redirector's owner
-     and renewal cadence here.
-
-**Whichever path you choose, the goal is the same:** a request to
-`https://eraseai.replit.app/<anything>` returns either `200` (same
-deployment, in which case the in-app middleware then issues the 308) or a
-direct `308` to `https://eraseai.ai/<anything>`. Never `404`.
-
-### 6b. Verify after every deploy
-
-Run these three curls from a machine outside the workspace (your laptop is
-fine — do **not** run them from the Replit shell, because the shell has
-internal routing that bypasses the public edge):
-
-```sh
-curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' \
-  https://eraseai.replit.app/api/dev/ping
-curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' \
-  https://eraseai.replit.app/ai-firewall
-curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' \
-  https://eraseai.replit.app/
-```
-
-**Acceptable outputs** for each line:
-
-- `200` (request reached our Express app on the same deployment as
-  `eraseai.ai`; the response body should match the canonical host), **or**
-- `308 https://eraseai.ai/<same-path>` (edge or in-app redirect kicked in).
-
-**Unacceptable output:** `404` with no `redirect_url`, or any 5xx. That
-means the legacy URL is dead again — go back to section 6a and re-attach
-the routing before the next extension release ships.
 
 ---
 
@@ -293,8 +221,3 @@ the routing before the next extension release ships.
 - [ ] (Firefox) requires polyfill work — see section 4
 - [ ] When live: set `VITE_CHROME_STORE_URL` / `VITE_EDGE_STORE_URL` /
       `VITE_FIREFOX_ADDON_URL` on the eraseai web artifact and redeploy
-- [ ] Run the three legacy-host curls from section 6b
-      (`https://eraseai.replit.app/api/dev/ping`, `/ai-firewall`, `/`).
-      Each must return `200` or a `308` to `eraseai.ai` — never `404`.
-      If any returns `404`, re-attach the legacy hostname per section 6a
-      before announcing the release.

@@ -333,7 +333,7 @@ describe("background.testConnection", () => {
 
   describe("auto_reset_to_default state", () => {
     it("returns auto_reset_to_default when a custom apiUrl is unreachable but the canonical default works, and removes the stored apiUrl", async () => {
-      const customUrl = "https://eraseai.replit.app";
+      const customUrl = "https://stale.eraseai.ai";
       init({
         storage: { apiUrl: customUrl, apiKey: "eak_x" },
         fetchImpl: async (url) => {
@@ -360,7 +360,7 @@ describe("background.testConnection", () => {
     });
 
     it("returns server_unreachable (not auto-heal) when both the custom URL AND the default fail", async () => {
-      const customUrl = "https://eraseai.replit.app";
+      const customUrl = "https://stale.eraseai.ai";
       init({
         storage: { apiUrl: customUrl, apiKey: "eak_x" },
         fetchImpl: async () => ({
@@ -399,7 +399,7 @@ describe("background.testConnection", () => {
     });
 
     it("does NOT auto_reset_to_default if storage.remove rejects (avoids loop on Continue) — surfaces the original error instead", async () => {
-      const customUrl = "https://eraseai.replit.app";
+      const customUrl = "https://stale.eraseai.ai";
       chromeStub = makeChrome({ apiUrl: customUrl, apiKey: "eak_x" });
       // Override remove() to reject — simulates a profile/disk-level failure
       // where chrome.storage.local.remove() can't actually clear the key.
@@ -424,12 +424,12 @@ describe("background.testConnection", () => {
     });
 
     it("auto-heals on a network-error failure of the custom URL too", async () => {
-      const customUrl = "https://eraseai.replit.app";
+      const customUrl = "https://stale.eraseai.ai";
       init({
         storage: { apiUrl: customUrl },
         fetchImpl: async (url) => {
           if (url.startsWith(customUrl)) {
-            throw new Error("getaddrinfo ENOTFOUND eraseai.replit.app");
+            throw new Error("getaddrinfo ENOTFOUND stale.eraseai.ai");
           }
           return jsonResponse({ ok: true, version: "1.3.1" });
         },
@@ -437,7 +437,7 @@ describe("background.testConnection", () => {
 
       const result = await mod.testConnection();
       expect(result.state).toBe("auto_reset_to_default");
-      expect(result.previousError).toMatch(/Cannot reach https:\/\/eraseai\.replit\.app/);
+      expect(result.previousError).toMatch(/Cannot reach https:\/\/stale\.eraseai\.ai/);
       expect(chromeStub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
     });
   });

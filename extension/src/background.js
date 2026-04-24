@@ -113,7 +113,8 @@ async function testConnection() {
   // canonical default works, drop the stale URL from storage and surface a
   // dedicated state so the popup can tell the user what we just did. This
   // is the recovery path for users (or demos) where chrome.storage.local
-  // still has a now-dead host (e.g. eraseai.replit.app) baked in.
+  // still has an old self-hosted/staging URL baked in that no longer
+  // resolves.
   if (!pingResult.ok && config.isCustomUrl) {
     const defaultPing = await probePing(DEFAULT_API_URL);
     if (defaultPing.ok) {
