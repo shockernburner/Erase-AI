@@ -249,4 +249,63 @@ describe("production lockdown in store-upload zip", () => {
       "manifest must still grant https://*.eraseai.ai/*",
     );
   });
+
+  // Regression guard for the "stale dashboard URL" demo break: an old build
+  // shipped a popup whose "Open EraseAI dashboard" button pointed at
+  // eraseai.replit.app instead of eraseai.ai. The fix added canonical URL
+  // constants in extension/src/popup.js and unit tests assert they all
+  // start with https://eraseai.ai/. That guards the dev source — but does
+  // not guard the actual zip we hand to the Chrome Web Store. A regression
+  // in the build pipeline (esbuild output, build-config.js generation,
+  // anything else that bakes the old host back into the shipped JS) could
+  // re-introduce the bug without any unit test catching it. Scan every
+  // file inside every shipped extension zip for the dead host.
+  //
+  // We match URL-shaped occurrences only (preceded by `/`, `"`, `'`, or
+  // backtick). This intentionally allows three legitimate prose mentions
+  // of the bare hostname that ship inside the zip and are part of the
+  // recovery story for affected users:
+  //   - extension/CHANGELOG.json — release notes describing the fix
+  //   - extension/src/background.js — comment in the auto-heal path
+  //     explaining what the now-dead host was
+  // Test fixtures under tests/ legitimately set the dead URL into mock
+  // chrome.storage.local to verify the auto-heal migration removes it,
+  // so we skip that directory too. Everything else — popup.js,
+  // background.js code (not comments), options.js, content scripts,
+  // manifest.json, html — is scanned.
+  test("no shipped extension zip contains the stale eraseai.replit.app dashboard URL", async () => {
+    const entries = await readdir(apiServerDistDir);
+    const shippedZips = entries.filter(
+      (f) => f.startsWith("eraseai-firewall-") && f.endsWith(".zip"),
+    );
+    assert.ok(
+      shippedZips.length >= 2,
+      `expected both manual-install and store-upload zips in ${apiServerDistDir} — got: ${entries.join(", ")}`,
+    );
+
+    // URL-shaped: a `/`, `"`, `'`, or backtick immediately before the
+    // hostname. Catches `https://eraseai.replit.app/...`, `"eraseai.replit.app"`,
+    // template strings, etc. Case-insensitive per the task spec.
+    const URL_SHAPED_DEAD_HOST = /[/"'`]eraseai\.replit\.app/i;
+    const isInTestsDir = (entryName) => /(^|\/)tests\//.test(entryName);
+
+    const offences = [];
+    for (const zipName of shippedZips) {
+      const zip = new AdmZip(path.join(apiServerDistDir, zipName));
+      for (const entry of zip.getEntries()) {
+        if (entry.isDirectory) continue;
+        if (isInTestsDir(entry.entryName)) continue;
+        const text = entry.getData().toString("utf8");
+        if (URL_SHAPED_DEAD_HOST.test(text)) {
+          offences.push(`${zipName} :: ${entry.entryName}`);
+        }
+      }
+    }
+
+    assert.deepEqual(
+      offences,
+      [],
+      `shipped extension zip(s) still reference eraseai.replit.app as a URL — that is the stale dashboard URL the demo broke on. Offending entries:\n  ${offences.join("\n  ")}`,
+    );
+  });
 });
