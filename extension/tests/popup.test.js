@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { loadPopupHtml, loadPopupSource } from "./loadModule.js";
 
-const DEFAULT_API_URL = "https://eraseai.ai";
+const API_URL = "https://eraseai.ai";
 
 function setUpDom() {
   const html = loadPopupHtml();
@@ -43,8 +43,6 @@ function makeChromeStub(initialStorage = {}) {
     runtime: {
       // sendMessage callbacks are intentionally never invoked by default, so
       // renderDiagnosis is only driven by direct calls within the tests.
-      // Tests that need loadState() to complete should override
-      // chrome.runtime.sendMessage to invoke the callback themselves.
       sendMessage: vi.fn(),
     },
     tabs: {
@@ -57,39 +55,9 @@ function loadPopup() {
   const src = loadPopupSource();
   // Wrap source so we can capture the otherwise-private functions for testing,
   // without altering production popup.js semantics.
-  const wrapped = `${src}\n;return { renderDiagnosis, renderDiagMeta, renderDiagTitle, runDiagnosis, loadState, IS_PRODUCTION_BUILD };`;
+  const wrapped = `${src}\n;return { renderDiagnosis, renderDiagTitle, runDiagnosis };`;
   // eslint-disable-next-line no-new-func
   return new Function(wrapped)();
-}
-
-function installBuildOnWindow(build) {
-  window.ERASEAI_BUILD = build;
-  const patterns = build.allowedApiHosts || [];
-  window.eraseaiIsApiUrlAllowed = function (url) {
-    if (typeof url !== "string" || !url.startsWith("https://")) return false;
-    let hostname;
-    try {
-      hostname = new URL(url).hostname;
-    } catch {
-      return false;
-    }
-    return patterns.some((p) => {
-      if (p.startsWith("*.")) {
-        const suffix = p.slice(1);
-        return hostname.endsWith(suffix) && hostname.length > suffix.length;
-      }
-      return hostname === p;
-    });
-  };
-}
-
-function uninstallBuildOnWindow() {
-  delete window.ERASEAI_BUILD;
-  delete window.eraseaiIsApiUrlAllowed;
-}
-
-function flush() {
-  return new Promise((r) => setTimeout(r, 0));
 }
 
 let popup;
@@ -106,8 +74,7 @@ describe("popup.renderDiagnosis state machine", () => {
   it("renders connected state with plan pill and quota line", () => {
     popup.renderDiagnosis({
       state: "connected",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       plan: "pro",
       dailyLimit: 1000,
       dailyRemaining: 750,
@@ -135,8 +102,7 @@ describe("popup.renderDiagnosis state machine", () => {
   it("shows 'Unlimited' line when dailyLimit is null", () => {
     popup.renderDiagnosis({
       state: "connected",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       plan: "enterprise",
       dailyLimit: null,
       dailyRemaining: null,
@@ -150,8 +116,7 @@ describe("popup.renderDiagnosis state machine", () => {
   it("renders no_key state with 'Get my API key' action", () => {
     popup.renderDiagnosis({
       state: "no_key",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
     });
 
     const card = document.getElementById("diag-card");
@@ -176,8 +141,7 @@ describe("popup.renderDiagnosis state machine", () => {
   it("renders invalid_key state with the canned guidance for the code and includes the server error in the detail", () => {
     popup.renderDiagnosis({
       state: "invalid_key",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       code: "AUTH_INVALID_KEY",
       error: "Invalid API key",
     });
@@ -260,8 +224,7 @@ describe("popup.renderDiagnosis state machine", () => {
       ({ code, title, detail: expectedDetail, actionLabel, actionUrl }) => {
         popup.renderDiagnosis({
           state: "invalid_key",
-          apiUrl: DEFAULT_API_URL,
-          isCustomUrl: false,
+          apiUrl: API_URL,
           code,
         });
 
@@ -290,8 +253,7 @@ describe("popup.renderDiagnosis state machine", () => {
     it("renders the unknown-code default with a primary 'Contact support' and a secondary 'Get a new key'", () => {
       popup.renderDiagnosis({
         state: "invalid_key",
-        apiUrl: DEFAULT_API_URL,
-        isCustomUrl: false,
+        apiUrl: API_URL,
         code: "AUTH_SOMETHING_WE_DONT_KNOW_YET",
       });
 
@@ -323,11 +285,10 @@ describe("popup.renderDiagnosis state machine", () => {
     });
   });
 
-  it("renders server_unreachable state with only the canonical-dashboard action by default", () => {
+  it("renders server_unreachable state with only the canonical-dashboard action", () => {
     popup.renderDiagnosis({
       state: "server_unreachable",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       error: "Cannot reach https://eraseai.ai: ENOTFOUND",
     });
 
@@ -340,100 +301,16 @@ describe("popup.renderDiagnosis state machine", () => {
     const buttons = document.getElementById("diag-actions").querySelectorAll("button");
     expect(buttons.length).toBe(1);
     expect(buttons[0].textContent).toBe("Open eraseai.ai");
-
-    // Reset action only appears for custom URLs.
-    const resetBtn = Array.from(buttons).find((b) => b.textContent.startsWith("Reset"));
-    expect(resetBtn).toBeUndefined();
-  });
-
-  it("server_unreachable with custom URL also shows a 'Reset URL' action", () => {
-    popup.renderDiagnosis({
-      state: "server_unreachable",
-      apiUrl: "https://staging.eraseai.ai",
-      isCustomUrl: true,
-      error: "timeout",
-    });
-
-    const buttons = document.getElementById("diag-actions").querySelectorAll("button");
-    const labels = Array.from(buttons).map((b) => b.textContent);
-    expect(labels).toContain("Reset URL to eraseai.ai");
-    expect(labels).toContain("Open eraseai.ai");
   });
 
   it("falls back to server_unreachable on unknown state", () => {
     popup.renderDiagnosis({
       state: "totally_made_up",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
     });
 
     const card = document.getElementById("diag-card");
     expect(card.className).toBe("diag server_unreachable");
-  });
-
-  it("always renders the API meta line with the apiUrl", () => {
-    popup.renderDiagnosis({
-      state: "connected",
-      apiUrl: "https://my.eraseai.ai",
-      isCustomUrl: true,
-      plan: "free",
-    });
-
-    const meta = document.getElementById("diag-meta");
-    expect(meta.style.display).not.toBe("none");
-    expect(meta.textContent).toContain("API: https://my.eraseai.ai");
-    // Custom URL → exposes the inline Reset link.
-    expect(meta.querySelector("button.reset-link")).not.toBeNull();
-  });
-
-  it("default URL → no Reset link in meta", () => {
-    popup.renderDiagnosis({
-      state: "connected",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
-      plan: "free",
-    });
-
-    const meta = document.getElementById("diag-meta");
-    expect(meta.querySelector("button.reset-link")).toBeNull();
-  });
-});
-
-describe("popup.renderDiagnosis auto_reset_to_default", () => {
-  it("renders the auto-heal recovery card with previous URL and a Continue button", () => {
-    popup.renderDiagnosis({
-      state: "auto_reset_to_default",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
-      previousApiUrl: "https://stale.eraseai.ai",
-      previousError: "Server responded with HTTP 404. Check the API URL.",
-      serverVersion: "1.3.1",
-    });
-
-    const card = document.getElementById("diag-card");
-    expect(card.className).toBe("diag auto_reset");
-
-    const title = document.getElementById("diag-title");
-    expect(title.textContent).toBe("Reset to the official EraseAI server");
-
-    const detail = document.getElementById("diag-detail");
-    expect(detail.textContent).toContain("https://stale.eraseai.ai");
-    expect(detail.textContent).toContain("https://eraseai.ai");
-
-    const buttons = document.getElementById("diag-actions").querySelectorAll("button");
-    expect(buttons.length).toBe(1);
-    expect(buttons[0].textContent).toBe("Continue");
-  });
-
-  it("falls back to a generic phrase when previousApiUrl is missing", () => {
-    popup.renderDiagnosis({
-      state: "auto_reset_to_default",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
-    });
-
-    const detail = document.getElementById("diag-detail");
-    expect(detail.textContent).toContain("your custom server");
   });
 });
 
@@ -459,11 +336,14 @@ describe("popup canonical URL constants", () => {
     }
   });
 
-  it("DEFAULT_API_URL is the canonical eraseai.ai origin", () => {
+  it("popup.js source contains no hardcoded URL outside of the canonical eraseai.ai constants", () => {
     const src = loadPopupSource();
-    const m = src.match(/^const\s+DEFAULT_API_URL\s*=\s*"([^"]+)";/m);
-    expect(m).not.toBeNull();
-    expect(m[1]).toBe("https://eraseai.ai");
+    // Find every https://... literal and confirm each is anchored to eraseai.ai.
+    const urlMatches = src.match(/https:\/\/[A-Za-z0-9.\-]+/g) || [];
+    expect(urlMatches.length).toBeGreaterThan(0);
+    for (const url of urlMatches) {
+      expect(url).toMatch(/^https:\/\/eraseai\.ai$/);
+    }
   });
 });
 
@@ -477,29 +357,11 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
     expect(document.querySelectorAll("svg").length).toBe(0);
   }
 
-  it("does not interpret HTML in apiUrl", () => {
-    const malicious = "<script>window.__pwned=true</script>";
-    popup.renderDiagnosis({
-      state: "connected",
-      apiUrl: malicious,
-      isCustomUrl: false,
-      plan: "free",
-    });
-
-    expectNoScriptInjection();
-    const meta = document.getElementById("diag-meta");
-    // The raw text must appear escaped in the textContent.
-    expect(meta.textContent).toContain(malicious);
-    // And nothing should have set the global.
-    expect(globalThis.__pwned).toBeUndefined();
-  });
-
   it("does not interpret HTML in result.error for invalid_key", () => {
     const malicious = '<img src=x onerror="window.__pwned2=true">';
     popup.renderDiagnosis({
       state: "invalid_key",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       error: malicious,
     });
 
@@ -513,8 +375,7 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
     const malicious = '<iframe src="javascript:window.__pwned3=true"></iframe>';
     popup.renderDiagnosis({
       state: "server_unreachable",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       error: malicious,
     });
 
@@ -528,8 +389,7 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
     const malicious = "<script>window.__pwned4=true</script>";
     popup.renderDiagnosis({
       state: "connected",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       plan: malicious,
     });
 
@@ -558,119 +418,15 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
   it("re-rendering clears stale buttons (no leak across renders)", () => {
     popup.renderDiagnosis({
       state: "no_key",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
     });
     expect(document.getElementById("diag-actions").children.length).toBe(1);
 
     popup.renderDiagnosis({
       state: "connected",
-      apiUrl: DEFAULT_API_URL,
-      isCustomUrl: false,
+      apiUrl: API_URL,
       plan: "free",
     });
     expect(document.getElementById("diag-actions").children.length).toBe(0);
-  });
-});
-
-describe("popup.loadState clears out-of-allowlist apiUrl on production builds", () => {
-  afterEach(() => {
-    uninstallBuildOnWindow();
-  });
-
-  function setUpLoadStateTest(build, initialStorage) {
-    installBuildOnWindow(build);
-    setUpDom();
-    const stub = makeChromeStub(initialStorage);
-    // Make runDiagnosis() resolve so loadState() can complete end-to-end.
-    stub.runtime.sendMessage = vi.fn((_msg, cb) => {
-      if (typeof cb === "function") {
-        cb({ state: "no_key", apiUrl: DEFAULT_API_URL, isCustomUrl: false });
-      }
-    });
-    globalThis.chrome = stub;
-    chromeStub = stub;
-    popup = loadPopup();
-    return stub;
-  }
-
-  it("removes a leftover *.replit.app URL from storage and leaves the input blank (production)", async () => {
-    const stub = setUpLoadStateTest(
-      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
-      { apiUrl: "https://eraseai-staging.replit.app", apiKey: "eak_test", enabled: true },
-    );
-
-    expect(popup.IS_PRODUCTION_BUILD).toBe(true);
-
-    await popup.loadState();
-
-    expect(stub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
-    expect("apiUrl" in stub.__storage).toBe(false);
-
-    const apiUrlInput = document.getElementById("api-url-input");
-    expect(apiUrlInput.value).toBe("");
-  });
-
-  it("does not touch storage when the stored URL is on the allowlist (production)", async () => {
-    const stub = setUpLoadStateTest(
-      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
-      { apiUrl: "https://api.eraseai.ai", enabled: true },
-    );
-
-    await popup.loadState();
-
-    expect(stub.storage.local.remove).not.toHaveBeenCalled();
-    expect(stub.__storage.apiUrl).toBe("https://api.eraseai.ai");
-
-    const apiUrlInput = document.getElementById("api-url-input");
-    expect(apiUrlInput.value).toBe("https://api.eraseai.ai");
-  });
-
-  it("does not touch storage when the stored URL equals the canonical default (production)", async () => {
-    const stub = setUpLoadStateTest(
-      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
-      { apiUrl: DEFAULT_API_URL, enabled: true },
-    );
-
-    await popup.loadState();
-
-    expect(stub.storage.local.remove).not.toHaveBeenCalled();
-    expect(stub.__storage.apiUrl).toBe(DEFAULT_API_URL);
-
-    // The default URL is not pre-filled in the custom-URL input.
-    const apiUrlInput = document.getElementById("api-url-input");
-    expect(apiUrlInput.value).toBe("");
-  });
-
-  it("preserves a leftover staging URL on dev builds (engineers don't lose it)", async () => {
-    const stub = setUpLoadStateTest(
-      { env: "development", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai", "*.replit.app"] },
-      { apiUrl: "https://eraseai-staging.replit.app", enabled: true },
-    );
-
-    expect(popup.IS_PRODUCTION_BUILD).toBe(false);
-
-    await popup.loadState();
-
-    expect(stub.storage.local.remove).not.toHaveBeenCalled();
-    expect(stub.__storage.apiUrl).toBe("https://eraseai-staging.replit.app");
-
-    const apiUrlInput = document.getElementById("api-url-input");
-    expect(apiUrlInput.value).toBe("https://eraseai-staging.replit.app");
-  });
-
-  it("does no work when there is no apiUrl in storage (production)", async () => {
-    const stub = setUpLoadStateTest(
-      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
-      { enabled: true },
-    );
-
-    await popup.loadState();
-
-    expect(stub.storage.local.remove).not.toHaveBeenCalled();
-    expect("apiUrl" in stub.__storage).toBe(false);
-
-    const apiUrlInput = document.getElementById("api-url-input");
-    expect(apiUrlInput.value).toBe("");
   });
 });

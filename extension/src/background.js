@@ -1,26 +1,11 @@
-importScripts("./build-config.js");
-
-const DEFAULT_API_URL = "https://eraseai.ai";
+const API_URL = "https://eraseai.ai";
 
 async function getConfig() {
-  const result = await chrome.storage.local.get(["apiKey", "apiUrl", "enabled"]);
-  let apiUrl = (result.apiUrl || DEFAULT_API_URL).replace(/\/$/, "");
-  if (!apiUrl.startsWith("https://")) {
-    apiUrl = DEFAULT_API_URL;
-  }
-  // Enforce the build-time allowlist. A custom URL that was acceptable in a
-  // dev build (e.g. *.replit.app) but isn't on the production allowlist must
-  // never actually be used as the API host — silently fall back to the
-  // canonical default. The popup separately surfaces a clear error message
-  // when a user tries to *save* a disallowed URL on a production build.
-  if (!self.eraseaiIsApiUrlAllowed(apiUrl)) {
-    apiUrl = DEFAULT_API_URL;
-  }
+  const result = await chrome.storage.local.get(["apiKey", "enabled"]);
   return {
     apiKey: result.apiKey || "",
-    apiUrl,
     enabled: result.enabled !== false,
-    isCustomUrl: apiUrl !== DEFAULT_API_URL,
+    apiUrl: API_URL,
   };
 }
 
@@ -34,7 +19,7 @@ async function analyzePrompt(text) {
   }
 
   try {
-    const response = await fetch(`${config.apiUrl}/api/dev/analyze`, {
+    const response = await fetch(`${API_URL}/api/dev/analyze`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -61,7 +46,7 @@ async function sanitizePrompt(text) {
   }
 
   try {
-    const response = await fetch(`${config.apiUrl}/api/dev/sanitize`, {
+    const response = await fetch(`${API_URL}/api/dev/sanitize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -81,14 +66,14 @@ async function sanitizePrompt(text) {
   }
 }
 
-async function probePing(apiUrl) {
+async function probePing() {
   try {
-    const probe = await fetch(`${apiUrl}/api/dev/ping`, {
+    const probe = await fetch(`${API_URL}/api/dev/ping`, {
       method: "GET",
       headers: { Accept: "application/json" },
     });
     if (!probe.ok) {
-      return { ok: false, error: `Server responded with HTTP ${probe.status}. Check the API URL.` };
+      return { ok: false, error: `Server responded with HTTP ${probe.status}.` };
     }
     const contentType = probe.headers.get("content-type") || "";
     if (!contentType.toLowerCase().includes("application/json")) {
@@ -100,64 +85,19 @@ async function probePing(apiUrl) {
     }
     return { ok: true, version: data.version };
   } catch (err) {
-    return { ok: false, error: `Cannot reach ${apiUrl}: ${err.message}` };
+    return { ok: false, error: `Cannot reach ${API_URL}: ${err.message}` };
   }
 }
 
 async function testConnection() {
-  let config = await getConfig();
+  const config = await getConfig();
 
-  let pingResult = await probePing(config.apiUrl);
-
-  // Auto-heal: if the user's stored custom apiUrl is unreachable but the
-  // canonical default works, drop the stale URL from storage and surface a
-  // dedicated state so the popup can tell the user what we just did. This
-  // is the recovery path for users (or demos) where chrome.storage.local
-  // still has an old self-hosted/staging URL baked in that no longer
-  // resolves.
-  if (!pingResult.ok && config.isCustomUrl) {
-    const defaultPing = await probePing(DEFAULT_API_URL);
-    if (defaultPing.ok) {
-      const previousApiUrl = config.apiUrl;
-      const previousError = pingResult.error;
-      let removed = true;
-      try {
-        await chrome.storage.local.remove("apiUrl");
-      } catch (_err) {
-        removed = false;
-      }
-      if (!removed) {
-        // Persisting the heal failed (rare — disk full, profile corruption,
-        // etc.). Don't return auto_reset_to_default, because clicking
-        // "Continue" would re-load the same stale apiUrl from storage and
-        // we'd loop here forever. Surface the real failure with an
-        // actionable message instead.
-        return {
-          connected: false,
-          state: "server_unreachable",
-          apiUrl: previousApiUrl,
-          isCustomUrl: true,
-          error: `${previousError} (auto-reset failed: could not clear stored API URL)`,
-        };
-      }
-      return {
-        connected: false,
-        state: "auto_reset_to_default",
-        apiUrl: DEFAULT_API_URL,
-        isCustomUrl: false,
-        serverVersion: defaultPing.version,
-        previousApiUrl,
-        previousError,
-      };
-    }
-  }
-
+  const pingResult = await probePing();
   if (!pingResult.ok) {
     return {
       connected: false,
       state: "server_unreachable",
-      apiUrl: config.apiUrl,
-      isCustomUrl: config.isCustomUrl,
+      apiUrl: API_URL,
       error: pingResult.error,
     };
   }
@@ -168,14 +108,13 @@ async function testConnection() {
     return {
       connected: false,
       state: "no_key",
-      apiUrl: config.apiUrl,
-      isCustomUrl: config.isCustomUrl,
+      apiUrl: API_URL,
       serverVersion: reachableServerVersion,
     };
   }
 
   try {
-    const auth = await fetch(`${config.apiUrl}/api/dev/ping`, {
+    const auth = await fetch(`${API_URL}/api/dev/ping`, {
       method: "GET",
       headers: { "Authorization": `Bearer ${config.apiKey}` },
     });
@@ -184,8 +123,7 @@ async function testConnection() {
       return {
         connected: false,
         state: "invalid_key",
-        apiUrl: config.apiUrl,
-        isCustomUrl: config.isCustomUrl,
+        apiUrl: API_URL,
         serverVersion: reachableServerVersion,
         error: err.error || "Invalid API key",
         code: typeof err.code === "string" ? err.code : null,
@@ -195,8 +133,7 @@ async function testConnection() {
       return {
         connected: false,
         state: "server_unreachable",
-        apiUrl: config.apiUrl,
-        isCustomUrl: config.isCustomUrl,
+        apiUrl: API_URL,
         error: `Authenticated probe failed: HTTP ${auth.status}`,
       };
     }
@@ -205,8 +142,7 @@ async function testConnection() {
       return {
         connected: false,
         state: "server_unreachable",
-        apiUrl: config.apiUrl,
-        isCustomUrl: config.isCustomUrl,
+        apiUrl: API_URL,
         error: "Authenticated endpoint did not return JSON.",
       };
     }
@@ -215,8 +151,7 @@ async function testConnection() {
       return {
         connected: false,
         state: "server_unreachable",
-        apiUrl: config.apiUrl,
-        isCustomUrl: config.isCustomUrl,
+        apiUrl: API_URL,
         error: "Authenticated endpoint returned unexpected payload.",
       };
     }
@@ -228,8 +163,7 @@ async function testConnection() {
     return {
       connected: true,
       state: "connected",
-      apiUrl: config.apiUrl,
-      isCustomUrl: config.isCustomUrl,
+      apiUrl: API_URL,
       serverVersion: typeof data.version === "string" ? data.version : reachableServerVersion,
       plan,
       dailyLimit,
@@ -240,8 +174,7 @@ async function testConnection() {
     return {
       connected: false,
       state: "server_unreachable",
-      apiUrl: config.apiUrl,
-      isCustomUrl: config.isCustomUrl,
+      apiUrl: API_URL,
       error: err.message,
     };
   }
@@ -280,12 +213,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "GET_CONFIG") {
-    getConfig().then(sendResponse).catch(() => sendResponse({ apiKey: "", apiUrl: DEFAULT_API_URL, enabled: true, isCustomUrl: false }));
-    return true;
-  }
-
-  if (message.type === "RESET_API_URL") {
-    chrome.storage.local.remove("apiUrl").then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
+    getConfig().then(sendResponse).catch(() => sendResponse({ apiKey: "", apiUrl: API_URL, enabled: true }));
     return true;
   }
 });

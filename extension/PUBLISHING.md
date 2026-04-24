@@ -10,29 +10,9 @@ The extension itself lives in `/extension`. Source of truth for icons, name,
 description, and version is `extension/manifest.json`. Manual-install zip and
 store-upload zip are produced by `artifacts/api-server/build.mjs`.
 
-### Dev vs production builds
-
-The checked-in `/extension` folder is the **development** build. Engineers can
-"Load unpacked" against it and the popup will accept any `*.replit.app` host as
-a custom API URL — handy for pointing at staging deployments.
-
-`pnpm --filter @workspace/api-server run build` produces the **production**
-zips. As part of packing, the build script:
-
-- Replaces `extension/src/build-config.js` with a hardened version whose
-  `allowedApiHosts` list only contains `eraseai.ai` and `*.eraseai.ai`. The
-  service worker silently ignores any stored custom API URL that doesn't match
-  this list.
-- Strips `https://*.replit.app/*` from `manifest.json`'s `host_permissions`
-  so the production extension cannot fetch arbitrary Replit deployments even
-  if a user manages to get a `*.replit.app` URL into storage.
-- Leaves the popup's "Custom API URL" input visible but shows a clear,
-  production-specific error if the user types anything outside the allowlist.
-
-If you add a new permanent staging hostname, update `PRODUCTION_ALLOWED_HOSTS`
-**and** `PRODUCTION_API_HOST_PERMISSIONS` in `artifacts/api-server/build.mjs`
-together — the popup-side allowlist and the manifest-side host_permissions
-must agree or the API call will be blocked by the browser.
+The extension talks only to `https://eraseai.ai` — there is no user-settable
+API URL and no environment-specific build. The same code in `/extension` is
+what ships to every store.
 
 ---
 
@@ -40,8 +20,10 @@ must agree or the API call will be blocked by the browser.
 
 1. Bump the `version` in `extension/manifest.json`. Use `MAJOR.MINOR.PATCH`.
    Stores reject any upload with a version `<=` the previous release.
-2. Smoke-test the change in Chrome via "Load unpacked" against `/extension`.
-3. Build the release artifacts:
+2. Add a matching entry at the top of `extension/CHANGELOG.json` so the public
+   status page and `/api/extension/version` reflect the new release.
+3. Smoke-test the change in Chrome via "Load unpacked" against `/extension`.
+4. Build the release artifacts:
 
    ```sh
    pnpm --filter @workspace/api-server run build
@@ -49,14 +31,14 @@ must agree or the API call will be blocked by the browser.
 
    This produces two files in `artifacts/api-server/dist/`:
 
-   - `eraseai-firewall.zip` — wraps everything in `/extension/`.
+   - `eraseai-firewall-<version>.zip` — wraps everything in `/extension/`.
      Served by `GET /api/extension/download`. This is the **manual-install**
      zip — users unzip it and select the `extension/` folder via
      "Load unpacked". Do **not** upload this file to a store.
-   - `eraseai-firewall-store.zip` — flat layout with `manifest.json` at the
-     zip root. **This is the file you upload to every store.**
+   - `eraseai-firewall-store-<version>.zip` — flat layout with `manifest.json`
+     at the zip root. **This is the file you upload to every store.**
 
-4. Verify the store zip by extracting it locally and confirming `manifest.json`
+5. Verify the store zip by extracting it locally and confirming `manifest.json`
    is at the root (not inside an `extension/` folder).
 
 ---
@@ -87,15 +69,15 @@ must agree or the API call will be blocked by the browser.
   - `activeTab` — read text from the focused chat input on supported AI sites.
   - `host_permissions` (each AI host) — inject the content script that
     intercepts prompts before they leave the browser.
-  - `host_permissions` (eraseai.ai, *.eraseai.ai, *.replit.app) — call the
-    EraseAI analyze/sanitize API from the service worker.
+  - `host_permissions` (eraseai.ai) — call the EraseAI analyze/sanitize API
+    from the service worker.
 
 **Release**
 
 1. Open the Chrome Web Store Developer Dashboard.
 2. New item (first release) or "Package" → "Upload new package" (subsequent
    releases).
-3. Upload `eraseai-firewall-store.zip`.
+3. Upload `eraseai-firewall-store-<version>.zip`.
 4. Fill / confirm the listing fields, screenshots, privacy practices, and
    regional availability (worldwide is fine).
 5. Submit for review. Initial review typically takes 1–7 business days; updates
@@ -120,7 +102,7 @@ must agree or the API call will be blocked by the browser.
 
 **Release**
 
-1. Create a new extension; upload the same `eraseai-firewall-store.zip`.
+1. Create a new extension; upload the same `eraseai-firewall-store-<version>.zip`.
 2. Re-use the Chrome listing copy and screenshots.
 3. Submit; review usually completes in 1–3 business days.
 
@@ -147,8 +129,8 @@ before it can be signed for permanent install. Until that work lands the
 2. In `manifest.json` add a `browser_specific_settings.gecko.id`
    (e.g. `firewall@eraseai.ai`).
 3. Sign up at <https://addons.mozilla.org/developers/>.
-4. Submit `eraseai-firewall-store.zip` (after the polyfill changes) via the
-   "Submit a New Add-on" flow. Choose "On this site" for distribution.
+4. Submit `eraseai-firewall-store-<version>.zip` (after the polyfill changes)
+   via the "Submit a New Add-on" flow. Choose "On this site" for distribution.
 5. Mozilla auto-signs and reviews. Updates ship the same way.
 
 **After it goes live**
@@ -181,40 +163,12 @@ listing goes live, then redeploy.
 
 ---
 
-## 6. Troubleshooting: stale custom API URL in `chrome.storage.local`
-
-**Symptom.** A user's popup reports `HTTP 404` when saving an API key, or
-shows "Server unreachable" against an unfamiliar host (e.g. an old
-self-hosted or staging URL they typed into the Custom API URL field
-months ago).
-
-**Auto-heal (1.3.1 and newer).** When the stored URL fails to respond but
-`https://eraseai.ai/api/dev/ping` succeeds, the service worker drops the
-stale `apiUrl` from storage automatically and the popup shows a
-"Reset to the official EraseAI server → Continue" card. The user clicks
-Continue, the diagnosis re-runs against `eraseai.ai`, and they're back in
-business.
-
-**Manual unblock (extensions older than 1.3.1, or if auto-heal can't
-write to storage).**
-
-1. In Chrome, open `chrome://extensions`, find **EraseAI Firewall**, click
-   **Service worker**, then in the DevTools console run:
-
-   ```js
-   chrome.storage.local.remove(["apiUrl"]);
-   ```
-
-2. Re-open the extension popup. The diagnosis card will switch to
-   "Connected" once the API key is verified against `eraseai.ai`.
-
----
-
-## 7. Quick checklist
+## 6. Quick checklist
 
 - [ ] Bump `extension/manifest.json` version
+- [ ] Add a matching entry to `extension/CHANGELOG.json`
 - [ ] `pnpm --filter @workspace/api-server run build`
-- [ ] Verify `dist/eraseai-firewall-store.zip` has `manifest.json` at root
+- [ ] Verify `dist/eraseai-firewall-store-<version>.zip` has `manifest.json` at root
 - [ ] Smoke-test "Load unpacked" against `/extension`
 - [ ] Upload to Chrome Web Store dashboard, submit for review
 - [ ] Upload to Edge Add-ons dashboard, submit for review

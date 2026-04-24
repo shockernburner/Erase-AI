@@ -138,14 +138,6 @@
       flex-wrap: wrap;
     }
 
-    .diag-meta {
-      font-size: 10px;
-      color: #71717a;
-      margin-top: 8px;
-      font-family: monospace;
-      word-break: break-all;
-    }
-
     .plan-pill {
       display: inline-block;
       font-size: 10px;
@@ -365,33 +357,6 @@
       text-decoration: underline;
     }
 
-    .api-url-section {
-      margin-top: 8px;
-    }
-
-    .api-url-toggle {
-      font-size: 11px;
-      color: #6366f1;
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      font-weight: 500;
-    }
-
-    .api-url-toggle:hover {
-      text-decoration: underline;
-    }
-
-    .api-url-input {
-      margin-top: 8px;
-      display: none;
-    }
-
-    .api-url-input.visible {
-      display: block;
-    }
-
     .status-text {
       font-size: 11px;
       margin-top: 6px;
@@ -408,19 +373,6 @@
       color: #ef4444;
       background: rgba(239,68,68,0.08);
     }
-
-    .reset-link {
-      font-size: 11px;
-      color: #f59e0b;
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      margin-left: 6px;
-      text-decoration: underline;
-    }
-
-    .reset-link:hover { color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -441,7 +393,6 @@
       </div>
       <div class="diag-detail" id="diag-detail">Probing the EraseAI API.</div>
       <div class="diag-actions" id="diag-actions"></div>
-      <div class="diag-meta" id="diag-meta" style="display:none"></div>
     </div>
     <div class="toggle-row">
       <span class="label">Firewall enabled</span>
@@ -462,15 +413,6 @@
       </div>
       <div id="key-status" class="status-text" style="display:none"></div>
     </div>
-    <div class="api-url-section">
-      <button class="api-url-toggle" id="url-toggle">Custom API URL</button>
-      <div class="api-url-input" id="url-input-section">
-        <div class="input-row">
-          <input type="text" class="input-field" id="api-url-input" placeholder="https://eraseai.ai">
-          <button class="btn btn-secondary" id="save-url-btn">Set</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="section">
@@ -484,7 +426,6 @@
     <a href="#" id="dashboard-link">Open EraseAI Dashboard →</a>
   </div>
 
-  <script src="build-config.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

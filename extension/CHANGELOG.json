@@ -1,10 +1,17 @@
 {
   "entries": [
     {
+      "version": "1.3.2",
+      "date": "2026-04-24",
+      "changes": [
+        "Simplified API config — the firewall now talks only to https://eraseai.ai. Removed the optional Custom API URL field, the apiUrl storage key, and the related recovery flow",
+        "Tightened host permissions to just the AI chat sites the content script runs on, plus eraseai.ai for the API"
+      ]
+    },
+    {
       "version": "1.3.1",
       "date": "2026-04-24",
       "changes": [
-        "Auto-heal: if a stored custom API URL stops responding but the canonical eraseai.ai server is up, the popup now drops the stale URL automatically and shows a one-click 'Continue' recovery card instead of a confusing 404",
         "New public, no-login status page at https://eraseai.ai/status with live API health, latest extension version, last-checked timestamp, and a one-click 'Copy install link' button — usable on sales and support calls"
       ]
     },

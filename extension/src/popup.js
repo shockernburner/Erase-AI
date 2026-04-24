@@ -1,43 +1,19 @@
-const DEFAULT_API_URL = "https://eraseai.ai";
 const CANONICAL_KEYS_URL = "https://eraseai.ai/?view=developer";
 const CANONICAL_DASHBOARD_URL = "https://eraseai.ai/ai-firewall";
 const CANONICAL_PRICING_URL = "https://eraseai.ai/?view=pricing";
 const CANONICAL_CONTACT_URL = "https://eraseai.ai/contact";
-
-const BUILD = (typeof window !== "undefined" && window.ERASEAI_BUILD) || { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] };
-const IS_PRODUCTION_BUILD = BUILD.env === "production";
-
-function isApiUrlAllowed(url) {
-  if (typeof window !== "undefined" && typeof window.eraseaiIsApiUrlAllowed === "function") {
-    return window.eraseaiIsApiUrlAllowed(url);
-  }
-  return false;
-}
-
-function describeAllowedHosts() {
-  const patterns = (BUILD.allowedApiHosts || []).map((p) => (p.startsWith("*.") ? p : p));
-  if (patterns.length === 0) return "eraseai.ai";
-  if (patterns.length === 1) return patterns[0];
-  if (patterns.length === 2) return `${patterns[0]} or ${patterns[1]}`;
-  return `${patterns.slice(0, -1).join(", ")}, or ${patterns[patterns.length - 1]}`;
-}
 
 const apiKeyInput = document.getElementById("api-key-input");
 const saveKeyBtn = document.getElementById("save-key-btn");
 const keyStatus = document.getElementById("key-status");
 const toggleEnabled = document.getElementById("toggle-enabled");
 const scanSummary = document.getElementById("scan-summary");
-const urlToggle = document.getElementById("url-toggle");
-const urlInputSection = document.getElementById("url-input-section");
-const apiUrlInput = document.getElementById("api-url-input");
-const saveUrlBtn = document.getElementById("save-url-btn");
 const dashboardLink = document.getElementById("dashboard-link");
 
 const diagCard = document.getElementById("diag-card");
 const diagTitle = document.getElementById("diag-title");
 const diagDetail = document.getElementById("diag-detail");
 const diagActions = document.getElementById("diag-actions");
-const diagMeta = document.getElementById("diag-meta");
 
 function showKeyStatus(msg, type) {
   keyStatus.textContent = msg;
@@ -59,22 +35,6 @@ function clearDiagActions() {
 function clearNode(node) {
   while (node.firstChild) {
     node.removeChild(node.firstChild);
-  }
-}
-
-function renderDiagMeta(apiUrl, onReset) {
-  clearNode(diagMeta);
-  diagMeta.style.display = "block";
-  const label = document.createTextNode(`API: ${apiUrl}`);
-  diagMeta.appendChild(label);
-  if (typeof onReset === "function") {
-    diagMeta.appendChild(document.createTextNode(" "));
-    const btn = document.createElement("button");
-    btn.className = "reset-link";
-    btn.type = "button";
-    btn.textContent = "Reset";
-    btn.addEventListener("click", onReset);
-    diagMeta.appendChild(btn);
   }
 }
 
@@ -165,20 +125,8 @@ function describeInvalidKey(code) {
   }
 }
 
-async function resetApiUrlAndRecheck() {
-  await chrome.storage.local.remove("apiUrl");
-  apiUrlInput.value = "";
-  showKeyStatus("API URL reset to default", "success");
-  await runDiagnosis();
-}
-
 function renderDiagnosis(result) {
   clearDiagActions();
-  diagMeta.style.display = "none";
-  clearNode(diagMeta);
-
-  const apiUrl = typeof result.apiUrl === "string" ? result.apiUrl : DEFAULT_API_URL;
-  const isCustom = !!result.isCustomUrl;
 
   if (result.state === "connected") {
     setDiagState("connected");
@@ -200,19 +148,6 @@ function renderDiagnosis(result) {
     renderDiagTitle("Add your API key");
     diagDetail.textContent = "The EraseAI server is reachable. Enter an API key below, or grab one from your dashboard.";
     addDiagButton("Get my API key", "primary", openCanonicalKeysDashboard);
-  } else if (result.state === "auto_reset_to_default") {
-    // Recovery state: the background service worker just dropped a stale
-    // custom apiUrl from chrome.storage.local because it could not reach
-    // it, but the canonical default IS reachable. Tell the user what we
-    // did and offer a "Continue" button that re-runs the diagnosis
-    // against the (now-default) URL.
-    setDiagState("auto_reset");
-    renderDiagTitle("Reset to the official EraseAI server");
-    const previous = typeof result.previousApiUrl === "string" ? result.previousApiUrl : "your custom server";
-    diagDetail.textContent = `${previous} wasn't responding, so the firewall is now using https://eraseai.ai. Click Continue to verify your API key.`;
-    addDiagButton("Continue", "primary", () => {
-      runDiagnosis();
-    });
   } else if (result.state === "invalid_key") {
     setDiagState("invalid_key");
     const info = describeInvalidKey(result.code);
@@ -237,13 +172,8 @@ function renderDiagnosis(result) {
     diagDetail.textContent = result.error
       ? `Could not reach the EraseAI API: ${result.error}`
       : "Could not reach the EraseAI API.";
-    if (isCustom) {
-      addDiagButton("Reset URL to eraseai.ai", "secondary", resetApiUrlAndRecheck);
-    }
     addDiagButton("Open eraseai.ai", "primary", openCanonicalDashboard);
   }
-
-  renderDiagMeta(apiUrl, isCustom ? resetApiUrlAndRecheck : null);
 }
 
 function runDiagnosis() {
@@ -252,7 +182,6 @@ function runDiagnosis() {
     diagTitle.textContent = "Checking…";
     diagDetail.textContent = "Probing the EraseAI API.";
     clearDiagActions();
-    diagMeta.style.display = "none";
     chrome.runtime.sendMessage({ type: "TEST_CONNECTION" }, (response) => {
       const safe = response || { state: "server_unreachable", error: "No response" };
       renderDiagnosis(safe);
@@ -317,48 +246,12 @@ function renderLastScan(scan) {
   }
 }
 
-function applyBuildModeUi() {
-  if (IS_PRODUCTION_BUILD) {
-    apiUrlInput.placeholder = "https://eraseai.ai";
-    if (!document.getElementById("url-prod-note")) {
-      const note = document.createElement("div");
-      note.id = "url-prod-note";
-      note.className = "status-text";
-      note.style.display = "block";
-      note.style.color = "#a1a1aa";
-      note.style.background = "rgba(255,255,255,0.04)";
-      note.style.marginTop = "6px";
-      note.textContent = `This build only accepts ${describeAllowedHosts()} as the API host.`;
-      urlInputSection.appendChild(note);
-    }
-  }
-}
-
 async function loadState() {
-  applyBuildModeUi();
-  const data = await chrome.storage.local.get(["apiKey", "apiUrl", "enabled", "lastScan"]);
+  const data = await chrome.storage.local.get(["apiKey", "enabled", "lastScan"]);
 
   if (data.apiKey) {
     apiKeyInput.value = data.apiKey;
     apiKeyInput.type = "password";
-  }
-
-  // On production builds, drop any leftover staging/dev URL the user typed
-  // during the beta. The background script already falls back to the default
-  // when the stored URL isn't in the allowlist, so the input would otherwise
-  // display a value that doesn't match what's actually being used.
-  if (
-    IS_PRODUCTION_BUILD &&
-    typeof data.apiUrl === "string" &&
-    data.apiUrl &&
-    !isApiUrlAllowed(data.apiUrl)
-  ) {
-    await chrome.storage.local.remove("apiUrl");
-    data.apiUrl = undefined;
-  }
-
-  if (data.apiUrl && data.apiUrl !== DEFAULT_API_URL) {
-    apiUrlInput.value = data.apiUrl;
   }
 
   toggleEnabled.checked = data.enabled !== false;
@@ -399,44 +292,12 @@ saveKeyBtn.addEventListener("click", async () => {
     const info = describeInvalidKey(result.code);
     showKeyStatus(info.title, "error");
   } else if (result.state === "server_unreachable") {
-    showKeyStatus("Server unreachable — check the API URL", "error");
+    showKeyStatus("Server unreachable — try again in a moment", "error");
   }
 });
 
 toggleEnabled.addEventListener("change", () => {
   chrome.storage.local.set({ enabled: toggleEnabled.checked });
-});
-
-urlToggle.addEventListener("click", () => {
-  urlInputSection.classList.toggle("visible");
-});
-
-saveUrlBtn.addEventListener("click", async () => {
-  const url = apiUrlInput.value.trim() || DEFAULT_API_URL;
-  if (!url.startsWith("https://")) {
-    showKeyStatus("API URL must use HTTPS", "error");
-    return;
-  }
-  try {
-    new URL(url);
-  } catch {
-    showKeyStatus("Invalid URL format", "error");
-    return;
-  }
-  if (!isApiUrlAllowed(url)) {
-    if (IS_PRODUCTION_BUILD) {
-      showKeyStatus(
-        `This release of the EraseAI Firewall only talks to ${describeAllowedHosts()}. To point at a staging or local server, install a development build of the extension.`,
-        "error",
-      );
-    } else {
-      showKeyStatus(`Custom URL must be ${describeAllowedHosts()}`, "error");
-    }
-    return;
-  }
-  await chrome.storage.local.set({ apiUrl: url });
-  showKeyStatus("API URL updated", "success");
-  await runDiagnosis();
 });
 
 loadState();

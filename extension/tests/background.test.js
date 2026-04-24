@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { loadBackgroundModule } from "./loadModule.js";
 
-const DEFAULT_API_URL = "https://eraseai.ai";
+const API_URL = "https://eraseai.ai";
 
 function makeChrome(storage = {}) {
   return {
@@ -76,7 +76,7 @@ describe("background.testConnection", () => {
 
       expect(result.connected).toBe(true);
       expect(result.state).toBe("connected");
-      expect(result.apiUrl).toBe(DEFAULT_API_URL);
+      expect(result.apiUrl).toBe(API_URL);
       expect(result.plan).toBe("pro");
       expect(result.dailyLimit).toBe(1000);
       expect(result.dailyRemaining).toBe(750);
@@ -331,117 +331,6 @@ describe("background.testConnection", () => {
     });
   });
 
-  describe("auto_reset_to_default state", () => {
-    it("returns auto_reset_to_default when a custom apiUrl is unreachable but the canonical default works, and removes the stored apiUrl", async () => {
-      const customUrl = "https://stale.eraseai.ai";
-      init({
-        storage: { apiUrl: customUrl, apiKey: "eak_x" },
-        fetchImpl: async (url) => {
-          if (url.startsWith(customUrl)) {
-            return { ok: false, status: 404, headers: { get: () => "text/html" }, json: async () => ({}) };
-          }
-          if (url.startsWith(DEFAULT_API_URL)) {
-            return jsonResponse({ ok: true, version: "1.3.1" });
-          }
-          throw new Error(`unexpected url: ${url}`);
-        },
-      });
-
-      const result = await mod.testConnection();
-
-      expect(result.connected).toBe(false);
-      expect(result.state).toBe("auto_reset_to_default");
-      expect(result.apiUrl).toBe(DEFAULT_API_URL);
-      expect(result.isCustomUrl).toBe(false);
-      expect(result.previousApiUrl).toBe(customUrl);
-      expect(result.previousError).toMatch(/HTTP 404/);
-      expect(result.serverVersion).toBe("1.3.1");
-      expect(chromeStub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
-    });
-
-    it("returns server_unreachable (not auto-heal) when both the custom URL AND the default fail", async () => {
-      const customUrl = "https://stale.eraseai.ai";
-      init({
-        storage: { apiUrl: customUrl, apiKey: "eak_x" },
-        fetchImpl: async () => ({
-          ok: false,
-          status: 404,
-          headers: { get: () => "text/html" },
-          json: async () => ({}),
-        }),
-      });
-
-      const result = await mod.testConnection();
-
-      expect(result.state).toBe("server_unreachable");
-      expect(result.apiUrl).toBe(customUrl);
-      expect(result.isCustomUrl).toBe(true);
-      expect(chromeStub.storage.local.remove).not.toHaveBeenCalled();
-    });
-
-    it("does NOT auto-heal when the failing URL is already the default (nothing to heal to)", async () => {
-      init({
-        storage: { apiKey: "eak_x" },
-        fetchImpl: async () => ({
-          ok: false,
-          status: 502,
-          headers: { get: () => "text/html" },
-          json: async () => ({}),
-        }),
-      });
-
-      const result = await mod.testConnection();
-      expect(result.state).toBe("server_unreachable");
-      expect(result.apiUrl).toBe(DEFAULT_API_URL);
-      // Crucially, no second probe to the default — only the original ping.
-      expect(fetchStub).toHaveBeenCalledTimes(1);
-      expect(chromeStub.storage.local.remove).not.toHaveBeenCalled();
-    });
-
-    it("does NOT auto_reset_to_default if storage.remove rejects (avoids loop on Continue) — surfaces the original error instead", async () => {
-      const customUrl = "https://stale.eraseai.ai";
-      chromeStub = makeChrome({ apiUrl: customUrl, apiKey: "eak_x" });
-      // Override remove() to reject — simulates a profile/disk-level failure
-      // where chrome.storage.local.remove() can't actually clear the key.
-      chromeStub.storage.local.remove = vi.fn(async () => {
-        throw new Error("storage quota exhausted");
-      });
-      fetchStub = vi.fn(async (url) => {
-        if (url.startsWith(customUrl)) {
-          return { ok: false, status: 404, headers: { get: () => "text/html" }, json: async () => ({}) };
-        }
-        return jsonResponse({ ok: true, version: "1.3.1" });
-      });
-      mod = loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
-
-      const result = await mod.testConnection();
-
-      expect(result.state).toBe("server_unreachable");
-      expect(result.apiUrl).toBe(customUrl);
-      expect(result.isCustomUrl).toBe(true);
-      expect(result.error).toMatch(/auto-reset failed/);
-      expect(result.error).toMatch(/HTTP 404/);
-    });
-
-    it("auto-heals on a network-error failure of the custom URL too", async () => {
-      const customUrl = "https://stale.eraseai.ai";
-      init({
-        storage: { apiUrl: customUrl },
-        fetchImpl: async (url) => {
-          if (url.startsWith(customUrl)) {
-            throw new Error("getaddrinfo ENOTFOUND stale.eraseai.ai");
-          }
-          return jsonResponse({ ok: true, version: "1.3.1" });
-        },
-      });
-
-      const result = await mod.testConnection();
-      expect(result.state).toBe("auto_reset_to_default");
-      expect(result.previousError).toMatch(/Cannot reach https:\/\/stale\.eraseai\.ai/);
-      expect(chromeStub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
-    });
-  });
-
   describe("analyzePrompt", () => {
     it("posts to /api/dev/analyze with bearer auth and returns the server JSON on 200", async () => {
       const serverPayload = {
@@ -460,7 +349,7 @@ describe("background.testConnection", () => {
       expect(result).toEqual(serverPayload);
       expect(fetchStub).toHaveBeenCalledTimes(1);
       const [url, opts] = fetchStub.mock.calls[0];
-      expect(url).toBe(`${DEFAULT_API_URL}/api/dev/analyze`);
+      expect(url).toBe(`${API_URL}/api/dev/analyze`);
       expect(opts.method).toBe("POST");
       expect(opts.headers["Content-Type"]).toBe("application/json");
       expect(opts.headers.Authorization).toBe("Bearer eak_good");
@@ -616,7 +505,7 @@ describe("background.testConnection", () => {
       expect(result).toEqual(serverPayload);
       expect(fetchStub).toHaveBeenCalledTimes(1);
       const [url, opts] = fetchStub.mock.calls[0];
-      expect(url).toBe(`${DEFAULT_API_URL}/api/dev/sanitize`);
+      expect(url).toBe(`${API_URL}/api/dev/sanitize`);
       expect(opts.method).toBe("POST");
       expect(opts.headers["Content-Type"]).toBe("application/json");
       expect(opts.headers.Authorization).toBe("Bearer eak_good");
@@ -699,26 +588,40 @@ describe("background.testConnection", () => {
   });
 
   describe("getConfig", () => {
-    it("ignores stored apiUrl that is not https://", async () => {
+    it("always returns the canonical eraseai.ai URL regardless of what's in storage", async () => {
       init({
-        storage: { apiUrl: "http://evil.example.com" },
+        storage: { apiUrl: "https://something-else.example.com", apiKey: "eak_x" },
         fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }),
       });
 
       const cfg = await mod.getConfig();
-      expect(cfg.apiUrl).toBe(DEFAULT_API_URL);
-      expect(cfg.isCustomUrl).toBe(false);
+      expect(cfg.apiUrl).toBe(API_URL);
+      expect(cfg.apiKey).toBe("eak_x");
+      expect(cfg.enabled).toBe(true);
     });
 
-    it("strips trailing slash from custom apiUrl", async () => {
+    it("does not read apiUrl from storage at all", async () => {
       init({
-        storage: { apiUrl: "https://my.eraseai.ai/" },
+        storage: { apiKey: "eak_x" },
         fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }),
       });
 
-      const cfg = await mod.getConfig();
-      expect(cfg.apiUrl).toBe("https://my.eraseai.ai");
-      expect(cfg.isCustomUrl).toBe(true);
+      await mod.getConfig();
+      const getCalls = chromeStub.storage.local.get.mock.calls;
+      expect(getCalls.length).toBe(1);
+      const requestedKeys = getCalls[0][0];
+      expect(requestedKeys).toEqual(["apiKey", "enabled"]);
+    });
+
+    it("treats missing/explicit-true `enabled` as enabled, and only false as disabled", async () => {
+      init({ storage: {}, fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }) });
+      expect((await mod.getConfig()).enabled).toBe(true);
+
+      init({ storage: { enabled: true }, fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }) });
+      expect((await mod.getConfig()).enabled).toBe(true);
+
+      init({ storage: { enabled: false }, fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }) });
+      expect((await mod.getConfig()).enabled).toBe(false);
     });
   });
 });
