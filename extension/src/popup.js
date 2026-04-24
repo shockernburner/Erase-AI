@@ -4,6 +4,24 @@ const CANONICAL_DASHBOARD_URL = "https://eraseai.ai/ai-firewall";
 const CANONICAL_PRICING_URL = "https://eraseai.ai/?view=pricing";
 const CANONICAL_CONTACT_URL = "https://eraseai.ai/contact";
 
+const BUILD = (typeof window !== "undefined" && window.ERASEAI_BUILD) || { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] };
+const IS_PRODUCTION_BUILD = BUILD.env === "production";
+
+function isApiUrlAllowed(url) {
+  if (typeof window !== "undefined" && typeof window.eraseaiIsApiUrlAllowed === "function") {
+    return window.eraseaiIsApiUrlAllowed(url);
+  }
+  return false;
+}
+
+function describeAllowedHosts() {
+  const patterns = (BUILD.allowedApiHosts || []).map((p) => (p.startsWith("*.") ? p : p));
+  if (patterns.length === 0) return "eraseai.ai";
+  if (patterns.length === 1) return patterns[0];
+  if (patterns.length === 2) return `${patterns[0]} or ${patterns[1]}`;
+  return `${patterns.slice(0, -1).join(", ")}, or ${patterns[patterns.length - 1]}`;
+}
+
 const apiKeyInput = document.getElementById("api-key-input");
 const saveKeyBtn = document.getElementById("save-key-btn");
 const keyStatus = document.getElementById("key-status");
@@ -278,7 +296,25 @@ function renderLastScan(scan) {
   }
 }
 
+function applyBuildModeUi() {
+  if (IS_PRODUCTION_BUILD) {
+    apiUrlInput.placeholder = "https://eraseai.ai";
+    if (!document.getElementById("url-prod-note")) {
+      const note = document.createElement("div");
+      note.id = "url-prod-note";
+      note.className = "status-text";
+      note.style.display = "block";
+      note.style.color = "#a1a1aa";
+      note.style.background = "rgba(255,255,255,0.04)";
+      note.style.marginTop = "6px";
+      note.textContent = `This build only accepts ${describeAllowedHosts()} as the API host.`;
+      urlInputSection.appendChild(note);
+    }
+  }
+}
+
 async function loadState() {
+  applyBuildModeUi();
   const data = await chrome.storage.local.get(["apiKey", "apiUrl", "enabled", "lastScan"]);
 
   if (data.apiKey) {
@@ -347,14 +383,20 @@ saveUrlBtn.addEventListener("click", async () => {
     return;
   }
   try {
-    const hostname = new URL(url).hostname;
-    const allowed = hostname === "eraseai.ai" || hostname.endsWith(".eraseai.ai") || hostname.endsWith(".replit.app");
-    if (!allowed) {
-      showKeyStatus("Custom URL must be eraseai.ai, a *.eraseai.ai subdomain, or a *.replit.app domain", "error");
-      return;
-    }
+    new URL(url);
   } catch {
     showKeyStatus("Invalid URL format", "error");
+    return;
+  }
+  if (!isApiUrlAllowed(url)) {
+    if (IS_PRODUCTION_BUILD) {
+      showKeyStatus(
+        `This release of the EraseAI Firewall only talks to ${describeAllowedHosts()}. To point at a staging or local server, install a development build of the extension.`,
+        "error",
+      );
+    } else {
+      showKeyStatus(`Custom URL must be ${describeAllowedHosts()}`, "error");
+    }
     return;
   }
   await chrome.storage.local.set({ apiUrl: url });

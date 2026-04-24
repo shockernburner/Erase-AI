@@ -11,6 +11,92 @@ globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
+// Production builds of the extension only allow the EraseAI-controlled hosts
+// below. *.replit.app is intentionally absent so a public release cannot be
+// pointed at a third-party Replit deployment that mimics our API contract.
+const PRODUCTION_ALLOWED_HOSTS = ["eraseai.ai", "*.eraseai.ai"];
+
+// Hosts that must remain in the production manifest's host_permissions so the
+// service worker can fetch the EraseAI API. Everything else (*.replit.app in
+// particular) is stripped from the manifest before packing.
+const PRODUCTION_API_HOST_PERMISSIONS = new Set([
+  "https://eraseai.ai/*",
+  "https://*.eraseai.ai/*",
+]);
+// Non-API host_permissions (the AI chat sites the content script runs on) are
+// passed through unchanged.
+const NON_API_HOST_PERMISSION_PATTERN = /^https:\/\/[^*]/;
+
+function buildProductionConfigSource() {
+  return [
+    "/* AUTO-GENERATED at build time — do not edit. See artifacts/api-server/build.mjs. */",
+    "self.ERASEAI_BUILD = {",
+    '  env: "production",',
+    `  allowedApiHosts: ${JSON.stringify(PRODUCTION_ALLOWED_HOSTS)},`,
+    "};",
+    "",
+    "self.eraseaiIsHostAllowed = function (hostname) {",
+    '  if (typeof hostname !== "string" || !hostname) return false;',
+    "  const patterns = self.ERASEAI_BUILD.allowedApiHosts;",
+    "  return patterns.some((p) => {",
+    '    if (p.startsWith("*.")) {',
+    "      const suffix = p.slice(1);",
+    "      return hostname.endsWith(suffix) && hostname.length > suffix.length;",
+    "    }",
+    "    return hostname === p;",
+    "  });",
+    "};",
+    "",
+    "self.eraseaiIsApiUrlAllowed = function (url) {",
+    '  if (typeof url !== "string" || !url.startsWith("https://")) return false;',
+    "  let hostname;",
+    "  try { hostname = new URL(url).hostname; } catch { return false; }",
+    "  return self.eraseaiIsHostAllowed(hostname);",
+    "};",
+    "",
+  ].join("\n");
+}
+
+function lockDownManifestForProduction(manifest) {
+  const out = { ...manifest };
+  const original = Array.isArray(manifest.host_permissions) ? manifest.host_permissions : [];
+  const kept = [];
+  const dropped = [];
+  for (const entry of original) {
+    if (typeof entry !== "string") continue;
+    if (PRODUCTION_API_HOST_PERMISSIONS.has(entry)) {
+      kept.push(entry);
+    } else if (NON_API_HOST_PERMISSION_PATTERN.test(entry)) {
+      // Concrete (non-wildcard) hostnames — the AI chat sites the content
+      // script runs against. Keep these untouched.
+      kept.push(entry);
+    } else {
+      dropped.push(entry);
+    }
+  }
+  out.host_permissions = kept;
+  return { manifest: out, dropped };
+}
+
+function applyProductionLockdownToZip(zip, prefix) {
+  // Replace src/build-config.js with the production allowlist.
+  const configEntryName = `${prefix}src/build-config.js`;
+  zip.deleteFile(configEntryName);
+  zip.addFile(configEntryName, Buffer.from(buildProductionConfigSource(), "utf8"));
+
+  // Rewrite manifest.json so host_permissions matches the locked-down list.
+  const manifestEntryName = `${prefix}manifest.json`;
+  const manifestEntry = zip.getEntry(manifestEntryName);
+  if (!manifestEntry) {
+    throw new Error(`[build] expected ${manifestEntryName} inside the packed zip — aborting build.`);
+  }
+  const manifestJson = JSON.parse(manifestEntry.getData().toString("utf8"));
+  const { manifest: locked, dropped } = lockDownManifestForProduction(manifestJson);
+  zip.deleteFile(manifestEntryName);
+  zip.addFile(manifestEntryName, Buffer.from(`${JSON.stringify(locked, null, 2)}\n`, "utf8"));
+  return dropped;
+}
+
 async function packExtensionZip(distDir) {
   const extensionDir = path.resolve(artifactDir, "../../extension");
   try {
@@ -29,6 +115,16 @@ async function packExtensionZip(distDir) {
   const version = manifest.version;
   if (!version || typeof version !== "string") {
     throw new Error(`[build] extension manifest is missing a valid "version" field — aborting build.`);
+  }
+
+  // Sanity check: the dev build-config must exist on disk. Without it the
+  // production override has nothing to replace and the loaded extension would
+  // crash on `importScripts("./build-config.js")`.
+  const buildConfigPath = path.resolve(extensionDir, "src/build-config.js");
+  try {
+    await access(buildConfigPath);
+  } catch {
+    throw new Error(`[build] extension/src/build-config.js is missing — production hardening cannot run. Aborting build.`);
   }
 
   let changelog = { entries: [] };
@@ -55,11 +151,15 @@ async function packExtensionZip(distDir) {
   if (manualEntryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty zip — aborting build.`);
   }
+  const manualDropped = applyProductionLockdownToZip(manualZip, "extension/");
   const manualFilename = `eraseai-firewall-${version}.zip`;
   const manualOutPath = path.resolve(distDir, manualFilename);
   manualZip.writeZip(manualOutPath);
   const manualInfo = await stat(manualOutPath);
   console.log(`[build] packed manual-install extension to ${manualOutPath} (${manualEntryCount} entries, ${manualInfo.size} bytes)`);
+  if (manualDropped.length > 0) {
+    console.log(`[build] manual-install: stripped non-EraseAI host_permissions ${JSON.stringify(manualDropped)}`);
+  }
 
   // 2) Store-upload zip — flat layout with manifest.json at the zip root.
   //    This is the package shape required by the Chrome Web Store, the Edge
@@ -70,10 +170,14 @@ async function packExtensionZip(distDir) {
   if (storeEntryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty store zip — aborting build.`);
   }
+  const storeDropped = applyProductionLockdownToZip(storeZip, "");
   const storeFilename = `eraseai-firewall-store-${version}.zip`;
   const storeOutPath = path.resolve(distDir, storeFilename);
   storeZip.writeZip(storeOutPath);
   console.log(`[build] packed store-upload extension to ${storeOutPath} (${storeEntryCount} entries)`);
+  if (storeDropped.length > 0) {
+    console.log(`[build] store-upload: stripped non-EraseAI host_permissions ${JSON.stringify(storeDropped)}`);
+  }
 
   // Metadata sidecar consumed by /api/extension/version and
   // /api/extension/download. The download route serves the manual-install

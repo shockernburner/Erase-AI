@@ -10,6 +10,30 @@ The extension itself lives in `/extension`. Source of truth for icons, name,
 description, and version is `extension/manifest.json`. Manual-install zip and
 store-upload zip are produced by `artifacts/api-server/build.mjs`.
 
+### Dev vs production builds
+
+The checked-in `/extension` folder is the **development** build. Engineers can
+"Load unpacked" against it and the popup will accept any `*.replit.app` host as
+a custom API URL — handy for pointing at staging deployments.
+
+`pnpm --filter @workspace/api-server run build` produces the **production**
+zips. As part of packing, the build script:
+
+- Replaces `extension/src/build-config.js` with a hardened version whose
+  `allowedApiHosts` list only contains `eraseai.ai` and `*.eraseai.ai`. The
+  service worker silently ignores any stored custom API URL that doesn't match
+  this list.
+- Strips `https://*.replit.app/*` from `manifest.json`'s `host_permissions`
+  so the production extension cannot fetch arbitrary Replit deployments even
+  if a user manages to get a `*.replit.app` URL into storage.
+- Leaves the popup's "Custom API URL" input visible but shows a clear,
+  production-specific error if the user types anything outside the allowlist.
+
+If you add a new permanent staging hostname, update `PRODUCTION_ALLOWED_HOSTS`
+**and** `PRODUCTION_API_HOST_PERMISSIONS` in `artifacts/api-server/build.mjs`
+together — the popup-side allowlist and the manifest-side host_permissions
+must agree or the API call will be blocked by the browser.
+
 ---
 
 ## 1. Cut a release

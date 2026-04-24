@@ -1,9 +1,19 @@
+importScripts("./build-config.js");
+
 const DEFAULT_API_URL = "https://eraseai.ai";
 
 async function getConfig() {
   const result = await chrome.storage.local.get(["apiKey", "apiUrl", "enabled"]);
   let apiUrl = (result.apiUrl || DEFAULT_API_URL).replace(/\/$/, "");
   if (!apiUrl.startsWith("https://")) {
+    apiUrl = DEFAULT_API_URL;
+  }
+  // Enforce the build-time allowlist. A custom URL that was acceptable in a
+  // dev build (e.g. *.replit.app) but isn't on the production allowlist must
+  // never actually be used as the API host — silently fall back to the
+  // canonical default. The popup separately surfaces a clear error message
+  // when a user tries to *save* a disallowed URL on a production build.
+  if (!self.eraseaiIsApiUrlAllowed(apiUrl)) {
     apiUrl = DEFAULT_API_URL;
   }
   return {

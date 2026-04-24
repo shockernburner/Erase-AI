@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "version": "1.3.0",
+      "date": "2026-04-24",
+      "changes": [
+        "Production builds now only accept eraseai.ai (and *.eraseai.ai) as the API host; *.replit.app is reserved for development builds",
+        "Popup explains clearly when a custom API URL is rejected on a production build",
+        "Stored custom URLs that fall outside the allowlist are silently ignored and the firewall falls back to eraseai.ai"
+      ]
+    },
+    {
       "version": "1.2.0",
       "date": "2026-04-24",
       "changes": [
