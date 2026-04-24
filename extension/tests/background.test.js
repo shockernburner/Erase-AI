@@ -331,6 +331,262 @@ describe("background.testConnection", () => {
     });
   });
 
+  describe("analyzePrompt", () => {
+    it("posts to /api/dev/analyze with bearer auth and returns the server JSON on 200", async () => {
+      const serverPayload = {
+        riskScore: 0.42,
+        level: "medium",
+        issues: [{ type: "email" }, { type: "phone" }],
+        sanitized: "redacted text",
+      };
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse(serverPayload),
+      });
+
+      const result = await mod.analyzePrompt("hello world");
+
+      expect(result).toEqual(serverPayload);
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      const [url, opts] = fetchStub.mock.calls[0];
+      expect(url).toBe(`${DEFAULT_API_URL}/api/dev/analyze`);
+      expect(opts.method).toBe("POST");
+      expect(opts.headers["Content-Type"]).toBe("application/json");
+      expect(opts.headers.Authorization).toBe("Bearer eak_good");
+      expect(JSON.parse(opts.body)).toEqual({ text: "hello world" });
+    });
+
+    it("short-circuits with an error when no apiKey is configured", async () => {
+      init({
+        storage: { enabled: true },
+        fetchImpl: async () => jsonResponse({ riskScore: 0.1 }),
+      });
+
+      const result = await mod.analyzePrompt("anything");
+
+      expect(result).toEqual({
+        error: "No API key configured. Open the EraseAI extension popup to set your key.",
+      });
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it("returns bypass:true without calling fetch when the firewall is disabled", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: false },
+        fetchImpl: async () => jsonResponse({ riskScore: 0.9 }),
+      });
+
+      const result = await mod.analyzePrompt("anything");
+
+      expect(result).toEqual({ bypass: true });
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it("surfaces err.error and err.code from a non-2xx JSON response", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 429,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Daily limit reached", code: "QUOTA_EXCEEDED" }),
+        }),
+      });
+
+      const result = await mod.analyzePrompt("anything");
+
+      expect(result).toEqual({ error: "Daily limit reached", code: "QUOTA_EXCEEDED" });
+    });
+
+    it("falls back to a generic error when a non-2xx response has no error field", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 500,
+          headers: { get: () => "application/json" },
+          json: async () => {
+            throw new Error("not json");
+          },
+        }),
+      });
+
+      const result = await mod.analyzePrompt("anything");
+
+      expect(result.error).toBe("API error: 500");
+      expect(result.code).toBeUndefined();
+    });
+
+    it("returns a Network error when fetch throws", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => {
+          throw new Error("getaddrinfo ENOTFOUND eraseai.ai");
+        },
+      });
+
+      const result = await mod.analyzePrompt("anything");
+
+      expect(result).toEqual({
+        error: "Network error: getaddrinfo ENOTFOUND eraseai.ai",
+      });
+    });
+
+    it("ANALYZE message handler writes lastScan to chrome.storage.local when the response includes riskScore", async () => {
+      const serverPayload = {
+        riskScore: 0.73,
+        level: "high",
+        issues: [{ type: "ssn" }, { type: "email" }, { type: "phone" }],
+      };
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse(serverPayload),
+      });
+
+      const handler = chromeStub.runtime.onMessage.addListener.mock.calls[0][0];
+      const sendResponse = vi.fn();
+      const ret = handler({ type: "ANALYZE", text: "hello" }, {}, sendResponse);
+      expect(ret).toBe(true);
+
+      // Wait for the analyzePrompt promise chain to resolve.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(chromeStub.storage.local.set).toHaveBeenCalledTimes(1);
+      const setArg = chromeStub.storage.local.set.mock.calls[0][0];
+      expect(setArg).toEqual({
+        lastScan: {
+          riskScore: 0.73,
+          level: "high",
+          issueCount: 3,
+          scannedAt: expect.any(Number),
+        },
+      });
+      expect(sendResponse).toHaveBeenCalledWith(serverPayload);
+    });
+
+    it("ANALYZE message handler does not write lastScan when the response has no riskScore", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 401,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Invalid API key", code: "INVALID_KEY" }),
+        }),
+      });
+
+      const handler = chromeStub.runtime.onMessage.addListener.mock.calls[0][0];
+      const sendResponse = vi.fn();
+      handler({ type: "ANALYZE", text: "hello" }, {}, sendResponse);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(chromeStub.storage.local.set).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({
+        error: "Invalid API key",
+        code: "INVALID_KEY",
+      });
+    });
+  });
+
+  describe("sanitizePrompt", () => {
+    it("posts to /api/dev/sanitize with bearer auth and returns the server JSON on 200", async () => {
+      const serverPayload = {
+        sanitized: "Hello [REDACTED]",
+        replacements: 1,
+      };
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse(serverPayload),
+      });
+
+      const result = await mod.sanitizePrompt("Hello alice@example.com");
+
+      expect(result).toEqual(serverPayload);
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      const [url, opts] = fetchStub.mock.calls[0];
+      expect(url).toBe(`${DEFAULT_API_URL}/api/dev/sanitize`);
+      expect(opts.method).toBe("POST");
+      expect(opts.headers["Content-Type"]).toBe("application/json");
+      expect(opts.headers.Authorization).toBe("Bearer eak_good");
+      expect(JSON.parse(opts.body)).toEqual({ text: "Hello alice@example.com" });
+    });
+
+    it("short-circuits with an error when no apiKey is configured", async () => {
+      init({
+        storage: {},
+        fetchImpl: async () => jsonResponse({ sanitized: "x" }),
+      });
+
+      const result = await mod.sanitizePrompt("anything");
+
+      expect(result).toEqual({ error: "No API key configured." });
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it("still calls the API when the firewall is disabled (no bypass for sanitize)", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: false },
+        fetchImpl: async () => jsonResponse({ sanitized: "ok" }),
+      });
+
+      const result = await mod.sanitizePrompt("hi");
+
+      expect(result).toEqual({ sanitized: "ok" });
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+    });
+
+    it("surfaces err.error and err.code from a non-2xx JSON response", async () => {
+      init({
+        storage: { apiKey: "eak_good" },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 401,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Invalid API key", code: "INVALID_KEY" }),
+        }),
+      });
+
+      const result = await mod.sanitizePrompt("anything");
+
+      expect(result).toEqual({ error: "Invalid API key", code: "INVALID_KEY" });
+    });
+
+    it("falls back to a generic error when a non-2xx response body cannot be parsed", async () => {
+      init({
+        storage: { apiKey: "eak_good" },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 503,
+          headers: { get: () => "text/html" },
+          json: async () => {
+            throw new Error("not json");
+          },
+        }),
+      });
+
+      const result = await mod.sanitizePrompt("anything");
+
+      expect(result.error).toBe("API error: 503");
+      expect(result.code).toBeUndefined();
+    });
+
+    it("returns a Network error when fetch throws", async () => {
+      init({
+        storage: { apiKey: "eak_good" },
+        fetchImpl: async () => {
+          throw new Error("ECONNREFUSED 127.0.0.1:443");
+        },
+      });
+
+      const result = await mod.sanitizePrompt("anything");
+
+      expect(result).toEqual({
+        error: "Network error: ECONNREFUSED 127.0.0.1:443",
+      });
+    });
+  });
+
   describe("getConfig", () => {
     it("ignores stored apiUrl that is not https://", async () => {
       init({
