@@ -78,8 +78,10 @@ export async function createCheckoutSession(params: {
   merchantOrderId: string;
   returnUrl: string;
   plan?: string;
+  billingPeriod?: "monthly" | "annual";
 }): Promise<{ intentId: string; clientSecret: string }> {
   const planLabel = params.plan || "pro";
+  const periodLabel = params.billingPeriod || "monthly";
 
   const intent = await airwallexRequest<PaymentIntentResponse>(
     "POST",
@@ -91,6 +93,7 @@ export async function createCheckoutSession(params: {
       metadata: {
         user_id: params.userId,
         plan: planLabel,
+        billing_period: periodLabel,
       },
       request_id: params.merchantOrderId,
       return_url: params.returnUrl,

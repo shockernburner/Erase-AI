@@ -202,17 +202,17 @@ const GOOGLE_ADS = {
             "Enterprise AI Governance",
             "AI Security at Scale",
             "Business AI Data Shield",
-            "Team AI Protection $149/mo",
+            "Team AI Protection $99/mo",
             "Webhook + API Governance",
             "SSO AI Security Platform",
           ],
           descriptions: [
-            "Business: $149/mo. 20 API keys, webhooks, advanced analytics. Protect your org.",
+            "Business: $99/mo. 20 API keys, webhooks, advanced analytics. Protect your org.",
             "Enterprise AI firewall with SSO, custom rules, and SLA. Contact eraseai.ai.",
           ],
           descriptionsB: [
-            "$5 Personal to $149 Business — scale AI protection across your org. Try free.",
-            "73% of enterprises lack AI governance. EraseAI deploys in minutes. From $149/mo.",
+            "$5 Personal to $99 Business — scale AI protection across your org. Try free.",
+            "73% of enterprises lack AI governance. EraseAI deploys in minutes. From $99/mo.",
           ],
           keywords: [
             "enterprise ai security", "corporate ai governance", "business ai protection",
@@ -227,7 +227,7 @@ const GOOGLE_ADS = {
       icon: Target,
       color: "bg-blue-500/10 text-blue-400",
       targeting: "Data Engineers, ML Engineers, Compliance Officers searching for GDPR/AI compliance tools",
-      bidStrategy: "Maximize conversions — target Pro plan trials ($49/mo)",
+      bidStrategy: "Maximize conversions — target Pro plan trials ($20/mo)",
       estimatedMetrics: "Est. CTR: 3-5% | CPC: $3.50-$5.00 | Conv. rate: 6-10% | Monthly impressions: 10K-18K",
       adGroups: [
         {
@@ -250,7 +250,7 @@ const GOOGLE_ADS = {
             "GDPR right to be forgotten for AI models. EraseAI: verified, auditable erasure.",
           ],
           descriptionsB: [
-            "Forget Score proves data was erased. Audit-ready reports for GDPR/CCPA/PDPA. $49/mo.",
+            "Forget Score proves data was erased. Audit-ready reports for GDPR/CCPA/PDPA. $20/mo.",
             "AI compliance in 3 steps: upload, detect, erase with audit trail. Free to start.",
           ],
           keywords: [
@@ -296,7 +296,7 @@ const GOOGLE_ADS = {
           ],
           descriptions: [
             "Upload datasets, erase data, verify with Forget Score. Full audit trail. Try free.",
-            "Machine unlearning for compliance. Before/after comparison and ML feedback. $49/mo.",
+            "Machine unlearning for compliance. Before/after comparison and ML feedback. $20/mo.",
           ],
           descriptionsB: [
             "Prove your AI forgot the data. Forget Score gives auditable verification. GDPR/PDPA.",
@@ -320,7 +320,7 @@ const GOOGLE_ADS = {
           ],
           descriptions: [
             "PDPA-compliant AI governance for Singapore and APAC. Detect PII, verify erasure.",
-            "PDPA, GDPR, CCPA in one platform. Sanitization from $49/mo. Business $149/mo.",
+            "PDPA, GDPR, CCPA in one platform. Sanitization from $20/mo. Business $99/mo.",
           ],
           descriptionsB: [
             "Singapore PDPA requires AI data protection. EraseAI: automated PII detection.",
@@ -356,11 +356,11 @@ const GOOGLE_ADS = {
           ],
           descriptions: [
             "One API call: scan content, block injections, clean datasets. SDK + webhooks. Free.",
-            "AI governance in your CI/CD pipeline. REST API with Bearer auth. Pro from $49/mo.",
+            "AI governance in your CI/CD pipeline. REST API with Bearer auth. Pro from $20/mo.",
             "Build responsible AI apps with EraseAI SDK. Scanning + sanitization via API. Free.",
           ],
           descriptionsB: [
-            "3 lines of code = full AI governance. Analyze, sanitize, verify. Pro from $49/mo.",
+            "3 lines of code = full AI governance. Analyze, sanitize, verify. Pro from $20/mo.",
             "Pre-commit hooks catch PII before it hits your repo. Webhooks on every scan. Free.",
           ],
           keywords: [
@@ -386,7 +386,7 @@ const GOOGLE_ADS = {
           ],
           descriptionsB: [
             "AI content scanning API. Detect PII, hate speech, bias in milliseconds. Try free.",
-            "Content safety at API speed. PII + toxicity scoring. Pro: $49/mo, 5 API keys.",
+            "Content safety at API speed. PII + toxicity scoring. Pro: $20/mo, 5 API keys.",
           ],
           keywords: [
             "content moderation api", "pii detection api", "toxicity detection api",
@@ -401,16 +401,16 @@ const GOOGLE_ADS = {
             "Sanitize Data via API",
             "CSV JSON Data Cleaner API",
             "ML Data Pipeline Tool",
-            "Pro Plan: $49/mo 5 Keys",
-            "Business: $149/mo 20 Keys",
+            "Pro Plan: $20/mo 5 Keys",
+            "Business: $99/mo 20 Keys",
           ],
           descriptions: [
             "Upload CSV/JSON/JSONL via API. Automated PII removal and bias detection. Try free.",
-            "Clean datasets via API. Pro: $49/mo (5 keys). Business: $149/mo (20 keys). Free.",
+            "Clean datasets via API. Pro: $20/mo (5 keys). Business: $99/mo (20 keys). Free.",
           ],
           descriptionsB: [
             "Automate dataset governance in your ML pipeline. Forget Score verification. Free.",
-            "Free to Pro ($49) to Business ($149). Scale AI data governance with EraseAI SDK.",
+            "Free to Pro ($20) to Business ($99). Scale AI data governance with EraseAI SDK.",
           ],
           keywords: [
             "dataset cleaning api", "data sanitization sdk", "ml data pipeline tool",
@@ -521,10 +521,10 @@ const GOOGLE_ADS = {
     longHeadlines: [
       "EraseAI: The AI Data Governance Platform That Scans, Blocks, and Cleans — Before Damage Is Done",
       "Stop Leaking Passwords and API Keys to ChatGPT — EraseAI Firewall Catches It in Real-Time",
-      "From $5/Month Personal to $149/Month Business: AI Governance That Scales With Your Organization",
+      "From $5/Month Personal to $99/Month Business: AI Governance That Scales With Your Organization",
     ],
     descriptions: [
-      "AI firewall + dataset sanitization. Personal $5, Pro $49, Business $149. Try free.",
+      "AI firewall + dataset sanitization. Personal $5, Pro $20, Business $99. Try free.",
       "Detect PII, bias, toxic content. Clean datasets with audit trail. GDPR compliant.",
     ],
     callToAction: "Start Free Trial",
@@ -558,7 +558,7 @@ What Samsung learned the hard way, you can prevent today:
 → Full audit trail for compliance teams
 → Browser extension + REST API
 
-From $5/mo Personal to $149/mo Business to custom enterprise plans.
+From $5/mo Personal to $99/mo Business to custom enterprise plans.
 
 Try it free at eraseai.ai`,
       headline: "Stop Data Leaks to AI — Before They Happen",
@@ -574,7 +574,7 @@ const report = await client.analyze(content);
 
 Used by developers, compliance teams, and security professionals who believe AI governance shouldn't be an afterthought.
 
-Free to start. Business $149/mo. Enterprise plans available.
+Free to start. Business $99/mo. Enterprise plans available.
 
 eraseai.ai`,
     },
@@ -594,7 +594,7 @@ EraseAI gives you:
 
 CSV, JSON, JSONL, TXT — up to 250K rows per dataset.
 
-Free tier available. Pro starts at $49/month with 5 API keys.
+Free tier available. Pro starts at $20/month with 5 API keys.
 
 eraseai.ai`,
       headline: "AI Data Governance SDK — Free to Start",
@@ -612,7 +612,7 @@ What you get:
 → Webhooks for real-time event notifications
 → Forget Score verification for compliance
 
-Pro plan: $49/mo | 5 API keys | 50K row datasets
+Pro plan: $20/mo | 5 API keys | 50K row datasets
 
 eraseai.ai — Free tier available`,
     },
@@ -690,7 +690,7 @@ What you get:
 → Pre-commit hooks + webhooks for CI/CD
 → Forget Score verification for compliance audits
 
-Pro plan: $49/mo | 5 API keys | up to 50K rows per dataset. Free tier available.
+Pro plan: $20/mo | 5 API keys | up to 50K rows per dataset. Free tier available.
 
 Want to try it? You can spin up a free account at eraseai.ai in 30 seconds.
 
@@ -917,7 +917,7 @@ EraseAI → eraseai.ai
         "Slide 5: 'Step 4: Integrate governance into CI/CD pipelines' (code pipeline visual)",
         "Slide 6: 'Step 5: Monitor risk trends and set alert thresholds' (chart visual)",
         "Slide 7: 'EraseAI covers Steps 2-5 in one platform. One SDK call.' (product overview)",
-        "Slide 8: 'Free tier available. Pro from $49/mo. eraseai.ai' (CTA)",
+        "Slide 8: 'Free tier available. Pro from $20/mo. eraseai.ai' (CTA)",
       ],
       caption: `AI governance isn't optional anymore. It's a board-level conversation.
 

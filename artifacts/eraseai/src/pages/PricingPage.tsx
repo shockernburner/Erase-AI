@@ -19,11 +19,17 @@ interface PlanDetails {
 }
 
 type TierId = "free" | "personal" | "pro" | "business" | "enterprise";
+type BillingPeriod = "monthly" | "annual";
 
 const TIER_ORDER: TierId[] = ["free", "personal", "pro", "business", "enterprise"];
 
 function tierIndex(id: TierId): number {
   return TIER_ORDER.indexOf(id);
+}
+
+const ANNUAL_DISCOUNT = 0.9;
+function annualPriceFor(monthly: number): number {
+  return Math.round(monthly * 12 * ANNUAL_DISCOUNT);
 }
 
 export default function PricingPage({ onBack }: PricingPageProps) {
@@ -35,12 +41,13 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const [showContact, setShowContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
 
   const tiers = [
     {
       id: "free" as TierId,
       name: t("pricing.tierFree"),
-      price: 0,
+      monthlyPrice: 0,
       icon: <Zap className="w-6 h-6" />,
       description: t("pricing.tierFreeDesc"),
       segment: t("pricing.tierFreeSegment"),
@@ -57,7 +64,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     {
       id: "personal" as TierId,
       name: t("pricing.tierPersonal"),
-      price: 5,
+      monthlyPrice: 5,
       icon: <Shield className="w-6 h-6" />,
       description: t("pricing.tierPersonalDesc"),
       segment: t("pricing.tierPersonalSegment"),
@@ -74,7 +81,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     {
       id: "pro" as TierId,
       name: t("pricing.tierPro"),
-      price: 49,
+      monthlyPrice: 20,
       icon: <Crown className="w-6 h-6" />,
       description: t("pricing.tierProDesc"),
       segment: t("pricing.tierProSegment"),
@@ -93,7 +100,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     {
       id: "business" as TierId,
       name: t("pricing.tierBusiness"),
-      price: 149,
+      monthlyPrice: 99,
       icon: <Briefcase className="w-6 h-6" />,
       description: t("pricing.tierBusinessDesc"),
       segment: t("pricing.tierBusinessSegment"),
@@ -111,7 +118,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     {
       id: "enterprise" as TierId,
       name: t("pricing.tierEnterprise"),
-      price: -1,
+      monthlyPrice: -1,
       icon: <Building2 className="w-6 h-6" />,
       description: t("pricing.tierEnterpriseDesc"),
       segment: t("pricing.tierEnterpriseSegment"),
@@ -168,6 +175,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         credentials: "include",
         body: JSON.stringify({
           plan,
+          billingPeriod,
           returnUrl: successUrl,
         }),
       });
@@ -187,6 +195,11 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             env: sdkEnv,
             enabledElements: ["payments"],
           });
+          if (!payments) {
+            console.error("Airwallex SDK: payments element unavailable");
+            alert(t("pricing.somethingWrong"));
+            return;
+          }
           await payments.redirectToCheckout({
             intent_id: data.intentId,
             client_secret: data.clientSecret,
@@ -239,7 +252,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             {t("pricing.backToDashboard")}
           </button>
 
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
                 <ShieldX className="w-7 h-7" />
@@ -253,6 +266,48 @@ export default function PricingPage({ onBack }: PricingPageProps) {
               {t("pricing.scaleGovernance")}
             </p>
           </div>
+
+          <div className="flex justify-center mb-10">
+            <div
+              role="tablist"
+              aria-label={t("pricing.billingPeriodLabel")}
+              className="inline-flex items-center gap-1 p-1 rounded-full bg-card/60 border border-border/50 backdrop-blur-md"
+            >
+              <button
+                role="tab"
+                aria-selected={billingPeriod === "monthly"}
+                onClick={() => setBillingPeriod("monthly")}
+                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all ${
+                  billingPeriod === "monthly"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_18px_rgba(6,182,212,0.45)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("pricing.monthly")}
+              </button>
+              <button
+                role="tab"
+                aria-selected={billingPeriod === "annual"}
+                onClick={() => setBillingPeriod("annual")}
+                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 ${
+                  billingPeriod === "annual"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_18px_rgba(6,182,212,0.45)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t("pricing.annual")}
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    billingPeriod === "annual"
+                      ? "bg-black/20 text-primary-foreground"
+                      : "bg-primary/15 text-primary"
+                  }`}
+                >
+                  {t("pricing.saveAnnual")}
+                </span>
+              </button>
+            </div>
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -261,6 +316,9 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             const isDowngrade = tierIndex(tier.id) < tierIndex(currentPlan);
             const isUpgrade = tierIndex(tier.id) > tierIndex(currentPlan);
             const canCheckout = tier.id === "personal" || tier.id === "pro" || tier.id === "business";
+            const annualPrice = tier.monthlyPrice > 0 ? annualPriceFor(tier.monthlyPrice) : 0;
+            const displayPrice = billingPeriod === "annual" ? annualPrice : tier.monthlyPrice;
+            const displaySuffix = billingPeriod === "annual" ? t("pricing.year") : t("pricing.month");
 
             return (
               <motion.div
@@ -291,24 +349,31 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                 <p className="text-sm text-muted-foreground mb-4">{tier.description}</p>
 
                 <div className="mb-6">
-                  {tier.price === 0 && (
+                  {tier.monthlyPrice === 0 && (
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-extrabold text-foreground">$0</span>
                       <span className="text-muted-foreground text-sm">{t("pricing.month")}</span>
                     </div>
                   )}
-                  {tier.price > 0 && (
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-extrabold text-foreground">${tier.price}</span>
-                      <span className="text-muted-foreground text-sm">{t("pricing.month")}</span>
-                    </div>
+                  {tier.monthlyPrice > 0 && (
+                    <>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-extrabold text-foreground">${displayPrice}</span>
+                        <span className="text-muted-foreground text-sm">{displaySuffix}</span>
+                      </div>
+                      {billingPeriod === "annual" && (
+                        <p className="text-xs text-primary mt-1 font-medium">
+                          {t("pricing.annualEquivalent", { price: (annualPrice / 12).toFixed(2) })}
+                        </p>
+                      )}
+                    </>
                   )}
-                  {tier.price < 0 && (
+                  {tier.monthlyPrice < 0 && (
                     <div className="flex items-baseline">
                       <span className="text-2xl font-bold text-foreground">{t("pricing.customPricing")}</span>
                     </div>
                   )}
-                  {tier.price > 0 && (
+                  {tier.monthlyPrice > 0 && (
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold">
                       <Calendar className="w-3 h-3" />
                       {t("trial.freeTrialBadge")}

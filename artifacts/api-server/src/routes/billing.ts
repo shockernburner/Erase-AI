@@ -16,15 +16,56 @@ import {
 
 const router: IRouter = Router();
 
-const PLAN_PRICING: Record<string, { price: number; currency: string }> = {
-  personal: { price: 5, currency: "USD" },
-  pro: { price: 49, currency: "USD" },
-  business: { price: 149, currency: "USD" },
+type BillingPeriod = "monthly" | "annual";
+
+interface PlanPricing {
+  monthly: number;
+  annual: number;
+  currency: string;
+}
+
+const ANNUAL_DISCOUNT = 0.9;
+
+function annualPrice(monthly: number): number {
+  return Math.round(monthly * 12 * ANNUAL_DISCOUNT);
+}
+
+const PLAN_PRICING: Record<string, PlanPricing> = {
+  personal: { monthly: 5, annual: annualPrice(5), currency: "USD" },
+  pro: { monthly: 20, annual: annualPrice(20), currency: "USD" },
+  business: { monthly: 99, annual: annualPrice(99), currency: "USD" },
 };
-const PERSONAL_PRICE_MONTHLY = 5;
-const PRO_PRICE_MONTHLY = 49;
-const PRO_PRICE_CURRENCY = "USD";
-const BUSINESS_PRICE_MONTHLY = 149;
+
+function isValidBillingPeriod(value: unknown): value is BillingPeriod {
+  return value === "monthly" || value === "annual";
+}
+
+function priceFor(plan: string, period: BillingPeriod): number | null {
+  const tier = PLAN_PRICING[plan];
+  if (!tier) return null;
+  return period === "annual" ? tier.annual : tier.monthly;
+}
+
+function extendEndDate(start: Date, period: BillingPeriod): Date {
+  const monthsToAdd = period === "annual" ? 12 : 1;
+  const originalDay = start.getDate();
+  const target = new Date(start);
+  target.setDate(1);
+  target.setMonth(target.getMonth() + monthsToAdd);
+  const lastDayOfTargetMonth = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0,
+  ).getDate();
+  target.setDate(Math.min(originalDay, lastDayOfTargetMonth));
+  target.setHours(
+    start.getHours(),
+    start.getMinutes(),
+    start.getSeconds(),
+    start.getMilliseconds(),
+  );
+  return target;
+}
 
 const WEBHOOK_SECRET = process.env.AIRWALLEX_WEBHOOK_SECRET || "";
 
@@ -56,11 +97,14 @@ router.get("/plan", async (req: Request, res: Response) => {
 
 router.get("/pricing", (_req: Request, res: Response) => {
   res.json({
+    annualDiscount: ANNUAL_DISCOUNT,
     tiers: [
       {
         id: "free",
         name: "Free",
         price: 0,
+        monthlyPrice: 0,
+        annualPrice: 0,
         currency: "USD",
         interval: "month",
         features: [
@@ -75,7 +119,9 @@ router.get("/pricing", (_req: Request, res: Response) => {
       {
         id: "personal",
         name: "EraseAI Personal",
-        price: PERSONAL_PRICE_MONTHLY,
+        price: PLAN_PRICING.personal.monthly,
+        monthlyPrice: PLAN_PRICING.personal.monthly,
+        annualPrice: PLAN_PRICING.personal.annual,
         currency: "USD",
         interval: "month",
         features: [
@@ -90,7 +136,9 @@ router.get("/pricing", (_req: Request, res: Response) => {
       {
         id: "pro",
         name: "Pro",
-        price: PRO_PRICE_MONTHLY,
+        price: PLAN_PRICING.pro.monthly,
+        monthlyPrice: PLAN_PRICING.pro.monthly,
+        annualPrice: PLAN_PRICING.pro.annual,
         currency: "USD",
         interval: "month",
         features: [
@@ -107,7 +155,9 @@ router.get("/pricing", (_req: Request, res: Response) => {
       {
         id: "business",
         name: "Business",
-        price: BUSINESS_PRICE_MONTHLY,
+        price: PLAN_PRICING.business.monthly,
+        monthlyPrice: PLAN_PRICING.business.monthly,
+        annualPrice: PLAN_PRICING.business.annual,
         currency: "USD",
         interval: "month",
         features: [
@@ -124,6 +174,8 @@ router.get("/pricing", (_req: Request, res: Response) => {
         id: "enterprise",
         name: "Enterprise",
         price: -1,
+        monthlyPrice: -1,
+        annualPrice: -1,
         currency: "USD",
         interval: "month",
         features: [
@@ -143,10 +195,23 @@ router.get("/pricing", (_req: Request, res: Response) => {
 router.post("/checkout", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
-  const { plan, returnUrl } = req.body as { plan?: string; returnUrl?: string };
-  const pricing = plan ? PLAN_PRICING[plan] : undefined;
-  if (!plan || !pricing) {
+  const { plan, returnUrl, billingPeriod } = req.body as {
+    plan?: string;
+    returnUrl?: string;
+    billingPeriod?: string;
+  };
+
+  const period: BillingPeriod = isValidBillingPeriod(billingPeriod) ? billingPeriod : "monthly";
+
+  if (!plan || !PLAN_PRICING[plan]) {
     res.status(400).json({ error: "Only 'personal', 'pro', and 'business' plans are available for self-serve checkout" });
+    return;
+  }
+
+  const amount = priceFor(plan, period);
+  const currency = PLAN_PRICING[plan].currency;
+  if (amount === null || amount <= 0) {
+    res.status(400).json({ error: "Invalid plan/billing period combination" });
     return;
   }
 
@@ -167,7 +232,7 @@ router.post("/checkout", async (req: Request, res: Response) => {
   }
 
   const rand = crypto.randomBytes(4).toString("hex");
-  const merchantOrderId = `ea_${plan}_${Date.now()}_${rand}`;
+  const merchantOrderId = `ea_${plan}_${period}_${Date.now()}_${rand}`;
   const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
   const host = req.get("host") || "";
   const origin = `${proto}://${host}`;
@@ -184,12 +249,13 @@ router.post("/checkout", async (req: Request, res: Response) => {
 
   try {
     const result = await createCheckoutSession({
-      amount: pricing.price,
-      currency: pricing.currency,
+      amount,
+      currency,
       userId: req.user!.id,
       merchantOrderId,
       returnUrl: successUrl,
       plan,
+      billingPeriod: period,
     });
 
     await db.update(usersTable).set({
@@ -203,9 +269,10 @@ router.post("/checkout", async (req: Request, res: Response) => {
       checkoutUrl: "",
       provider: "airwallex",
       airwallexEnv: getSdkEnv(),
-      amount: pricing.price,
-      currency: pricing.currency,
+      amount,
+      currency,
       plan,
+      billingPeriod: period,
     });
   } catch (err) {
     console.error("Airwallex checkout error:", err);
@@ -250,11 +317,12 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
     const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
     const rawPlan = intent.metadata?.plan || "pro";
     const targetPlan = VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro";
+    const rawPeriod = intent.metadata?.billing_period;
+    const targetPeriod: BillingPeriod = isValidBillingPeriod(rawPeriod) ? rawPeriod : "monthly";
 
     if (intent.status === "SUCCEEDED") {
       const now = new Date();
-      const endDate = new Date(now);
-      endDate.setMonth(endDate.getMonth() + 1);
+      const endDate = extendEndDate(now, targetPeriod);
 
       await db.update(usersTable).set({
         planType: targetPlan,
@@ -268,12 +336,12 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       if (sid) {
         const session = await getSession(sid);
         if (session) {
-          session.user.planType = targetPlan as "free" | "personal" | "pro" | "business" | "enterprise";
+          (session.user as { planType: string }).planType = targetPlan;
           await updateSession(sid, session);
         }
       }
 
-      res.json({ status: "succeeded", planType: targetPlan });
+      res.json({ status: "succeeded", planType: targetPlan, billingPeriod: targetPeriod });
     } else if (intent.status === "REQUIRES_PAYMENT_METHOD" || intent.status === "REQUIRES_CUSTOMER_ACTION") {
       res.json({ status: "pending" });
     } else {
@@ -309,7 +377,7 @@ router.post("/cancel", async (req: Request, res: Response) => {
   if (sid) {
     const session = await getSession(sid);
     if (session) {
-      session.user.planType = "free";
+      (session.user as { planType: string }).planType = "free";
       await updateSession(sid, session);
     }
   }
@@ -395,6 +463,8 @@ router.post("/webhook", async (req: Request, res: Response) => {
         const VALID_PLANS = ["personal", "pro", "business"];
         const rawWebhookPlan = intentData.metadata?.plan || "pro";
         const webhookPlan = VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro";
+        const rawWebhookPeriod = intentData.metadata?.billing_period;
+        const webhookPeriod: BillingPeriod = isValidBillingPeriod(rawWebhookPeriod) ? rawWebhookPeriod : "monthly";
         if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
           break;
         }
@@ -404,8 +474,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         }
 
         const now = new Date();
-        const endDate = new Date(now);
-        endDate.setMonth(endDate.getMonth() + 1);
+        const endDate = extendEndDate(now, webhookPeriod);
 
         await db.update(usersTable).set({
           planType: webhookPlan,

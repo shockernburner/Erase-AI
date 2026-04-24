@@ -43,8 +43,8 @@ function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => voi
 
   const plans = [
     { id: "personal", nameKey: "plan.personal", price: "$5", icon: <Shield className="w-5 h-5" />, showUnit: true },
-    { id: "pro", nameKey: "plan.pro", price: "$49", icon: <Crown className="w-5 h-5" />, showUnit: true },
-    { id: "business", nameKey: "plan.business", price: "$149", icon: <Briefcase className="w-5 h-5" />, showUnit: true },
+    { id: "pro", nameKey: "plan.pro", price: "$20", icon: <Crown className="w-5 h-5" />, showUnit: true },
+    { id: "business", nameKey: "plan.business", price: "$99", icon: <Briefcase className="w-5 h-5" />, showUnit: true },
     { id: "enterprise", nameKey: "plan.enterprise", price: "", icon: <Building2 className="w-5 h-5" />, showUnit: false },
   ];
 

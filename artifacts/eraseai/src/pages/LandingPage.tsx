@@ -397,7 +397,7 @@ export default function LandingPage({
               },
               {
                 key: "pro",
-                price: "$49",
+                price: "$20",
                 icon: Crown,
                 features: ["pricingProF1", "pricingProF2", "pricingProF3"],
                 highlight: false,
