@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { loadPopupHtml, loadPopupSource } from "./loadModule.js";
 
 const DEFAULT_API_URL = "https://eraseai.ai";
@@ -12,9 +12,10 @@ function setUpDom() {
   document.body.innerHTML = sanitized;
 }
 
-function makeChromeStub() {
-  const storage = {};
+function makeChromeStub(initialStorage = {}) {
+  const storage = { ...initialStorage };
   return {
+    __storage: storage,
     storage: {
       local: {
         get: vi.fn(async (keys) => {
@@ -30,12 +31,20 @@ function makeChromeStub() {
         set: vi.fn(async (obj) => {
           Object.assign(storage, obj);
         }),
-        remove: vi.fn(async () => {}),
+        remove: vi.fn(async (key) => {
+          if (Array.isArray(key)) {
+            for (const k of key) delete storage[k];
+          } else {
+            delete storage[key];
+          }
+        }),
       },
     },
     runtime: {
-      // sendMessage callbacks are intentionally never invoked, so renderDiagnosis
-      // is only driven by direct calls within the tests.
+      // sendMessage callbacks are intentionally never invoked by default, so
+      // renderDiagnosis is only driven by direct calls within the tests.
+      // Tests that need loadState() to complete should override
+      // chrome.runtime.sendMessage to invoke the callback themselves.
       sendMessage: vi.fn(),
     },
     tabs: {
@@ -48,9 +57,39 @@ function loadPopup() {
   const src = loadPopupSource();
   // Wrap source so we can capture the otherwise-private functions for testing,
   // without altering production popup.js semantics.
-  const wrapped = `${src}\n;return { renderDiagnosis, renderDiagMeta, renderDiagTitle, runDiagnosis };`;
+  const wrapped = `${src}\n;return { renderDiagnosis, renderDiagMeta, renderDiagTitle, runDiagnosis, loadState, IS_PRODUCTION_BUILD };`;
   // eslint-disable-next-line no-new-func
   return new Function(wrapped)();
+}
+
+function installBuildOnWindow(build) {
+  window.ERASEAI_BUILD = build;
+  const patterns = build.allowedApiHosts || [];
+  window.eraseaiIsApiUrlAllowed = function (url) {
+    if (typeof url !== "string" || !url.startsWith("https://")) return false;
+    let hostname;
+    try {
+      hostname = new URL(url).hostname;
+    } catch {
+      return false;
+    }
+    return patterns.some((p) => {
+      if (p.startsWith("*.")) {
+        const suffix = p.slice(1);
+        return hostname.endsWith(suffix) && hostname.length > suffix.length;
+      }
+      return hostname === p;
+    });
+  };
+}
+
+function uninstallBuildOnWindow() {
+  delete window.ERASEAI_BUILD;
+  delete window.eraseaiIsApiUrlAllowed;
+}
+
+function flush() {
+  return new Promise((r) => setTimeout(r, 0));
 }
 
 let popup;
@@ -335,5 +374,107 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
       plan: "free",
     });
     expect(document.getElementById("diag-actions").children.length).toBe(0);
+  });
+});
+
+describe("popup.loadState clears out-of-allowlist apiUrl on production builds", () => {
+  afterEach(() => {
+    uninstallBuildOnWindow();
+  });
+
+  function setUpLoadStateTest(build, initialStorage) {
+    installBuildOnWindow(build);
+    setUpDom();
+    const stub = makeChromeStub(initialStorage);
+    // Make runDiagnosis() resolve so loadState() can complete end-to-end.
+    stub.runtime.sendMessage = vi.fn((_msg, cb) => {
+      if (typeof cb === "function") {
+        cb({ state: "no_key", apiUrl: DEFAULT_API_URL, isCustomUrl: false });
+      }
+    });
+    globalThis.chrome = stub;
+    chromeStub = stub;
+    popup = loadPopup();
+    return stub;
+  }
+
+  it("removes a leftover *.replit.app URL from storage and leaves the input blank (production)", async () => {
+    const stub = setUpLoadStateTest(
+      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
+      { apiUrl: "https://eraseai-staging.replit.app", apiKey: "eak_test", enabled: true },
+    );
+
+    expect(popup.IS_PRODUCTION_BUILD).toBe(true);
+
+    await popup.loadState();
+
+    expect(stub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
+    expect("apiUrl" in stub.__storage).toBe(false);
+
+    const apiUrlInput = document.getElementById("api-url-input");
+    expect(apiUrlInput.value).toBe("");
+  });
+
+  it("does not touch storage when the stored URL is on the allowlist (production)", async () => {
+    const stub = setUpLoadStateTest(
+      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
+      { apiUrl: "https://api.eraseai.ai", enabled: true },
+    );
+
+    await popup.loadState();
+
+    expect(stub.storage.local.remove).not.toHaveBeenCalled();
+    expect(stub.__storage.apiUrl).toBe("https://api.eraseai.ai");
+
+    const apiUrlInput = document.getElementById("api-url-input");
+    expect(apiUrlInput.value).toBe("https://api.eraseai.ai");
+  });
+
+  it("does not touch storage when the stored URL equals the canonical default (production)", async () => {
+    const stub = setUpLoadStateTest(
+      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
+      { apiUrl: DEFAULT_API_URL, enabled: true },
+    );
+
+    await popup.loadState();
+
+    expect(stub.storage.local.remove).not.toHaveBeenCalled();
+    expect(stub.__storage.apiUrl).toBe(DEFAULT_API_URL);
+
+    // The default URL is not pre-filled in the custom-URL input.
+    const apiUrlInput = document.getElementById("api-url-input");
+    expect(apiUrlInput.value).toBe("");
+  });
+
+  it("preserves a leftover staging URL on dev builds (engineers don't lose it)", async () => {
+    const stub = setUpLoadStateTest(
+      { env: "development", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai", "*.replit.app"] },
+      { apiUrl: "https://eraseai-staging.replit.app", enabled: true },
+    );
+
+    expect(popup.IS_PRODUCTION_BUILD).toBe(false);
+
+    await popup.loadState();
+
+    expect(stub.storage.local.remove).not.toHaveBeenCalled();
+    expect(stub.__storage.apiUrl).toBe("https://eraseai-staging.replit.app");
+
+    const apiUrlInput = document.getElementById("api-url-input");
+    expect(apiUrlInput.value).toBe("https://eraseai-staging.replit.app");
+  });
+
+  it("does no work when there is no apiUrl in storage (production)", async () => {
+    const stub = setUpLoadStateTest(
+      { env: "production", allowedApiHosts: ["eraseai.ai", "*.eraseai.ai"] },
+      { enabled: true },
+    );
+
+    await popup.loadState();
+
+    expect(stub.storage.local.remove).not.toHaveBeenCalled();
+    expect("apiUrl" in stub.__storage).toBe(false);
+
+    const apiUrlInput = document.getElementById("api-url-input");
+    expect(apiUrlInput.value).toBe("");
   });
 });

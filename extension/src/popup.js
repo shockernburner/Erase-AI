@@ -322,6 +322,20 @@ async function loadState() {
     apiKeyInput.type = "password";
   }
 
+  // On production builds, drop any leftover staging/dev URL the user typed
+  // during the beta. The background script already falls back to the default
+  // when the stored URL isn't in the allowlist, so the input would otherwise
+  // display a value that doesn't match what's actually being used.
+  if (
+    IS_PRODUCTION_BUILD &&
+    typeof data.apiUrl === "string" &&
+    data.apiUrl &&
+    !isApiUrlAllowed(data.apiUrl)
+  ) {
+    await chrome.storage.local.remove("apiUrl");
+    data.apiUrl = undefined;
+  }
+
   if (data.apiUrl && data.apiUrl !== DEFAULT_API_URL) {
     apiUrlInput.value = data.apiUrl;
   }
