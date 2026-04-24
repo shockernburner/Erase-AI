@@ -273,7 +273,7 @@
     "annual": "按年",
     "saveAnnual": "节省10%",
     "billingPeriodLabel": "结算周期",
-    "annualEquivalent": "≈ ${{price}}/月，按年结算",
+    "annualEquivalent": "≈ ${{price}}/月，立省 10%",
     "customPricing": "定制价格",
     "currentPlan": "当前计划",
     "includedInPlan": "已包含在您的计划中",

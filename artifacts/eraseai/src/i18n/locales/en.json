@@ -273,7 +273,7 @@
     "annual": "Annual",
     "saveAnnual": "SAVE 10%",
     "billingPeriodLabel": "Billing period",
-    "annualEquivalent": "≈ ${{price}}/mo, billed yearly",
+    "annualEquivalent": "≈ ${{price}}/mo, save 10%",
     "customPricing": "Custom Pricing",
     "currentPlan": "Current Plan",
     "includedInPlan": "Included in your plan",

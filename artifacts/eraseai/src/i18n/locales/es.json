@@ -273,7 +273,7 @@
     "annual": "Anual",
     "saveAnnual": "AHORRA 10%",
     "billingPeriodLabel": "Período de facturación",
-    "annualEquivalent": "≈ ${{price}}/mes, facturación anual",
+    "annualEquivalent": "≈ ${{price}}/mes, ahorra 10%",
     "customPricing": "Precios personalizados",
     "currentPlan": "Plan actual",
     "includedInPlan": "Incluido en tu plan",

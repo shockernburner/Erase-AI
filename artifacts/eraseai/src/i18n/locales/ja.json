@@ -273,7 +273,7 @@
     "annual": "年払い",
     "saveAnnual": "10%オフ",
     "billingPeriodLabel": "請求期間",
-    "annualEquivalent": "≈ ${{price}}/月、年払い",
+    "annualEquivalent": "≈ ${{price}}/月、10% お得",
     "customPricing": "カスタム価格",
     "currentPlan": "現在のプラン",
     "includedInPlan": "プランに含まれています",
