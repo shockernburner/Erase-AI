@@ -19,15 +19,37 @@ async function packExtensionZip(distDir) {
     throw new Error(`[build] extension folder not found at ${extensionDir}. The download endpoint depends on this zip — aborting build.`);
   }
   await mkdir(distDir, { recursive: true });
-  const zip = new AdmZip();
-  zip.addLocalFolder(extensionDir, "extension");
-  const entryCount = zip.getEntries().length;
-  if (entryCount === 0) {
+
+  // Skip developer-facing files that should not ship inside the extension
+  // package (the store reviewer flags unexpected non-extension files, and
+  // they bloat the manual-install zip too).
+  const isExcluded = (name) => /(^|\/)(PUBLISHING\.md|\.DS_Store|Thumbs\.db)$/i.test(name);
+  const includeFilter = (filename) => !isExcluded(filename);
+
+  // 1) Manual-install zip — wraps everything in an /extension/ folder so users
+  //    can unzip and "Load unpacked" → select the /extension folder.
+  const manualZip = new AdmZip();
+  manualZip.addLocalFolder(extensionDir, "extension", includeFilter);
+  const manualEntryCount = manualZip.getEntries().length;
+  if (manualEntryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty zip — aborting build.`);
   }
-  const outPath = path.resolve(distDir, "eraseai-firewall.zip");
-  zip.writeZip(outPath);
-  console.log(`[build] packed extension to ${outPath} (${entryCount} entries)`);
+  const manualOutPath = path.resolve(distDir, "eraseai-firewall.zip");
+  manualZip.writeZip(manualOutPath);
+  console.log(`[build] packed manual-install extension to ${manualOutPath} (${manualEntryCount} entries)`);
+
+  // 2) Store-upload zip — flat layout with manifest.json at the zip root.
+  //    This is the package shape required by the Chrome Web Store, the Edge
+  //    Add-ons store, and Firefox AMO. Upload this file to the store dashboards.
+  const storeZip = new AdmZip();
+  storeZip.addLocalFolder(extensionDir, "", includeFilter);
+  const storeEntryCount = storeZip.getEntries().length;
+  if (storeEntryCount === 0) {
+    throw new Error(`[build] extension folder ${extensionDir} produced an empty store zip — aborting build.`);
+  }
+  const storeOutPath = path.resolve(distDir, "eraseai-firewall-store.zip");
+  storeZip.writeZip(storeOutPath);
+  console.log(`[build] packed store-upload extension to ${storeOutPath} (${storeEntryCount} entries)`);
 }
 
 async function buildAll() {

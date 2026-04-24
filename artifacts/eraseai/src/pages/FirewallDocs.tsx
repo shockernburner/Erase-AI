@@ -117,6 +117,18 @@ function OverviewSection() {
 
 function InstallSection() {
   const { t } = useTranslation();
+  const chromeStoreUrl = (import.meta.env.VITE_CHROME_STORE_URL as string | undefined) || "";
+  const edgeStoreUrl = (import.meta.env.VITE_EDGE_STORE_URL as string | undefined) || "";
+  const firefoxAddonUrl = (import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined) || "";
+  const [showManual, setShowManual] = useState(false);
+
+  const stores: { name: string; url: string; color: string }[] = [
+    { name: "Chrome", url: chromeStoreUrl, color: "bg-primary text-primary-foreground" },
+    { name: "Edge", url: edgeStoreUrl, color: "bg-sky-500 text-white" },
+    { name: "Firefox", url: firefoxAddonUrl, color: "bg-orange-500 text-white" },
+  ];
+  const liveStores = stores.filter((s) => s.url);
+
   return (
     <div className="space-y-6">
       <div>
@@ -124,32 +136,95 @@ function InstallSection() {
         <p className="text-sm text-muted-foreground leading-relaxed">{t("firewallDocs.installDesc")}</p>
       </div>
 
-      <a
-        href="/api/extension/download"
-        download
-        className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-lg hover:opacity-90 transition-opacity"
-      >
-        <Download className="w-4 h-4" />
-        {t("firewallDocs.downloadExtension")}
-      </a>
+      <div className="bg-card/40 border border-border/20 rounded-xl p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <Puzzle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.storeInstallTitle")}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t("firewallDocs.storeInstallDesc")}</p>
+          </div>
+        </div>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.installStepsTitle")}</h3>
-        <div className="space-y-3">
+        {liveStores.length > 0 ? (
+          <div className="flex flex-col sm:flex-row gap-3">
+            {liveStores.map((s) => (
+              <a
+                key={s.name}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm shadow-lg hover:opacity-90 transition-opacity ${s.color}`}
+              >
+                <Download className="w-4 h-4" />
+                {t("firewallDocs.storeAddTo", { browser: s.name })}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3 flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-yellow-300/80">{t("firewallDocs.storeComingSoon")}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.browserCompatTitle")}</h3>
+        <p className="text-sm text-muted-foreground">{t("firewallDocs.browserCompatDesc")}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            t("firewallDocs.installStep1"),
-            t("firewallDocs.installStep2"),
-            t("firewallDocs.installStep3"),
-            t("firewallDocs.installStep4"),
-            t("firewallDocs.installStep5"),
-          ].map((step, i) => (
-            <div key={i} className="flex items-start gap-3 text-sm bg-card/40 border border-border/20 rounded-lg p-3">
-              <span className="text-primary font-bold shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">{i + 1}</span>
-              <span className="text-muted-foreground">{step}</span>
+            { name: "Chrome", status: t("firewallDocs.browserFull"), color: "text-green-400", bg: "bg-green-500/5 border-green-500/20" },
+            { name: "Edge", status: t("firewallDocs.browserFull"), color: "text-green-400", bg: "bg-green-500/5 border-green-500/20" },
+            { name: "Firefox", status: t("firewallDocs.browserPartial"), color: "text-yellow-400", bg: "bg-yellow-500/5 border-yellow-500/20" },
+          ].map((b) => (
+            <div key={b.name} className={`${b.bg} border rounded-lg p-3 space-y-1`}>
+              <h4 className="text-sm font-bold text-foreground">{b.name}</h4>
+              <p className={`text-xs font-medium ${b.color}`}>{b.status}</p>
             </div>
           ))}
         </div>
       </div>
+
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowManual((v) => !v)}
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Terminal className="w-4 h-4" />
+          {showManual ? t("firewallDocs.manualInstallHide") : t("firewallDocs.manualInstallShow")}
+        </button>
+        <p className="text-xs text-muted-foreground/80">{t("firewallDocs.manualInstallHint")}</p>
+      </div>
+
+      {showManual && (
+        <>
+          <a
+            href="/api/extension/download"
+            download
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-card border border-border/30 text-foreground font-semibold text-sm hover:bg-card/70 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            {t("firewallDocs.downloadExtension")}
+          </a>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.installStepsTitle")}</h3>
+            <div className="space-y-3">
+              {[
+                t("firewallDocs.installStep1"),
+                t("firewallDocs.installStep2"),
+                t("firewallDocs.installStep3"),
+                t("firewallDocs.installStep4"),
+                t("firewallDocs.installStep5"),
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-3 text-sm bg-card/40 border border-border/20 rounded-lg p-3">
+                  <span className="text-primary font-bold shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">{i + 1}</span>
+                  <span className="text-muted-foreground">{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.configTitle")}</h3>
@@ -237,6 +312,8 @@ function InstallSection() {
         <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
         <p className="text-xs text-yellow-300/80">{t("firewallDocs.installWarning")}</p>
       </div>
+        </>
+      )}
     </div>
   );
 }

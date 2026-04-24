@@ -3,6 +3,9 @@
   "name": "EraseAI Firewall",
   "version": "1.1.0",
   "description": "AI Firewall — Analyze prompts for privacy risks before sending to AI platforms",
+  "author": "Vantward Solutions Pte. Ltd.",
+  "homepage_url": "https://eraseai.ai/ai-firewall",
+  "minimum_chrome_version": "88",
   "permissions": ["storage", "activeTab"],
   "icons": {
     "16": "icons/icon16.png",
