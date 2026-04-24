@@ -19,6 +19,7 @@ import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
+import PublishingChecklist from "@/pages/PublishingChecklist";
 import TermsOfService from "@/pages/TermsOfService";
 import LicenseAgreement from "@/pages/LicenseAgreement";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -129,7 +130,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
+type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "publishingChecklist" | "terms" | "license" | "privacy" | "contact";
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 function SeoLoadingFallback() {
@@ -392,7 +393,18 @@ function AuthGate() {
   }
 
   if (view === "firewallDocs") {
-    return <FirewallDocs onBack={() => setView("home")} onUpgrade={() => setView("pricing")} onDevMode={() => setView("devMode")} />;
+    return (
+      <FirewallDocs
+        onBack={() => setView("home")}
+        onUpgrade={() => setView("pricing")}
+        onDevMode={() => setView("devMode")}
+        onOpenPublishing={() => setView("publishingChecklist")}
+      />
+    );
+  }
+
+  if (view === "publishingChecklist") {
+    return <PublishingChecklist onBack={() => setView("firewallDocs")} />;
   }
 
   if (view === "certifications") {

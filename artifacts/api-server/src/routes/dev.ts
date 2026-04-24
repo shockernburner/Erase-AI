@@ -101,73 +101,104 @@ function buildMeta() {
 
 // Public, auth-optional health probe. The browser extension and external
 // monitors hit this without credentials to verify the server is reachable.
-// When a Bearer token is provided we validate it so the popup can also
-// distinguish "key invalid" from "server unreachable" with a single call.
+// When a Bearer token OR a logged-in session cookie is provided we resolve
+// the caller's plan + remaining daily quota so the popup and the in-app
+// install card can render that info with a single round-trip.
+async function buildAuthedPingPayload(
+  user: { id: string; email: string | null; planType: string | null },
+  meta: ReturnType<typeof buildMeta>,
+) {
+  const planType = (user.planType || "free") as string;
+  let dailyLimit: number | null = null;
+  let dailyUsed = 0;
+  let dailyRemaining: number | null = null;
+  if (planType === "free") {
+    try {
+      dailyUsed = await getDailyUsageCount(user.id);
+    } catch {
+      dailyUsed = 0;
+    }
+    dailyLimit = FREE_DAILY_LIMIT;
+    dailyRemaining = Math.max(0, FREE_DAILY_LIMIT - dailyUsed);
+  }
+  return {
+    ok: true,
+    version: API_VERSION,
+    timestamp: meta.timestamp,
+    plan: planType,
+    email: user.email,
+    dailyLimit,
+    dailyUsed,
+    dailyRemaining,
+    meta,
+  };
+}
+
 router.get("/ping", async (req, res) => {
   const meta = buildMeta();
   const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    res.json({ ok: true, version: API_VERSION, timestamp: meta.timestamp, meta });
-    return;
-  }
-
-  if (!authHeader.startsWith("Bearer ")) {
-    res.status(401).json({
-      error: "Invalid Authorization header. Use: Bearer <API_KEY>",
-      code: "AUTH_INVALID_HEADER",
+  // 1. Bearer token path — validate the API key and resolve the owner.
+  if (authHeader) {
+    if (!authHeader.startsWith("Bearer ")) {
+      res.status(401).json({
+        error: "Invalid Authorization header. Use: Bearer <API_KEY>",
+        code: "AUTH_INVALID_HEADER",
+        meta,
+      });
+      return;
+    }
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      res.status(401).json({ error: "API key is empty", code: "AUTH_INVALID_KEY", meta });
+      return;
+    }
+    const keyHash = hashApiKey(token);
+    const [apiKey] = await db
+      .select()
+      .from(apiKeysTable)
+      .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
+    if (!apiKey) {
+      res.status(401).json({ error: "Invalid or revoked API key", code: "AUTH_INVALID_KEY", meta });
+      return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, apiKey.userId));
+    if (!user) {
+      res.status(401).json({ error: "API key owner not found", code: "AUTH_USER_NOT_FOUND", meta });
+      return;
+    }
+    res.json(await buildAuthedPingPayload(
+      { id: user.id, email: user.email, planType: user.planType ?? null },
       meta,
-    });
+    ));
     return;
   }
 
-  const token = authHeader.slice(7).trim();
-  if (!token) {
-    res.status(401).json({
-      error: "API key is empty",
-      code: "AUTH_INVALID_KEY",
-      meta,
-    });
-    return;
+  // 2. Session-cookie path — if the browser has an authenticated session,
+  //    return the same enriched payload. We re-read the user from the DB so
+  //    the plan/quota reflects the current row, not a stale session snapshot.
+  const sid = getSessionId(req);
+  if (sid) {
+    try {
+      const session = await getSession(sid);
+      if (session?.user?.id) {
+        const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.user.id));
+        if (user) {
+          res.json(await buildAuthedPingPayload(
+            { id: user.id, email: user.email, planType: user.planType ?? null },
+            meta,
+          ));
+          return;
+        }
+      }
+    } catch {
+      // Fall through to the unauthenticated response — a broken session must
+      // never make the public health probe fail.
+    }
   }
 
-  const keyHash = hashApiKey(token);
-  const [apiKey] = await db
-    .select()
-    .from(apiKeysTable)
-    .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
-
-  if (!apiKey) {
-    res.status(401).json({
-      error: "Invalid or revoked API key",
-      code: "AUTH_INVALID_KEY",
-      meta,
-    });
-    return;
-  }
-
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, apiKey.userId));
-
-  if (!user) {
-    res.status(401).json({
-      error: "API key owner not found",
-      code: "AUTH_USER_NOT_FOUND",
-      meta,
-    });
-    return;
-  }
-
-  res.json({
-    ok: true,
-    version: API_VERSION,
-    timestamp: meta.timestamp,
-    plan: (user.planType || "free") as string,
-    email: user.email,
-    meta,
-  });
+  // 3. Anonymous probe — public health check.
+  res.json({ ok: true, version: API_VERSION, timestamp: meta.timestamp, meta });
 });
 
 router.use(sessionOrApiKeyAuth);

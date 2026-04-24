@@ -35,6 +35,7 @@ interface FirewallDocsProps {
   onBack: () => void;
   onUpgrade?: () => void;
   onDevMode?: () => void;
+  onOpenPublishing?: () => void;
 }
 
 function CopyBtn({ text }: { text: string }) {
@@ -357,20 +358,29 @@ interface GoLiveProbe {
   error?: string;
 }
 
-function GoLiveChecklistCard({ apiBase }: { apiBase: string }) {
+// Canonical production endpoint we expect eraseai.ai to resolve to. We probe
+// this absolute URL (not the relative apiBase) so the checklist actually
+// verifies that the public eraseai.ai DNS / deployment is healthy, instead
+// of just confirming the current origin can reach itself.
+const CANONICAL_PING_URL = "https://eraseai.ai/api/dev/ping";
+
+function GoLiveChecklistCard({ onOpenPublishing }: { onOpenPublishing: () => void }) {
   const { t } = useTranslation();
-  const chromeStoreUrl = (import.meta.env.VITE_CHROME_STORE_URL as string | undefined) || "";
-  const edgeStoreUrl = (import.meta.env.VITE_EDGE_STORE_URL as string | undefined) || "";
-  const firefoxAddonUrl = (import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined) || "";
+  // Per spec: never reveal the actual env-var value here. We only expose a
+  // boolean indicator (set / not set) and the env-var *name* (which is
+  // already public knowledge from the codebase / docs).
+  const chromeStoreSet = !!(import.meta.env.VITE_CHROME_STORE_URL as string | undefined);
+  const edgeStoreSet = !!(import.meta.env.VITE_EDGE_STORE_URL as string | undefined);
+  const firefoxAddonSet = !!(import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined);
   const [probe, setProbe] = useState<GoLiveProbe | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${apiBase}/dev/ping`, { headers: { Accept: "application/json" } })
+    fetch(CANONICAL_PING_URL, { headers: { Accept: "application/json" } })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        if (!cancelled) setProbe({ ok: true, version: data.version });
+        if (!cancelled) setProbe({ ok: data?.ok === true, version: typeof data?.version === "string" ? data.version : undefined });
       })
       .catch((err) => {
         if (!cancelled) setProbe({ ok: false, error: err && err.message ? err.message : "unreachable" });
@@ -378,13 +388,39 @@ function GoLiveChecklistCard({ apiBase }: { apiBase: string }) {
     return () => {
       cancelled = true;
     };
-  }, [apiBase]);
+  }, []);
 
-  const items: { ok: boolean; label: string; hint?: string }[] = [
-    { ok: !!probe?.ok, label: t("firewallDocs.goliveProbe"), hint: probe?.ok ? `v${probe.version || "?"}` : (probe?.error || t("firewallDocs.goliveProbeChecking")) },
-    { ok: !!chromeStoreUrl, label: t("firewallDocs.goliveChrome"), hint: chromeStoreUrl || "VITE_CHROME_STORE_URL" },
-    { ok: !!edgeStoreUrl, label: t("firewallDocs.goliveEdge"), hint: edgeStoreUrl || "VITE_EDGE_STORE_URL" },
-    { ok: !!firefoxAddonUrl, label: t("firewallDocs.goliveFirefox"), hint: firefoxAddonUrl || "VITE_FIREFOX_ADDON_URL" },
+  // `detail` is intentionally limited to safe, non-secret information:
+  //   - the EraseAI server version returned by /ping (public),
+  //   - the env-var *name* that needs to be set (no value),
+  //   - a generic error string for the probe.
+  const setLabel = t("firewallDocs.goliveStatusSet");
+  const notSetLabel = t("firewallDocs.goliveStatusNotSet");
+  const items: { ok: boolean; label: string; detail: string }[] = [
+    {
+      ok: !!probe?.ok,
+      label: t("firewallDocs.goliveProbe"),
+      detail: probe == null
+        ? t("firewallDocs.goliveProbeChecking")
+        : probe.ok
+          ? `${setLabel} — eraseai.ai v${probe.version || "?"}`
+          : `${notSetLabel} — ${probe.error || "unreachable"}`,
+    },
+    {
+      ok: chromeStoreSet,
+      label: t("firewallDocs.goliveChrome"),
+      detail: `${chromeStoreSet ? setLabel : notSetLabel} — VITE_CHROME_STORE_URL`,
+    },
+    {
+      ok: edgeStoreSet,
+      label: t("firewallDocs.goliveEdge"),
+      detail: `${edgeStoreSet ? setLabel : notSetLabel} — VITE_EDGE_STORE_URL`,
+    },
+    {
+      ok: firefoxAddonSet,
+      label: t("firewallDocs.goliveFirefox"),
+      detail: `${firefoxAddonSet ? setLabel : notSetLabel} — VITE_FIREFOX_ADDON_URL`,
+    },
   ];
 
   return (
@@ -410,21 +446,24 @@ function GoLiveChecklistCard({ apiBase }: { apiBase: string }) {
             )}
             <div className="min-w-0">
               <div className={item.ok ? "text-foreground" : "text-amber-300/90 font-medium"}>{item.label}</div>
-              {item.hint && (
-                <div className="text-[11px] text-muted-foreground font-mono break-all">{item.hint}</div>
-              )}
+              <div className="text-[11px] text-muted-foreground break-all">{item.detail}</div>
             </div>
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-muted-foreground">
-        {t("firewallDocs.goliveDocs")} <code className="font-mono">extension/PUBLISHING.md</code>
-      </p>
+      <button
+        type="button"
+        onClick={onOpenPublishing}
+        className="inline-flex items-center gap-2 text-xs text-primary hover:underline"
+        data-testid="install-golive-publishing-link"
+      >
+        {t("firewallDocs.goliveDocs")}
+      </button>
     </div>
   );
 }
 
-function InstallSection() {
+function InstallSection({ onOpenPublishing }: { onOpenPublishing: () => void }) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -715,7 +754,7 @@ function InstallSection() {
         </div>
       )}
 
-      {isAdmin && <GoLiveChecklistCard apiBase={apiBase} />}
+      {isAdmin && <GoLiveChecklistCard onOpenPublishing={onOpenPublishing} />}
     </div>
   );
 }
@@ -1643,7 +1682,7 @@ function TroubleshootingSection() {
   );
 }
 
-export default function FirewallDocs({ onBack, onUpgrade, onDevMode }: FirewallDocsProps) {
+export default function FirewallDocs({ onBack, onUpgrade, onDevMode, onOpenPublishing }: FirewallDocsProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<SectionId>("overview");
@@ -1704,7 +1743,7 @@ export default function FirewallDocs({ onBack, onUpgrade, onDevMode }: FirewallD
             <main className="flex-1 min-w-0">
               {activeSection === "overview" && <OverviewSection />}
               {activeSection === "apikey" && <ApiKeySection />}
-              {activeSection === "install" && <InstallSection />}
+              {activeSection === "install" && <InstallSection onOpenPublishing={onOpenPublishing || (() => {})} />}
               {activeSection === "endpoints" && <EndpointsSection />}
               {activeSection === "extension" && <ExtensionSection />}
               {activeSection === "vscode" && <VSCodeSection />}
