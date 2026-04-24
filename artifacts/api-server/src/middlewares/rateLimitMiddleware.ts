@@ -3,6 +3,7 @@ import { db, apiUsageTable, apiKeysTable } from "@workspace/db";
 import { eq, and, gte, sql } from "drizzle-orm";
 
 const PLAN_REQUEST_LIMITS: Record<string, number> = {
+  personal: 200,
   pro: 1000,
   business: 10000,
   enterprise: -1,
