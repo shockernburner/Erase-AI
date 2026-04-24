@@ -17,6 +17,20 @@ interface ExtensionVersion {
 const PING_URL = "https://eraseai.ai/api/dev/ping";
 const EXTENSION_VERSION_URL = "https://eraseai.ai/api/extension/version";
 const INSTALL_URL = "https://eraseai.ai/ai-firewall";
+const PING_INTERVAL_MS = 30_000;
+
+function formatTimestamp(ts: number): string {
+  try {
+    const d = new Date(ts);
+    return d.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return String(ts);
+  }
+}
 
 export default function StatusPage() {
   const [ping, setPing] = useState<PingResult | null>(null);
@@ -26,8 +40,10 @@ export default function StatusPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(PING_URL, { headers: { Accept: "application/json" } })
-      .then(async (res) => {
+
+    const probePing = async () => {
+      try {
+        const res = await fetch(PING_URL, { headers: { Accept: "application/json" } });
         const ct = res.headers.get("content-type") || "";
         if (!res.ok) {
           if (!cancelled) setPing({ ok: false, error: `HTTP ${res.status}`, fetchedAt: Date.now() });
@@ -45,26 +61,48 @@ export default function StatusPage() {
             fetchedAt: Date.now(),
           });
         }
-      })
-      .catch((err) => {
-        if (!cancelled) setPing({ ok: false, error: err?.message || "unreachable", fetchedAt: Date.now() });
-      });
+      } catch (err) {
+        if (!cancelled) {
+          setPing({
+            ok: false,
+            error: (err as Error)?.message || "unreachable",
+            fetchedAt: Date.now(),
+          });
+        }
+      }
+    };
 
-    fetch(EXTENSION_VERSION_URL, { headers: { Accept: "application/json" } })
-      .then(async (res) => {
+    const probeExtension = async () => {
+      try {
+        const res = await fetch(EXTENSION_VERSION_URL, { headers: { Accept: "application/json" } });
         if (!res.ok) {
-          if (!cancelled) setExtError(`HTTP ${res.status}`);
+          if (!cancelled) {
+            setExtError(`HTTP ${res.status}`);
+            setExt(null);
+          }
           return;
         }
         const data = (await res.json()) as ExtensionVersion;
-        if (!cancelled) setExt(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setExtError(err?.message || "unreachable");
-      });
+        if (!cancelled) {
+          setExt(data);
+          setExtError(null);
+        }
+      } catch (err) {
+        if (!cancelled) setExtError((err as Error)?.message || "unreachable");
+      }
+    };
+
+    // First probe immediately on mount, then poll on an interval so the page
+    // is genuinely live when left open during a sales call or incident.
+    void probePing();
+    void probeExtension();
+    const pingTimer = setInterval(probePing, PING_INTERVAL_MS);
+    const extTimer = setInterval(probeExtension, PING_INTERVAL_MS * 4);
 
     return () => {
       cancelled = true;
+      clearInterval(pingTimer);
+      clearInterval(extTimer);
     };
   }, []);
 
@@ -116,6 +154,10 @@ export default function StatusPage() {
             <dd className="text-zinc-200 font-mono" data-testid="status-api-version">
               {ping?.version ? `v${ping.version}` : ping == null ? "—" : "unknown"}
             </dd>
+            <dt>Last checked</dt>
+            <dd className="text-zinc-200 font-mono" data-testid="status-api-last-checked">
+              {ping?.fetchedAt ? formatTimestamp(ping.fetchedAt) : "—"}
+            </dd>
             {ping && !ping.ok && (
               <>
                 <dt>Error</dt>
@@ -125,6 +167,9 @@ export default function StatusPage() {
               </>
             )}
           </dl>
+          <p className="text-[11px] text-zinc-500 pt-1">
+            Auto-refreshes every {Math.round(PING_INTERVAL_MS / 1000)} seconds.
+          </p>
         </section>
 
         <section
