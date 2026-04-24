@@ -24,6 +24,7 @@ import TermsOfService from "@/pages/TermsOfService";
 import LicenseAgreement from "@/pages/LicenseAgreement";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ContactPage from "@/pages/ContactPage";
+import StatusPage from "@/pages/StatusPage";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -452,6 +453,7 @@ function App() {
               <Route path="/contact">
                 <ContactPage onBack={() => window.history.back()} />
               </Route>
+              <Route path="/status" component={StatusPage} />
               <Route>
                 <AuthGate />
               </Route>

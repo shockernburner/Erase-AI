@@ -399,6 +399,74 @@ describe("popup.renderDiagnosis state machine", () => {
   });
 });
 
+describe("popup.renderDiagnosis auto_reset_to_default", () => {
+  it("renders the auto-heal recovery card with previous URL and a Continue button", () => {
+    popup.renderDiagnosis({
+      state: "auto_reset_to_default",
+      apiUrl: DEFAULT_API_URL,
+      isCustomUrl: false,
+      previousApiUrl: "https://eraseai.replit.app",
+      previousError: "Server responded with HTTP 404. Check the API URL.",
+      serverVersion: "1.3.1",
+    });
+
+    const card = document.getElementById("diag-card");
+    expect(card.className).toBe("diag auto_reset");
+
+    const title = document.getElementById("diag-title");
+    expect(title.textContent).toBe("Reset to the official EraseAI server");
+
+    const detail = document.getElementById("diag-detail");
+    expect(detail.textContent).toContain("https://eraseai.replit.app");
+    expect(detail.textContent).toContain("https://eraseai.ai");
+
+    const buttons = document.getElementById("diag-actions").querySelectorAll("button");
+    expect(buttons.length).toBe(1);
+    expect(buttons[0].textContent).toBe("Continue");
+  });
+
+  it("falls back to a generic phrase when previousApiUrl is missing", () => {
+    popup.renderDiagnosis({
+      state: "auto_reset_to_default",
+      apiUrl: DEFAULT_API_URL,
+      isCustomUrl: false,
+    });
+
+    const detail = document.getElementById("diag-detail");
+    expect(detail.textContent).toContain("your custom server");
+  });
+});
+
+describe("popup canonical URL constants", () => {
+  it("every CANONICAL_*_URL constant is anchored to https://eraseai.ai", () => {
+    const src = loadPopupSource();
+    const matches = Array.from(src.matchAll(/^const\s+(CANONICAL_[A-Z_]*URL)\s*=\s*"([^"]+)";/gm));
+    // Sanity: we must have actually picked up the constants we care about.
+    expect(matches.length).toBeGreaterThanOrEqual(4);
+    const names = matches.map((m) => m[1]);
+    for (const required of [
+      "CANONICAL_KEYS_URL",
+      "CANONICAL_DASHBOARD_URL",
+      "CANONICAL_PRICING_URL",
+      "CANONICAL_CONTACT_URL",
+    ]) {
+      expect(names).toContain(required);
+    }
+    for (const [, name, value] of matches) {
+      expect(value, `${name} must point at the canonical eraseai.ai host`).toMatch(
+        /^https:\/\/eraseai\.ai(\/|\?|$)/,
+      );
+    }
+  });
+
+  it("DEFAULT_API_URL is the canonical eraseai.ai origin", () => {
+    const src = loadPopupSource();
+    const m = src.match(/^const\s+DEFAULT_API_URL\s*=\s*"([^"]+)";/m);
+    expect(m).not.toBeNull();
+    expect(m[1]).toBe("https://eraseai.ai");
+  });
+});
+
 describe("popup.renderDiagnosis is XSS-safe", () => {
   function expectNoScriptInjection() {
     // No new <script>, <img>, or <iframe> elements should ever be added by

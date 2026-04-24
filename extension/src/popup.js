@@ -200,6 +200,19 @@ function renderDiagnosis(result) {
     renderDiagTitle("Add your API key");
     diagDetail.textContent = "The EraseAI server is reachable. Enter an API key below, or grab one from your dashboard.";
     addDiagButton("Get my API key", "primary", openCanonicalKeysDashboard);
+  } else if (result.state === "auto_reset_to_default") {
+    // Recovery state: the background service worker just dropped a stale
+    // custom apiUrl from chrome.storage.local because it could not reach
+    // it, but the canonical default IS reachable. Tell the user what we
+    // did and offer a "Continue" button that re-runs the diagnosis
+    // against the (now-default) URL.
+    setDiagState("auto_reset");
+    renderDiagTitle("Reset to the official EraseAI server");
+    const previous = typeof result.previousApiUrl === "string" ? result.previousApiUrl : "your custom server";
+    diagDetail.textContent = `${previous} wasn't responding, so the firewall is now using https://eraseai.ai. Click Continue to verify your API key.`;
+    addDiagButton("Continue", "primary", () => {
+      runDiagnosis();
+    });
   } else if (result.state === "invalid_key") {
     setDiagState("invalid_key");
     const info = describeInvalidKey(result.code);

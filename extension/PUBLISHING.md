@@ -181,7 +181,48 @@ listing goes live, then redeploy.
 
 ---
 
-## 6. Quick checklist
+## 6. Troubleshooting: HTTP 404 from the extension
+
+**Symptom.** The popup reports `HTTP 404` when saving an API key, or the
+"Open EraseAI dashboard" link opens `eraseai.replit.app` (and that page is
+itself a 404).
+
+**Cause.** An older install of the extension (pre-1.3.0) wrote
+`apiUrl: "https://eraseai.replit.app"` into `chrome.storage.local`. The
+1.3.0 production lockdown drops that URL on save, but if the extension was
+never re-opened after upgrading, the stale value can still drive the
+service worker for one boot. The 1.3.1 service worker auto-heals this:
+when the stored URL fails to respond but `https://eraseai.ai/api/dev/ping`
+succeeds, it removes the stale `apiUrl` from storage and the popup shows a
+"Reset to the official EraseAI server → Continue" card.
+
+**Manual unblock for users on 1.3.0 or older:**
+
+1. In Chrome, open `chrome://extensions`, find **EraseAI Firewall**, click
+   **Service worker**, then in the DevTools console run:
+
+   ```js
+   chrome.storage.local.remove(["apiUrl"]);
+   ```
+
+2. Re-open the extension popup. The diagnosis card will switch to
+   "Connected" once the API key is verified against `eraseai.ai`.
+
+**Operator side-fix.** The api-server unconditionally 308-redirects any
+incoming request whose `Host` header is `eraseai.replit.app` (or any
+`*.eraseai.replit.app` subdomain) to the same path on `eraseai.ai`
+(see `artifacts/api-server/src/app.ts`). If the Replit deployment is
+reachable on its `.replit.app` default URL, this means even a stale
+extension client gets transparently rerouted to the canonical host.
+
+If the `.replit.app` subdomain itself is returning 404 from Replit's edge
+(i.e. there is no live deployment serving that hostname at all), the
+redirect cannot help — confirm the deployment status from the
+`https://eraseai.ai/status` page and redeploy if necessary.
+
+---
+
+## 7. Quick checklist
 
 - [ ] Bump `extension/manifest.json` version
 - [ ] `pnpm --filter @workspace/api-server run build`

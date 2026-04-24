@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "EraseAI Firewall",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "AI Firewall — Analyze prompts for privacy risks before sending to AI platforms",
   "author": "Vantward Solutions Pte. Ltd.",
   "homepage_url": "https://eraseai.ai/ai-firewall",

@@ -331,6 +331,117 @@ describe("background.testConnection", () => {
     });
   });
 
+  describe("auto_reset_to_default state", () => {
+    it("returns auto_reset_to_default when a custom apiUrl is unreachable but the canonical default works, and removes the stored apiUrl", async () => {
+      const customUrl = "https://eraseai.replit.app";
+      init({
+        storage: { apiUrl: customUrl, apiKey: "eak_x" },
+        fetchImpl: async (url) => {
+          if (url.startsWith(customUrl)) {
+            return { ok: false, status: 404, headers: { get: () => "text/html" }, json: async () => ({}) };
+          }
+          if (url.startsWith(DEFAULT_API_URL)) {
+            return jsonResponse({ ok: true, version: "1.3.1" });
+          }
+          throw new Error(`unexpected url: ${url}`);
+        },
+      });
+
+      const result = await mod.testConnection();
+
+      expect(result.connected).toBe(false);
+      expect(result.state).toBe("auto_reset_to_default");
+      expect(result.apiUrl).toBe(DEFAULT_API_URL);
+      expect(result.isCustomUrl).toBe(false);
+      expect(result.previousApiUrl).toBe(customUrl);
+      expect(result.previousError).toMatch(/HTTP 404/);
+      expect(result.serverVersion).toBe("1.3.1");
+      expect(chromeStub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
+    });
+
+    it("returns server_unreachable (not auto-heal) when both the custom URL AND the default fail", async () => {
+      const customUrl = "https://eraseai.replit.app";
+      init({
+        storage: { apiUrl: customUrl, apiKey: "eak_x" },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 404,
+          headers: { get: () => "text/html" },
+          json: async () => ({}),
+        }),
+      });
+
+      const result = await mod.testConnection();
+
+      expect(result.state).toBe("server_unreachable");
+      expect(result.apiUrl).toBe(customUrl);
+      expect(result.isCustomUrl).toBe(true);
+      expect(chromeStub.storage.local.remove).not.toHaveBeenCalled();
+    });
+
+    it("does NOT auto-heal when the failing URL is already the default (nothing to heal to)", async () => {
+      init({
+        storage: { apiKey: "eak_x" },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 502,
+          headers: { get: () => "text/html" },
+          json: async () => ({}),
+        }),
+      });
+
+      const result = await mod.testConnection();
+      expect(result.state).toBe("server_unreachable");
+      expect(result.apiUrl).toBe(DEFAULT_API_URL);
+      // Crucially, no second probe to the default — only the original ping.
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      expect(chromeStub.storage.local.remove).not.toHaveBeenCalled();
+    });
+
+    it("does NOT auto_reset_to_default if storage.remove rejects (avoids loop on Continue) — surfaces the original error instead", async () => {
+      const customUrl = "https://eraseai.replit.app";
+      chromeStub = makeChrome({ apiUrl: customUrl, apiKey: "eak_x" });
+      // Override remove() to reject — simulates a profile/disk-level failure
+      // where chrome.storage.local.remove() can't actually clear the key.
+      chromeStub.storage.local.remove = vi.fn(async () => {
+        throw new Error("storage quota exhausted");
+      });
+      fetchStub = vi.fn(async (url) => {
+        if (url.startsWith(customUrl)) {
+          return { ok: false, status: 404, headers: { get: () => "text/html" }, json: async () => ({}) };
+        }
+        return jsonResponse({ ok: true, version: "1.3.1" });
+      });
+      mod = loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
+
+      const result = await mod.testConnection();
+
+      expect(result.state).toBe("server_unreachable");
+      expect(result.apiUrl).toBe(customUrl);
+      expect(result.isCustomUrl).toBe(true);
+      expect(result.error).toMatch(/auto-reset failed/);
+      expect(result.error).toMatch(/HTTP 404/);
+    });
+
+    it("auto-heals on a network-error failure of the custom URL too", async () => {
+      const customUrl = "https://eraseai.replit.app";
+      init({
+        storage: { apiUrl: customUrl },
+        fetchImpl: async (url) => {
+          if (url.startsWith(customUrl)) {
+            throw new Error("getaddrinfo ENOTFOUND eraseai.replit.app");
+          }
+          return jsonResponse({ ok: true, version: "1.3.1" });
+        },
+      });
+
+      const result = await mod.testConnection();
+      expect(result.state).toBe("auto_reset_to_default");
+      expect(result.previousError).toMatch(/Cannot reach https:\/\/eraseai\.replit\.app/);
+      expect(chromeStub.storage.local.remove).toHaveBeenCalledWith("apiUrl");
+    });
+  });
+
   describe("analyzePrompt", () => {
     it("posts to /api/dev/analyze with bearer auth and returns the server JSON on 200", async () => {
       const serverPayload = {
