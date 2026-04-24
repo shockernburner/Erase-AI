@@ -144,6 +144,7 @@ async function testConnection() {
         isCustomUrl: config.isCustomUrl,
         serverVersion: reachableServerVersion,
         error: err.error || "Invalid API key",
+        code: typeof err.code === "string" ? err.code : null,
       };
     }
     if (!auth.ok) {

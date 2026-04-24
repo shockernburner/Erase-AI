@@ -1,6 +1,8 @@
 const DEFAULT_API_URL = "https://eraseai.ai";
 const CANONICAL_KEYS_URL = "https://eraseai.ai/?view=developer";
 const CANONICAL_DASHBOARD_URL = "https://eraseai.ai/ai-firewall";
+const CANONICAL_PRICING_URL = "https://eraseai.ai/?view=pricing";
+const CANONICAL_CONTACT_URL = "https://eraseai.ai/contact";
 
 const apiKeyInput = document.getElementById("api-key-input");
 const saveKeyBtn = document.getElementById("save-key-btn");
@@ -87,6 +89,64 @@ function openCanonicalKeysDashboard() {
   chrome.tabs.create({ url: CANONICAL_KEYS_URL });
 }
 
+function openCanonicalPricing() {
+  chrome.tabs.create({ url: CANONICAL_PRICING_URL });
+}
+
+function openCanonicalContact() {
+  chrome.tabs.create({ url: CANONICAL_CONTACT_URL });
+}
+
+function describeInvalidKey(code) {
+  switch (code) {
+    case "AUTH_INVALID_FORMAT":
+    case "AUTH_INVALID_HEADER":
+      return {
+        title: "API key format looks wrong",
+        detail: "The key you entered doesn't look like a valid EraseAI key (they start with eak_). Generate a fresh key from your dashboard and paste it below.",
+        actionLabel: "Get a new key",
+        actionHandler: openCanonicalKeysDashboard,
+      };
+    case "AUTH_REVOKED_KEY":
+      return {
+        title: "API key has been revoked",
+        detail: "This key was revoked from your dashboard and can no longer be used. Generate a new key and paste it below.",
+        actionLabel: "Generate a new key",
+        actionHandler: openCanonicalKeysDashboard,
+      };
+    case "AUTH_EXPIRED_KEY":
+      return {
+        title: "Subscription expired",
+        detail: "Your API key is no longer active because the subscription it belongs to has expired. Renew to start using the firewall again.",
+        actionLabel: "Renew your subscription",
+        actionHandler: openCanonicalPricing,
+      };
+    case "AUTH_USER_NOT_FOUND":
+      return {
+        title: "Account not found",
+        detail: "The EraseAI account this key belongs to could not be found. Contact support so we can sort this out.",
+        actionLabel: "Contact support",
+        actionHandler: openCanonicalContact,
+      };
+    case "AUTH_INVALID_KEY":
+      return {
+        title: "API key not recognized",
+        detail: "The server doesn't recognize this key. It may have been deleted or copied incorrectly. Generate a new key and paste it below.",
+        actionLabel: "Get a new key",
+        actionHandler: openCanonicalKeysDashboard,
+      };
+    default:
+      return {
+        title: "API key not accepted",
+        detail: "The server rejected this key but didn't say why. Try generating a new key, or contact support if the problem continues.",
+        actionLabel: "Contact support",
+        actionHandler: openCanonicalContact,
+        secondaryLabel: "Get a new key",
+        secondaryHandler: openCanonicalKeysDashboard,
+      };
+  }
+}
+
 async function resetApiUrlAndRecheck() {
   await chrome.storage.local.remove("apiUrl");
   apiUrlInput.value = "";
@@ -124,11 +184,13 @@ function renderDiagnosis(result) {
     addDiagButton("Get my API key", "primary", openCanonicalKeysDashboard);
   } else if (result.state === "invalid_key") {
     setDiagState("invalid_key");
-    renderDiagTitle("API key not accepted");
-    diagDetail.textContent = result.error
-      ? `${result.error}. Generate a new key from your dashboard and paste it below.`
-      : "Generate a new key from your dashboard and paste it below.";
-    addDiagButton("Get a new key", "primary", openCanonicalKeysDashboard);
+    const info = describeInvalidKey(result.code);
+    renderDiagTitle(info.title);
+    diagDetail.textContent = info.detail;
+    addDiagButton(info.actionLabel, "primary", info.actionHandler);
+    if (info.secondaryLabel && info.secondaryHandler) {
+      addDiagButton(info.secondaryLabel, "secondary", info.secondaryHandler);
+    }
   } else {
     // server_unreachable (default fallback)
     setDiagState("server_unreachable");
@@ -263,7 +325,8 @@ saveKeyBtn.addEventListener("click", async () => {
   if (result.state === "connected") {
     showKeyStatus("Connected successfully!", "success");
   } else if (result.state === "invalid_key") {
-    showKeyStatus(result.error || "API key not accepted", "error");
+    const info = describeInvalidKey(result.code);
+    showKeyStatus(info.title, "error");
   } else if (result.state === "server_unreachable") {
     showKeyStatus("Server unreachable — check the API URL", "error");
   }

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { db, apiKeysTable, usersTable } from "@workspace/db";
-import { sql, eq, and, isNull } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
@@ -16,7 +16,11 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim();
     if (!token) {
-      res.status(401).json({ error: "API key is empty", code: "AUTH_INVALID_KEY", meta: buildMeta() });
+      res.status(401).json({ error: "API key is empty", code: "AUTH_INVALID_FORMAT", meta: buildMeta() });
+      return;
+    }
+    if (!isWellFormedApiKey(token)) {
+      res.status(401).json({ error: "API key format is invalid. Expected an eak_… key.", code: "AUTH_INVALID_FORMAT", meta: buildMeta() });
       return;
     }
 
@@ -24,10 +28,15 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
     const [apiKey] = await db
       .select()
       .from(apiKeysTable)
-      .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
+      .where(eq(apiKeysTable.keyHash, keyHash));
 
     if (!apiKey) {
-      res.status(401).json({ error: "Invalid or revoked API key", code: "AUTH_INVALID_KEY", meta: buildMeta() });
+      res.status(401).json({ error: "API key not recognized", code: "AUTH_INVALID_KEY", meta: buildMeta() });
+      return;
+    }
+
+    if (apiKey.revokedAt) {
+      res.status(401).json({ error: "API key has been revoked", code: "AUTH_REVOKED_KEY", meta: buildMeta() });
       return;
     }
 
@@ -91,6 +100,10 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
 
 const API_VERSION = "1.0";
 
+function isWellFormedApiKey(token: string): boolean {
+  return /^eak_[A-Za-z0-9_-]{8,}$/.test(token);
+}
+
 function buildMeta() {
   return {
     version: API_VERSION,
@@ -112,15 +125,21 @@ async function resolvePingAuth(req: Request): Promise<PingAuth> {
     }
     const token = authHeader.slice(7).trim();
     if (!token) {
-      return { kind: "error", status: 401, code: "AUTH_INVALID_KEY", error: "API key is empty" };
+      return { kind: "error", status: 401, code: "AUTH_INVALID_FORMAT", error: "API key is empty" };
+    }
+    if (!isWellFormedApiKey(token)) {
+      return { kind: "error", status: 401, code: "AUTH_INVALID_FORMAT", error: "API key format is invalid. Expected an eak_… key." };
     }
     const keyHash = hashApiKey(token);
     const [apiKey] = await db
       .select()
       .from(apiKeysTable)
-      .where(and(eq(apiKeysTable.keyHash, keyHash), isNull(apiKeysTable.revokedAt)));
+      .where(eq(apiKeysTable.keyHash, keyHash));
     if (!apiKey) {
-      return { kind: "error", status: 401, code: "AUTH_INVALID_KEY", error: "Invalid or revoked API key" };
+      return { kind: "error", status: 401, code: "AUTH_INVALID_KEY", error: "API key not recognized" };
+    }
+    if (apiKey.revokedAt) {
+      return { kind: "error", status: 401, code: "AUTH_REVOKED_KEY", error: "API key has been revoked" };
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, apiKey.userId));
     if (!user) {
