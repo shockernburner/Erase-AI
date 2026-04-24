@@ -177,8 +177,6 @@ async function testConnection() {
     }
     const allowedPlans = new Set(["free", "personal", "pro", "business", "enterprise"]);
     const plan = typeof data.plan === "string" && allowedPlans.has(data.plan) ? data.plan : "free";
-    const email = typeof data.email === "string" ? data.email : null;
-    // dailyLimit / dailyRemaining are numbers for free plan, null for paid (= unlimited).
     const dailyLimit = typeof data.dailyLimit === "number" ? data.dailyLimit : null;
     const dailyRemaining = typeof data.dailyRemaining === "number" ? data.dailyRemaining : null;
     const dailyUsed = typeof data.dailyUsed === "number" ? data.dailyUsed : null;
@@ -189,7 +187,6 @@ async function testConnection() {
       isCustomUrl: config.isCustomUrl,
       serverVersion: typeof data.version === "string" ? data.version : reachableServerVersion,
       plan,
-      email,
       dailyLimit,
       dailyRemaining,
       dailyUsed,

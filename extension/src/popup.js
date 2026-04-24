@@ -107,7 +107,7 @@ function renderDiagnosis(result) {
     const planLabel = typeof result.plan === "string" ? result.plan : "free";
     const planPretty = planLabel.charAt(0).toUpperCase() + planLabel.slice(1);
     renderDiagTitle("Connected", planPretty);
-    const accountLine = result.email ? `Authenticated as ${result.email}.` : "Your API key is valid and the firewall is active.";
+    const accountLine = "Your API key is valid and the firewall is active.";
     let quotaLine = "";
     if (typeof result.dailyRemaining === "number" && typeof result.dailyLimit === "number") {
       const r = Math.max(0, Math.floor(result.dailyRemaining));
