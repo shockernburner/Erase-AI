@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ArrowLeft, FileText } from "lucide-react";
 import publishingMd from "../../../../extension/PUBLISHING.md?raw";
 
@@ -91,8 +92,8 @@ function parseMarkdown(src: string): MdBlock[] {
   return blocks;
 }
 
-function renderInline(text: string): (string | JSX.Element)[] {
-  const out: (string | JSX.Element)[] = [];
+function renderInline(text: string): ReactNode[] {
+  const out: ReactNode[] = [];
   let cursor = 0;
   const pattern = /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\)|<https?:\/\/[^>]+>)/g;
   let match: RegExpExecArray | null;
