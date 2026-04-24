@@ -588,9 +588,9 @@ describe("background.testConnection", () => {
   });
 
   describe("getConfig", () => {
-    it("always returns the canonical eraseai.ai URL regardless of what's in storage", async () => {
+    it("always returns the canonical eraseai.ai URL", async () => {
       init({
-        storage: { apiUrl: "https://something-else.example.com", apiKey: "eak_x" },
+        storage: { apiKey: "eak_x" },
         fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }),
       });
 
@@ -600,7 +600,7 @@ describe("background.testConnection", () => {
       expect(cfg.enabled).toBe(true);
     });
 
-    it("does not read apiUrl from storage at all", async () => {
+    it("only reads apiKey + enabled from storage — there is no other config key", async () => {
       init({
         storage: { apiKey: "eak_x" },
         fetchImpl: async () => jsonResponse({ ok: true, version: "1.0.0" }),

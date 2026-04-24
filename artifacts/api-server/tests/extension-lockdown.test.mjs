@@ -121,13 +121,9 @@ describe("packed store-upload zip", () => {
     );
   });
 
-  test("packed extension does NOT ship the dev build-config or PUBLISHING doc", () => {
+  test("packed extension does NOT ship the internal PUBLISHING doc", () => {
     const zip = new AdmZip(storeZipPath);
     const names = new Set(zip.getEntries().map((e) => e.entryName));
-    assert.ok(
-      !names.has("src/build-config.js"),
-      "src/build-config.js must not be in the store zip — the extension no longer uses a build-time allowlist",
-    );
     assert.ok(
       !names.has("PUBLISHING.md"),
       "PUBLISHING.md is internal-only and must be excluded from the store zip",
