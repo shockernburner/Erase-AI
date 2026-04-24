@@ -203,10 +203,6 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
     };
   }, [apiAccessAllowed, apiBase]);
 
-  // Shared creation path. Used by both the named-create form and the
-  // one-click "quick install" button. When `auto` is true we automatically
-  // copy the freshly-revealed key to the clipboard so the user can paste it
-  // straight into the extension popup with a single click.
   const createKeyWithName = async (name: string, auto: boolean) => {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -236,8 +232,7 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
           setCopied(true);
           setTimeout(() => setCopied(false), 2500);
         } catch {
-          // Clipboard write can fail (e.g. permission denied / insecure
-          // context). The key is still revealed for manual copy below.
+          /* clipboard blocked — key still visible for manual copy */
         }
       }
       const listRes = await fetch(`${apiBase}/developer/keys`, { credentials: "include" });
@@ -255,9 +250,6 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
   const createKey = () => createKeyWithName(newKeyName, false);
 
   const quickCreateKey = () => {
-    // Stamp the auto-generated key with a date so users can spot which one
-    // belongs to the extension if they later rotate it from the developer
-    // dashboard.
     const stamp = new Date().toISOString().slice(0, 10);
     return createKeyWithName(`EraseAI Firewall extension – ${stamp}`, true);
   };
@@ -410,17 +402,10 @@ interface GoLiveProbe {
   error?: string;
 }
 
-// Canonical production endpoint we expect eraseai.ai to resolve to. We probe
-// this absolute URL (not the relative apiBase) so the checklist actually
-// verifies that the public eraseai.ai DNS / deployment is healthy, instead
-// of just confirming the current origin can reach itself.
 const CANONICAL_PING_URL = "https://eraseai.ai/api/dev/ping";
 
 function GoLiveChecklistCard({ onOpenPublishing }: { onOpenPublishing: () => void }) {
   const { t } = useTranslation();
-  // Per spec: never reveal the actual env-var value here. We only expose a
-  // boolean indicator (set / not set) and the env-var *name* (which is
-  // already public knowledge from the codebase / docs).
   const chromeStoreSet = !!(import.meta.env.VITE_CHROME_STORE_URL as string | undefined);
   const edgeStoreSet = !!(import.meta.env.VITE_EDGE_STORE_URL as string | undefined);
   const firefoxAddonSet = !!(import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined);

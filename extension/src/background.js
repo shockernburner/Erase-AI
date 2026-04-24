@@ -71,21 +71,9 @@ async function sanitizePrompt(text) {
   }
 }
 
-// Self-diagnostic probe used by the popup. We hit the public /ping endpoint
-// (which now accepts an optional Bearer token) so that we can disambiguate the
-// three failure modes the user actually cares about:
-//   1. server_unreachable — DNS/network/proxy/down. Reset URL.
-//   2. no_key             — server is healthy, user just hasn't set a key.
-//   3. invalid_key        — server is healthy, key is wrong/revoked.
-// Anything else is a successful "connected" with the user's plan.
 async function testConnection() {
   const config = await getConfig();
 
-  // Step 1: reachability — unauthenticated probe always returns 200 if the
-  // server is healthy, regardless of whether the user has a key set.
-  // We don't trust HTTP 200 alone — a misconfigured custom URL might point at
-  // an unrelated server that happens to return 200 HTML. We additionally
-  // require the response to be JSON shaped like our /ping contract.
   let reachableServerVersion = null;
   try {
     const probe = await fetch(`${config.apiUrl}/api/dev/ping`, {
@@ -132,7 +120,6 @@ async function testConnection() {
     };
   }
 
-  // Step 2: do we even have a key?
   if (!config.apiKey) {
     return {
       connected: false,
@@ -143,7 +130,6 @@ async function testConnection() {
     };
   }
 
-  // Step 3: validate the key. Same /ping, but with Authorization.
   try {
     const auth = await fetch(`${config.apiUrl}/api/dev/ping`, {
       method: "GET",

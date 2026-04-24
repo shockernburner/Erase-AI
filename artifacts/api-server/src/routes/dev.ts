@@ -99,11 +99,6 @@ function buildMeta() {
   };
 }
 
-// Public, auth-optional health probe. The browser extension and external
-// monitors hit this without credentials to verify the server is reachable.
-// When a Bearer token OR a logged-in session cookie is provided we resolve
-// the caller's plan + remaining daily quota so the popup and the in-app
-// install card can render that info with a single round-trip.
 async function buildAuthedPingPayload(
   user: { id: string; email: string | null; planType: string | null },
   meta: ReturnType<typeof buildMeta>,
@@ -138,7 +133,6 @@ router.get("/ping", async (req, res) => {
   const meta = buildMeta();
   const authHeader = req.headers.authorization;
 
-  // 1. Bearer token path — validate the API key and resolve the owner.
   if (authHeader) {
     if (!authHeader.startsWith("Bearer ")) {
       res.status(401).json({
@@ -174,9 +168,6 @@ router.get("/ping", async (req, res) => {
     return;
   }
 
-  // 2. Session-cookie path — if the browser has an authenticated session,
-  //    return the same enriched payload. We re-read the user from the DB so
-  //    the plan/quota reflects the current row, not a stale session snapshot.
   const sid = getSessionId(req);
   if (sid) {
     try {
@@ -192,12 +183,10 @@ router.get("/ping", async (req, res) => {
         }
       }
     } catch {
-      // Fall through to the unauthenticated response — a broken session must
-      // never make the public health probe fail.
+      /* fall through to anonymous response */
     }
   }
 
-  // 3. Anonymous probe — public health check.
   res.json({ ok: true, version: API_VERSION, timestamp: meta.timestamp, meta });
 });
 

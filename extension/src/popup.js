@@ -1,15 +1,3 @@
-// Hard-coded canonical targets. We deliberately do NOT use the user's stored
-// apiUrl here — the whole point is that if they typed a wrong URL into the
-// custom-API-URL field they would never reach the dashboard from the popup.
-// Always send them to the canonical production site.
-//
-// CANONICAL_KEYS_URL deep-links into the eraseai.ai web app's Developer
-// Dashboard via the ?view=developer query parameter (whitelisted in
-// AuthGate). That page is where users actually generate / rotate API keys,
-// so it is the correct target for the "Get my API key" / "Get a new key"
-// CTAs. CANONICAL_DASHBOARD_URL is the public AI-firewall install/docs page
-// that we fall back to when the API itself is unreachable (since at that
-// point the user may not even be logged in).
 const DEFAULT_API_URL = "https://eraseai.ai";
 const CANONICAL_KEYS_URL = "https://eraseai.ai/?view=developer";
 const CANONICAL_DASHBOARD_URL = "https://eraseai.ai/ai-firewall";
@@ -54,8 +42,6 @@ function clearNode(node) {
   }
 }
 
-// Build "API: <url> [Reset]" into diagMeta safely (no innerHTML).
-// onReset is called when the Reset button is clicked.
 function renderDiagMeta(apiUrl, onReset) {
   clearNode(diagMeta);
   diagMeta.style.display = "block";
@@ -98,9 +84,6 @@ function openCanonicalDashboard() {
 }
 
 function openCanonicalKeysDashboard() {
-  // Direct deep-link to the developer keys page on the canonical domain.
-  // Used by the "Get my API key" / "Get a new key" CTAs so the user lands
-  // exactly where they can create or rotate a key, in one click.
   chrome.tabs.create({ url: CANONICAL_KEYS_URL });
 }
 
@@ -159,10 +142,6 @@ function renderDiagnosis(result) {
     addDiagButton("Open eraseai.ai", "primary", openCanonicalDashboard);
   }
 
-  // Always show the effective API URL — in every state, default or custom —
-  // so the user can verify which endpoint the extension is actually probing.
-  // The Reset button only appears when the URL differs from the canonical
-  // default; clicking it restores https://eraseai.ai and re-runs diagnosis.
   renderDiagMeta(apiUrl, isCustom ? resetApiUrlAndRecheck : null);
 }
 
