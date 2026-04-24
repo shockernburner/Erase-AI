@@ -108,7 +108,6 @@ function renderDiagnosis(result) {
     const planLabel = typeof result.plan === "string" ? result.plan : "free";
     const planPretty = planLabel.charAt(0).toUpperCase() + planLabel.slice(1);
     renderDiagTitle("Connected", planPretty);
-    // Build the detail line: account + remaining daily quota (free plan only).
     const accountLine = result.email ? `Authenticated as ${result.email}.` : "Your API key is valid and the firewall is active.";
     let quotaLine = "";
     if (typeof result.dailyRemaining === "number" && typeof result.dailyLimit === "number") {
@@ -119,47 +118,36 @@ function renderDiagnosis(result) {
       quotaLine = " Unlimited daily scans on this plan.";
     }
     diagDetail.textContent = accountLine + quotaLine;
-    if (isCustom) {
-      renderDiagMeta(apiUrl, resetApiUrlAndRecheck);
-    }
-    return;
-  }
-
-  if (result.state === "no_key") {
+  } else if (result.state === "no_key") {
     setDiagState("no_key");
     renderDiagTitle("Add your API key");
     diagDetail.textContent = "The EraseAI server is reachable. Enter an API key below, or grab one from your dashboard.";
     addDiagButton("Get my API key", "primary", openCanonicalDashboard);
-    if (isCustom) {
-      renderDiagMeta(apiUrl, resetApiUrlAndRecheck);
-    }
-    return;
-  }
-
-  if (result.state === "invalid_key") {
+  } else if (result.state === "invalid_key") {
     setDiagState("invalid_key");
     renderDiagTitle("API key not accepted");
     diagDetail.textContent = result.error
       ? `${result.error}. Generate a new key from your dashboard and paste it below.`
       : "Generate a new key from your dashboard and paste it below.";
     addDiagButton("Get a new key", "primary", openCanonicalDashboard);
+  } else {
+    // server_unreachable (default fallback)
+    setDiagState("server_unreachable");
+    renderDiagTitle("Server unreachable");
+    diagDetail.textContent = result.error
+      ? `Could not reach the EraseAI API: ${result.error}`
+      : "Could not reach the EraseAI API.";
     if (isCustom) {
-      renderDiagMeta(apiUrl, resetApiUrlAndRecheck);
+      addDiagButton("Reset URL to eraseai.ai", "secondary", resetApiUrlAndRecheck);
     }
-    return;
+    addDiagButton("Open eraseai.ai", "primary", openCanonicalDashboard);
   }
 
-  // server_unreachable (default fallback)
-  setDiagState("server_unreachable");
-  renderDiagTitle("Server unreachable");
-  diagDetail.textContent = result.error
-    ? `Could not reach the EraseAI API: ${result.error}`
-    : "Could not reach the EraseAI API.";
-  if (isCustom) {
-    addDiagButton("Reset URL to eraseai.ai", "secondary", resetApiUrlAndRecheck);
-  }
-  addDiagButton("Open eraseai.ai", "primary", openCanonicalDashboard);
-  renderDiagMeta(apiUrl);
+  // Always show the effective API URL — in every state, default or custom —
+  // so the user can verify which endpoint the extension is actually probing.
+  // The Reset button only appears when the URL differs from the canonical
+  // default; clicking it restores https://eraseai.ai and re-runs diagnosis.
+  renderDiagMeta(apiUrl, isCustom ? resetApiUrlAndRecheck : null);
 }
 
 function runDiagnosis() {

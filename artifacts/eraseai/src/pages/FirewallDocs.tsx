@@ -203,9 +203,13 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
     };
   }, [apiAccessAllowed, apiBase]);
 
-  const createKey = async () => {
-    const name = newKeyName.trim();
-    if (!name) {
+  // Shared creation path. Used by both the named-create form and the
+  // one-click "quick install" button. When `auto` is true we automatically
+  // copy the freshly-revealed key to the clipboard so the user can paste it
+  // straight into the extension popup with a single click.
+  const createKeyWithName = async (name: string, auto: boolean) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
       setError(t("firewallDocs.installKeyNameRequired"));
       return;
     }
@@ -216,15 +220,26 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: trimmed }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || t("firewallDocs.installKeyCreateFailed"));
         return;
       }
-      setRevealedKey(data.key as string);
+      const newKey = data.key as string;
+      setRevealedKey(newKey);
       setNewKeyName("");
+      if (auto && typeof navigator !== "undefined" && navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(newKey);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        } catch {
+          // Clipboard write can fail (e.g. permission denied / insecure
+          // context). The key is still revealed for manual copy below.
+        }
+      }
       const listRes = await fetch(`${apiBase}/developer/keys`, { credentials: "include" });
       if (listRes.ok) {
         const list = (await listRes.json()) as { keys: InstallApiKey[] };
@@ -235,6 +250,16 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
     } finally {
       setCreating(false);
     }
+  };
+
+  const createKey = () => createKeyWithName(newKeyName, false);
+
+  const quickCreateKey = () => {
+    // Stamp the auto-generated key with a date so users can spot which one
+    // belongs to the extension if they later rotate it from the developer
+    // dashboard.
+    const stamp = new Date().toISOString().slice(0, 10);
+    return createKeyWithName(`EraseAI Firewall extension – ${stamp}`, true);
   };
 
   const copyRevealed = () => {
@@ -303,29 +328,56 @@ function InstallApiKeyMini({ apiBase }: { apiBase: string }) {
       )}
 
       {!loading && !revealedKey && (
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {t("firewallDocs.installKeyCreateLabel")}
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newKeyName}
-              onChange={(e) => setNewKeyName(e.target.value)}
-              placeholder={t("firewallDocs.installKeyNamePlaceholder")}
-              className="flex-1 px-3 py-2 bg-black/30 border border-border/30 rounded-lg text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:border-primary outline-none"
-              data-testid="install-apikey-name-input"
-            />
-            <button
-              type="button"
-              onClick={createKey}
-              disabled={creating || !newKeyName.trim()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              data-testid="install-apikey-create-btn"
-            >
-              {creating ? t("firewallDocs.installKeyCreating") : t("firewallDocs.installKeyCreate")}
-            </button>
-          </div>
+        <div className="space-y-3">
+          {/*
+            Primary one-click path: generates a key with an auto-name and
+            copies it straight to the clipboard, so a user installing the
+            extension only ever needs a single click to obtain a usable key
+            (regardless of whether they already have other keys).
+          */}
+          <button
+            type="button"
+            onClick={quickCreateKey}
+            disabled={creating}
+            className="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            data-testid="install-apikey-quick-create"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            {creating ? t("firewallDocs.installKeyQuickCreating") : t("firewallDocs.installKeyQuickCreate")}
+          </button>
+          <p className="text-[11px] text-muted-foreground text-center">
+            {t("firewallDocs.installKeyQuickHint")}
+          </p>
+
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none hover:text-foreground transition-colors" data-testid="install-apikey-advanced-toggle">
+              {t("firewallDocs.installKeyAdvancedToggle")}
+            </summary>
+            <div className="mt-3 space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {t("firewallDocs.installKeyCreateLabel")}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder={t("firewallDocs.installKeyNamePlaceholder")}
+                  className="flex-1 px-3 py-2 bg-black/30 border border-border/30 rounded-lg text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:border-primary outline-none"
+                  data-testid="install-apikey-name-input"
+                />
+                <button
+                  type="button"
+                  onClick={createKey}
+                  disabled={creating || !newKeyName.trim()}
+                  className="px-4 py-2 bg-white/5 border border-border/40 text-foreground rounded-lg text-xs font-semibold hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  data-testid="install-apikey-create-btn"
+                >
+                  {creating ? t("firewallDocs.installKeyCreating") : t("firewallDocs.installKeyCreate")}
+                </button>
+              </div>
+            </div>
+          </details>
           {error && <p className="text-xs text-red-400" data-testid="install-apikey-error">{error}</p>}
         </div>
       )}
