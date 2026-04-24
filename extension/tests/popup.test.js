@@ -199,6 +199,130 @@ describe("popup.renderDiagnosis state machine", () => {
     expect(buttons[0].textContent).toBe("Get a new key");
   });
 
+  describe("invalid_key code → message mapping", () => {
+    const KEYS_URL = "https://eraseai.ai/?view=developer";
+    const PRICING_URL = "https://eraseai.ai/?view=pricing";
+    const CONTACT_URL = "https://eraseai.ai/contact";
+
+    const cases = [
+      {
+        code: "AUTH_INVALID_FORMAT",
+        title: "API key format looks wrong",
+        detail:
+          "The key you entered doesn't look like a valid EraseAI key (they start with eak_). Generate a fresh key from your dashboard and paste it below.",
+        actionLabel: "Get a new key",
+        actionUrl: KEYS_URL,
+      },
+      {
+        code: "AUTH_INVALID_HEADER",
+        title: "API key format looks wrong",
+        detail:
+          "The key you entered doesn't look like a valid EraseAI key (they start with eak_). Generate a fresh key from your dashboard and paste it below.",
+        actionLabel: "Get a new key",
+        actionUrl: KEYS_URL,
+      },
+      {
+        code: "AUTH_REVOKED_KEY",
+        title: "API key has been revoked",
+        detail:
+          "This key was revoked from your dashboard and can no longer be used. Generate a new key and paste it below.",
+        actionLabel: "Generate a new key",
+        actionUrl: KEYS_URL,
+      },
+      {
+        code: "AUTH_EXPIRED_KEY",
+        title: "Subscription expired",
+        detail:
+          "Your API key is no longer active because the subscription it belongs to has expired. Renew to start using the firewall again.",
+        actionLabel: "Renew your subscription",
+        actionUrl: PRICING_URL,
+      },
+      {
+        code: "AUTH_USER_NOT_FOUND",
+        title: "Account not found",
+        detail:
+          "The EraseAI account this key belongs to could not be found. Contact support so we can sort this out.",
+        actionLabel: "Contact support",
+        actionUrl: CONTACT_URL,
+      },
+      {
+        code: "AUTH_INVALID_KEY",
+        title: "API key not recognized",
+        detail:
+          "The server doesn't recognize this key. It may have been deleted or copied incorrectly. Generate a new key and paste it below.",
+        actionLabel: "Get a new key",
+        actionUrl: KEYS_URL,
+      },
+    ];
+
+    it.each(cases)(
+      "renders the canned title, detail, and primary action for $code",
+      ({ code, title, detail: expectedDetail, actionLabel, actionUrl }) => {
+        popup.renderDiagnosis({
+          state: "invalid_key",
+          apiUrl: DEFAULT_API_URL,
+          isCustomUrl: false,
+          code,
+        });
+
+        const card = document.getElementById("diag-card");
+        expect(card.className).toBe("diag invalid_key");
+
+        const titleEl = document.getElementById("diag-title");
+        expect(titleEl.textContent).toBe(title);
+
+        // Exact full-string match (no result.error provided here) so any
+        // wording drift in the canned copy fails the test.
+        const detail = document.getElementById("diag-detail");
+        expect(detail.textContent).toBe(expectedDetail);
+
+        const buttons = document
+          .getElementById("diag-actions")
+          .querySelectorAll("button");
+        expect(buttons.length).toBe(1);
+        expect(buttons[0].textContent).toBe(actionLabel);
+
+        buttons[0].click();
+        expect(chromeStub.tabs.create).toHaveBeenCalledWith({ url: actionUrl });
+      },
+    );
+
+    it("renders the unknown-code default with a primary 'Contact support' and a secondary 'Get a new key'", () => {
+      popup.renderDiagnosis({
+        state: "invalid_key",
+        apiUrl: DEFAULT_API_URL,
+        isCustomUrl: false,
+        code: "AUTH_SOMETHING_WE_DONT_KNOW_YET",
+      });
+
+      const card = document.getElementById("diag-card");
+      expect(card.className).toBe("diag invalid_key");
+
+      const titleEl = document.getElementById("diag-title");
+      expect(titleEl.textContent).toBe("API key not accepted");
+
+      const detail = document.getElementById("diag-detail");
+      expect(detail.textContent).toBe(
+        "The server rejected this key but didn't say why. Try generating a new key, or contact support if the problem continues.",
+      );
+
+      const buttons = document
+        .getElementById("diag-actions")
+        .querySelectorAll("button");
+      expect(buttons.length).toBe(2);
+
+      const [primary, secondary] = buttons;
+      expect(primary.textContent).toBe("Contact support");
+      expect(secondary.textContent).toBe("Get a new key");
+
+      primary.click();
+      expect(chromeStub.tabs.create).toHaveBeenCalledWith({ url: CONTACT_URL });
+
+      secondary.click();
+      expect(chromeStub.tabs.create).toHaveBeenCalledWith({ url: KEYS_URL });
+    });
+  });
+
   it("renders server_unreachable state with only the canonical-dashboard action by default", () => {
     popup.renderDiagnosis({
       state: "server_unreachable",
