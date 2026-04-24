@@ -90,6 +90,12 @@ uri = "file://attached_assets/vantward_article_machine_unlearning.png"
 type = "image"
 title = "Machine unlearning article cover GDPR"
 
+[[generated]]
+id = "X8kRo3o9ie903UefenX5M"
+uri = "file://attached_assets/generated_images/eraseai_linkedin_cover.png"
+type = "image"
+title = "eraseai linkedin cover v2"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -166,7 +172,7 @@ title = "EraseAI LinkedIn Article Cover Image"
 id = "rYnKGW9dw6VlGRE1csLLh"
 uri = "file://attached_assets/eraseai_linkedin_article.md"
 type = "text"
-title = "EraseAI LinkedIn Article — Full Text"
+title = "LinkedIn article — The Missing Layer in AI"
 
 [[outputs]]
 id = "URwqqBqo1oAsQLvvy4dYv"
@@ -221,3 +227,27 @@ id = "wBvjRS4AyHSk4G6lNXwdt"
 uri = "file://attached_assets/vantward_article_machine_unlearning.png"
 type = "image"
 title = "LinkedIn Article #3 Cover — Machine Unlearning"
+
+[[outputs]]
+id = "5Xdy8NDVPeyPrDiYwzXcY"
+uri = "file://attached_assets/generated_images/eraseai_linkedin_cover.png"
+type = "image"
+title = "Cover image (16:9)"
+
+[[outputs]]
+id = "QKApBaTnWf_t7nd30soJX"
+uri = "file://attached_assets/screenshots/eraseai_ai.png"
+type = "image"
+title = "Screenshot 1 — eraseai.ai homepage (3 audience modes)"
+
+[[outputs]]
+id = "y_lhrukBr84Rem7c9UB3U"
+uri = "file://attached_assets/screenshots/eraseai_ai_ai-firewall.png"
+type = "image"
+title = "Screenshot 2 — AI Firewall product page"
+
+[[outputs]]
+id = "r8w0wSdyNzMVcwVmf6fIS"
+uri = "file://attached_assets/screenshots/eraseai_ai_blog.png"
+type = "image"
+title = "Screenshot 3 — AI Security Blog (credibility)"
