@@ -142,7 +142,7 @@ saveUrlBtn.addEventListener("click", async () => {
     const hostname = new URL(url).hostname;
     const allowed = hostname === "eraseai.ai" || hostname.endsWith(".eraseai.ai") || hostname.endsWith(".replit.app");
     if (!allowed) {
-      showKeyStatus("Custom URL must be eraseai.ai or a *.replit.app domain", "error");
+      showKeyStatus("Custom URL must be eraseai.ai, a *.eraseai.ai subdomain, or a *.replit.app domain", "error");
       return;
     }
   } catch {

@@ -20,7 +20,7 @@ async function packExtensionZip(distDir) {
   }
   await mkdir(distDir, { recursive: true });
   const zip = new AdmZip();
-  zip.addLocalFolder(extensionDir);
+  zip.addLocalFolder(extensionDir, "extension");
   const entryCount = zip.getEntries().length;
   if (entryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty zip — aborting build.`);
