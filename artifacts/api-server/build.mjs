@@ -192,6 +192,16 @@ async function packExtensionZip(distDir) {
   const metadataPath = path.resolve(distDir, "extension-metadata.json");
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
   console.log(`[build] wrote extension metadata to ${metadataPath}`);
+
+  // Also copy the raw CHANGELOG.json next to the dist bundle. The
+  // /api/extension/version route prefers the live CHANGELOG over the
+  // metadata sidecar so that bumping extension/manifest.json + CHANGELOG.json
+  // automatically updates the public status page even if a build hasn't run
+  // yet. This copy is the fallback for deployed environments where the
+  // workspace `extension/` source folder may not be present at runtime.
+  const changelogCopyPath = path.resolve(distDir, "extension-changelog.json");
+  await writeFile(changelogCopyPath, JSON.stringify(changelog, null, 2));
+  console.log(`[build] copied CHANGELOG to ${changelogCopyPath}`);
 }
 
 async function buildAll() {
