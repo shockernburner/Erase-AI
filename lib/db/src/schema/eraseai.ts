@@ -118,6 +118,19 @@ export type AnalysisResult = typeof analysisResultsTable.$inferSelect;
 export type PersonalScan = typeof personalScansTable.$inferSelect;
 export type PersonalAlert = typeof personalAlertsTable.$inferSelect;
 
+export const firewallOutcomesTable = pgTable("firewall_outcomes", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  apiKeyId: text("api_key_id"),
+  level: text("level").notNull(),
+  action: text("action").notNull(),
+  riskScore: integer("risk_score"),
+  categories: text("categories").notNull().default("[]"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type FirewallOutcome = typeof firewallOutcomesTable.$inferSelect;
+
 export const contactInquiriesTable = pgTable("contact_inquiries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),

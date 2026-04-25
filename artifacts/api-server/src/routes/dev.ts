@@ -8,6 +8,7 @@ import { refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { maskSecret } from "../lib/dev/secrets";
 import { hashApiKey } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
+import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
 
 const router = Router();
 
@@ -352,6 +353,37 @@ router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
   } catch (err) {
     console.error("Dev sanitize error:", err);
     res.status(500).json({ error: "Sanitization failed", code: "SANITIZATION_FAILED", meta: buildMeta() });
+  }
+});
+
+router.post("/outcome", async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
+      return;
+    }
+
+    const validated = validateOutcomePayload(req.body);
+    if (!validated.ok) {
+      res.status(400).json({
+        error: validated.error,
+        code: "INVALID_INPUT",
+        meta: buildMeta(),
+      });
+      return;
+    }
+
+    const { level, action, riskScore, categories } = validated.value;
+
+    await db.execute(sql`
+      INSERT INTO firewall_outcomes (user_id, api_key_id, level, action, risk_score, categories, created_at)
+      VALUES (${req.user.id}, ${req.apiKeyId ?? null}, ${level}, ${action}, ${riskScore}, ${JSON.stringify(categories)}, NOW())
+    `);
+
+    res.json({ ok: true, meta: buildMeta() });
+  } catch (err) {
+    console.error("Dev outcome error:", err);
+    res.status(500).json({ error: "Failed to record outcome", code: "OUTCOME_FAILED", meta: buildMeta() });
   }
 });
 

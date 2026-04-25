@@ -111,6 +111,61 @@
   // Module-scoped so removeOverlay() can cancel it when the overlay is
   // replaced before the safe-path auto-dismiss window elapses.
   let pendingSafeTimer = null;
+  // The last analyze result we showed to the user. We attach this to every
+  // outcome event we report so the api-server can attribute the action
+  // (sanitize / cancel / send-anyway / auto-send) to a specific risk level
+  // and category set. Cleared after we report a terminal action so the next
+  // submission cannot inherit a stale result.
+  let lastAnalysis = null;
+  let outcomeReported = false;
+
+  function extractCategories(result) {
+    if (!result || !Array.isArray(result.issues)) return [];
+    const seen = new Set();
+    const out = [];
+    for (const issue of result.issues) {
+      if (!issue || typeof issue !== "object") continue;
+      const cat = typeof issue.category === "string" && issue.category
+        ? issue.category
+        : typeof issue.type === "string" && issue.type
+          ? issue.type
+          : null;
+      if (!cat) continue;
+      if (seen.has(cat)) continue;
+      seen.add(cat);
+      out.push(cat);
+      if (out.length >= 32) break;
+    }
+    return out;
+  }
+
+  function reportOutcome(action) {
+    if (outcomeReported) return;
+    if (!lastAnalysis || !lastAnalysis.level) return;
+    outcomeReported = true;
+    try {
+      chrome.runtime.sendMessage(
+        {
+          type: "OUTCOME",
+          outcome: {
+            level: lastAnalysis.level,
+            action,
+            riskScore: typeof lastAnalysis.riskScore === "number" ? lastAnalysis.riskScore : null,
+            categories: lastAnalysis.categories || [],
+          },
+        },
+        () => {
+          if (chrome.runtime.lastError) {
+            // Outcome reporting is best-effort; never surface a failure to
+            // the user mid-flow.
+          }
+        },
+      );
+    } catch {
+      // Ignore — the firewall must keep working even if the service worker
+      // has been suspended.
+    }
+  }
 
   function detectPlatform() {
     const host = window.location.hostname;
@@ -272,12 +327,20 @@
       </div>
     `;
 
+    // Track whether the user successfully sanitized before sending. The
+    // Sanitize button is not itself a terminal action — the user must still
+    // click Send Sanitized afterwards. We attribute the final outcome based
+    // on which path they actually committed to.
+    let sanitizedApplied = false;
+
     panel.querySelector("#eraseai-cancel").addEventListener("click", () => {
+      reportOutcome("cancel");
       removeOverlay();
       isIntercepting = false;
     });
 
     panel.querySelector("#eraseai-send-anyway").addEventListener("click", () => {
+      reportOutcome(sanitizedApplied ? "sanitize" : "send-anyway");
       removeOverlay();
       bypassNext = true;
       isIntercepting = false;
@@ -323,6 +386,7 @@
         }
 
         btn.textContent = "\u2713 Sanitized";
+        sanitizedApplied = true;
 
         const sendBtn = panel.querySelector("#eraseai-send-anyway");
         if (sendBtn) {
@@ -377,6 +441,7 @@
         clearTimeout(pendingSafeTimer);
         pendingSafeTimer = null;
       }
+      reportOutcome("auto-send");
       removeOverlay();
       bypassNext = true;
       isIntercepting = false;
@@ -390,6 +455,7 @@
         clearTimeout(pendingSafeTimer);
         pendingSafeTimer = null;
       }
+      reportOutcome("cancel");
       removeOverlay();
       isIntercepting = false;
     };
@@ -463,6 +529,10 @@
     e.stopImmediatePropagation();
 
     isIntercepting = true;
+    // Reset the per-submission outcome state so each new prompt produces at
+    // most one outcome event tied to its own analysis result.
+    lastAnalysis = null;
+    outcomeReported = false;
 
     chrome.runtime.sendMessage({ type: "GET_CONFIG" }, (configResult) => {
       if (chrome.runtime.lastError || !configResult) {
@@ -501,6 +571,15 @@
           isIntercepting = false;
           return;
         }
+
+        // Capture the analysis result so terminal-action handlers can
+        // attribute the outcome event back to the level/categories the user
+        // actually saw.
+        lastAnalysis = {
+          level: typeof result.level === "string" ? result.level : null,
+          riskScore: typeof result.riskScore === "number" ? result.riskScore : null,
+          categories: extractCategories(result),
+        };
 
         // Safe prompts get an "All clear" confirmation that auto-sends
         // after a short window; never a silent skip.

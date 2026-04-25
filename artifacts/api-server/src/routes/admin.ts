@@ -73,7 +73,16 @@ router.get("/admin/stats", async (req: Request, res: Response) => {
     const weekStart = new Date(todayStart);
     weekStart.setDate(weekStart.getDate() - 7);
 
-    const [[totalVisits], [todayVisits], [weekVisits], [totalUsers], [proSubs], [totalFeedback], [avgRating]] = await Promise.all([
+    const [
+      [totalVisits],
+      [todayVisits],
+      [weekVisits],
+      [totalUsers],
+      [proSubs],
+      [totalFeedback],
+      [avgRating],
+      firewallStats,
+    ] = await Promise.all([
       db.select({ total: count() }).from(pageVisitsTable),
       db.select({ total: count() }).from(pageVisitsTable).where(gte(pageVisitsTable.createdAt, todayStart)),
       db.select({ total: count() }).from(pageVisitsTable).where(gte(pageVisitsTable.createdAt, weekStart)),
@@ -81,7 +90,21 @@ router.get("/admin/stats", async (req: Request, res: Response) => {
       db.select({ total: count() }).from(usersTable).where(sql`${usersTable.planType} IN ('personal', 'pro', 'business', 'enterprise') AND ${usersTable.subscriptionStatus} = 'active'`),
       db.select({ total: count() }).from(feedbackTable),
       db.select({ avg: sql<string>`ROUND(AVG(${feedbackTable.rating}), 1)` }).from(feedbackTable),
+      db.execute(sql`
+        SELECT
+          COUNT(*) FILTER (WHERE created_at >= ${todayStart.toISOString()} AND level IN ('caution','danger'))::int AS today_shown,
+          COUNT(*) FILTER (WHERE created_at >= ${todayStart.toISOString()} AND level IN ('caution','danger') AND action IN ('sanitize','cancel'))::int AS today_saved,
+          COUNT(*) FILTER (WHERE created_at >= ${todayStart.toISOString()} AND level IN ('caution','danger') AND action = 'send-anyway')::int AS today_dismissed,
+          COUNT(*) FILTER (WHERE created_at >= ${weekStart.toISOString()} AND level IN ('caution','danger'))::int AS week_shown,
+          COUNT(*) FILTER (WHERE created_at >= ${weekStart.toISOString()} AND level IN ('caution','danger') AND action IN ('sanitize','cancel'))::int AS week_saved,
+          COUNT(*) FILTER (WHERE created_at >= ${weekStart.toISOString()} AND level IN ('caution','danger') AND action = 'send-anyway')::int AS week_dismissed,
+          COUNT(*) FILTER (WHERE level IN ('caution','danger'))::int AS all_time_shown,
+          COUNT(*) FILTER (WHERE level IN ('caution','danger') AND action IN ('sanitize','cancel'))::int AS all_time_saved
+        FROM firewall_outcomes
+      `).then((r) => r.rows?.[0] as Record<string, number> | undefined ?? {}).catch(() => ({} as Record<string, number>)),
     ]);
+
+    const fw = firewallStats as Record<string, number>;
 
     res.json({
       visits: {
@@ -94,6 +117,16 @@ router.get("/admin/stats", async (req: Request, res: Response) => {
       feedback: {
         total: totalFeedback.total,
         averageRating: avgRating.avg ? parseFloat(avgRating.avg) : null,
+      },
+      firewallOutcomes: {
+        todayShown: Number(fw.today_shown ?? 0),
+        todaySaved: Number(fw.today_saved ?? 0),
+        todayDismissed: Number(fw.today_dismissed ?? 0),
+        weekShown: Number(fw.week_shown ?? 0),
+        weekSaved: Number(fw.week_saved ?? 0),
+        weekDismissed: Number(fw.week_dismissed ?? 0),
+        allTimeShown: Number(fw.all_time_shown ?? 0),
+        allTimeSaved: Number(fw.all_time_saved ?? 0),
       },
     });
   } catch (err) {

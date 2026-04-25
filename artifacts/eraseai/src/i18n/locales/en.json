@@ -594,7 +594,9 @@
     "apiTopUsers": "Top API Users",
     "apiDailyTrend": "API Daily Trend",
     "apiRequests": "requests",
-    "noApiUsage": "No API usage data yet"
+    "noApiUsage": "No API usage data yet",
+    "savedLeaks": "Saved Leaks",
+    "savedLeaksSub": "Today: {{shown}} warnings shown · {{saved}} saved · {{dismissed}} dismissed"
   },
   "checkout": {
     "confirming": "Confirming Your Payment",

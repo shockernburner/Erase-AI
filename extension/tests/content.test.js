@@ -32,10 +32,12 @@ function makeChromeStub({
   enabled = true,
   apiKey = "eak_test",
   analyzeResult = { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" },
+  outcomes = [],
 } = {}) {
   const listeners = { onChanged: [] };
   return {
     __listeners: listeners,
+    __outcomes: outcomes,
     runtime: {
       lastError: undefined,
       sendMessage: vi.fn((msg, cb) => {
@@ -52,7 +54,12 @@ function makeChromeStub({
           queueMicrotask(() => cb({ sanitized: msg.text, changes: [] }));
           return;
         }
-        queueMicrotask(() => cb({}));
+        if (msg.type === "OUTCOME") {
+          outcomes.push(msg.outcome);
+          if (typeof cb === "function") queueMicrotask(() => cb({ ok: true }));
+          return;
+        }
+        if (typeof cb === "function") queueMicrotask(() => cb({}));
       }),
     },
     storage: {
@@ -355,5 +362,129 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
     // No auto-send: the cautionary panel must wait for an explicit user choice.
     await vi.advanceTimersByTimeAsync(3000);
     expect(sendClickSpy).not.toHaveBeenCalled();
+  });
+
+  describe("outcome reporting (task #114)", () => {
+    it("auto-dismiss safe path posts an OUTCOME with action=auto-send and level=safe", async () => {
+      chromeStub = makeChromeStub({
+        analyzeResult: {
+          riskScore: 95,
+          level: "safe",
+          issues: [],
+          suggestions: [],
+          summary: "All clear",
+        },
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      await vi.advanceTimersByTimeAsync(1300);
+      await flushAsync();
+
+      expect(chromeStub.__outcomes).toHaveLength(1);
+      const ev = chromeStub.__outcomes[0];
+      expect(ev.action).toBe("auto-send");
+      expect(ev.level).toBe("safe");
+      expect(ev.riskScore).toBe(95);
+      expect(Array.isArray(ev.categories)).toBe(true);
+    });
+
+    it("Cancel on the safe-path confirmation reports action=cancel exactly once", async () => {
+      chromeStub = makeChromeStub({
+        analyzeResult: {
+          riskScore: 100,
+          level: "safe",
+          issues: [],
+          suggestions: [],
+          summary: "All clear",
+        },
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      document.getElementById("eraseai-clear-cancel").click();
+      await vi.advanceTimersByTimeAsync(2000);
+      await flushAsync();
+
+      const cancels = chromeStub.__outcomes.filter((o) => o.action === "cancel");
+      expect(cancels).toHaveLength(1);
+      expect(cancels[0].level).toBe("safe");
+      // Auto-send must NOT also have fired.
+      expect(chromeStub.__outcomes.some((o) => o.action === "auto-send")).toBe(false);
+    });
+
+    it("Cancel on a warning panel reports action=cancel with the warning level + categories", async () => {
+      chromeStub = makeChromeStub({
+        analyzeResult: {
+          riskScore: 55,
+          level: "caution",
+          issues: [
+            { category: "pii", severity: "high", detail: "Email address found", match: "a@b.c", start: 0, end: 5 },
+            { category: "secrets", severity: "high", detail: "API key found", match: "sk_x", start: 6, end: 10 },
+          ],
+          suggestions: [],
+          summary: "2 issues",
+        },
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      document.getElementById("eraseai-cancel").click();
+      await flushAsync();
+
+      expect(chromeStub.__outcomes).toHaveLength(1);
+      const ev = chromeStub.__outcomes[0];
+      expect(ev.action).toBe("cancel");
+      expect(ev.level).toBe("caution");
+      expect(ev.riskScore).toBe(55);
+      expect(ev.categories).toEqual(expect.arrayContaining(["pii", "secrets"]));
+    });
+
+    it("Send Anyway on a warning panel reports action=send-anyway when nothing was sanitized", async () => {
+      chromeStub = makeChromeStub({
+        analyzeResult: {
+          riskScore: 30,
+          level: "danger",
+          issues: [
+            { category: "secrets", severity: "high", detail: "API key", match: "sk_x", start: 0, end: 4 },
+          ],
+          suggestions: [],
+          summary: "1 issue",
+        },
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea, sendBtn } = setUpChatGPTDom();
+      const sendClickSpy = vi.fn();
+      sendBtn.addEventListener("click", sendClickSpy);
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      document.getElementById("eraseai-send-anyway").click();
+      await vi.advanceTimersByTimeAsync(100);
+      await flushAsync();
+
+      expect(chromeStub.__outcomes).toHaveLength(1);
+      const ev = chromeStub.__outcomes[0];
+      expect(ev.action).toBe("send-anyway");
+      expect(ev.level).toBe("danger");
+    });
   });
 });

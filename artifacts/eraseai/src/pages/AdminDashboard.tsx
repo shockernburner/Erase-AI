@@ -5,7 +5,7 @@ import {
   ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
   Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
   BarChart3, RefreshCw, Check, ChevronDown, UserPlus, X,
-  Mail, Lock, User as UserIcon, Activity,
+  Mail, Lock, User as UserIcon, Activity, ShieldCheck,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
@@ -16,6 +16,16 @@ interface Stats {
   totalUsers: number;
   proSubscriptions: number;
   feedback: { total: number; averageRating: number | null };
+  firewallOutcomes?: {
+    todayShown: number;
+    todaySaved: number;
+    todayDismissed: number;
+    weekShown: number;
+    weekSaved: number;
+    weekDismissed: number;
+    allTimeShown: number;
+    allTimeSaved: number;
+  };
 }
 
 interface UserRow {
@@ -574,7 +584,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
               <StatCard
                 icon={<Eye className="w-5 h-5" />}
                 label={t("admin.totalVisits")}
@@ -590,6 +600,16 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 icon={<Crown className="w-5 h-5" />}
                 label={t("admin.proSubscriptions")}
                 value={stats?.proSubscriptions ?? 0}
+              />
+              <StatCard
+                icon={<ShieldCheck className="w-5 h-5" />}
+                label={t("admin.savedLeaks")}
+                value={stats?.firewallOutcomes?.todaySaved ?? 0}
+                sub={t("admin.savedLeaksSub", {
+                  shown: stats?.firewallOutcomes?.todayShown ?? 0,
+                  saved: stats?.firewallOutcomes?.todaySaved ?? 0,
+                  dismissed: stats?.firewallOutcomes?.todayDismissed ?? 0,
+                })}
               />
               <StatCard
                 icon={<MessageSquare className="w-5 h-5" />}

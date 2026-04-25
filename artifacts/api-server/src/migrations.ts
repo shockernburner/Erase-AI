@@ -151,6 +151,29 @@ async function ensureDevScansTable() {
   }
 }
 
+async function ensureFirewallOutcomesTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS firewall_outcomes (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        api_key_id TEXT,
+        level TEXT NOT NULL,
+        action TEXT NOT NULL,
+        risk_score INTEGER,
+        categories TEXT NOT NULL DEFAULT '[]',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_firewall_outcomes_user_id ON firewall_outcomes(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_firewall_outcomes_api_key_day ON firewall_outcomes(api_key_id, created_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_firewall_outcomes_created_at ON firewall_outcomes(created_at)`);
+    logger.info("Startup migration: firewall_outcomes table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: firewall_outcomes table warning (non-fatal)");
+  }
+}
+
 async function ensureContactInquiriesTable() {
   try {
     await db.execute(sql`
@@ -177,6 +200,7 @@ export async function runStartupMigrations() {
   await ensurePersonalScansTable();
   await ensurePersonalAlertsTable();
   await ensureDevScansTable();
+  await ensureFirewallOutcomesTable();
   await ensureContactInquiriesTable();
   try {
     const demoDatasets = await db.execute(sql`

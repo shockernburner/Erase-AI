@@ -66,6 +66,51 @@ async function sanitizePrompt(text) {
   }
 }
 
+async function reportOutcome(payload) {
+  const config = await getConfig();
+  if (!config.apiKey) {
+    return { ok: false, error: "no_api_key" };
+  }
+  if (!config.enabled) {
+    return { ok: false, error: "disabled" };
+  }
+
+  const body = {
+    level: payload && typeof payload.level === "string" ? payload.level : null,
+    action: payload && typeof payload.action === "string" ? payload.action : null,
+    riskScore:
+      payload && typeof payload.riskScore === "number" && Number.isFinite(payload.riskScore)
+        ? payload.riskScore
+        : null,
+    categories:
+      payload && Array.isArray(payload.categories)
+        ? payload.categories.filter((c) => typeof c === "string").slice(0, 32)
+        : [],
+  };
+
+  if (!body.level || !body.action) {
+    return { ok: false, error: "invalid_payload" };
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/dev/outcome`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return { ok: false, error: err.error || `API error: ${response.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `Network error: ${err.message}` };
+  }
+}
+
 async function probePing() {
   try {
     const probe = await fetch(`${API_URL}/api/dev/ping`, {
@@ -209,6 +254,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       state: "server_unreachable",
       error: err && err.message ? err.message : "Test failed",
     }));
+    return true;
+  }
+
+  if (message.type === "OUTCOME") {
+    reportOutcome(message.outcome).then(sendResponse).catch((err) => sendResponse({ ok: false, error: err && err.message ? err.message : "Outcome failed" }));
     return true;
   }
 

@@ -624,4 +624,114 @@ describe("background.testConnection", () => {
       expect((await mod.getConfig()).enabled).toBe(false);
     });
   });
+
+  describe("reportOutcome", () => {
+    it("POSTs to /api/dev/outcome with the bearer key and a normalised body", async () => {
+      init({
+        storage: { apiKey: "eak_outcome", enabled: true },
+        fetchImpl: async () => jsonResponse({ ok: true }),
+      });
+
+      const result = await mod.reportOutcome({
+        level: "danger",
+        action: "cancel",
+        riskScore: 87,
+        categories: ["pii", "secrets"],
+      });
+
+      expect(result).toEqual({ ok: true });
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      const [url, opts] = fetchStub.mock.calls[0];
+      expect(url).toBe(`${API_URL}/api/dev/outcome`);
+      expect(opts.method).toBe("POST");
+      expect(opts.headers["Content-Type"]).toBe("application/json");
+      expect(opts.headers.Authorization).toBe("Bearer eak_outcome");
+      const body = JSON.parse(opts.body);
+      expect(body).toEqual({
+        level: "danger",
+        action: "cancel",
+        riskScore: 87,
+        categories: ["pii", "secrets"],
+      });
+    });
+
+    it("returns no_api_key without making a network call when no key is set", async () => {
+      init({
+        storage: {},
+        fetchImpl: async () => jsonResponse({ ok: true }),
+      });
+      const result = await mod.reportOutcome({ level: "caution", action: "send-anyway" });
+      expect(result).toEqual({ ok: false, error: "no_api_key" });
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it("returns disabled without making a network call when the firewall is disabled", async () => {
+      init({
+        storage: { apiKey: "eak_x", enabled: false },
+        fetchImpl: async () => jsonResponse({ ok: true }),
+      });
+      const result = await mod.reportOutcome({ level: "caution", action: "sanitize" });
+      expect(result).toEqual({ ok: false, error: "disabled" });
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it("rejects payloads that are missing level or action without making a network call", async () => {
+      init({
+        storage: { apiKey: "eak_x", enabled: true },
+        fetchImpl: async () => jsonResponse({ ok: true }),
+      });
+      const a = await mod.reportOutcome({ action: "cancel" });
+      const b = await mod.reportOutcome({ level: "danger" });
+      const c = await mod.reportOutcome(null);
+      expect(a).toEqual({ ok: false, error: "invalid_payload" });
+      expect(b).toEqual({ ok: false, error: "invalid_payload" });
+      expect(c).toEqual({ ok: false, error: "invalid_payload" });
+      expect(fetchStub).not.toHaveBeenCalled();
+    });
+
+    it("drops non-finite riskScore and non-string category entries, capping at 32 categories", async () => {
+      init({
+        storage: { apiKey: "eak_x", enabled: true },
+        fetchImpl: async () => jsonResponse({ ok: true }),
+      });
+
+      const tooMany = Array.from({ length: 50 }, (_, i) => `c${i}`);
+      await mod.reportOutcome({
+        level: "caution",
+        action: "send-anyway",
+        riskScore: NaN,
+        categories: [...tooMany, 42, null, undefined, "ok"],
+      });
+      const body = JSON.parse(fetchStub.mock.calls[0][1].body);
+      expect(body.riskScore).toBe(null);
+      expect(body.categories).toHaveLength(32);
+      expect(body.categories[0]).toBe("c0");
+      expect(body.categories[31]).toBe("c31");
+    });
+
+    it("surfaces server errors from non-2xx responses", async () => {
+      init({
+        storage: { apiKey: "eak_x", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 400,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Invalid level" }),
+        }),
+      });
+      const result = await mod.reportOutcome({ level: "weird", action: "cancel" });
+      expect(result).toEqual({ ok: false, error: "Invalid level" });
+    });
+
+    it("surfaces network errors when fetch throws", async () => {
+      init({
+        storage: { apiKey: "eak_x", enabled: true },
+        fetchImpl: async () => {
+          throw new Error("ECONNREFUSED 127.0.0.1:443");
+        },
+      });
+      const result = await mod.reportOutcome({ level: "danger", action: "cancel" });
+      expect(result).toEqual({ ok: false, error: "Network error: ECONNREFUSED 127.0.0.1:443" });
+    });
+  });
 });
