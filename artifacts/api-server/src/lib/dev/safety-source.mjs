@@ -1,18 +1,5 @@
-// Source-of-truth safety analyzer for user prompts. Lives in a plain .mjs
-// file so the api-server test suite can exercise it directly via `node
-// --test` without needing a TypeScript loader. The TypeScript wrapper at
-// ./safety.ts re-exports from here with compile-time types.
-//
-// Detection philosophy (task #113): the firewall must catch CASUALLY-typed
-// sensitive content the user is realistically going to type while testing —
-// not just textbook-realistic secrets. False positives are acceptable; false
-// negatives undermine the whole point of the firewall.
-//
-// Scoring rule: any single detected issue caps the risk score at 65 so the
-// "safe" threshold (>= 70) is never reached when something was found. This
-// guarantees the in-page overlay shows a warning panel rather than the
-// brief "All clear" auto-send confirmation.
-
+// Safety analyzer for user prompts. Patterns intentionally err toward
+// catching casually-typed sensitive content over false-negatives.
 import { detectSecrets } from "./secrets-source.mjs";
 
 const PII_PATTERNS = [
@@ -22,62 +9,47 @@ const PII_PATTERNS = [
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, severity: "high", detail: "Credit card number found" },
 ];
 
-// Casual / contextual PII patterns added in v1.3.3 to catch the everyday
-// shapes users actually type ("my password is hello", "account number 12345",
-// "DOB: 03/14/1990", "123 Main St") instead of textbook regex shapes only.
+// Contextual / casually-typed PII shapes (added v1.3.3).
 const CASUAL_PII_PATTERNS = [
-  // "password is hello" / "password: hello123" / "PIN = 1234" / "passcode hunter2"
   {
     pattern: /\b(?:password|passwd|pwd|passcode|pin)\s*(?:is|=|:)\s*\S+/gi,
     severity: "high",
     detail: "Password or PIN appears to be disclosed in plain text",
   },
-  // "account number 12345" / "acct: 9876" / "bank account # 11112222"
   {
     pattern: /\b(?:bank\s+account|account|acct|acc)\s*(?:number|num|no|#)?\s*(?:is|=|:)?\s*\d{4,}/gi,
     severity: "high",
     detail: "Bank/account number appears to be disclosed",
   },
-  // "social security 123-45-6789" / "ssn 123 45 6789" / "national id 12345"
-  // Catches partial / loosely-formatted SSNs the strict ###-##-#### pattern misses.
   {
     pattern: /\b(?:social\s*security(?:\s*number|\s*#)?|ssn|national\s+id|tax\s+id|tin)\s*(?:is|=|:|#)?\s*[\d\s\-]{4,}/gi,
     severity: "high",
     detail: "Government identification number (SSN / tax ID / national ID) disclosed",
   },
-  // SSN with spaces instead of dashes — the legacy pattern only catches dashes.
   {
     pattern: /\b\d{3}\s\d{2}\s\d{4}\b/g,
     severity: "high",
     detail: "SSN-like pattern (space-separated) found",
   },
-  // Date of birth in any common shape — only flagged when the DOB context
-  // word is nearby, otherwise ordinary dates would all trip it.
   {
     pattern: /\b(?:dob|d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date|birthday|born(?:\s+on)?)\s*(?:is|=|:|on)?\s*\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/gi,
     severity: "medium",
     detail: "Date of birth appears in the prompt",
   },
-  // Residential address: street number + street name + street-type word.
   {
+    // Street number + 1-4 Title-Case words + street-type suffix.
     pattern: /\b\d{1,6}\s+[A-Z][A-Za-z0-9.'-]*(?:\s+[A-Z][A-Za-z0-9.'-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|Pl|Place|Way|Hwy|Highway|Pkwy|Parkway|Terrace|Trail|Sq|Square)\b\.?/g,
     severity: "medium",
     detail: "Residential / street address pattern found",
   },
-  // Credit card without separators (13–19 digit run). The legacy 4-4-4-4
-  // pattern with `[\s-]?` does technically match contiguous 16 digits, but
-  // long card-shaped runs (15-digit Amex, 19-digit) and standalone runs
-  // were missed.
   {
+    // 13–19 digit run for cards without separators (covers Amex 15, 19-digit).
     pattern: /\b\d{13,19}\b/g,
     severity: "high",
     detail: "Long digit run that looks like a credit card number",
   },
-  // "my (full / legal) name is Jane Q Smith" / "I am John Smith".
-  // The prefix permits either casing of the first letter (My/my, I/i), but
-  // the names themselves must be Title Case (`[A-Z][a-z]+`) so the pattern
-  // doesn't fire on contextual prose like "my name is Jane and the …".
   {
+    // Names must be Title Case so prose like "my name is Jane and the …" doesn't trip.
     pattern: /\b(?:[Mm]y\s+(?:full\s+|legal\s+)?name\s+is|[Ii]\s+am)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]?\.?)?\s+[A-Z][a-z]+\b/g,
     severity: "medium",
     detail: "Full personal name disclosed in the prompt",
@@ -108,9 +80,8 @@ function findMatches(text, pattern) {
   return results;
 }
 
-// If any issue is detected, the score is capped at this value so it always
-// falls into "caution" or worse — the in-page overlay will then render a
-// full warning panel rather than the brief "All clear" auto-send.
+// Any detected issue caps the score below SAFE_THRESHOLD so the overlay
+// renders a warning panel rather than the brief "All clear" auto-send.
 const SAFE_THRESHOLD = 70;
 const DETECTED_SCORE_CAP = SAFE_THRESHOLD - 5;
 
@@ -191,11 +162,6 @@ export function analyzePromptSafety(text) {
       case "low": riskScore -= 5; break;
     }
   }
-  // CRITICAL: any single detected issue must bring the score below the
-  // "safe" threshold so the overlay shows a warning panel. Without this
-  // cap, a single low-severity hit (-5) would still leave the score at 95
-  // = safe, and the user would see the brief auto-send confirmation
-  // instead of an actual warning. See task #113.
   if (issues.length > 0) {
     riskScore = Math.min(riskScore, DETECTED_SCORE_CAP);
   }

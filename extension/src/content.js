@@ -108,12 +108,8 @@
   let bypassNext = false;
   let listenersAttached = false;
   let observer = null;
-  // Handle for the auto-dismiss timer of the "All clear" safe-path
-  // confirmation panel. Hoisted to module scope so removeOverlay() can
-  // cancel it whenever the overlay is replaced (e.g. the user submits a
-  // new prompt before the 1.2s window elapses). Without this, an old
-  // timer would fire later and silently click Send during a subsequent
-  // analysis or warning panel — see task #113 architect review.
+  // Module-scoped so removeOverlay() can cancel it when the overlay is
+  // replaced before the safe-path auto-dismiss window elapses.
   let pendingSafeTimer = null;
 
   function detectPlatform() {
@@ -159,12 +155,6 @@
   }
 
   function removeOverlay() {
-    // Always cancel a pending safe-path auto-send timer before destroying
-    // the overlay. Otherwise, replacing the overlay (e.g. user starts a
-    // new submission before the 1.2s window elapses) leaves the old timer
-    // ticking, and it will later run triggerSend() during whatever flow is
-    // active at that moment — bypassing the user's intent. Critical fix
-    // from the task #113 architect review.
     if (pendingSafeTimer != null) {
       clearTimeout(pendingSafeTimer);
       pendingSafeTimer = null;
@@ -407,13 +397,6 @@
     panel.querySelector("#eraseai-clear-cancel").addEventListener("click", cancel);
     panel.querySelector("#eraseai-clear-send").addEventListener("click", fireSend);
 
-    // Auto-dismiss + send after a short window so the user sees the firewall did
-    // run, but a clean prompt isn't held up. Cancel is reachable for the whole
-    // window. ~1.2s matches the briefing in the task plan.
-    //
-    // The handle is hoisted to module scope (pendingSafeTimer) so removeOverlay()
-    // can cancel it whenever the overlay is replaced — preventing a stale timer
-    // from later clicking Send during a different submission. See task #113.
     if (pendingSafeTimer != null) clearTimeout(pendingSafeTimer);
     pendingSafeTimer = setTimeout(() => {
       pendingSafeTimer = null;
@@ -519,10 +502,8 @@
           return;
         }
 
-        // Always surface a result panel — never silently auto-send. A clean
-        // (level=safe) prompt gets a brief "All clear" confirmation that
-        // auto-dismisses + sends after ~1.2s but exposes Cancel during that
-        // window. Risky / cautionary results render the full panel below.
+        // Safe prompts get an "All clear" confirmation that auto-sends
+        // after a short window; never a silent skip.
         if (result.level === "safe") {
           renderClearConfirmation(panel, result, inputEl);
           isIntercepting = false;
