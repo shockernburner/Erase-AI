@@ -251,3 +251,9 @@ id = "r8w0wSdyNzMVcwVmf6fIS"
 uri = "file://attached_assets/screenshots/eraseai_ai_blog.png"
 type = "image"
 title = "Screenshot 3 — AI Security Blog (credibility)"
+
+[[outputs]]
+id = "rQNhYDS-LCEvj6gP50JbZ"
+uri = "file://attached_assets/meeting-prep-joseph-callahan-2026-04-29.tar.gz"
+type = "unspecified"
+title = "Meeting prep — Joe Callahan (29 Apr 2026)"
