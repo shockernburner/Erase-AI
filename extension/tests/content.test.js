@@ -1,0 +1,359 @@
+// @vitest-environment jsdom
+// @vitest-environment-options {"url":"https://chatgpt.com/"}
+//
+// Tests the in-page firewall overlay (extension/src/content.js). Task #113
+// kills the silent auto-bypass that previously dismissed the overlay and
+// clicked Send when the analyzer returned a safe result, with no feedback to
+// the user. The tests below assert:
+//
+//   1. The overlay ALWAYS renders a panel after analysis — no silent skip
+//      ever, even on a clean prompt.
+//   2. The new "All clear" panel auto-dismisses + sends after ~1.2s.
+//   3. The Cancel button reachable during that window suppresses the send.
+//   4. A cautionary analyzer result still renders the full warning panel
+//      with Sanitize and Send Anyway buttons (no regression).
+//
+// content.js is wrapped in an IIFE so we evaluate its source in the jsdom
+// `window` context after stubbing `chrome` — this matches how Chrome runs
+// the file at document_idle.
+
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CONTENT_SRC = fs.readFileSync(
+  path.resolve(__dirname, "..", "src", "content.js"),
+  "utf8",
+);
+
+function makeChromeStub({
+  enabled = true,
+  apiKey = "eak_test",
+  analyzeResult = { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" },
+} = {}) {
+  const listeners = { onChanged: [] };
+  return {
+    __listeners: listeners,
+    runtime: {
+      lastError: undefined,
+      sendMessage: vi.fn((msg, cb) => {
+        if (msg.type === "GET_CONFIG") {
+          // Simulate the async hop the real service worker takes.
+          queueMicrotask(() => cb({ apiKey, enabled, apiUrl: "https://eraseai.ai" }));
+          return;
+        }
+        if (msg.type === "ANALYZE") {
+          queueMicrotask(() => cb(analyzeResult));
+          return;
+        }
+        if (msg.type === "SANITIZE") {
+          queueMicrotask(() => cb({ sanitized: msg.text, changes: [] }));
+          return;
+        }
+        queueMicrotask(() => cb({}));
+      }),
+    },
+    storage: {
+      local: {
+        get: vi.fn((keys, cb) => {
+          if (typeof cb === "function") {
+            queueMicrotask(() => cb({ enabled }));
+          } else {
+            return Promise.resolve({ enabled });
+          }
+        }),
+        set: vi.fn(() => Promise.resolve()),
+      },
+      onChanged: {
+        addListener: vi.fn((fn) => listeners.onChanged.push(fn)),
+      },
+    },
+  };
+}
+
+function loadContentScriptInJsdom(chromeStub) {
+  globalThis.chrome = chromeStub;
+  // Some sites mock execCommand; jsdom doesn't implement contenteditable
+  // commands, so stub it as a no-op to keep the sanitize flow harmless.
+  if (!document.execCommand) document.execCommand = () => true;
+  // The IIFE in content.js calls init() at the bottom which kicks off the
+  // listener attachment via chrome.storage.local.get. eval-ing in the
+  // current realm gives the script the same `document` and `window` we
+  // assert against.
+  // eslint-disable-next-line no-eval
+  (0, eval)(CONTENT_SRC);
+}
+
+async function flushAsync() {
+  // Two microtask flushes — GET_CONFIG callback, then ANALYZE callback.
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+function setUpChatGPTDom() {
+  document.body.innerHTML = "";
+  const textarea = document.createElement("textarea");
+  textarea.id = "prompt-textarea";
+  textarea.value = "tell me a fun fact about otters";
+  document.body.appendChild(textarea);
+
+  const sendBtn = document.createElement("button");
+  sendBtn.setAttribute("data-testid", "send-button");
+  sendBtn.type = "button";
+  sendBtn.textContent = "Send";
+  document.body.appendChild(sendBtn);
+
+  return { textarea, sendBtn };
+}
+
+function dispatchEnterOn(el) {
+  const evt = new window.KeyboardEvent("keydown", {
+    key: "Enter",
+    bubbles: true,
+    cancelable: true,
+  });
+  el.dispatchEvent(evt);
+  return evt;
+}
+
+describe("content.js — always-show panel + auto-dismiss confirmation (task #113)", () => {
+  let chromeStub;
+
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    delete globalThis.chrome;
+    document.body.innerHTML = "";
+  });
+
+  it("renders the 'All clear' confirmation panel for a safe analyzer result (no silent skip)", async () => {
+    chromeStub = makeChromeStub({
+      analyzeResult: {
+        riskScore: 100,
+        level: "safe",
+        issues: [],
+        suggestions: [],
+        summary: "No issues detected. This prompt appears safe to send to AI systems.",
+      },
+    });
+    loadContentScriptInJsdom(chromeStub);
+
+    // Let init() run the chrome.storage.local.get callback that attaches
+    // listeners.
+    await flushAsync();
+
+    const { textarea } = setUpChatGPTDom();
+    // The MutationObserver in content.js hooks the send button when it
+    // appears in the DOM. Run any pending microtasks so the hook is in
+    // place before we dispatch the keypress.
+    await flushAsync();
+
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    const backdrop = document.getElementById("eraseai-overlay-backdrop");
+    expect(backdrop).not.toBeNull();
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).not.toBeNull();
+
+    // Headline copy must say all clear so the user can SEE the firewall ran.
+    expect(panel.textContent).toMatch(/All clear/i);
+    expect(panel.textContent).toMatch(/Low Risk|Safe/i);
+
+    // Both Cancel and Send-now buttons are present during the auto-dismiss
+    // window — the user can always abort.
+    expect(document.getElementById("eraseai-clear-cancel")).not.toBeNull();
+    expect(document.getElementById("eraseai-clear-send")).not.toBeNull();
+
+    // Crucially: the Send Anyway / risky red button from the warning panel
+    // must NOT be in the DOM for a safe result.
+    expect(document.getElementById("eraseai-send-anyway")).toBeNull();
+  });
+
+  it("auto-dismisses + clicks the platform Send button after ~1.2s", async () => {
+    chromeStub = makeChromeStub({
+      analyzeResult: {
+        riskScore: 95,
+        level: "safe",
+        issues: [],
+        suggestions: [],
+        summary: "All clear",
+      },
+    });
+    loadContentScriptInJsdom(chromeStub);
+    await flushAsync();
+
+    const { textarea, sendBtn } = setUpChatGPTDom();
+    const sendClickSpy = vi.fn();
+    sendBtn.addEventListener("click", sendClickSpy);
+
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    expect(document.getElementById("eraseai-overlay-backdrop")).not.toBeNull();
+    // Send button should NOT have been clicked yet — the overlay is still
+    // showing its 1.2s confirmation window.
+    expect(sendClickSpy).not.toHaveBeenCalled();
+
+    // Advance the auto-dismiss timer + the small triggerSend setTimeout.
+    await vi.advanceTimersByTimeAsync(1300);
+    await flushAsync();
+
+    expect(document.getElementById("eraseai-overlay-backdrop")).toBeNull();
+    // The first click is from interceptSubmission's hook firing on the
+    // dispatched keydown? No — keydown doesn't click the button. The only
+    // click should come from triggerSend after the auto-dismiss timer.
+    expect(sendClickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("Cancel during the auto-dismiss window suppresses the auto-send", async () => {
+    chromeStub = makeChromeStub({
+      analyzeResult: {
+        riskScore: 100,
+        level: "safe",
+        issues: [],
+        suggestions: [],
+        summary: "All clear",
+      },
+    });
+    loadContentScriptInJsdom(chromeStub);
+    await flushAsync();
+
+    const { textarea, sendBtn } = setUpChatGPTDom();
+    const sendClickSpy = vi.fn();
+    sendBtn.addEventListener("click", sendClickSpy);
+
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    const cancelBtn = document.getElementById("eraseai-clear-cancel");
+    expect(cancelBtn).not.toBeNull();
+    cancelBtn.click();
+
+    // Even after the auto-dismiss timer would fire, no send must happen.
+    await vi.advanceTimersByTimeAsync(2000);
+    await flushAsync();
+
+    expect(document.getElementById("eraseai-overlay-backdrop")).toBeNull();
+    expect(sendClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not stale-fire the auto-send timer if the overlay is replaced before 1.2s (race regression)", async () => {
+    chromeStub = makeChromeStub({
+      analyzeResult: {
+        riskScore: 100,
+        level: "safe",
+        issues: [],
+        suggestions: [],
+        summary: "All clear",
+      },
+    });
+    loadContentScriptInJsdom(chromeStub);
+    await flushAsync();
+
+    const { textarea, sendBtn } = setUpChatGPTDom();
+    const sendClickSpy = vi.fn();
+    sendBtn.addEventListener("click", sendClickSpy);
+
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    // Sanity: the safe panel is up.
+    expect(document.getElementById("eraseai-clear-cancel")).not.toBeNull();
+
+    // Simulate a second submission BEFORE the 1.2s window elapses — the
+    // most likely real-world way an overlay gets replaced (user types
+    // another prompt and hits Enter again before the previous panel
+    // auto-dismissed).
+    await vi.advanceTimersByTimeAsync(400);
+    expect(sendClickSpy).not.toHaveBeenCalled();
+
+    const sentinelValue = "SECOND_PROMPT_SENTINEL_value";
+    textarea.value = sentinelValue;
+    // Capture the textarea value AT the moment the platform Send is clicked.
+    // This proves the surviving send is tied to the second-submission flow
+    // (the textarea hasn't been mutated since), not the stale first timer
+    // happening to win and "look like" a single send.
+    let textAtSendTime = null;
+    sendBtn.addEventListener("click", () => {
+      textAtSendTime = textarea.value;
+    });
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    // Cross the deadline of the FIRST timer (originally 1200ms after first
+    // submit; we are 400ms past that, so 800ms-from-second is when the
+    // stale timer would fire if not cancelled). +50ms covers the small
+    // triggerSend setTimeout. Nothing must have sent yet.
+    await vi.advanceTimersByTimeAsync(850);
+    await flushAsync();
+    expect(
+      sendClickSpy,
+      "stale first-submission timer must have been cancelled when overlay was replaced",
+    ).not.toHaveBeenCalled();
+
+    // Now cross the SECOND timer's deadline (1200ms from second submit
+    // + 50ms for triggerSend = 1250ms; we've already advanced 850ms past
+    // second submit, so 450ms more is plenty).
+    await vi.advanceTimersByTimeAsync(500);
+    await flushAsync();
+
+    // Exactly ONE send must have happened — and it must be tied to the
+    // SECOND submission (the textarea contents at click time are the
+    // sentinel from the second prompt).
+    expect(sendClickSpy).toHaveBeenCalledTimes(1);
+    expect(textAtSendTime).toBe(sentinelValue);
+  });
+
+  it("renders the full warning panel (Sanitize + Send Anyway) for cautionary results", async () => {
+    chromeStub = makeChromeStub({
+      analyzeResult: {
+        riskScore: 55,
+        level: "caution",
+        issues: [
+          { category: "pii", severity: "high", detail: "Email address found in prompt", match: "a@b.c", start: 0, end: 5 },
+        ],
+        suggestions: [
+          { category: "pii", action: "Redact", detail: "Replace with placeholder values" },
+        ],
+        summary: "Found 1 issue: 1 pii.",
+      },
+    });
+    loadContentScriptInJsdom(chromeStub);
+    await flushAsync();
+
+    const { textarea, sendBtn } = setUpChatGPTDom();
+    const sendClickSpy = vi.fn();
+    sendBtn.addEventListener("click", sendClickSpy);
+
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).not.toBeNull();
+    expect(document.getElementById("eraseai-cancel")).not.toBeNull();
+    expect(document.getElementById("eraseai-sanitize")).not.toBeNull();
+    expect(document.getElementById("eraseai-send-anyway")).not.toBeNull();
+
+    // The "All clear" auto-dismiss IDs must NOT be present for a cautionary
+    // result — those belong to the safe-path confirmation panel only.
+    expect(document.getElementById("eraseai-clear-cancel")).toBeNull();
+    expect(document.getElementById("eraseai-clear-send")).toBeNull();
+
+    // No auto-send: the cautionary panel must wait for an explicit user choice.
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(sendClickSpy).not.toHaveBeenCalled();
+  });
+});

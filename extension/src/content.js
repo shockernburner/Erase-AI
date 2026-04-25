@@ -108,6 +108,13 @@
   let bypassNext = false;
   let listenersAttached = false;
   let observer = null;
+  // Handle for the auto-dismiss timer of the "All clear" safe-path
+  // confirmation panel. Hoisted to module scope so removeOverlay() can
+  // cancel it whenever the overlay is replaced (e.g. the user submits a
+  // new prompt before the 1.2s window elapses). Without this, an old
+  // timer would fire later and silently click Send during a subsequent
+  // analysis or warning panel — see task #113 architect review.
+  let pendingSafeTimer = null;
 
   function detectPlatform() {
     const host = window.location.hostname;
@@ -152,6 +159,16 @@
   }
 
   function removeOverlay() {
+    // Always cancel a pending safe-path auto-send timer before destroying
+    // the overlay. Otherwise, replacing the overlay (e.g. user starts a
+    // new submission before the 1.2s window elapses) leaves the old timer
+    // ticking, and it will later run triggerSend() during whatever flow is
+    // active at that moment — bypassing the user's intent. Critical fix
+    // from the task #113 architect review.
+    if (pendingSafeTimer != null) {
+      clearTimeout(pendingSafeTimer);
+      pendingSafeTimer = null;
+    }
     const el = document.getElementById("eraseai-overlay-backdrop");
     if (el) el.remove();
   }
@@ -326,6 +343,84 @@
     });
   }
 
+  function renderClearConfirmation(panel, result, inputEl) {
+    const { riskScore, summary } = result;
+    const score = typeof riskScore === "number" ? riskScore : 100;
+    const message = (summary && String(summary).trim()) ||
+      "No issues detected. Your prompt looks safe.";
+
+    panel.innerHTML = `
+      <div class="eraseai-header">
+        <div class="eraseai-logo">E</div>
+        <div class="eraseai-header-text">
+          <h2>EraseAI Firewall</h2>
+          <p>All clear &mdash; sending your prompt</p>
+        </div>
+      </div>
+      <div class="eraseai-score-section eraseai-level-safe">
+        <div class="eraseai-score-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="4"/>
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#22c55e" stroke-width="4"
+              stroke-dasharray="${2 * Math.PI * 26}" stroke-dashoffset="0" stroke-linecap="round"/>
+          </svg>
+          <span class="score-value">${score}</span>
+        </div>
+        <div class="eraseai-score-info">
+          <h3>Low Risk \u2014 Safe</h3>
+          <p>${escapeHtml(message)}</p>
+          <p id="eraseai-clear-countdown" style="margin-top:6px;font-size:12px;color:#71717a;">Sending automatically in a moment\u2026</p>
+        </div>
+      </div>
+      <div class="eraseai-actions">
+        <button class="eraseai-btn eraseai-btn-cancel" id="eraseai-clear-cancel">Cancel</button>
+        <button class="eraseai-btn eraseai-btn-sanitize" id="eraseai-clear-send">Send now</button>
+      </div>
+    `;
+
+    let cancelled = false;
+
+    const fireSend = () => {
+      if (cancelled) return;
+      cancelled = true;
+      if (pendingSafeTimer != null) {
+        clearTimeout(pendingSafeTimer);
+        pendingSafeTimer = null;
+      }
+      removeOverlay();
+      bypassNext = true;
+      isIntercepting = false;
+      triggerSend();
+    };
+
+    const cancel = () => {
+      if (cancelled) return;
+      cancelled = true;
+      if (pendingSafeTimer != null) {
+        clearTimeout(pendingSafeTimer);
+        pendingSafeTimer = null;
+      }
+      removeOverlay();
+      isIntercepting = false;
+    };
+
+    panel.querySelector("#eraseai-clear-cancel").addEventListener("click", cancel);
+    panel.querySelector("#eraseai-clear-send").addEventListener("click", fireSend);
+
+    // Auto-dismiss + send after a short window so the user sees the firewall did
+    // run, but a clean prompt isn't held up. Cancel is reachable for the whole
+    // window. ~1.2s matches the briefing in the task plan.
+    //
+    // The handle is hoisted to module scope (pendingSafeTimer) so removeOverlay()
+    // can cancel it whenever the overlay is replaced — preventing a stale timer
+    // from later clicking Send during a different submission. See task #113.
+    if (pendingSafeTimer != null) clearTimeout(pendingSafeTimer);
+    pendingSafeTimer = setTimeout(() => {
+      pendingSafeTimer = null;
+      fireSend();
+    }, 1200);
+  }
+
   function renderError(panel, errorMsg) {
     panel.innerHTML = `
       <div class="eraseai-header">
@@ -424,11 +519,13 @@
           return;
         }
 
-        if (result.riskScore > 70) {
-          removeOverlay();
-          bypassNext = true;
+        // Always surface a result panel — never silently auto-send. A clean
+        // (level=safe) prompt gets a brief "All clear" confirmation that
+        // auto-dismisses + sends after ~1.2s but exposes Cancel during that
+        // window. Risky / cautionary results render the full panel below.
+        if (result.level === "safe") {
+          renderClearConfirmation(panel, result, inputEl);
           isIntercepting = false;
-          triggerSend();
           return;
         }
 

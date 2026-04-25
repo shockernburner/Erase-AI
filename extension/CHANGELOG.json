@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "version": "1.3.3",
+      "date": "2026-04-25",
+      "changes": [
+        "Firewall now ALWAYS shows a result panel — clean prompts get a brief 'All clear' confirmation that auto-sends after ~1.2s but exposes Cancel during the window. Removes the silent auto-bypass that previously dismissed the overlay and clicked Send with no feedback",
+        "Detector now catches casually-typed sensitive content: short fake-key strings (sk-fake1234, Bearer abcd, ghp_short), contextual passwords/PINs/account numbers, partial/space-separated SSNs, dates of birth, residential addresses, credit card numbers without separators, and disclosed full names",
+        "Any single detected issue now caps the risk score below the 'safe' threshold so the warning panel always renders when something was found"
+      ]
+    },
+    {
       "version": "1.3.2",
       "date": "2026-04-24",
       "changes": [
