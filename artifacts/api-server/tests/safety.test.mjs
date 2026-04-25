@@ -218,6 +218,20 @@ describe("casual sensitive content (new in v1.3.3) — positive + negative per p
     test("'my name is Jane' (single name, no surname) is NOT flagged", () => {
       expectClean("my name is Jane and I have a question");
     });
+
+    test("name + DOB in the same prompt produces multiple issues and is far from safe", () => {
+      // Original task wording explicitly called out "full names + DOB" as
+      // one of the casually-typed combinations the firewall must catch.
+      const r = analyzePromptSafety(
+        "my name is Jane Smith and my DOB is 03/14/1990",
+      );
+      const hasName = r.issues.some((i) => /Full personal name/.test(i.detail));
+      const hasDob = r.issues.some((i) => /Date of birth/.test(i.detail));
+      assert.ok(hasName, "expected the full-name pattern to fire");
+      assert.ok(hasDob, "expected the date-of-birth pattern to fire");
+      assert.ok(r.issues.length >= 2);
+      assert.notEqual(r.level, "safe");
+    });
   });
 });
 
