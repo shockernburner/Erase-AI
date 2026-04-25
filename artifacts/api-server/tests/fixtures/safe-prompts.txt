@@ -1,0 +1,156 @@
+# Corpus of "definitely safe" user prompts used to pin the safety analyzer's
+# false-positive rate. Lines beginning with "#" are comments. Blank lines are
+# ignored. Every other line is one independent prompt that an analyst has
+# manually classified as containing zero secrets, PII, proprietary signals,
+# or prompt-injection attempts. If a real user typed this into the firewall,
+# we want the in-page overlay to say "All clear" rather than warn them.
+#
+# When you add a prompt, double-check it really is unambiguously safe — the
+# regression test in safety-corpus.test.mjs will fail loudly if even one
+# entry slips into a "warn" category. Adding entries makes the corpus
+# stronger; weakening assertions to compensate is not allowed.
+
+# --- ChatGPT-style factual / casual questions ---
+How do I make sourdough bread at home from scratch?
+Can you suggest a recipe using chicken, broccoli, and brown rice?
+Whats the best way to caramelize onions without burning them?
+I want to bake chocolate chip cookies with extra vanilla, any tips?
+Convert two cups of flour into grams for a European recipe.
+Tips for making fluffy pancakes from scratch on a weekend morning.
+How long should I marinate a flank steak before grilling?
+Help me plan a vegetarian dinner for six people on Saturday.
+Suggest three weeknight pasta dishes that take under thirty minutes.
+What spices pair well with roasted butternut squash?
+Whats a good substitute for buttermilk in a cake recipe?
+Explain the difference between baking soda and baking powder.
+How do I tell when a watermelon is ripe at the grocery store?
+Give me a simple weekday breakfast that I can make in five minutes.
+Can you walk me through making chicken stock from leftover bones?
+
+# --- General knowledge / explainers ---
+Explain quantum entanglement in simple terms a teenager could follow.
+What were the major causes of the French Revolution?
+Summarize the plot of Pride and Prejudice in two sentences.
+How does photosynthesis actually work at the cellular level?
+Recommend three good science fiction novels from the last decade.
+What is the difference between weather and climate, in one paragraph?
+Why does the moon look bigger near the horizon than overhead?
+How do vaccines train the immune system to recognize a virus?
+Explain how an internal combustion engine produces motion.
+Whats the deal with leap years and why do we skip some of them?
+Tell me about the history of the silk road in three paragraphs.
+What are the main differences between classical and operant conditioning?
+Why do leaves change color in autumn?
+How does a microwave actually heat food?
+Explain general relativity using only words a fifth grader knows.
+
+# --- Marketing copy / writing help ---
+Write a tagline for an eco friendly water bottle brand aimed at hikers.
+Draft a product description for a wireless ergonomic keyboard.
+Help me brainstorm names for a coffee subscription service.
+Create a friendly welcome email for new newsletter subscribers.
+Write three Instagram captions for a small bakery launching croissants.
+Help me write a polite follow up email to a hiring manager after an interview.
+Suggest five blog post titles about beginner houseplants.
+Draft a short LinkedIn post announcing that I just finished a marathon.
+Rewrite this sentence to sound more confident: I think we might be ready.
+Give me a punchy headline for a charity run raising money for animal shelters.
+Help me edit my About page to feel warmer and less corporate.
+Suggest an opening line for a wedding speech for my best friend.
+
+# --- Coding questions phrased as plain English ---
+What is the difference between TCP and UDP, in plain language?
+How do I learn React in thirty days as a backend developer?
+Compare SQLite and PostgreSQL for a small side project.
+Explain how garbage collection works in modern programming languages.
+What are common pitfalls when learning recursion for the first time?
+Why does my unit test pass locally but fail in continuous integration?
+What is the difference between a process and a thread, conceptually?
+How should I think about big O notation when interviewing?
+Explain why HTTPS is more secure than plain HTTP in two paragraphs.
+What is the main idea behind dependency injection?
+How do I know when to use a hash map versus a sorted list?
+Whats the difference between authentication and authorization?
+Explain the actor model versus traditional shared memory threading.
+How do I get better at reading other peoples code?
+Why might a cache miss be more expensive than I expect on modern CPUs?
+
+# --- Travel and planning ---
+Suggest a five day itinerary for Tokyo in late spring.
+Whats the best time of year to visit New Zealand for hiking?
+What should I pack for a backpacking trip in Patagonia in October?
+How do I politely ask for directions in Italian?
+Give me a one week itinerary for a first time visitor to Japan.
+Whats the cheapest way to get from Heathrow to central London?
+Recommend three walkable neighborhoods to stay in for a weekend in Lisbon.
+How early should I arrive at the airport for an international flight?
+Whats a reasonable tip in restaurants when traveling in France?
+Suggest a relaxing weekend trip within a few hours of San Francisco.
+
+# --- Personal but non-PII ---
+I am feeling anxious about a job interview tomorrow, any tips?
+Help me write a thank you note for my grandparents.
+I am stuck on a crossword clue that needs a seven letter word for stubborn.
+Suggest three small hobbies I could try that do not require any equipment.
+What are some ways to wind down after a long day without using a screen?
+Help me brainstorm a meaningful birthday gift for a close friend.
+I have been feeling unmotivated this week, what are some gentle resets?
+Recommend a beginner workout I can do at home with no weights.
+How do I gracefully decline an invitation without hurting feelings?
+Whats a good way to start journaling if I have never done it before?
+
+# --- Dates that are NOT dates of birth ---
+The meeting on 03/14/2026 will cover the product roadmap.
+My deadline is 1/2/2025 and I am behind, how should I prioritize?
+Schedule a kickoff for 12/25/2025 across the engineering team.
+Reschedule the quarterly review from 4/1/2026 to a week later.
+The conference runs from 6/15/2026 through 6/17/2026 in Berlin.
+
+# --- Long numeric IDs that are NOT credit cards or accounts ---
+The unix timestamp 1735689600000 corresponds to early 2025.
+Order id 12345 was created today and shipped within an hour.
+The git commit hash starts with a1b2c3d4 in the build log.
+ISBN 9781234567897 should not be flagged as a payment instrument.
+Process id 482910 keeps respawning every minute on my server.
+The build ran for 1234 milliseconds before timing out.
+There were 50000 attendees at the conference last weekend.
+We processed 250000 records in under a minute on the new hardware.
+The model has 7 billion parameters in the smallest variant.
+The dataset contains exactly 10000000 rows of synthetic data.
+
+# --- Names mentioned in prose without disclosure context ---
+Did you know Albert Einstein never won a Nobel Prize for relativity itself?
+Marie Curie won two Nobel Prizes in two different scientific fields.
+How did Abraham Lincoln approach the moral case against slavery?
+Compare the leadership styles of Winston Churchill and Franklin Roosevelt.
+Why is Ada Lovelace often called the first computer programmer?
+
+# --- Famous places / landmarks (street names without personal context) ---
+Tell me about the history of Times Square in Manhattan.
+What restaurants are near Trafalgar Square that locals actually like?
+Recommend a walking route through Hyde Park on a sunny afternoon.
+The Golden Gate Bridge spans almost two miles across the bay.
+Whats interesting to do near Pioneer Square in Seattle on a weekday?
+
+# --- Casual chat about money / accounts without disclosing numbers ---
+How do I create an account on the new portal you mentioned?
+I lost my card yesterday and need to figure out the next step.
+Whats the difference between a checking account and a savings account?
+How do I open a brokerage account as a first time investor?
+I am thinking about switching banks, what should I look out for?
+
+# --- Well known address-like phrases that are not residential PII ---
+I read a great article about 100 Year Old recipes from grandmothers.
+The 5 Day Free Trial is the best way to evaluate the software.
+There is a popular 3 Mile Trail near the visitor center if you want a hike.
+A 1 Page Resume is enough for most early career applicants.
+The 10 Best Movies This Year list is up on the magazine site.
+We saw a 5 Star Hotel Review series last night on the travel channel.
+The 7 Day Forecast looks rainy through the weekend.
+She wrote a 4 Part Series for the local paper about urban gardening.
+
+# --- Tutorials referencing instructions without injection intent ---
+Read the chapter again and follow the steps carefully before continuing.
+Please remember the formatting rules I described earlier in this thread.
+Lets revisit the requirements before I write any more code, please.
+Can you act as a friendly tutor and explain it again with a new analogy?

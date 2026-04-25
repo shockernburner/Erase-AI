@@ -1,10 +1,61 @@
 // Safety analyzer for user prompts. Patterns intentionally err toward
-// catching casually-typed sensitive content over false-negatives.
+// catching casually-typed sensitive content over false-negatives, but
+// are paired with lightweight context validators so prose like
+// "internal combustion engine", "ISBN 9781234567897", or
+// "the 3 Mile Trail" doesn't trip the warning panel.
 import { detectSecrets } from "./secrets-source.mjs";
+
+// --- shared helpers used by the casually-typed pattern validators ---
+
+// Luhn checksum for unseparated 13–19 digit runs. Real card numbers
+// pass; random ids, timestamps, and ISBN-13 codes statistically don't.
+function luhnValid(digits) {
+  if (digits.length < 13 || digits.length > 19) return false;
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    const n = digits.charCodeAt(i) - 48;
+    if (n < 0 || n > 9) return false;
+    let v = n;
+    if (alt) {
+      v *= 2;
+      if (v > 9) v -= 9;
+    }
+    sum += v;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
+const CARD_CONTEXT_RE = /\b(?:card|credit|debit|visa|mastercard|master\s*card|amex|american\s+express|discover|cvv|cvc|expir(?:y|es|ation)|cc\b|billing|charge|payment\s+(?:method|info|details))\b/i;
+
+function hasCardContext(text, start, end) {
+  const before = text.slice(Math.max(0, start - 40), start);
+  const after = text.slice(end, end + 40);
+  return CARD_CONTEXT_RE.test(before) || CARD_CONTEXT_RE.test(after);
+}
+
+const ADDRESS_BEFORE_RE = /\b(?:live[sd]?|residing|reside[sd]?|address(?:es)?|ship(?:ping|ped|s)?|deliver(?:y|ed|ies|s)?|mail(?:ed|ing|s|\s+(?:to|at))?|located|residence|apartment|apt\.?|suite|ste\.?|unit|po\s*box|moving|moved|sent|drop\s*(?:off|ped)|home\s+(?:address|is\s+at)|located\s+at|find\s+me\s+at)\b/i;
+const US_STATE_OR_ZIP_RE = /^[\s,.]{0,3}(?:[A-Z][a-zA-Z]+(?:[\s,]+[A-Z][a-zA-Z]+){0,2}[\s,]+)?(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)\b|^[\s,.]{0,3}\d{5}(?:-\d{4})?\b/;
+
+function hasAddressContext(text, start, end) {
+  const before = text.slice(Math.max(0, start - 60), start);
+  const after = text.slice(end, end + 60);
+  if (ADDRESS_BEFORE_RE.test(before)) return true;
+  if (US_STATE_OR_ZIP_RE.test(after)) return true;
+  return false;
+}
+
+// --- pattern definitions ---
 
 const PII_PATTERNS = [
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, severity: "high", detail: "Email address found in prompt" },
-  { pattern: /\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, severity: "high", detail: "Phone number found in prompt" },
+  // Phone numbers: either separated (dash/dot/space between every block)
+  // or a clean 10-digit / 11-digit-with-1 run. Avoids matching pure
+  // 12-13 digit timestamps or ISBNs that incidentally contain a
+  // valid 3-3-4 split.
+  { pattern: /\b(?:\+?\d{1,3}[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b/g, severity: "high", detail: "Phone number found in prompt" },
+  { pattern: /\b(?:\+?1[-.\s]?)?\d{10}\b/g, severity: "high", detail: "Phone number found in prompt" },
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, severity: "high", detail: "SSN-like pattern found" },
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, severity: "high", detail: "Credit card number found" },
 ];
@@ -38,15 +89,24 @@ const CASUAL_PII_PATTERNS = [
   },
   {
     // Street number + 1-4 Title-Case words + street-type suffix.
+    // Tightened (task #115): requires either an address-context word
+    // before the candidate (live, ship, mail, address, apartment, …)
+    // or a US state code / ZIP after it. Otherwise prose like
+    // "the 3 Mile Trail near the visitor center" won't fire.
     pattern: /\b\d{1,6}\s+[A-Z][A-Za-z0-9.'-]*(?:\s+[A-Z][A-Za-z0-9.'-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|Pl|Place|Way|Hwy|Highway|Pkwy|Parkway|Terrace|Trail|Sq|Square)\b\.?/g,
     severity: "medium",
     detail: "Residential / street address pattern found",
+    validate: (text, m) => hasAddressContext(text, m.start, m.end),
   },
   {
     // 13–19 digit run for cards without separators (covers Amex 15, 19-digit).
+    // Tightened (task #115): only flag if Luhn checksum passes (as real
+    // card numbers do) or there's a card-related context word nearby.
+    // Otherwise unix-ms timestamps and ISBN-13s would all fire.
     pattern: /\b\d{13,19}\b/g,
     severity: "high",
     detail: "Long digit run that looks like a credit card number",
+    validate: (text, m) => luhnValid(m.match) || hasCardContext(text, m.start, m.end),
   },
   {
     // Names must be Title Case so prose like "my name is Jane and the …" doesn't trip.
@@ -57,7 +117,13 @@ const CASUAL_PII_PATTERNS = [
 ];
 
 const PROPRIETARY_PATTERNS = [
-  { pattern: /\b(internal|proprietary|confidential|trade\s*secret)\b/gi, severity: "medium", detail: "Confidentiality marker found" },
+  // "internal" alone matches lots of harmless prose ("internal combustion
+  // engine", "internal monologue", "internal organs"). Require a
+  // business/technical follower so we keep flagging real leakage like
+  // "internal API", "internal docs", "internal wiki" without warning on
+  // every middle-school biology question.
+  { pattern: /\binternal\s+(?:api|use|only|tool|team|doc(?:s|ument(?:s|ation)?)?|server|service|endpoint|repo(?:sitory)?|wiki|notes?|memo|spec(?:s|ification)?|infrastructure|systems?|policy|policies|process(?:es)?|roadmap|review|metric)s?\b/gi, severity: "medium", detail: "Confidentiality marker found" },
+  { pattern: /\b(proprietary|confidential|trade\s*secret)\b/gi, severity: "medium", detail: "Confidentiality marker found" },
   { pattern: /\b(TODO|FIXME|HACK|XXX)\b.*(?:password|secret|key|token)/gi, severity: "high", detail: "Code comment exposing sensitive context" },
   { pattern: /\/(api|internal|admin|private)\/[a-z0-9/_-]+/gi, severity: "low", detail: "Internal API path exposed" },
   { pattern: /\b(?:SELECT|INSERT|UPDATE|DELETE)\s+.*\s+(?:FROM|INTO|SET)\s+\w+/gi, severity: "medium", detail: "Raw SQL query with schema details" },
@@ -85,6 +151,23 @@ function findMatches(text, pattern) {
 const SAFE_THRESHOLD = 70;
 const DETECTED_SCORE_CAP = SAFE_THRESHOLD - 5;
 
+function pushPatternIssues(text, patterns, category, issues) {
+  for (const cfg of patterns) {
+    const { pattern, severity, detail, validate } = cfg;
+    for (const m of findMatches(text, pattern)) {
+      if (validate && !validate(text, m)) continue;
+      issues.push({
+        category,
+        severity,
+        detail,
+        match: m.match,
+        start: m.start,
+        end: m.end,
+      });
+    }
+  }
+}
+
 export function analyzePromptSafety(text) {
   const issues = [];
 
@@ -101,57 +184,10 @@ export function analyzePromptSafety(text) {
     });
   }
 
-  for (const { pattern, severity, detail } of PII_PATTERNS) {
-    for (const m of findMatches(text, pattern)) {
-      issues.push({
-        category: "pii",
-        severity,
-        detail,
-        match: m.match,
-        start: m.start,
-        end: m.end,
-      });
-    }
-  }
-
-  for (const { pattern, severity, detail } of CASUAL_PII_PATTERNS) {
-    for (const m of findMatches(text, pattern)) {
-      issues.push({
-        category: "pii",
-        severity,
-        detail,
-        match: m.match,
-        start: m.start,
-        end: m.end,
-      });
-    }
-  }
-
-  for (const { pattern, severity, detail } of PROPRIETARY_PATTERNS) {
-    for (const m of findMatches(text, pattern)) {
-      issues.push({
-        category: "proprietary_logic",
-        severity,
-        detail,
-        match: m.match,
-        start: m.start,
-        end: m.end,
-      });
-    }
-  }
-
-  for (const { pattern, severity, detail } of TOXICITY_PATTERNS) {
-    for (const m of findMatches(text, pattern)) {
-      issues.push({
-        category: "toxicity",
-        severity,
-        detail,
-        match: m.match,
-        start: m.start,
-        end: m.end,
-      });
-    }
-  }
+  pushPatternIssues(text, PII_PATTERNS, "pii", issues);
+  pushPatternIssues(text, CASUAL_PII_PATTERNS, "pii", issues);
+  pushPatternIssues(text, PROPRIETARY_PATTERNS, "proprietary_logic", issues);
+  pushPatternIssues(text, TOXICITY_PATTERNS, "toxicity", issues);
 
   let riskScore = 100;
   for (const issue of issues) {
