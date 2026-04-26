@@ -47,9 +47,18 @@ function makeFakePort({ onPosted } = {}) {
     }),
     onMessage: { addListener: vi.fn((fn) => listeners.message.push(fn)) },
     onDisconnect: { addListener: vi.fn((fn) => listeners.disconnect.push(fn)) },
-    __deliverResult(result) {
+    __deliverAnalyzeResult(result) {
       const payload = { type: "ANALYZE_RESULT", result };
       for (const fn of listeners.message.slice()) fn(payload);
+    },
+    __deliverSanitizeResult(result) {
+      const payload = { type: "SANITIZE_RESULT", result };
+      for (const fn of listeners.message.slice()) fn(payload);
+    },
+    // Back-compat shim for older tests that called __deliverResult before
+    // the sanitize port existed; defaults to the analyze wrapper shape.
+    __deliverResult(result) {
+      port.__deliverAnalyzeResult(result);
     },
     __triggerDisconnect() {
       port.disconnect();
@@ -65,6 +74,7 @@ function makeChromeStub({
   enabled = true,
   apiKey = "eak_test",
   analyzeResult = { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" },
+  sanitizeResult = null,
   outcomes = [],
   ports = [],
 } = {}) {
@@ -75,22 +85,30 @@ function makeChromeStub({
     __ports: ports,
     runtime: {
       lastError: undefined,
-      // Long-lived port transport for ANALYZE — the production code path
-      // since the MV3-suspension root-cause fix.
+      // Long-lived port transport for ANALYZE and SANITIZE — the
+      // production code path since the MV3-suspension root-cause fix
+      // (tasks #124 + #125).
       connect: vi.fn((info) => {
+        const portName = info && info.name ? info.name : "analyze";
         const port = makeFakePort({
           onPosted: (msg, p) => {
             if (msg && msg.type === "ANALYZE") {
               // Mirror the background's behaviour: deliver the result via
               // the port and then disconnect.
               queueMicrotask(() => {
-                p.__deliverResult(analyzeResult);
+                p.__deliverAnalyzeResult(analyzeResult);
+                p.disconnect();
+              });
+            } else if (msg && msg.type === "SANITIZE") {
+              const result = sanitizeResult || { sanitized: msg.text, changes: [] };
+              queueMicrotask(() => {
+                p.__deliverSanitizeResult(result);
                 p.disconnect();
               });
             }
           },
         });
-        port.name = info && info.name ? info.name : port.name;
+        port.name = portName;
         ports.push(port);
         return port;
       }),
@@ -98,10 +116,6 @@ function makeChromeStub({
         if (msg.type === "GET_CONFIG") {
           // Simulate the async hop the real service worker takes.
           queueMicrotask(() => cb({ apiKey, enabled, apiUrl: "https://eraseai.ai" }));
-          return;
-        }
-        if (msg.type === "SANITIZE") {
-          queueMicrotask(() => cb({ sanitized: msg.text, changes: [] }));
           return;
         }
         if (msg.type === "OUTCOME") {
@@ -1147,6 +1161,263 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       const tail = lastAttemptWrites[lastAttemptWrites.length - 1].lastAttempt;
       expect(tail.status).toBe("error");
       expect(tail.reason).toMatch(/port|connect/i);
+    });
+  });
+
+  describe("SANITIZE long-lived port (task #125 — sanitize button stuck on Sanitizing…)", () => {
+    // Build a chrome stub whose ANALYZE port resolves immediately with a
+    // cautionary result (so the warning panel — and therefore the
+    // Sanitize button — is on screen), but whose SANITIZE port we
+    // control by hand. This lets us prove the Sanitize button now uses
+    // the long-lived port transport and survives a simulated MV3
+    // worker-suspension window mid-fetch.
+    function makeStubWithControlledSanitizePort({ sanitizeBehaviour = "auto" } = {}) {
+      const listeners = { onChanged: [] };
+      const ports = [];
+      const sanitizePosts = [];
+      const sanitizePorts = [];
+      const analyzeResult = {
+        riskScore: 55,
+        level: "caution",
+        issues: [
+          { category: "pii", severity: "medium", detail: "Email", match: "a@b.c", start: 0, end: 5 },
+        ],
+        suggestions: [],
+        summary: "1 issue",
+      };
+      const stub = {
+        __listeners: listeners,
+        __ports: ports,
+        __sanitizePorts: sanitizePorts,
+        __sanitizePosts: sanitizePosts,
+        runtime: {
+          lastError: undefined,
+          connect: vi.fn((info) => {
+            const portName = info && info.name ? info.name : "analyze";
+            if (portName === "analyze") {
+              const port = makeFakePort({
+                onPosted: (msg, p) => {
+                  if (msg && msg.type === "ANALYZE") {
+                    queueMicrotask(() => {
+                      p.__deliverAnalyzeResult(analyzeResult);
+                      p.disconnect();
+                    });
+                  }
+                },
+              });
+              port.name = "analyze";
+              ports.push(port);
+              return port;
+            }
+            // SANITIZE port — caller-controlled.
+            const port = makeFakePort({
+              onPosted: (msg, p) => {
+                if (msg && msg.type === "SANITIZE") {
+                  sanitizePosts.push(msg);
+                  if (sanitizeBehaviour === "auto") {
+                    queueMicrotask(() => {
+                      p.__deliverSanitizeResult({
+                        sanitized: `redacted: ${msg.text}`,
+                        changes: [{ category: "pii", original: "a@b.c", replacement: "[EMAIL]" }],
+                      });
+                      p.disconnect();
+                    });
+                  }
+                  // sanitizeBehaviour === "hold": never auto-deliver; the
+                  // test will drive it manually via sanitizePorts[0].
+                }
+              },
+            });
+            port.name = "sanitize";
+            sanitizePorts.push(port);
+            return port;
+          }),
+          sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "GET_CONFIG") {
+              queueMicrotask(() =>
+                cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
+              );
+              return;
+            }
+            if (typeof cb === "function") queueMicrotask(() => cb({}));
+          }),
+        },
+        storage: {
+          local: {
+            get: vi.fn((keys, cb) => {
+              if (typeof cb === "function") {
+                queueMicrotask(() => cb({ enabled: true }));
+              } else {
+                return Promise.resolve({ enabled: true });
+              }
+            }),
+            set: vi.fn(() => Promise.resolve()),
+          },
+          onChanged: { addListener: vi.fn((fn) => listeners.onChanged.push(fn)) },
+        },
+      };
+      return stub;
+    }
+
+    it("Sanitize button opens a chrome.runtime.connect port named 'sanitize' instead of using sendMessage", async () => {
+      const chromeStub = makeStubWithControlledSanitizePort();
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      const sanitizeBtn = document.getElementById("eraseai-sanitize");
+      expect(sanitizeBtn).not.toBeNull();
+      sanitizeBtn.click();
+      await flushAsync();
+
+      // The Sanitize click must have opened a sanitize port, NOT used
+      // the legacy sendMessage transport (which is the MV3
+      // worker-suspension root cause this task closes).
+      const connectArgs = chromeStub.runtime.connect.mock.calls.map((c) => c[0]);
+      expect(connectArgs).toContainEqual({ name: "sanitize" });
+      expect(chromeStub.__sanitizePorts).toHaveLength(1);
+
+      // The SANITIZE request must have travelled OVER THE PORT, with
+      // the original prompt text as payload.
+      expect(chromeStub.__sanitizePosts).toHaveLength(1);
+      expect(chromeStub.__sanitizePosts[0].type).toBe("SANITIZE");
+      expect(typeof chromeStub.__sanitizePosts[0].text).toBe("string");
+
+      // No SANITIZE message should have been sent through the legacy
+      // sendMessage transport — that path is the suspension window
+      // we're closing.
+      const sendMessageCalls = chromeStub.runtime.sendMessage.mock.calls.map((c) => c[0]);
+      expect(sendMessageCalls.some((m) => m && m.type === "SANITIZE")).toBe(false);
+    });
+
+    it("renders the Sanitized state when the result is delivered over the port (happy path)", async () => {
+      const chromeStub = makeStubWithControlledSanitizePort();
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      const sanitizeBtn = document.getElementById("eraseai-sanitize");
+      sanitizeBtn.click();
+      await flushAsync();
+
+      // The button must reach the terminal Sanitized state, the input
+      // must be rewritten, and the Send Anyway button must flip to
+      // "Send Sanitized" — proving the result rode the port to
+      // completion.
+      expect(sanitizeBtn.textContent).toMatch(/Sanitized/);
+      expect(textarea.value).toMatch(/^redacted:/);
+      const sendBtn = document.getElementById("eraseai-send-anyway");
+      expect(sendBtn).not.toBeNull();
+      expect(sendBtn.textContent).toBe("Send Sanitized");
+    });
+
+    it("survives a simulated mid-fetch suspension window: result delivered over the port well past the old suspension cutoff still renders the Sanitized state", async () => {
+      // Hold the SANITIZE port open without delivering a result — this
+      // is precisely the slice during which a one-shot sendMessage
+      // callback would have been lost to MV3 worker suspension. Under
+      // the long-lived port transport, the worker stays alive for as
+      // long as the port is connected, so a late delivery must still
+      // reach a terminal Sanitized state.
+      const chromeStub = makeStubWithControlledSanitizePort({ sanitizeBehaviour: "hold" });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      const sanitizeBtn = document.getElementById("eraseai-sanitize");
+      sanitizeBtn.click();
+      await flushAsync();
+
+      // Mid-flight: the button is "Sanitizing..." and the port is open
+      // but no result has been delivered yet.
+      expect(sanitizeBtn.textContent).toMatch(/Sanitizing/);
+      expect(chromeStub.__sanitizePorts).toHaveLength(1);
+      const sanitizePort = chromeStub.__sanitizePorts[0];
+      expect(sanitizePort.__isDisconnected()).toBe(false);
+
+      // Burn ~8s of wall time. Under the OLD sendMessage transport the
+      // worker could have been suspended in this window and the
+      // callback would never fire — leaving the button stuck on
+      // "Sanitizing..." forever. Under the port transport the keep-alive
+      // contract holds.
+      await vi.advanceTimersByTimeAsync(8000);
+      await flushAsync();
+      expect(sanitizeBtn.textContent).toMatch(/Sanitizing/);
+
+      // Now the background "wakes up" and finally answers.
+      sanitizePort.__deliverSanitizeResult({
+        sanitized: "redacted text",
+        changes: [{ category: "pii", original: "a@b.c", replacement: "[EMAIL]" }],
+      });
+      sanitizePort.__triggerDisconnect();
+      await flushAsync();
+
+      // Terminal state reached — exactly what the user needs to see.
+      expect(sanitizeBtn.textContent).toMatch(/Sanitized/);
+      expect(textarea.value).toBe("redacted text");
+      const sendBtn = document.getElementById("eraseai-send-anyway");
+      expect(sendBtn.textContent).toBe("Send Sanitized");
+    });
+
+    it("flips the Sanitize button to a terminal Failed state when the sanitize port is disconnected before any result arrives", async () => {
+      // Background tears down the port without sending a result. The
+      // user must NOT be stuck on a "Sanitizing..." spinner forever —
+      // the disconnect itself promotes the button to Failed.
+      const chromeStub = makeStubWithControlledSanitizePort({ sanitizeBehaviour: "hold" });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      const sanitizeBtn = document.getElementById("eraseai-sanitize");
+      sanitizeBtn.click();
+      await flushAsync();
+
+      expect(chromeStub.__sanitizePorts).toHaveLength(1);
+      chromeStub.__sanitizePorts[0].__triggerDisconnect();
+      await flushAsync();
+
+      expect(sanitizeBtn.textContent).toBe("Failed");
+      expect(sanitizeBtn.disabled).toBe(false);
+    });
+
+    it("flips the Sanitize button to a terminal Failed state when chrome.runtime.connect throws (no port at all)", async () => {
+      const chromeStub = makeStubWithControlledSanitizePort();
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // Now swap connect to throw — only the next (sanitize) connect
+      // attempt is exercised by the click. The analyze port already
+      // resolved during the keypress flow above.
+      chromeStub.runtime.connect = vi.fn(() => {
+        throw new Error("Extension context invalidated.");
+      });
+
+      const sanitizeBtn = document.getElementById("eraseai-sanitize");
+      sanitizeBtn.click();
+      await flushAsync();
+
+      expect(sanitizeBtn.textContent).toBe("Failed");
+      expect(sanitizeBtn.disabled).toBe(false);
     });
   });
 });

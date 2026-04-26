@@ -683,6 +683,133 @@ describe("background.testConnection", () => {
     });
   });
 
+  describe("SANITIZE long-lived port (task #125 — close the worker-suspension window for sanitize too)", () => {
+    function makeFakeIncomingPort(name = "sanitize") {
+      const listeners = { message: [], disconnect: [] };
+      const posted = [];
+      let disconnected = false;
+      return {
+        name,
+        __posted: posted,
+        __isDisconnected: () => disconnected,
+        postMessage: vi.fn((msg) => posted.push(msg)),
+        disconnect: vi.fn(() => {
+          if (disconnected) return;
+          disconnected = true;
+          for (const fn of listeners.disconnect.slice()) fn();
+        }),
+        onMessage: { addListener: vi.fn((fn) => listeners.message.push(fn)) },
+        onDisconnect: { addListener: vi.fn((fn) => listeners.disconnect.push(fn)) },
+        __deliverIncoming(msg) {
+          for (const fn of listeners.message.slice()) fn(msg);
+        },
+      };
+    }
+
+    it("registers a single onConnect handler that also services 'sanitize' ports", () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse({ sanitized: "x", changes: [] }),
+      });
+      // The same single onConnect listener that handles 'analyze' must
+      // also be the entry point for 'sanitize' — this is the keep-alive
+      // path that prevents the MV3 worker from being suspended mid-fetch.
+      expect(chromeStub.runtime.onConnect.addListener).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores ports whose name is neither 'analyze' nor 'sanitize' (no message listener attached)", () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse({}),
+      });
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort("not-a-real-name");
+      handler(port);
+      expect(port.onMessage.addListener).not.toHaveBeenCalled();
+    });
+
+    it("runs sanitize, posts the result over the port, and disconnects so the worker keep-alive is released", async () => {
+      const serverPayload = {
+        sanitized: "Hello [REDACTED]",
+        changes: [{ category: "pii", original: "alice@example.com", replacement: "[REDACTED]" }],
+      };
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse(serverPayload),
+      });
+
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort();
+      handler(port);
+      port.__deliverIncoming({ type: "SANITIZE", text: "Hello alice@example.com" });
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // The result must come back OVER THE PORT in the agreed wrapper shape.
+      expect(port.__posted).toHaveLength(1);
+      expect(port.__posted[0]).toEqual({
+        type: "SANITIZE_RESULT",
+        result: serverPayload,
+      });
+
+      // Port must be disconnected so the worker keep-alive is released —
+      // otherwise the worker would stay armed forever and exhaust the
+      // 5-minute lifetime cap.
+      expect(port.__isDisconnected()).toBe(true);
+
+      // The sanitize fetch must have actually been issued, not skipped.
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      expect(fetchStub.mock.calls[0][0]).toBe(`${API_URL}/api/dev/sanitize`);
+    });
+
+    it("posts an error wrapper and disconnects when sanitize returns an error (e.g. invalid API key)", async () => {
+      init({
+        storage: { apiKey: "eak_bad", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 401,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Invalid API key", code: "INVALID_KEY" }),
+        }),
+      });
+
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort();
+      handler(port);
+      port.__deliverIncoming({ type: "SANITIZE", text: "anything" });
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(port.__posted).toHaveLength(1);
+      expect(port.__posted[0].type).toBe("SANITIZE_RESULT");
+      expect(port.__posted[0].result).toEqual({
+        error: "Invalid API key",
+        code: "INVALID_KEY",
+      });
+      expect(port.__isDisconnected()).toBe(true);
+    });
+
+    it("ignores non-SANITIZE messages arriving on the sanitize port (no fetch, no posting)", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse({ sanitized: "x" }),
+      });
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort();
+      handler(port);
+
+      port.__deliverIncoming({ type: "SOMETHING_ELSE", text: "x" });
+      port.__deliverIncoming(null);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(fetchStub).not.toHaveBeenCalled();
+      expect(port.__posted).toHaveLength(0);
+      expect(port.__isDisconnected()).toBe(false);
+    });
+  });
+
   describe("sanitizePrompt", () => {
     it("posts to /api/dev/sanitize with bearer auth and returns the server JSON on 200", async () => {
       const serverPayload = {

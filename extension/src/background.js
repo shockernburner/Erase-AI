@@ -327,38 +327,80 @@ async function recordLastAttempt(record) {
 // in content.js becomes a true safety net, never expected to fire under
 // normal demo conditions.
 chrome.runtime.onConnect.addListener((port) => {
-  if (!port || port.name !== "analyze") return;
+  if (!port) return;
 
-  port.onMessage.addListener((message) => {
-    if (!message || message.type !== "ANALYZE") return;
-    const attemptId = typeof message.attemptId === "string" ? message.attemptId : null;
-    processAnalyzeRequest(message.text, attemptId)
-      .then((result) => {
-        try {
-          port.postMessage({ type: "ANALYZE_RESULT", result });
-        } catch {
-          // port was closed (e.g. content script tab navigated away);
-          // nothing the user can see, drop silently.
-        }
-        try {
-          port.disconnect();
-        } catch {
-          // already disconnected
-        }
-      })
-      .catch(() => {
-        try {
-          port.postMessage({ type: "ANALYZE_RESULT", result: { error: "Analysis failed" } });
-        } catch {
-          // ignore
-        }
-        try {
-          port.disconnect();
-        } catch {
-          // ignore
-        }
-      });
-  });
+  if (port.name === "analyze") {
+    port.onMessage.addListener((message) => {
+      if (!message || message.type !== "ANALYZE") return;
+      const attemptId = typeof message.attemptId === "string" ? message.attemptId : null;
+      processAnalyzeRequest(message.text, attemptId)
+        .then((result) => {
+          try {
+            port.postMessage({ type: "ANALYZE_RESULT", result });
+          } catch {
+            // port was closed (e.g. content script tab navigated away);
+            // nothing the user can see, drop silently.
+          }
+          try {
+            port.disconnect();
+          } catch {
+            // already disconnected
+          }
+        })
+        .catch(() => {
+          try {
+            port.postMessage({ type: "ANALYZE_RESULT", result: { error: "Analysis failed" } });
+          } catch {
+            // ignore
+          }
+          try {
+            port.disconnect();
+          } catch {
+            // ignore
+          }
+        });
+    });
+    return;
+  }
+
+  // Long-lived port transport for SANITIZE — same MV3 worker-suspension
+  // root-cause as the ANALYZE flow (task #124). The sanitize fetch can
+  // outlive the worker's idle window, so we keep the worker alive for
+  // the duration by holding a port open. The content script's Sanitize
+  // button uses chrome.runtime.connect({ name: "sanitize" }) and waits
+  // for a single { type: "SANITIZE_RESULT", result } message before the
+  // port is torn down.
+  if (port.name === "sanitize") {
+    port.onMessage.addListener((message) => {
+      if (!message || message.type !== "SANITIZE") return;
+      sanitizePrompt(message.text)
+        .then((result) => {
+          try {
+            port.postMessage({ type: "SANITIZE_RESULT", result });
+          } catch {
+            // port was closed (tab navigated away); drop silently.
+          }
+          try {
+            port.disconnect();
+          } catch {
+            // already disconnected
+          }
+        })
+        .catch(() => {
+          try {
+            port.postMessage({ type: "SANITIZE_RESULT", result: { error: "Sanitization failed" } });
+          } catch {
+            // ignore
+          }
+          try {
+            port.disconnect();
+          } catch {
+            // ignore
+          }
+        });
+    });
+    return;
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -418,6 +460,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "SANITIZE") {
+    // Legacy one-shot transport kept for back-compat. New code paths in
+    // content.js use the long-lived `sanitize` port (see onConnect above)
+    // because that is what keeps the MV3 service worker alive across the
+    // sanitize fetch.
     sanitizePrompt(message.text).then(sendResponse).catch(() => sendResponse({ error: "Sanitization failed" }));
     return true;
   }

@@ -436,12 +436,20 @@
       btn.textContent = "Sanitizing...";
 
       const originalText = platform.getInputText(inputEl);
-      chrome.runtime.sendMessage({ type: "SANITIZE", text: originalText }, (response) => {
-        if (chrome.runtime.lastError) {
-          btn.textContent = "Failed";
-          btn.disabled = false;
-          return;
-        }
+
+      // Long-lived port transport, mirroring the ANALYZE flow (task #124).
+      // chrome.runtime.sendMessage lets the MV3 service worker be
+      // suspended mid-fetch, which leaves this button stuck on
+      // "Sanitizing..." with no callback. The port keeps the worker
+      // alive for the duration of the sanitize fetch; the background
+      // posts back a single { type: "SANITIZE_RESULT", result } message
+      // and disconnects.
+      let sanitizeResponded = false;
+
+      const finalizeSanitizeResult = (response) => {
+        if (sanitizeResponded) return;
+        sanitizeResponded = true;
+
         if (!response || response.error) {
           btn.textContent = "Failed";
           btn.disabled = false;
@@ -476,7 +484,46 @@
           sendBtn.textContent = "Send Sanitized";
           sendBtn.className = "eraseai-btn eraseai-btn-sanitize";
         }
+      };
+
+      const finalizeSanitizeFailure = () => {
+        if (sanitizeResponded) return;
+        sanitizeResponded = true;
+        btn.textContent = "Failed";
+        btn.disabled = false;
+      };
+
+      let sanitizePort = null;
+      try {
+        sanitizePort = chrome.runtime.connect({ name: "sanitize" });
+      } catch {
+        finalizeSanitizeFailure();
+        return;
+      }
+      if (!sanitizePort) {
+        finalizeSanitizeFailure();
+        return;
+      }
+
+      sanitizePort.onMessage.addListener((msg) => {
+        if (!msg || msg.type !== "SANITIZE_RESULT") return;
+        finalizeSanitizeResult(msg.result);
       });
+
+      sanitizePort.onDisconnect.addListener(() => {
+        // Normal teardown after the background posted a result is fine.
+        // Otherwise something killed the port before delivering — flip
+        // the button to a terminal Failed state so the user isn't stuck
+        // on a "Sanitizing..." spinner forever.
+        if (sanitizeResponded) return;
+        finalizeSanitizeFailure();
+      });
+
+      try {
+        sanitizePort.postMessage({ type: "SANITIZE", text: originalText });
+      } catch {
+        finalizeSanitizeFailure();
+      }
     });
   }
 
