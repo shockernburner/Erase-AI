@@ -451,9 +451,8 @@ describe("background.testConnection", () => {
       // Wait for the analyzePrompt promise chain to resolve.
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Two writes: the existing lastScan (rendered in the popup's "Last
-      // Scan" card) AND the v1.3.4 lastAttempt (rendered in the popup's
-      // "Last attempt" status line for mid-demo self-checks).
+      // Two writes: the existing lastScan AND the v1.3.4 lastAttempt
+      // (rendered in the popup's "Last attempt" status line).
       const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
       expect(setCalls).toContainEqual({
         lastScan: {
@@ -467,6 +466,7 @@ describe("background.testConnection", () => {
         lastAttempt: {
           status: "success",
           at: expect.any(Number),
+          attemptId: null,
         },
       });
       expect(sendResponse).toHaveBeenCalledWith(serverPayload);
@@ -768,6 +768,72 @@ describe("background.testConnection", () => {
       });
       const result = await mod.reportOutcome({ level: "danger", action: "cancel" });
       expect(result).toEqual({ ok: false, error: "Network error: ECONNREFUSED 127.0.0.1:443" });
+    });
+  });
+
+  describe("recordLastAttempt — attempt-ID correlation (task #122)", () => {
+    // The handler is registered via chrome.runtime.onMessage.addListener;
+    // we drive ANALYZE through it so we exercise the real recordLastAttempt
+    // code path including the attemptId echo.
+
+    function getMessageListener(chromeStub) {
+      return chromeStub.runtime.onMessage.addListener.mock.calls[0][0];
+    }
+
+    function makeChromeWithExistingTimeout(attemptId) {
+      const stub = makeChrome({ apiKey: "eak_good", enabled: true });
+      const existing = { status: "timeout", at: Date.now(), attemptId };
+      // The real handler issues two get() calls: one for {apiKey, enabled}
+      // (analyzePrompt) and one for "lastAttempt" (recordLastAttempt).
+      stub.storage.local.get = vi.fn(async (keys) => {
+        if (keys === "lastAttempt") return { lastAttempt: existing };
+        if (Array.isArray(keys)) {
+          const out = {};
+          if (keys.includes("apiKey")) out.apiKey = "eak_good";
+          if (keys.includes("enabled")) out.enabled = true;
+          return out;
+        }
+        return { apiKey: "eak_good", enabled: true };
+      });
+      return stub;
+    }
+
+    it("does NOT overwrite a fresh timeout record when the late background response has the SAME attemptId", async () => {
+      const chromeStub = makeChromeWithExistingTimeout("A");
+      const fetchStub = vi.fn(async () =>
+        jsonResponse({ riskScore: 0.1, level: "low", issues: [] }),
+      );
+      loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
+      const listener = getMessageListener(chromeStub);
+
+      const sendResponse = vi.fn();
+      listener({ type: "ANALYZE", text: "hi", attemptId: "A" }, {}, sendResponse);
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
+      expect(setCalls.some((c) => "lastAttempt" in c)).toBe(false);
+    });
+
+    it("overwrites an old timeout record when a NEW attempt (different attemptId) succeeds within the same 30s window", async () => {
+      const chromeStub = makeChromeWithExistingTimeout("A");
+      const fetchStub = vi.fn(async () =>
+        jsonResponse({ riskScore: 0.1, level: "low", issues: [] }),
+      );
+      loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
+      const listener = getMessageListener(chromeStub);
+
+      const sendResponse = vi.fn();
+      listener({ type: "ANALYZE", text: "hi", attemptId: "B" }, {}, sendResponse);
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const attempts = chromeStub.storage.local.set.mock.calls
+        .map((c) => c[0])
+        .filter((c) => "lastAttempt" in c);
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0].lastAttempt.status).toBe("success");
+      expect(attempts[0].lastAttempt.attemptId).toBe("B");
     });
   });
 

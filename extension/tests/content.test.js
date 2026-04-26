@@ -593,12 +593,10 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       await vi.advanceTimersByTimeAsync(16000);
       await flushAsync();
 
-      // After timeout swap the spinner element MUST be gone — otherwise the
-      // user sees a confusing half-error-half-spinner state.
+      // After timeout swap the spinner element AND the "Analyzing…" copy
+      // MUST both be gone — otherwise the panel shows a confusing
+      // half-error-half-spinner state.
       expect(document.querySelector(".eraseai-spinner")).toBeNull();
-      // The "Analyzing your prompt…" copy MUST also be gone — having that
-      // headline next to "Couldn't analyze" was the original demo-blocking
-      // bug from a screenshot perspective.
       const panel = document.getElementById("eraseai-overlay-panel");
       expect(panel.textContent).not.toMatch(/Analyzing your prompt/i);
     });

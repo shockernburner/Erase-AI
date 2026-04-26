@@ -431,7 +431,7 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
   });
 });
 
-describe("popup.renderLastAttempt — mid-demo self-check status line (task #122)", () => {
+describe("popup.renderLastAttempt — last-attempt status line (task #122)", () => {
   // Frozen wall-clock so the relative-time renderer ("4s ago", "10s ago", …)
   // is bit-for-bit deterministic regardless of how loaded the test runner is.
   const NOW = 1_700_000_000_000;

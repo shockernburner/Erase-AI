@@ -226,22 +226,19 @@ async function testConnection() {
 }
 
 async function recordLastAttempt(record) {
-  // Best-effort write; never let a storage failure mask the analyze result.
-  // We do a read-modify-write so a late background response (a worker that
-  // finally woke up and answered) cannot silently overwrite a fresh
-  // `timeout` record that the content script wrote moments earlier — that
-  // would blur the diagnostic signal the popup is supposed to surface.
+  // Best-effort write. Suppress only when this write is a stale late
+  // response from the SAME attempt that the content script already
+  // recorded as a timeout — matched by attemptId. A new attempt (different
+  // attemptId, or no attemptId echoed back) always overwrites.
   try {
     const data = await chrome.storage.local.get("lastAttempt");
     const existing = data && data.lastAttempt;
     if (
       existing &&
       existing.status === "timeout" &&
-      typeof existing.at === "number" &&
-      // Within the same analyze round-trip window (15s timeout + generous
-      // slack for a slow late wake-up). Outside this window the new
-      // record is genuinely a fresh attempt and may overwrite.
-      Date.now() - existing.at < 30000
+      existing.attemptId &&
+      record.attemptId &&
+      existing.attemptId === record.attemptId
     ) {
       return;
     }
@@ -253,6 +250,7 @@ async function recordLastAttempt(record) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "ANALYZE") {
+    const attemptId = typeof message.attemptId === "string" ? message.attemptId : null;
     analyzePrompt(message.text).then((result) => {
       if (result.riskScore != null) {
         chrome.storage.local.set({
@@ -264,44 +262,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           },
         });
       }
-      // Mid-demo self-check: the popup reads `lastAttempt` to render a
-      // single-line "Last attempt: …" status under the connection card so
-      // the founder can open the popup during a live call and immediately
-      // see whether the previous analyze hit the API or hung.
+      // Popup reads `lastAttempt` to render the "Last attempt: …" status line.
       if (result.error) {
         recordLastAttempt({
           status: "error",
           reason: String(result.error).slice(0, 200),
           at: Date.now(),
+          attemptId,
         });
       } else if (result.bypass) {
         recordLastAttempt({
           status: "success",
           reason: "firewall disabled (bypass)",
           at: Date.now(),
+          attemptId,
         });
       } else {
-        recordLastAttempt({ status: "success", at: Date.now() });
+        recordLastAttempt({ status: "success", at: Date.now(), attemptId });
       }
       sendResponse(result);
     }).catch(() => {
-      recordLastAttempt({ status: "error", reason: "Analysis failed", at: Date.now() });
+      recordLastAttempt({ status: "error", reason: "Analysis failed", at: Date.now(), attemptId });
       sendResponse({ error: "Analysis failed" });
     });
     return true;
   }
 
   if (message.type === "OPEN_POPUP") {
-    // The content script's "Open Extension Popup" button on the error panel
-    // routes through here. chrome.action.openPopup() is only available in
-    // very recent Chrome and only from a user gesture inside a privileged
-    // context, so we fall back to opening popup.html as a regular tab —
-    // chrome-extension:// URLs CAN be opened by the background via tabs.create.
-    //
-    // We respond ONLY after the open attempt has actually settled, so the
-    // content script's fallback (inline toast + clipboard) reliably fires
-    // when neither path succeeds. Anything else risks a "ghost success"
-    // where the user sees nothing happen and gets no recovery hint.
+    // Try chrome.action.openPopup() first, fall back to opening popup.html
+    // as a tab. Respond only after the attempt actually settles so the
+    // content script's clipboard fallback reliably fires on failure.
     const openAsTab = () =>
       new Promise((resolve) => {
         try {

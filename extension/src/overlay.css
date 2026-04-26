@@ -292,13 +292,8 @@
   font-size: 13px;
 }
 
-/* ----------------------------------------------------------------------
- * Error panel — visually unmistakable from the analyzing-state panel.
- * Red-orange accent on the header bar plus a triangular alert icon in
- * place of the gradient "E" logo.  At a glance during a live demo the
- * user should know whether they're looking at "Analyzing…" or
- * "Couldn't analyze".
- * ---------------------------------------------------------------------- */
+/* Error panel — red-orange accent + alert icon to differentiate clearly
+ * from the analyzing-state panel. */
 #eraseai-overlay-panel.eraseai-error-panel {
   border-color: rgba(249, 115, 22, 0.35);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5),
@@ -344,10 +339,7 @@
   color: #ffedd5;
 }
 
-/* Inline recovery toast shown ON the error panel when the OPEN_POPUP
- * message round-trip to the background fails — content scripts can't
- * always programmatically open the toolbar popup, so we show the user a
- * fallback hint and copy the popup URL to their clipboard. */
+/* Inline recovery toast shown on the error panel when OPEN_POPUP fails. */
 .eraseai-open-popup-toast {
   margin: 0 24px 12px;
   padding: 10px 12px;

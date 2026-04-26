@@ -103,14 +103,9 @@
     },
   };
 
-  // Hard ceiling on how long the content script will wait for the background
-  // service worker to respond to an ANALYZE message. MV3 service workers can
-  // be suspended at any time; if that happens mid-fetch the sendMessage
-  // callback never fires and the spinner would otherwise hang forever. 15s
-  // is generous enough that a slow but healthy network (the API typically
-  // returns in <2s, but mobile tethering / hotel wifi can spike to 8-10s)
-  // never trips it, while still being short enough that no live-demo
-  // viewer thinks the product is broken.
+  // Hard ceiling on how long to wait for the background ANALYZE response.
+  // MV3 service workers can be suspended mid-fetch and never call back;
+  // this timer guarantees the overlay reaches a terminal state.
   const ANALYZE_TIMEOUT_MS = 15000;
 
   let platform = null;
@@ -239,15 +234,25 @@
     try {
       chrome.storage.local.set({ lastAttempt: record });
     } catch {
-      // Persistence is best-effort; never surface a failure to the user.
+      // best-effort
     }
   }
 
+  function newAttemptId() {
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+    } catch {
+      // fall through
+    }
+    return `a_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+
   function showOpenPopupFallback(panel) {
-    // Display a small inline toast on the error panel itself when we can't
-    // open the popup programmatically. We deliberately put the recovery
-    // hint INSIDE the panel (not as a window-level toast) so a user already
-    // looking at the error is guaranteed to see it.
+    // Inline recovery hint shown on the error panel itself when we cannot
+    // programmatically open the popup. Also copies the popup URL to the
+    // clipboard so the user can paste it into a new tab.
     if (!panel) return;
     let toast = panel.querySelector(".eraseai-open-popup-toast");
     if (!toast) {
@@ -270,13 +275,8 @@
       ? `Couldn't auto-open the popup. Click the EraseAI icon in your toolbar — or paste this into a new tab: ${url}`
       : "Couldn't auto-open the popup. Click the EraseAI icon in your toolbar.";
 
-    // Best-effort: also copy the URL to the clipboard so the user can paste
-    // it directly. Wrapped in try/catch because clipboard access can be
-    // blocked by site permissions on chat.openai.com etc.
     if (url && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      navigator.clipboard.writeText(url).catch(() => {
-        // ignore — the toast already tells the user what to do
-      });
+      navigator.clipboard.writeText(url).catch(() => {});
     }
   }
 
@@ -286,9 +286,6 @@
       chrome.runtime.sendMessage({ type: "OPEN_POPUP" }, (response) => {
         messageReturned = true;
         if (chrome.runtime.lastError || !response || response.ok === false) {
-          // Background couldn't open it (worker dead, permission error, or
-          // chrome.action.openPopup unavailable). Fall back to the inline
-          // toast + clipboard so the user always has a recovery path.
           showOpenPopupFallback(panel);
         }
       });
@@ -297,10 +294,8 @@
       showOpenPopupFallback(panel);
       return;
     }
-    // If sendMessage swallowed the call entirely (no callback ever runs —
-    // can happen when the service worker port closes immediately), surface
-    // the fallback after a short grace window so the user is never left
-    // wondering whether the click did anything.
+    // Grace window for the case where sendMessage's callback never fires
+    // (e.g. service worker port closed immediately).
     setTimeout(() => {
       if (!messageReturned) showOpenPopupFallback(panel);
     }, 800);
@@ -666,13 +661,12 @@
 
       const { panel } = createOverlayBackdrop();
 
-      // Belt-and-braces hard timeout. The MV3 service worker that handles
-      // ANALYZE can be suspended at any point — including AFTER it
-      // dispatched the upstream fetch but BEFORE it called sendResponse.
-      // chrome.runtime.lastError is set on some failure modes (port closed)
-      // but NOT on this one (worker simply went idle), which is why the
-      // pre-1.3.4 extension hangs forever on this path. The timer below
-      // is the only thing that guarantees the user sees a terminal state.
+      // Hard client-side ceiling — guarantees a terminal UI state if the
+      // MV3 service worker is suspended mid-fetch and never calls back.
+      // attemptId correlates the timeout record with the matching late
+      // background response so we can suppress only stale same-attempt
+      // overwrites (see recordLastAttempt in background.js).
+      const attemptId = newAttemptId();
       let analyzeResponded = false;
       analyzeTimer = setTimeout(() => {
         if (analyzeResponded) return;
@@ -682,6 +676,7 @@
           status: "timeout",
           reason: `No response from background within ${Math.round(ANALYZE_TIMEOUT_MS / 1000)}s`,
           at: Date.now(),
+          attemptId,
         });
         renderError(
           panel,
@@ -691,7 +686,7 @@
         isIntercepting = false;
       }, ANALYZE_TIMEOUT_MS);
 
-      chrome.runtime.sendMessage({ type: "ANALYZE", text }, (result) => {
+      chrome.runtime.sendMessage({ type: "ANALYZE", text, attemptId }, (result) => {
         if (analyzeResponded) return;
         analyzeResponded = true;
         if (analyzeTimer != null) {
