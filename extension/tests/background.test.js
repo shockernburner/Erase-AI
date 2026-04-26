@@ -770,4 +770,100 @@ describe("background.testConnection", () => {
       expect(result).toEqual({ ok: false, error: "Network error: ECONNREFUSED 127.0.0.1:443" });
     });
   });
+
+  describe("OPEN_POPUP message handler", () => {
+    // The handler is registered via chrome.runtime.onMessage.addListener; the
+    // makeChrome stub captures it in a vi.fn so we can invoke it directly
+    // here. The contract we care about: sendResponse fires AFTER the open
+    // attempt actually settles, with {ok:true} on success and {ok:false}
+    // on failure — the content-script's clipboard fallback depends on this.
+
+    function getMessageListener(chromeStub) {
+      const calls = chromeStub.runtime.onMessage.addListener.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      return calls[0][0];
+    }
+
+    it("responds {ok:true} when chrome.action.openPopup() resolves", async () => {
+      const chromeStub = makeChrome();
+      chromeStub.action = { openPopup: vi.fn(() => Promise.resolve()) };
+      chromeStub.runtime.getURL = (p) => `chrome-extension://abcd/${p}`;
+      chromeStub.tabs = { create: vi.fn() };
+      const fetchStub = vi.fn();
+      loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
+      const listener = getMessageListener(chromeStub);
+
+      const sendResponse = vi.fn();
+      const keepAlive = listener({ type: "OPEN_POPUP" }, {}, sendResponse);
+      expect(keepAlive).toBe(true);
+      // Drain microtasks so the async IIFE inside the handler can complete.
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(chromeStub.action.openPopup).toHaveBeenCalledTimes(1);
+      expect(chromeStub.tabs.create).not.toHaveBeenCalled();
+      expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+    });
+
+    it("falls back to tabs.create when chrome.action.openPopup() rejects, and waits for it to settle before responding", async () => {
+      const chromeStub = makeChrome();
+      chromeStub.action = { openPopup: vi.fn(() => Promise.reject(new Error("no active window"))) };
+      chromeStub.runtime.getURL = (p) => `chrome-extension://abcd/${p}`;
+      let createCb;
+      chromeStub.tabs = {
+        create: vi.fn((opts, cb) => {
+          createCb = cb;
+        }),
+      };
+      const fetchStub = vi.fn();
+      loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
+      const listener = getMessageListener(chromeStub);
+
+      const sendResponse = vi.fn();
+      listener({ type: "OPEN_POPUP" }, {}, sendResponse);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(chromeStub.tabs.create).toHaveBeenCalledTimes(1);
+      // openPopup rejected → handler is now awaiting tabs.create. It must
+      // NOT have responded yet — that was the "ghost success" bug.
+      expect(sendResponse).not.toHaveBeenCalled();
+
+      // Now resolve tabs.create with a tab → handler should respond ok:true.
+      createCb({ id: 42 });
+      // Drain enough microtasks for openAsTab's Promise.resolve to chain
+      // back through the awaiting IIFE and into sendResponse.
+      for (let i = 0; i < 8; i++) await Promise.resolve();
+      expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+    });
+
+    it("responds {ok:false} when both openPopup and tabs.create fail, so the content script can show its clipboard fallback", async () => {
+      const chromeStub = makeChrome();
+      chromeStub.action = undefined; // no openPopup at all
+      chromeStub.runtime.getURL = (p) => `chrome-extension://abcd/${p}`;
+      chromeStub.tabs = {
+        create: vi.fn((opts, cb) => {
+          chromeStub.runtime.lastError = { message: "tab create blocked" };
+          cb(null);
+          chromeStub.runtime.lastError = undefined;
+        }),
+      };
+      const fetchStub = vi.fn();
+      loadBackgroundModule({ chrome: chromeStub, fetch: fetchStub });
+      const listener = getMessageListener(chromeStub);
+
+      const sendResponse = vi.fn();
+      listener({ type: "OPEN_POPUP" }, {}, sendResponse);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(sendResponse).toHaveBeenCalledTimes(1);
+      const arg = sendResponse.mock.calls[0][0];
+      expect(arg.ok).toBe(false);
+      expect(typeof arg.error).toBe("string");
+    });
+  });
 });
