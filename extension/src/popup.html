@@ -138,6 +138,27 @@
       flex-wrap: wrap;
     }
 
+    .last-attempt {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 11px;
+      color: #a1a1aa;
+      line-height: 1.4;
+    }
+
+    .last-attempt.empty {
+      color: #52525b;
+    }
+
+    .last-attempt .last-attempt-status {
+      font-weight: 600;
+    }
+
+    .last-attempt.success .last-attempt-status { color: #4ade80; }
+    .last-attempt.error .last-attempt-status { color: #f87171; }
+    .last-attempt.timeout .last-attempt-status { color: #fb923c; }
+
     .plan-pill {
       display: inline-block;
       font-size: 10px;
@@ -393,6 +414,7 @@
       </div>
       <div class="diag-detail" id="diag-detail">Probing the EraseAI API.</div>
       <div class="diag-actions" id="diag-actions"></div>
+      <div class="last-attempt empty" id="last-attempt-line">Last attempt: none yet</div>
     </div>
     <div class="toggle-row">
       <span class="label">Firewall enabled</span>

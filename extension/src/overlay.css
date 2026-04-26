@@ -291,3 +291,55 @@
   color: #f87171;
   font-size: 13px;
 }
+
+/* ----------------------------------------------------------------------
+ * Error panel — visually unmistakable from the analyzing-state panel.
+ * Red-orange accent on the header bar plus a triangular alert icon in
+ * place of the gradient "E" logo.  At a glance during a live demo the
+ * user should know whether they're looking at "Analyzing…" or
+ * "Couldn't analyze".
+ * ---------------------------------------------------------------------- */
+#eraseai-overlay-panel.eraseai-error-panel {
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(249, 115, 22, 0.18);
+}
+
+.eraseai-error-header {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(249, 115, 22, 0.18));
+  border-bottom: 1px solid rgba(249, 115, 22, 0.45);
+}
+
+.eraseai-error-header .eraseai-header-text h2 {
+  color: #fb923c;
+}
+
+.eraseai-error-header .eraseai-header-text p {
+  color: #fdba74;
+}
+
+.eraseai-error-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4),
+              0 4px 12px rgba(249, 115, 22, 0.35);
+}
+
+.eraseai-btn-open-popup {
+  background: rgba(249, 115, 22, 0.14);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+.eraseai-btn-open-popup:hover {
+  background: rgba(249, 115, 22, 0.24);
+  color: #ffedd5;
+}

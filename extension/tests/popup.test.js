@@ -430,3 +430,96 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
     expect(document.getElementById("diag-actions").children.length).toBe(0);
   });
 });
+
+describe("popup.renderLastAttempt — mid-demo self-check status line (task #122)", () => {
+  // Frozen wall-clock so the relative-time renderer ("4s ago", "10s ago", …)
+  // is bit-for-bit deterministic regardless of how loaded the test runner is.
+  const NOW = 1_700_000_000_000;
+
+  function loadPopupForLastAttempt() {
+    const src = loadPopupSource();
+    const wrapped = `${src}\n;return { renderLastAttempt };`;
+    // eslint-disable-next-line no-new-func
+    return new Function(wrapped)();
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  // Reset to real timers after each test so other suites in this file are
+  // unaffected by the fake-timer setup.
+  function teardownTimers() {
+    vi.useRealTimers();
+  }
+
+  it("renders the empty state when no lastAttempt has been recorded", () => {
+    const { renderLastAttempt } = loadPopupForLastAttempt();
+    renderLastAttempt(undefined);
+
+    const line = document.getElementById("last-attempt-line");
+    expect(line).not.toBeNull();
+    expect(line.className).toContain("empty");
+    expect(line.textContent).toMatch(/none yet/i);
+    // Status sub-element absent for the empty state.
+    expect(line.querySelector(".last-attempt-status")).toBeNull();
+    teardownTimers();
+  });
+
+  it("renders the success state with elapsed seconds", () => {
+    const { renderLastAttempt } = loadPopupForLastAttempt();
+    renderLastAttempt({ status: "success", at: NOW - 4000 });
+
+    const line = document.getElementById("last-attempt-line");
+    expect(line.className).toContain("success");
+    expect(line.querySelector(".last-attempt-status").textContent).toBe("succeeded");
+    expect(line.textContent).toMatch(/4s ago/);
+    teardownTimers();
+  });
+
+  it("renders the failed state with reason", () => {
+    const { renderLastAttempt } = loadPopupForLastAttempt();
+    renderLastAttempt({
+      status: "error",
+      reason: "Invalid API key",
+      at: NOW - 10000,
+    });
+
+    const line = document.getElementById("last-attempt-line");
+    expect(line.className).toContain("error");
+    expect(line.querySelector(".last-attempt-status").textContent).toBe("failed");
+    expect(line.textContent).toMatch(/Invalid API key/);
+    expect(line.textContent).toMatch(/10s ago/);
+    teardownTimers();
+  });
+
+  it("renders the timeout state with the no-response label", () => {
+    const { renderLastAttempt } = loadPopupForLastAttempt();
+    renderLastAttempt({
+      status: "timeout",
+      reason: "No response from background within 15s",
+      at: NOW - 5000,
+    });
+
+    const line = document.getElementById("last-attempt-line");
+    expect(line.className).toContain("timeout");
+    expect(line.querySelector(".last-attempt-status").textContent).toBe("no response");
+    expect(line.textContent).toMatch(/No response from background within 15s/);
+    expect(line.textContent).toMatch(/5s ago/);
+    teardownTimers();
+  });
+
+  it("re-rendering with a fresh attempt replaces stale content (no leak)", () => {
+    const { renderLastAttempt } = loadPopupForLastAttempt();
+    renderLastAttempt({ status: "error", reason: "first error", at: NOW - 1000 });
+    renderLastAttempt({ status: "success", at: NOW - 1000 });
+
+    const line = document.getElementById("last-attempt-line");
+    expect(line.textContent).not.toMatch(/first error/);
+    expect(line.querySelector(".last-attempt-status").textContent).toBe("succeeded");
+    expect(line.className).toContain("success");
+    expect(line.className).not.toContain("error");
+    teardownTimers();
+  });
+});

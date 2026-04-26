@@ -487,4 +487,218 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       expect(ev.level).toBe("danger");
     });
   });
+
+  describe("analyze hard timeout (task #122 — firewall stuck on Analyzing…)", () => {
+    function makeHangingChromeStub() {
+      const listeners = { onChanged: [] };
+      const storageSets = [];
+      return {
+        __listeners: listeners,
+        __storageSets: storageSets,
+        runtime: {
+          lastError: undefined,
+          sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "GET_CONFIG") {
+              queueMicrotask(() =>
+                cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
+              );
+              return;
+            }
+            // The whole point: ANALYZE never calls back. This simulates an
+            // MV3 service worker that was suspended mid-fetch.
+            if (msg.type === "ANALYZE") return;
+            if (typeof cb === "function") queueMicrotask(() => cb({}));
+          }),
+        },
+        storage: {
+          local: {
+            get: vi.fn((keys, cb) => {
+              if (typeof cb === "function") {
+                queueMicrotask(() => cb({ enabled: true }));
+              } else {
+                return Promise.resolve({ enabled: true });
+              }
+            }),
+            set: vi.fn((obj) => {
+              storageSets.push(obj);
+              return Promise.resolve();
+            }),
+          },
+          onChanged: {
+            addListener: vi.fn((fn) => listeners.onChanged.push(fn)),
+          },
+        },
+      };
+    }
+
+    it("renders the error panel and persists lastAttempt=timeout when ANALYZE never responds within the 15s deadline", async () => {
+      const chromeStub = makeHangingChromeStub();
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // Spinner panel is up, no error panel yet.
+      let panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+
+      // Just before the 15s deadline: still spinning, still no error panel.
+      await vi.advanceTimersByTimeAsync(14000);
+      await flushAsync();
+      panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+
+      // Cross the deadline.
+      await vi.advanceTimersByTimeAsync(2000);
+      await flushAsync();
+
+      panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(true);
+      // The "Couldn't analyze" headline must be present so a viewer at a
+      // glance knows this is a terminal failure, not the analyzing state.
+      expect(panel.textContent).toMatch(/Couldn't analyze/i);
+      // The Open Extension Popup button must be present for timeout cases.
+      expect(document.getElementById("eraseai-open-popup")).not.toBeNull();
+      // Send Anyway and Close are still there.
+      expect(document.getElementById("eraseai-send-anyway")).not.toBeNull();
+      expect(document.getElementById("eraseai-cancel")).not.toBeNull();
+
+      // lastAttempt timeout must have been persisted so the popup can show it.
+      const lastAttemptWrites = chromeStub.__storageSets.filter((s) => "lastAttempt" in s);
+      expect(lastAttemptWrites.length).toBeGreaterThanOrEqual(1);
+      const tail = lastAttemptWrites[lastAttemptWrites.length - 1].lastAttempt;
+      expect(tail.status).toBe("timeout");
+      expect(typeof tail.at).toBe("number");
+      expect(tail.reason).toMatch(/no response/i);
+    });
+
+    it("error panel wipes the analyzing-state DOM (no orphaned spinner element)", async () => {
+      const chromeStub = makeHangingChromeStub();
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // Spinner is up.
+      expect(document.querySelector(".eraseai-spinner")).not.toBeNull();
+
+      await vi.advanceTimersByTimeAsync(16000);
+      await flushAsync();
+
+      // After timeout swap the spinner element MUST be gone — otherwise the
+      // user sees a confusing half-error-half-spinner state.
+      expect(document.querySelector(".eraseai-spinner")).toBeNull();
+      // The "Analyzing your prompt…" copy MUST also be gone — having that
+      // headline next to "Couldn't analyze" was the original demo-blocking
+      // bug from a screenshot perspective.
+      const panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel.textContent).not.toMatch(/Analyzing your prompt/i);
+    });
+
+    it("late ANALYZE response after the timeout has fired does NOT flip the UI back to a result panel", async () => {
+      // Stash the cb the content script passed to sendMessage so we can fire
+      // it manually AFTER the timeout has already promoted the overlay to
+      // the error state. This is the exact race the production fix has to
+      // win — a worker that finally wakes up and calls sendResponse must
+      // not be allowed to clobber the user-visible error.
+      const listeners = { onChanged: [] };
+      const storageSets = [];
+      let savedCb = null;
+      const chromeStub = {
+        __listeners: listeners,
+        __storageSets: storageSets,
+        runtime: {
+          lastError: undefined,
+          sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "GET_CONFIG") {
+              queueMicrotask(() =>
+                cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
+              );
+              return;
+            }
+            if (msg.type === "ANALYZE") {
+              savedCb = cb;
+              return;
+            }
+            if (typeof cb === "function") queueMicrotask(() => cb({}));
+          }),
+        },
+        storage: {
+          local: {
+            get: vi.fn((keys, cb) => {
+              if (typeof cb === "function") {
+                queueMicrotask(() => cb({ enabled: true }));
+              } else {
+                return Promise.resolve({ enabled: true });
+              }
+            }),
+            set: vi.fn((obj) => {
+              storageSets.push(obj);
+              return Promise.resolve();
+            }),
+          },
+          onChanged: {
+            addListener: vi.fn((fn) => listeners.onChanged.push(fn)),
+          },
+        },
+      };
+
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // Fire the timeout.
+      await vi.advanceTimersByTimeAsync(16000);
+      await flushAsync();
+
+      const panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(true);
+      const errorHtmlBefore = panel.innerHTML;
+
+      // Now the suspended worker "wakes up" and finally answers.
+      expect(typeof savedCb).toBe("function");
+      savedCb({ riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" });
+      await flushAsync();
+
+      // The error panel must NOT have been replaced by the safe-path
+      // confirmation. The user already had a terminal state on screen and
+      // clobbering it would be a worse UX than the original hang.
+      const panelAfter = document.getElementById("eraseai-overlay-panel");
+      expect(panelAfter).not.toBeNull();
+      expect(panelAfter.classList.contains("eraseai-error-panel")).toBe(true);
+      expect(panelAfter.innerHTML).toBe(errorHtmlBefore);
+    });
+
+    it("clicking Close on the timeout error panel removes the overlay", async () => {
+      const chromeStub = makeHangingChromeStub();
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      await vi.advanceTimersByTimeAsync(16000);
+      await flushAsync();
+
+      const closeBtn = document.getElementById("eraseai-cancel");
+      expect(closeBtn).not.toBeNull();
+      closeBtn.click();
+      await flushAsync();
+
+      expect(document.getElementById("eraseai-overlay-backdrop")).toBeNull();
+    });
+  });
 });

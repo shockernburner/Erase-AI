@@ -14,6 +14,7 @@ const diagCard = document.getElementById("diag-card");
 const diagTitle = document.getElementById("diag-title");
 const diagDetail = document.getElementById("diag-detail");
 const diagActions = document.getElementById("diag-actions");
+const lastAttemptLine = document.getElementById("last-attempt-line");
 
 function showKeyStatus(msg, type) {
   keyStatus.textContent = msg;
@@ -198,6 +199,56 @@ function formatTimeAgo(timestamp) {
   return `${Math.floor(diff / 86400000)}d ago`;
 }
 
+function formatSecondsAgo(timestamp) {
+  const diff = Math.max(0, Date.now() - timestamp);
+  if (diff < 1000) return "just now";
+  if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+function renderLastAttempt(attempt) {
+  if (!lastAttemptLine) return;
+  if (!attempt || typeof attempt.at !== "number") {
+    lastAttemptLine.className = "last-attempt empty";
+    clearNode(lastAttemptLine);
+    lastAttemptLine.appendChild(document.createTextNode("Last attempt: none yet"));
+    return;
+  }
+
+  const status = attempt.status === "success" || attempt.status === "error" || attempt.status === "timeout"
+    ? attempt.status
+    : "error";
+  const ago = formatSecondsAgo(attempt.at);
+
+  let label;
+  if (status === "success") {
+    label = "succeeded";
+  } else if (status === "timeout") {
+    label = "no response";
+  } else {
+    label = "failed";
+  }
+
+  clearNode(lastAttemptLine);
+  lastAttemptLine.className = `last-attempt ${status}`;
+  lastAttemptLine.appendChild(document.createTextNode("Last attempt: "));
+
+  const statusEl = document.createElement("span");
+  statusEl.className = "last-attempt-status";
+  statusEl.textContent = label;
+  lastAttemptLine.appendChild(statusEl);
+
+  if (attempt.reason && typeof attempt.reason === "string") {
+    lastAttemptLine.appendChild(document.createTextNode(` (${attempt.reason})`));
+  } else if (status === "timeout") {
+    lastAttemptLine.appendChild(document.createTextNode(" (timed out)"));
+  }
+
+  lastAttemptLine.appendChild(document.createTextNode(` — ${ago}`));
+}
+
 function renderLastScan(scan) {
   clearNode(scanSummary);
   if (!scan || scan.riskScore == null) {
@@ -247,7 +298,12 @@ function renderLastScan(scan) {
 }
 
 async function loadState() {
-  const data = await chrome.storage.local.get(["apiKey", "enabled", "lastScan"]);
+  const data = await chrome.storage.local.get([
+    "apiKey",
+    "enabled",
+    "lastScan",
+    "lastAttempt",
+  ]);
 
   if (data.apiKey) {
     apiKeyInput.value = data.apiKey;
@@ -256,6 +312,7 @@ async function loadState() {
 
   toggleEnabled.checked = data.enabled !== false;
   renderLastScan(data.lastScan);
+  renderLastAttempt(data.lastAttempt);
 
   // Footer link always points at the canonical dashboard.
   dashboardLink.href = CANONICAL_DASHBOARD_URL;

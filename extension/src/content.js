@@ -103,6 +103,16 @@
     },
   };
 
+  // Hard ceiling on how long the content script will wait for the background
+  // service worker to respond to an ANALYZE message. MV3 service workers can
+  // be suspended at any time; if that happens mid-fetch the sendMessage
+  // callback never fires and the spinner would otherwise hang forever. 15s
+  // is generous enough that a slow but healthy network (the API typically
+  // returns in <2s, but mobile tethering / hotel wifi can spike to 8-10s)
+  // never trips it, while still being short enough that no live-demo
+  // viewer thinks the product is broken.
+  const ANALYZE_TIMEOUT_MS = 15000;
+
   let platform = null;
   let isIntercepting = false;
   let bypassNext = false;
@@ -111,6 +121,9 @@
   // Module-scoped so removeOverlay() can cancel it when the overlay is
   // replaced before the safe-path auto-dismiss window elapses.
   let pendingSafeTimer = null;
+  // Module-scoped so removeOverlay() can cancel it when the overlay is
+  // dismissed before the analyze callback or the timeout fires.
+  let analyzeTimer = null;
   // The last analyze result we showed to the user. We attach this to every
   // outcome event we report so the api-server can attribute the action
   // (sanitize / cancel / send-anyway / auto-send) to a specific risk level
@@ -214,8 +227,34 @@
       clearTimeout(pendingSafeTimer);
       pendingSafeTimer = null;
     }
+    if (analyzeTimer != null) {
+      clearTimeout(analyzeTimer);
+      analyzeTimer = null;
+    }
     const el = document.getElementById("eraseai-overlay-backdrop");
     if (el) el.remove();
+  }
+
+  function persistLastAttempt(record) {
+    try {
+      chrome.storage.local.set({ lastAttempt: record });
+    } catch {
+      // Persistence is best-effort; never surface a failure to the user.
+    }
+  }
+
+  function openExtensionPopup() {
+    try {
+      chrome.runtime.sendMessage({ type: "OPEN_POPUP" }, () => {
+        if (chrome.runtime.lastError) {
+          // Background couldn't open it (worker dead or permission error);
+          // user can still click the toolbar icon.
+        }
+      });
+    } catch {
+      // Ignore — even if messaging is broken, the user can click the
+      // toolbar icon manually.
+    }
   }
 
   function escapeHtml(str) {
@@ -470,18 +509,39 @@
     }, 1200);
   }
 
-  function renderError(panel, errorMsg) {
+  function getErrorSubtitle(kind) {
+    if (kind === "timeout") return "No response from the EraseAI service in time";
+    if (kind === "auth") return "API key problem";
+    if (kind === "network") return "Network problem";
+    return "Couldn't reach the EraseAI service";
+  }
+
+  function renderError(panel, errorMsg, opts) {
+    // The analyzing-state panel can be visually mistaken for the error panel
+    // at a glance — both centred, both dark. Tag the panel with an
+    // unmistakable error class (red-orange accent on the header bar, an
+    // alert icon next to the title, distinct headline copy) so a user
+    // glancing at the screen during a demo can tell at a glance which one
+    // they're looking at. Always wipe the analyzing DOM (innerHTML reset)
+    // so no orphaned spinner can survive into the error state.
+    const options = opts || {};
+    const kind = typeof options.kind === "string" ? options.kind : "server";
+    const showOpenPopup = options.showOpenPopup !== false;
+    const subtitle = options.subtitle || getErrorSubtitle(kind);
+
+    panel.classList.add("eraseai-error-panel");
     panel.innerHTML = `
-      <div class="eraseai-header">
-        <div class="eraseai-logo">E</div>
+      <div class="eraseai-header eraseai-error-header">
+        <div class="eraseai-error-icon" aria-hidden="true">!</div>
         <div class="eraseai-header-text">
-          <h2>EraseAI Firewall</h2>
-          <p>Analysis failed</p>
+          <h2>Couldn't analyze</h2>
+          <p>${escapeHtml(subtitle)}</p>
         </div>
       </div>
       <div class="eraseai-error-msg">${escapeHtml(errorMsg)}</div>
       <div class="eraseai-actions">
         <button class="eraseai-btn eraseai-btn-cancel" id="eraseai-cancel">Close</button>
+        ${showOpenPopup ? '<button class="eraseai-btn eraseai-btn-open-popup" id="eraseai-open-popup">Open Extension Popup</button>' : ""}
         <button class="eraseai-btn eraseai-btn-send" id="eraseai-send-anyway">Send Anyway</button>
       </div>
     `;
@@ -495,6 +555,12 @@
       isIntercepting = false;
       triggerSend();
     });
+    const openPopupBtn = panel.querySelector("#eraseai-open-popup");
+    if (openPopupBtn) {
+      openPopupBtn.addEventListener("click", () => {
+        openExtensionPopup();
+      });
+    }
   }
 
   function triggerSend() {
@@ -551,9 +617,45 @@
 
       const { panel } = createOverlayBackdrop();
 
+      // Belt-and-braces hard timeout. The MV3 service worker that handles
+      // ANALYZE can be suspended at any point — including AFTER it
+      // dispatched the upstream fetch but BEFORE it called sendResponse.
+      // chrome.runtime.lastError is set on some failure modes (port closed)
+      // but NOT on this one (worker simply went idle), which is why the
+      // pre-1.3.4 extension hangs forever on this path. The timer below
+      // is the only thing that guarantees the user sees a terminal state.
+      let analyzeResponded = false;
+      analyzeTimer = setTimeout(() => {
+        if (analyzeResponded) return;
+        analyzeResponded = true;
+        analyzeTimer = null;
+        persistLastAttempt({
+          status: "timeout",
+          reason: `No response from background within ${Math.round(ANALYZE_TIMEOUT_MS / 1000)}s`,
+          at: Date.now(),
+        });
+        renderError(
+          panel,
+          "Couldn't reach the EraseAI service in time. Check your API key and connection in the extension popup.",
+          { kind: "timeout", showOpenPopup: true },
+        );
+        isIntercepting = false;
+      }, ANALYZE_TIMEOUT_MS);
+
       chrome.runtime.sendMessage({ type: "ANALYZE", text }, (result) => {
+        if (analyzeResponded) return;
+        analyzeResponded = true;
+        if (analyzeTimer != null) {
+          clearTimeout(analyzeTimer);
+          analyzeTimer = null;
+        }
+
         if (chrome.runtime.lastError || !result) {
-          renderError(panel, "Failed to connect to EraseAI service.");
+          renderError(
+            panel,
+            "Failed to connect to EraseAI service.",
+            { kind: "network", showOpenPopup: true },
+          );
           isIntercepting = false;
           return;
         }
@@ -567,7 +669,13 @@
         }
 
         if (result.error) {
-          renderError(panel, result.error);
+          const isAuth =
+            /api key|unauthor|invalid|revoked|expired/i.test(String(result.error)) ||
+            (typeof result.code === "string" && result.code.startsWith("AUTH_"));
+          renderError(panel, result.error, {
+            kind: isAuth ? "auth" : "server",
+            showOpenPopup: true,
+          });
           isIntercepting = false;
           return;
         }

@@ -451,9 +451,11 @@ describe("background.testConnection", () => {
       // Wait for the analyzePrompt promise chain to resolve.
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(chromeStub.storage.local.set).toHaveBeenCalledTimes(1);
-      const setArg = chromeStub.storage.local.set.mock.calls[0][0];
-      expect(setArg).toEqual({
+      // Two writes: the existing lastScan (rendered in the popup's "Last
+      // Scan" card) AND the v1.3.4 lastAttempt (rendered in the popup's
+      // "Last attempt" status line for mid-demo self-checks).
+      const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
+      expect(setCalls).toContainEqual({
         lastScan: {
           riskScore: 0.73,
           level: "high",
@@ -461,10 +463,16 @@ describe("background.testConnection", () => {
           scannedAt: expect.any(Number),
         },
       });
+      expect(setCalls).toContainEqual({
+        lastAttempt: {
+          status: "success",
+          at: expect.any(Number),
+        },
+      });
       expect(sendResponse).toHaveBeenCalledWith(serverPayload);
     });
 
-    it("ANALYZE message handler does not write lastScan when the response has no riskScore", async () => {
+    it("ANALYZE message handler writes lastAttempt error (without lastScan) when the response has no riskScore", async () => {
       init({
         storage: { apiKey: "eak_good", enabled: true },
         fetchImpl: async () => ({
@@ -481,11 +489,39 @@ describe("background.testConnection", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(chromeStub.storage.local.set).not.toHaveBeenCalled();
+      const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
+      // No lastScan should be written for this branch.
+      expect(setCalls.some((c) => "lastScan" in c)).toBe(false);
+      // lastAttempt error must always be recorded so the popup can show it.
+      const attempts = setCalls.filter((c) => "lastAttempt" in c);
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0].lastAttempt.status).toBe("error");
+      expect(attempts[0].lastAttempt.reason).toBe("Invalid API key");
+      expect(typeof attempts[0].lastAttempt.at).toBe("number");
       expect(sendResponse).toHaveBeenCalledWith({
         error: "Invalid API key",
         code: "INVALID_KEY",
       });
+    });
+
+    it("ANALYZE message handler writes lastAttempt success with bypass reason when firewall is disabled", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: false },
+        fetchImpl: async () => jsonResponse({ riskScore: 0.5 }),
+      });
+
+      const handler = chromeStub.runtime.onMessage.addListener.mock.calls[0][0];
+      const sendResponse = vi.fn();
+      handler({ type: "ANALYZE", text: "hello" }, {}, sendResponse);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
+      const attempts = setCalls.filter((c) => "lastAttempt" in c);
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0].lastAttempt.status).toBe("success");
+      expect(attempts[0].lastAttempt.reason).toMatch(/bypass/i);
+      expect(sendResponse).toHaveBeenCalledWith({ bypass: true });
     });
   });
 

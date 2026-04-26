@@ -225,6 +225,15 @@ async function testConnection() {
   }
 }
 
+function recordLastAttempt(record) {
+  // Best-effort write; never let a storage failure mask the analyze result.
+  try {
+    chrome.storage.local.set({ lastAttempt: record });
+  } catch {
+    // ignore
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "ANALYZE") {
     analyzePrompt(message.text).then((result) => {
@@ -238,8 +247,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           },
         });
       }
+      // Mid-demo self-check: the popup reads `lastAttempt` to render a
+      // single-line "Last attempt: …" status under the connection card so
+      // the founder can open the popup during a live call and immediately
+      // see whether the previous analyze hit the API or hung.
+      if (result.error) {
+        recordLastAttempt({
+          status: "error",
+          reason: String(result.error).slice(0, 200),
+          at: Date.now(),
+        });
+      } else if (result.bypass) {
+        recordLastAttempt({
+          status: "success",
+          reason: "firewall disabled (bypass)",
+          at: Date.now(),
+        });
+      } else {
+        recordLastAttempt({ status: "success", at: Date.now() });
+      }
       sendResponse(result);
-    }).catch(() => sendResponse({ error: "Analysis failed" }));
+    }).catch(() => {
+      recordLastAttempt({ status: "error", reason: "Analysis failed", at: Date.now() });
+      sendResponse({ error: "Analysis failed" });
+    });
+    return true;
+  }
+
+  if (message.type === "OPEN_POPUP") {
+    // The content script's "Open Extension Popup" button on the error panel
+    // routes through here. chrome.action.openPopup() is only available in
+    // very recent Chrome and only from a user gesture inside a privileged
+    // context, so we fall back to opening popup.html as a regular tab —
+    // chrome-extension:// URLs CAN be opened by the background via tabs.create.
+    try {
+      if (chrome.action && typeof chrome.action.openPopup === "function") {
+        chrome.action.openPopup().catch(() => {
+          chrome.tabs.create({ url: chrome.runtime.getURL("src/popup.html") });
+        });
+      } else {
+        chrome.tabs.create({ url: chrome.runtime.getURL("src/popup.html") });
+      }
+      sendResponse({ ok: true });
+    } catch (err) {
+      sendResponse({ ok: false, error: err && err.message ? err.message : "open_popup_failed" });
+    }
     return true;
   }
 
