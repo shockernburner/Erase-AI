@@ -225,10 +225,27 @@ async function testConnection() {
   }
 }
 
-function recordLastAttempt(record) {
+async function recordLastAttempt(record) {
   // Best-effort write; never let a storage failure mask the analyze result.
+  // We do a read-modify-write so a late background response (a worker that
+  // finally woke up and answered) cannot silently overwrite a fresh
+  // `timeout` record that the content script wrote moments earlier — that
+  // would blur the diagnostic signal the popup is supposed to surface.
   try {
-    chrome.storage.local.set({ lastAttempt: record });
+    const data = await chrome.storage.local.get("lastAttempt");
+    const existing = data && data.lastAttempt;
+    if (
+      existing &&
+      existing.status === "timeout" &&
+      typeof existing.at === "number" &&
+      // Within the same analyze round-trip window (15s timeout + generous
+      // slack for a slow late wake-up). Outside this window the new
+      // record is genuinely a fresh attempt and may overwrite.
+      Date.now() - existing.at < 30000
+    ) {
+      return;
+    }
+    await chrome.storage.local.set({ lastAttempt: record });
   } catch {
     // ignore
   }
@@ -280,18 +297,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // very recent Chrome and only from a user gesture inside a privileged
     // context, so we fall back to opening popup.html as a regular tab —
     // chrome-extension:// URLs CAN be opened by the background via tabs.create.
-    try {
-      if (chrome.action && typeof chrome.action.openPopup === "function") {
-        chrome.action.openPopup().catch(() => {
-          chrome.tabs.create({ url: chrome.runtime.getURL("src/popup.html") });
-        });
-      } else {
-        chrome.tabs.create({ url: chrome.runtime.getURL("src/popup.html") });
+    //
+    // We respond ONLY after the open attempt has actually settled, so the
+    // content script's fallback (inline toast + clipboard) reliably fires
+    // when neither path succeeds. Anything else risks a "ghost success"
+    // where the user sees nothing happen and gets no recovery hint.
+    const openAsTab = () =>
+      new Promise((resolve) => {
+        try {
+          chrome.tabs.create(
+            { url: chrome.runtime.getURL("src/popup.html") },
+            (tab) => {
+              if (chrome.runtime.lastError || !tab) {
+                resolve({ ok: false, error: chrome.runtime.lastError ? chrome.runtime.lastError.message : "tabs_create_failed" });
+              } else {
+                resolve({ ok: true });
+              }
+            },
+          );
+        } catch (err) {
+          resolve({ ok: false, error: err && err.message ? err.message : "tabs_create_threw" });
+        }
+      });
+
+    (async () => {
+      try {
+        if (chrome.action && typeof chrome.action.openPopup === "function") {
+          try {
+            await chrome.action.openPopup();
+            sendResponse({ ok: true });
+            return;
+          } catch {
+            // openPopup() failed (no active window, no user gesture, …);
+            // fall through to the new-tab fallback.
+          }
+        }
+        const tabResult = await openAsTab();
+        sendResponse(tabResult);
+      } catch (err) {
+        sendResponse({ ok: false, error: err && err.message ? err.message : "open_popup_failed" });
       }
-      sendResponse({ ok: true });
-    } catch (err) {
-      sendResponse({ ok: false, error: err && err.message ? err.message : "open_popup_failed" });
-    }
+    })();
     return true;
   }
 
