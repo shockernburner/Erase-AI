@@ -243,18 +243,67 @@
     }
   }
 
-  function openExtensionPopup() {
+  function showOpenPopupFallback(panel) {
+    // Display a small inline toast on the error panel itself when we can't
+    // open the popup programmatically. We deliberately put the recovery
+    // hint INSIDE the panel (not as a window-level toast) so a user already
+    // looking at the error is guaranteed to see it.
+    if (!panel) return;
+    let toast = panel.querySelector(".eraseai-open-popup-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.className = "eraseai-open-popup-toast";
+      const actions = panel.querySelector(".eraseai-actions");
+      if (actions && actions.parentNode) {
+        actions.parentNode.insertBefore(toast, actions);
+      } else {
+        panel.appendChild(toast);
+      }
+    }
+    let url = "";
     try {
-      chrome.runtime.sendMessage({ type: "OPEN_POPUP" }, () => {
-        if (chrome.runtime.lastError) {
-          // Background couldn't open it (worker dead or permission error);
-          // user can still click the toolbar icon.
+      url = chrome.runtime.getURL("src/popup.html");
+    } catch {
+      url = "";
+    }
+    toast.textContent = url
+      ? `Couldn't auto-open the popup. Click the EraseAI icon in your toolbar — or paste this into a new tab: ${url}`
+      : "Couldn't auto-open the popup. Click the EraseAI icon in your toolbar.";
+
+    // Best-effort: also copy the URL to the clipboard so the user can paste
+    // it directly. Wrapped in try/catch because clipboard access can be
+    // blocked by site permissions on chat.openai.com etc.
+    if (url && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      navigator.clipboard.writeText(url).catch(() => {
+        // ignore — the toast already tells the user what to do
+      });
+    }
+  }
+
+  function openExtensionPopup(panel) {
+    let messageReturned = false;
+    try {
+      chrome.runtime.sendMessage({ type: "OPEN_POPUP" }, (response) => {
+        messageReturned = true;
+        if (chrome.runtime.lastError || !response || response.ok === false) {
+          // Background couldn't open it (worker dead, permission error, or
+          // chrome.action.openPopup unavailable). Fall back to the inline
+          // toast + clipboard so the user always has a recovery path.
+          showOpenPopupFallback(panel);
         }
       });
     } catch {
-      // Ignore — even if messaging is broken, the user can click the
-      // toolbar icon manually.
+      messageReturned = true;
+      showOpenPopupFallback(panel);
+      return;
     }
+    // If sendMessage swallowed the call entirely (no callback ever runs —
+    // can happen when the service worker port closes immediately), surface
+    // the fallback after a short grace window so the user is never left
+    // wondering whether the click did anything.
+    setTimeout(() => {
+      if (!messageReturned) showOpenPopupFallback(panel);
+    }, 800);
   }
 
   function escapeHtml(str) {
@@ -558,7 +607,7 @@
     const openPopupBtn = panel.querySelector("#eraseai-open-popup");
     if (openPopupBtn) {
       openPopupBtn.addEventListener("click", () => {
-        openExtensionPopup();
+        openExtensionPopup(panel);
       });
     }
   }

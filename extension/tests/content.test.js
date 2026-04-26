@@ -680,6 +680,89 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       expect(panelAfter.innerHTML).toBe(errorHtmlBefore);
     });
 
+    it("clicking Open Extension Popup falls back to an inline toast + clipboard URL when the background can't open the popup", async () => {
+      // Build a stub where ANALYZE never responds (so we hit the timeout
+      // path) AND OPEN_POPUP responds with ok:false (so we hit the fallback
+      // path on the click). The fallback must surface a recovery hint
+      // INSIDE the panel so a user already looking at the error sees it.
+      const listeners = { onChanged: [] };
+      const storageSets = [];
+      const writeTextCalls = [];
+      const chromeStub = {
+        __listeners: listeners,
+        __storageSets: storageSets,
+        runtime: {
+          lastError: undefined,
+          getURL: vi.fn((p) => `chrome-extension://abcd1234/${p}`),
+          sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "GET_CONFIG") {
+              queueMicrotask(() =>
+                cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
+              );
+              return;
+            }
+            if (msg.type === "ANALYZE") return; // hang
+            if (msg.type === "OPEN_POPUP") {
+              queueMicrotask(() => cb({ ok: false, error: "openPopup unavailable" }));
+              return;
+            }
+            if (typeof cb === "function") queueMicrotask(() => cb({}));
+          }),
+        },
+        storage: {
+          local: {
+            get: vi.fn((keys, cb) => {
+              if (typeof cb === "function") {
+                queueMicrotask(() => cb({ enabled: true }));
+              } else {
+                return Promise.resolve({ enabled: true });
+              }
+            }),
+            set: vi.fn((obj) => {
+              storageSets.push(obj);
+              return Promise.resolve();
+            }),
+          },
+          onChanged: {
+            addListener: vi.fn((fn) => listeners.onChanged.push(fn)),
+          },
+        },
+      };
+
+      // Stub clipboard so we can assert the URL was copied.
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: vi.fn((s) => {
+            writeTextCalls.push(s);
+            return Promise.resolve();
+          }),
+        },
+      });
+
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      await vi.advanceTimersByTimeAsync(16000);
+      await flushAsync();
+
+      const openPopupBtn = document.getElementById("eraseai-open-popup");
+      expect(openPopupBtn).not.toBeNull();
+      openPopupBtn.click();
+      await flushAsync();
+
+      const toast = document.querySelector(".eraseai-open-popup-toast");
+      expect(toast).not.toBeNull();
+      expect(toast.textContent).toMatch(/click the EraseAI icon|paste this/i);
+      // The fallback URL should have made it to the toast AND the clipboard.
+      expect(toast.textContent).toContain("chrome-extension://abcd1234/src/popup.html");
+      expect(writeTextCalls).toContain("chrome-extension://abcd1234/src/popup.html");
+    });
+
     it("clicking Close on the timeout error panel removes the overlay", async () => {
       const chromeStub = makeHangingChromeStub();
       loadContentScriptInJsdom(chromeStub);

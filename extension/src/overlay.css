@@ -343,3 +343,20 @@
   background: rgba(249, 115, 22, 0.24);
   color: #ffedd5;
 }
+
+/* Inline recovery toast shown ON the error panel when the OPEN_POPUP
+ * message round-trip to the background fails — content scripts can't
+ * always programmatically open the toolbar popup, so we show the user a
+ * fallback hint and copy the popup URL to their clipboard. */
+.eraseai-open-popup-toast {
+  margin: 0 24px 12px;
+  padding: 10px 12px;
+  background: rgba(249, 115, 22, 0.10);
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  border-radius: 8px;
+  color: #fed7aa;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  word-break: break-all;
+}
