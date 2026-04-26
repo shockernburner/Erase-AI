@@ -28,26 +28,76 @@ const CONTENT_SRC = fs.readFileSync(
   "utf8",
 );
 
+// Build a fake `chrome.runtime.Port` that captures the analyze message
+// posted by content.js and lets the test deliver a result (or never deliver
+// one, to simulate a worker suspension that the long-lived port should
+// still survive).
+function makeFakePort({ onPosted } = {}) {
+  const listeners = { message: [], disconnect: [] };
+  let disconnected = false;
+  const port = {
+    name: "analyze",
+    postMessage: vi.fn((msg) => {
+      if (typeof onPosted === "function") onPosted(msg, port);
+    }),
+    disconnect: vi.fn(() => {
+      if (disconnected) return;
+      disconnected = true;
+      for (const fn of listeners.disconnect.slice()) fn();
+    }),
+    onMessage: { addListener: vi.fn((fn) => listeners.message.push(fn)) },
+    onDisconnect: { addListener: vi.fn((fn) => listeners.disconnect.push(fn)) },
+    __deliverResult(result) {
+      const payload = { type: "ANALYZE_RESULT", result };
+      for (const fn of listeners.message.slice()) fn(payload);
+    },
+    __triggerDisconnect() {
+      port.disconnect();
+    },
+    __isDisconnected() {
+      return disconnected;
+    },
+  };
+  return port;
+}
+
 function makeChromeStub({
   enabled = true,
   apiKey = "eak_test",
   analyzeResult = { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" },
   outcomes = [],
+  ports = [],
 } = {}) {
   const listeners = { onChanged: [] };
   return {
     __listeners: listeners,
     __outcomes: outcomes,
+    __ports: ports,
     runtime: {
       lastError: undefined,
+      // Long-lived port transport for ANALYZE — the production code path
+      // since the MV3-suspension root-cause fix.
+      connect: vi.fn((info) => {
+        const port = makeFakePort({
+          onPosted: (msg, p) => {
+            if (msg && msg.type === "ANALYZE") {
+              // Mirror the background's behaviour: deliver the result via
+              // the port and then disconnect.
+              queueMicrotask(() => {
+                p.__deliverResult(analyzeResult);
+                p.disconnect();
+              });
+            }
+          },
+        });
+        port.name = info && info.name ? info.name : port.name;
+        ports.push(port);
+        return port;
+      }),
       sendMessage: vi.fn((msg, cb) => {
         if (msg.type === "GET_CONFIG") {
           // Simulate the async hop the real service worker takes.
           queueMicrotask(() => cb({ apiKey, enabled, apiUrl: "https://eraseai.ai" }));
-          return;
-        }
-        if (msg.type === "ANALYZE") {
-          queueMicrotask(() => cb(analyzeResult));
           return;
         }
         if (msg.type === "SANITIZE") {
@@ -492,11 +542,24 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
     function makeHangingChromeStub() {
       const listeners = { onChanged: [] };
       const storageSets = [];
+      const ports = [];
       return {
         __listeners: listeners,
         __storageSets: storageSets,
+        __ports: ports,
         runtime: {
           lastError: undefined,
+          // The whole point: the analyze port is opened but the
+          // background "never wakes up" to deliver a result. The port
+          // stays connected for the entire test, so even with the
+          // long-lived port transport in place, the 15s safety-net timer
+          // is the thing that must promote the overlay to a terminal
+          // error state.
+          connect: vi.fn(() => {
+            const port = makeFakePort();
+            ports.push(port);
+            return port;
+          }),
           sendMessage: vi.fn((msg, cb) => {
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
@@ -504,9 +567,6 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
               );
               return;
             }
-            // The whole point: ANALYZE never calls back. This simulates an
-            // MV3 service worker that was suspended mid-fetch.
-            if (msg.type === "ANALYZE") return;
             if (typeof cb === "function") queueMicrotask(() => cb({}));
           }),
         },
@@ -602,28 +662,30 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
     });
 
     it("late ANALYZE response after the timeout has fired does NOT flip the UI back to a result panel", async () => {
-      // Stash the cb the content script passed to sendMessage so we can fire
-      // it manually AFTER the timeout has already promoted the overlay to
-      // the error state. This is the exact race the production fix has to
-      // win — a worker that finally wakes up and calls sendResponse must
-      // not be allowed to clobber the user-visible error.
+      // Stash the analyze port so we can deliver a late result over it
+      // AFTER the safety-net timer has already promoted the overlay to
+      // the error state. With the long-lived port transport this should
+      // be even rarer than under sendMessage (because the port keep-alive
+      // prevents the underlying suspension), but the rendering code must
+      // still refuse to clobber the user-visible error if a late result
+      // ever lands.
       const listeners = { onChanged: [] };
       const storageSets = [];
-      let savedCb = null;
+      let savedPort = null;
       const chromeStub = {
         __listeners: listeners,
         __storageSets: storageSets,
         runtime: {
           lastError: undefined,
+          connect: vi.fn(() => {
+            savedPort = makeFakePort();
+            return savedPort;
+          }),
           sendMessage: vi.fn((msg, cb) => {
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
               );
-              return;
-            }
-            if (msg.type === "ANALYZE") {
-              savedCb = cb;
               return;
             }
             if (typeof cb === "function") queueMicrotask(() => cb({}));
@@ -664,9 +726,16 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       expect(panel.classList.contains("eraseai-error-panel")).toBe(true);
       const errorHtmlBefore = panel.innerHTML;
 
-      // Now the suspended worker "wakes up" and finally answers.
-      expect(typeof savedCb).toBe("function");
-      savedCb({ riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" });
+      // Now the suspended worker "wakes up" and finally answers via the
+      // still-open port.
+      expect(savedPort).not.toBeNull();
+      savedPort.__deliverResult({
+        riskScore: 100,
+        level: "safe",
+        issues: [],
+        suggestions: [],
+        summary: "All clear",
+      });
       await flushAsync();
 
       // The error panel must NOT have been replaced by the safe-path
@@ -692,6 +761,10 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
         runtime: {
           lastError: undefined,
           getURL: vi.fn((p) => `chrome-extension://abcd1234/${p}`),
+          // Hang the analyze port — the result message never arrives, so
+          // the 15s safety-net timer must fire and promote the overlay
+          // to its terminal error state.
+          connect: vi.fn(() => makeFakePort()),
           sendMessage: vi.fn((msg, cb) => {
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
@@ -699,7 +772,6 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
               );
               return;
             }
-            if (msg.type === "ANALYZE") return; // hang
             if (msg.type === "OPEN_POPUP") {
               queueMicrotask(() => cb({ ok: false, error: "openPopup unavailable" }));
               return;
@@ -780,6 +852,301 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       await flushAsync();
 
       expect(document.getElementById("eraseai-overlay-backdrop")).toBeNull();
+    });
+  });
+
+  describe("ANALYZE long-lived port (task #124 — MV3 worker-suspension root-cause fix)", () => {
+    it("opens a chrome.runtime.connect port named 'analyze' instead of using sendMessage", async () => {
+      // The bug: chrome.runtime.sendMessage lets the MV3 service worker
+      // be suspended mid-fetch. The fix: use a long-lived port, which
+      // Chrome documents as a service-worker keep-alive for the life of
+      // the connection.
+      const chromeStub = makeChromeStub({
+        analyzeResult: {
+          riskScore: 100,
+          level: "safe",
+          issues: [],
+          suggestions: [],
+          summary: "All clear",
+        },
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // The content script must have opened exactly one analyze port for
+      // this submission, with the agreed-upon name.
+      expect(chromeStub.runtime.connect).toHaveBeenCalledTimes(1);
+      const connectArg = chromeStub.runtime.connect.mock.calls[0][0];
+      expect(connectArg).toEqual({ name: "analyze" });
+      expect(chromeStub.__ports).toHaveLength(1);
+
+      // The ANALYZE request must have travelled OVER THE PORT, not via a
+      // bare sendMessage — the latter would re-introduce the suspension
+      // window the fix is meant to close.
+      const analyzePort = chromeStub.__ports[0];
+      expect(analyzePort.postMessage).toHaveBeenCalledTimes(1);
+      const posted = analyzePort.postMessage.mock.calls[0][0];
+      expect(posted.type).toBe("ANALYZE");
+      expect(posted.text).toMatch(/otters/);
+      expect(typeof posted.attemptId).toBe("string");
+      expect(posted.attemptId.length).toBeGreaterThan(0);
+
+      // No ANALYZE message should have been sent through the legacy
+      // sendMessage transport — that path was the root cause and must
+      // not be re-used by content.js.
+      const sendMessageCalls = chromeStub.runtime.sendMessage.mock.calls.map((c) => c[0]);
+      expect(sendMessageCalls.some((m) => m && m.type === "ANALYZE")).toBe(false);
+    });
+
+    it("renders the analyze result delivered over the port (the worker-stayed-alive happy path)", async () => {
+      const chromeStub = makeChromeStub({
+        analyzeResult: {
+          riskScore: 60,
+          level: "caution",
+          issues: [
+            { category: "pii", severity: "medium", detail: "Email address found", match: "a@b.c", start: 0, end: 5 },
+          ],
+          suggestions: [],
+          summary: "1 issue",
+        },
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // The warning panel must render — proving the result that came back
+      // OVER THE PORT is processed by the same finalize logic as the old
+      // sendMessage callback.
+      const panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(document.getElementById("eraseai-sanitize")).not.toBeNull();
+      expect(document.getElementById("eraseai-send-anyway")).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+    });
+
+    it("survives a simulated mid-fetch suspension window: result delivered over the port well past the old suspension cutoff still renders normally", async () => {
+      // Build a stub where the analyze port is opened but the result is
+      // NOT delivered immediately — we hold it for 8 seconds (well past
+      // the ~30s idle suspension threshold scaled to test time, and a
+      // realistic worst-case fetch duration). The port's keep-alive
+      // contract is what makes this safe; the user must see a normal
+      // result panel, NOT the safety-net error panel.
+      const listeners = { onChanged: [] };
+      const ports = [];
+      const chromeStub = {
+        __listeners: listeners,
+        __ports: ports,
+        runtime: {
+          lastError: undefined,
+          connect: vi.fn(() => {
+            const port = makeFakePort();
+            ports.push(port);
+            return port;
+          }),
+          sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "GET_CONFIG") {
+              queueMicrotask(() =>
+                cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
+              );
+              return;
+            }
+            if (typeof cb === "function") queueMicrotask(() => cb({}));
+          }),
+        },
+        storage: {
+          local: {
+            get: vi.fn((keys, cb) => {
+              if (typeof cb === "function") {
+                queueMicrotask(() => cb({ enabled: true }));
+              } else {
+                return Promise.resolve({ enabled: true });
+              }
+            }),
+            set: vi.fn(() => Promise.resolve()),
+          },
+          onChanged: { addListener: vi.fn((fn) => listeners.onChanged.push(fn)) },
+        },
+      };
+
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // The spinner is up; the safety-net timer is armed but not fired.
+      let panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+      expect(document.querySelector(".eraseai-spinner")).not.toBeNull();
+
+      // Burn ~8s of the 15s safety-net window. Under the OLD sendMessage
+      // transport, this is precisely the slice during which the worker
+      // could have been suspended and the callback never fired. Under
+      // the port transport, the port keeps the worker alive and the
+      // result is delivered through it.
+      await vi.advanceTimersByTimeAsync(8000);
+      await flushAsync();
+
+      // Spinner must still be on screen — we are NOT in the error state.
+      panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+
+      // Now the background finally posts the analyze result through the
+      // still-alive port. We use a caution-level result so the panel
+      // stays on screen (safe auto-dismisses after 1.2s and would
+      // confuse the assertion below).
+      expect(ports).toHaveLength(1);
+      ports[0].__deliverResult({
+        riskScore: 55,
+        level: "caution",
+        issues: [
+          { category: "pii", severity: "medium", detail: "Email", match: "a@b.c", start: 0, end: 5 },
+        ],
+        suggestions: [],
+        summary: "1 issue",
+      });
+      ports[0].__triggerDisconnect();
+      await flushAsync();
+
+      // The user must see the normal warning panel — proving the
+      // result rode the port to completion. The safety-net timer must
+      // have been cancelled (otherwise it would still flip us to the
+      // error panel below).
+      panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+      expect(document.getElementById("eraseai-sanitize")).not.toBeNull();
+      expect(document.getElementById("eraseai-send-anyway")).not.toBeNull();
+
+      // Push past the 15s safety-net deadline. The error panel must NOT
+      // appear — the timer was cancelled when the port delivered.
+      await vi.advanceTimersByTimeAsync(10000);
+      await flushAsync();
+      panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(false);
+    });
+
+    it("falls back to a network error panel AND persists lastAttempt=error when the analyze port is disconnected before any result arrives (e.g. background crash)", async () => {
+      const listeners = { onChanged: [] };
+      const ports = [];
+      const storageSets = [];
+      const chromeStub = {
+        __listeners: listeners,
+        __ports: ports,
+        __storageSets: storageSets,
+        runtime: {
+          lastError: undefined,
+          connect: vi.fn(() => {
+            const port = makeFakePort();
+            ports.push(port);
+            return port;
+          }),
+          sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "GET_CONFIG") {
+              queueMicrotask(() =>
+                cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
+              );
+              return;
+            }
+            if (typeof cb === "function") queueMicrotask(() => cb({}));
+          }),
+        },
+        storage: {
+          local: {
+            get: vi.fn((keys, cb) => {
+              if (typeof cb === "function") {
+                queueMicrotask(() => cb({ enabled: true }));
+              } else {
+                return Promise.resolve({ enabled: true });
+              }
+            }),
+            set: vi.fn((obj) => {
+              storageSets.push(obj);
+              return Promise.resolve();
+            }),
+          },
+          onChanged: { addListener: vi.fn((fn) => listeners.onChanged.push(fn)) },
+        },
+      };
+
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      // Background tears down the port without sending a result. This is
+      // the "worker crash" / "extension reloaded mid-flight" path. We
+      // must NOT wait the full 15s for the safety-net timer — the
+      // disconnect itself should promote the overlay to a terminal
+      // network-error state immediately, so the user gets feedback
+      // promptly instead of staring at a spinner.
+      expect(ports).toHaveLength(1);
+      ports[0].__triggerDisconnect();
+      await flushAsync();
+
+      const panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(true);
+      expect(panel.textContent).toMatch(/Couldn't analyze/i);
+
+      // The popup's "Last attempt" line must reflect this failure too —
+      // background.js's recordLastAttempt() never runs in this branch
+      // because the worker disconnected before processing the message,
+      // so the content script has to persist it itself.
+      const lastAttemptWrites = storageSets.filter((s) => "lastAttempt" in s);
+      expect(lastAttemptWrites.length).toBeGreaterThanOrEqual(1);
+      const tail = lastAttemptWrites[lastAttemptWrites.length - 1].lastAttempt;
+      expect(tail.status).toBe("error");
+      expect(tail.reason).toMatch(/disconnected|port/i);
+      expect(typeof tail.at).toBe("number");
+    });
+
+    it("falls back to a network error panel AND persists lastAttempt=error when chrome.runtime.connect throws (no port at all)", async () => {
+      const storageSets = [];
+      const chromeStub = makeChromeStub({});
+      // Override connect to throw synchronously — simulates the
+      // pathological "extension context invalidated" branch.
+      chromeStub.runtime.connect = vi.fn(() => {
+        throw new Error("Extension context invalidated.");
+      });
+      // Capture every storage write so we can assert the lastAttempt
+      // record made it through.
+      chromeStub.storage.local.set = vi.fn((obj) => {
+        storageSets.push(obj);
+        return Promise.resolve();
+      });
+      loadContentScriptInJsdom(chromeStub);
+      await flushAsync();
+
+      const { textarea } = setUpChatGPTDom();
+      await flushAsync();
+      dispatchEnterOn(textarea);
+      await flushAsync();
+
+      const panel = document.getElementById("eraseai-overlay-panel");
+      expect(panel).not.toBeNull();
+      expect(panel.classList.contains("eraseai-error-panel")).toBe(true);
+      expect(panel.textContent).toMatch(/Couldn't analyze/i);
+
+      const lastAttemptWrites = storageSets.filter((s) => "lastAttempt" in s);
+      expect(lastAttemptWrites.length).toBeGreaterThanOrEqual(1);
+      const tail = lastAttemptWrites[lastAttemptWrites.length - 1].lastAttempt;
+      expect(tail.status).toBe("error");
+      expect(tail.reason).toMatch(/port|connect/i);
     });
   });
 });

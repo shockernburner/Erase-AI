@@ -661,32 +661,19 @@
 
       const { panel } = createOverlayBackdrop();
 
-      // Hard client-side ceiling — guarantees a terminal UI state if the
-      // MV3 service worker is suspended mid-fetch and never calls back.
-      // attemptId correlates the timeout record with the matching late
-      // background response so we can suppress only stale same-attempt
-      // overwrites (see recordLastAttempt in background.js).
+      // Hard client-side ceiling — true safety net now that ANALYZE goes
+      // over a long-lived port (see below). The port keeps the MV3 service
+      // worker alive for the duration of the in-flight fetch, so this
+      // timer is not expected to fire under normal conditions; it only
+      // catches pathological cases (port creation throws, worker crash
+      // before responding, etc.). attemptId correlates the timeout record
+      // with the matching late background response so we can suppress
+      // stale same-attempt overwrites (see recordLastAttempt in
+      // background.js).
       const attemptId = newAttemptId();
       let analyzeResponded = false;
-      analyzeTimer = setTimeout(() => {
-        if (analyzeResponded) return;
-        analyzeResponded = true;
-        analyzeTimer = null;
-        persistLastAttempt({
-          status: "timeout",
-          reason: `No response from background within ${Math.round(ANALYZE_TIMEOUT_MS / 1000)}s`,
-          at: Date.now(),
-          attemptId,
-        });
-        renderError(
-          panel,
-          "Couldn't reach the EraseAI service in time. Check your API key and connection in the extension popup.",
-          { kind: "timeout", showOpenPopup: true },
-        );
-        isIntercepting = false;
-      }, ANALYZE_TIMEOUT_MS);
 
-      chrome.runtime.sendMessage({ type: "ANALYZE", text, attemptId }, (result) => {
+      const finalizeWithResult = (result) => {
         if (analyzeResponded) return;
         analyzeResponded = true;
         if (analyzeTimer != null) {
@@ -694,7 +681,7 @@
           analyzeTimer = null;
         }
 
-        if (chrome.runtime.lastError || !result) {
+        if (!result) {
           renderError(
             panel,
             "Failed to connect to EraseAI service.",
@@ -743,7 +730,104 @@
 
         renderResults(panel, result, inputEl);
         isIntercepting = false;
+      };
+
+      const finalizeWithError = (errorMsg, persistReason) => {
+        if (analyzeResponded) return;
+        analyzeResponded = true;
+        if (analyzeTimer != null) {
+          clearTimeout(analyzeTimer);
+          analyzeTimer = null;
+        }
+        // Keep the popup's "Last attempt" status line accurate when the
+        // port path fails before delivering a result (background crashed,
+        // extension context invalidated, port creation threw, etc.). The
+        // background's recordLastAttempt() never runs in these cases
+        // because the worker either died or never received the message.
+        if (persistReason) {
+          persistLastAttempt({
+            status: "error",
+            reason: persistReason,
+            at: Date.now(),
+            attemptId,
+          });
+        }
+        renderError(
+          panel,
+          errorMsg,
+          { kind: "network", showOpenPopup: true },
+        );
+        isIntercepting = false;
+      };
+
+      analyzeTimer = setTimeout(() => {
+        if (analyzeResponded) return;
+        analyzeResponded = true;
+        analyzeTimer = null;
+        persistLastAttempt({
+          status: "timeout",
+          reason: `No response from background within ${Math.round(ANALYZE_TIMEOUT_MS / 1000)}s`,
+          at: Date.now(),
+          attemptId,
+        });
+        renderError(
+          panel,
+          "Couldn't reach the EraseAI service in time. Check your API key and connection in the extension popup.",
+          { kind: "timeout", showOpenPopup: true },
+        );
+        isIntercepting = false;
+      }, ANALYZE_TIMEOUT_MS);
+
+      // Long-lived port transport. While this port is connected, Chrome
+      // keeps the MV3 service worker alive, so the analyze fetch can
+      // complete even if the worker would otherwise have been suspended
+      // mid-flight. The background-side onConnect handler posts back a
+      // single { type: "ANALYZE_RESULT", result } message and then
+      // disconnects, releasing the keep-alive.
+      let analyzePort = null;
+      try {
+        analyzePort = chrome.runtime.connect({ name: "analyze" });
+      } catch (err) {
+        finalizeWithError(
+          "Failed to connect to EraseAI service.",
+          "Could not open analyze port (extension context invalidated?)",
+        );
+        return;
+      }
+      if (!analyzePort) {
+        finalizeWithError(
+          "Failed to connect to EraseAI service.",
+          "chrome.runtime.connect returned no port",
+        );
+        return;
+      }
+
+      analyzePort.onMessage.addListener((msg) => {
+        if (!msg || msg.type !== "ANALYZE_RESULT") return;
+        finalizeWithResult(msg.result);
       });
+
+      analyzePort.onDisconnect.addListener(() => {
+        // If we've already rendered a result this is the normal teardown
+        // (background disconnects after posting). Otherwise something
+        // tore the port down before we got a result — surface it as a
+        // network error rather than letting the spinner ride out the 15s
+        // safety-net timer.
+        if (analyzeResponded) return;
+        finalizeWithError(
+          "Failed to connect to EraseAI service.",
+          "Background disconnected the analyze port before delivering a result",
+        );
+      });
+
+      try {
+        analyzePort.postMessage({ type: "ANALYZE", text, attemptId });
+      } catch (err) {
+        finalizeWithError(
+          "Failed to connect to EraseAI service.",
+          "Could not post ANALYZE message over the port",
+        );
+      }
     });
   }
 

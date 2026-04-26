@@ -23,6 +23,7 @@ function makeChrome(storage = {}) {
     },
     runtime: {
       onMessage: { addListener: vi.fn() },
+      onConnect: { addListener: vi.fn() },
     },
   };
 }
@@ -522,6 +523,163 @@ describe("background.testConnection", () => {
       expect(attempts[0].lastAttempt.status).toBe("success");
       expect(attempts[0].lastAttempt.reason).toMatch(/bypass/i);
       expect(sendResponse).toHaveBeenCalledWith({ bypass: true });
+    });
+  });
+
+  describe("ANALYZE long-lived port (task #124 — MV3 worker-suspension root-cause fix)", () => {
+    function makeFakeIncomingPort(name = "analyze") {
+      const listeners = { message: [], disconnect: [] };
+      const posted = [];
+      let disconnected = false;
+      return {
+        name,
+        __posted: posted,
+        __isDisconnected: () => disconnected,
+        postMessage: vi.fn((msg) => posted.push(msg)),
+        disconnect: vi.fn(() => {
+          if (disconnected) return;
+          disconnected = true;
+          for (const fn of listeners.disconnect.slice()) fn();
+        }),
+        onMessage: { addListener: vi.fn((fn) => listeners.message.push(fn)) },
+        onDisconnect: { addListener: vi.fn((fn) => listeners.disconnect.push(fn)) },
+        __deliverIncoming(msg) {
+          for (const fn of listeners.message.slice()) fn(msg);
+        },
+      };
+    }
+
+    it("registers an onConnect handler for the long-lived 'analyze' port", () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse({ riskScore: 0.5, level: "safe" }),
+      });
+      // Background must register exactly one onConnect listener — that's
+      // the keep-alive entry point that prevents the MV3 worker from
+      // being suspended mid-fetch.
+      expect(chromeStub.runtime.onConnect.addListener).toHaveBeenCalledTimes(1);
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      expect(typeof handler).toBe("function");
+    });
+
+    it("ignores ports with a name other than 'analyze' (no message listener attached)", () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse({}),
+      });
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort("not-analyze");
+      handler(port);
+      // Must NOT have wired up an onMessage listener on a foreign port.
+      expect(port.onMessage.addListener).not.toHaveBeenCalled();
+    });
+
+    it("runs analyze, posts the result over the port, and disconnects so the worker keep-alive is released", async () => {
+      const serverPayload = {
+        riskScore: 95,
+        level: "safe",
+        issues: [],
+        summary: "All clear",
+      };
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse(serverPayload),
+      });
+
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort();
+      handler(port);
+      // Drive an ANALYZE message in over the port.
+      port.__deliverIncoming({ type: "ANALYZE", text: "hello", attemptId: "att_42" });
+
+      // Wait for the analyze + storage promise chain to settle.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // The result must have come back OVER THE PORT in the agreed
+      // wrapper shape.
+      expect(port.__posted).toHaveLength(1);
+      expect(port.__posted[0]).toEqual({
+        type: "ANALYZE_RESULT",
+        result: serverPayload,
+      });
+
+      // Port must be disconnected after the result is posted — otherwise
+      // the worker keep-alive would stay armed forever and exhaust the
+      // 5-minute lifetime cap.
+      expect(port.__isDisconnected()).toBe(true);
+
+      // lastScan + lastAttempt writes must STILL happen, identical to
+      // the legacy sendMessage path. This proves we factored the storage
+      // side-effects out into a shared helper rather than dropping them
+      // when switching transports.
+      const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
+      expect(setCalls).toContainEqual({
+        lastScan: {
+          riskScore: 95,
+          level: "safe",
+          issueCount: 0,
+          scannedAt: expect.any(Number),
+        },
+      });
+      const lastAttemptWrites = setCalls.filter((c) => "lastAttempt" in c);
+      expect(lastAttemptWrites).toHaveLength(1);
+      expect(lastAttemptWrites[0].lastAttempt.status).toBe("success");
+      expect(lastAttemptWrites[0].lastAttempt.attemptId).toBe("att_42");
+    });
+
+    it("posts an error wrapper and disconnects when analyze returns an error (e.g. invalid API key)", async () => {
+      init({
+        storage: { apiKey: "eak_bad", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 401,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Invalid API key", code: "INVALID_KEY" }),
+        }),
+      });
+
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort();
+      handler(port);
+      port.__deliverIncoming({ type: "ANALYZE", text: "hello", attemptId: "att_x" });
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(port.__posted).toHaveLength(1);
+      expect(port.__posted[0].type).toBe("ANALYZE_RESULT");
+      expect(port.__posted[0].result).toEqual({
+        error: "Invalid API key",
+        code: "INVALID_KEY",
+      });
+      expect(port.__isDisconnected()).toBe(true);
+
+      // lastAttempt error must STILL be persisted so the popup status
+      // line stays accurate when the failure rode the port path.
+      const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
+      const lastAttemptWrites = setCalls.filter((c) => "lastAttempt" in c);
+      expect(lastAttemptWrites).toHaveLength(1);
+      expect(lastAttemptWrites[0].lastAttempt.status).toBe("error");
+      expect(lastAttemptWrites[0].lastAttempt.reason).toBe("Invalid API key");
+    });
+
+    it("ignores non-ANALYZE messages arriving on the analyze port (no fetch, no posting)", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => jsonResponse({ riskScore: 0.5, level: "safe" }),
+      });
+      const handler = chromeStub.runtime.onConnect.addListener.mock.calls[0][0];
+      const port = makeFakeIncomingPort();
+      handler(port);
+
+      port.__deliverIncoming({ type: "SOMETHING_ELSE", text: "x" });
+      port.__deliverIncoming(null);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(fetchStub).not.toHaveBeenCalled();
+      expect(port.__posted).toHaveLength(0);
+      expect(port.__isDisconnected()).toBe(false);
     });
   });
 
