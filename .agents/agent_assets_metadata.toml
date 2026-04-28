@@ -96,6 +96,18 @@ uri = "file://attached_assets/generated_images/eraseai_linkedin_cover.png"
 type = "image"
 title = "eraseai linkedin cover v2"
 
+[[generated]]
+id = "8RWWPaC3Gawa8w7qTn_Ou"
+uri = "file://attached_assets/medium-cover/identity-gap-model-master-src.png"
+type = "image"
+title = "identity gap model master"
+
+[[generated]]
+id = "M9hOBjgQ84q8fVO7WJr4Q"
+uri = "file://attached_assets/medium-cover/hallway-missing-door-master-src.png"
+type = "image"
+title = "hallway missing door master"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -257,3 +269,27 @@ id = "rQNhYDS-LCEvj6gP50JbZ"
 uri = "file://attached_assets/meeting-prep-joseph-callahan-2026-04-29.tar.gz"
 type = "unspecified"
 title = "Meeting prep — Joe Callahan (29 Apr 2026)"
+
+[[outputs]]
+id = "mSaIMF3nDfarRkcHYA6ZQ"
+uri = "file://attached_assets/medium-cover/identity-gap-model-master-1500x750.png"
+type = "image"
+title = "Medium cover — Identity / Gap / Model (1500×750, upload this one)"
+
+[[outputs]]
+id = "4x4zKMGjioeb4BAhqPNIV"
+uri = "file://attached_assets/medium-cover/identity-gap-model-master-2400x1200.png"
+type = "image"
+title = "Medium cover — Identity / Gap / Model (2400×1200 hi-res master)"
+
+[[outputs]]
+id = "O1QPlYdkwQrPP6e5DD-UA"
+uri = "file://attached_assets/medium-cover/hallway-missing-door-master-1500x750.png"
+type = "image"
+title = "Stock-alternative — hallway with missing door (1500×750)"
+
+[[outputs]]
+id = "noiWzd1ChMqydswYoXE1q"
+uri = "file://attached_assets/medium-cover/hallway-missing-door-master-2400x1200.png"
+type = "image"
+title = "Stock-alternative — hallway with missing door (2400×1200 hi-res master)"
