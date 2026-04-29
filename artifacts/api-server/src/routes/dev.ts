@@ -9,6 +9,8 @@ import { maskSecret } from "../lib/dev/secrets";
 import { hashApiKey } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
 import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
+import { trackApiUsage, apiRateLimit } from "../middlewares/rateLimitMiddleware";
+import { apiKeyBurstLimit, ipBurstLimit } from "../middlewares/burstLimitMiddleware";
 
 const router = Router();
 
@@ -194,7 +196,7 @@ async function buildAuthedPingPayload(
   };
 }
 
-router.get("/ping", async (req, res) => {
+router.get("/ping", ipBurstLimit(), async (req, res) => {
   const meta = buildMeta();
   const auth = await resolvePingAuth(req);
   if (auth.kind === "error") {
@@ -209,6 +211,14 @@ router.get("/ping", async (req, res) => {
 });
 
 router.use(sessionOrApiKeyAuth);
+
+// Per-API-key burst limiter (60 req/min) — applies to all plans, including
+// enterprise. No session-based caller (the dashboard) is constrained here;
+// the bucket is keyed by req.apiKeyId, so session callers pass through.
+const burstChain = [apiKeyBurstLimit()];
+// Monthly per-plan quota + audit-log of every API-key request. Both are
+// no-ops when there's no req.apiKeyId (i.e. session-based dashboard calls).
+const quotaChain = [trackApiUsage(), apiRateLimit()];
 
 const FREE_DAILY_LIMIT = 10;
 
@@ -241,7 +251,7 @@ async function checkDailyLimit(userId: string, plan: string): Promise<{ allowed:
   return { allowed: used < FREE_DAILY_LIMIT, used };
 }
 
-router.post("/analyze", refreshPlanFromDB, async (req, res) => {
+router.post("/analyze", ...burstChain, ...quotaChain, refreshPlanFromDB, async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
@@ -301,7 +311,7 @@ router.post("/analyze", refreshPlanFromDB, async (req, res) => {
   }
 });
 
-router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
+router.post("/sanitize", ...burstChain, ...quotaChain, refreshPlanFromDB, async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
@@ -356,7 +366,7 @@ router.post("/sanitize", refreshPlanFromDB, async (req, res) => {
   }
 });
 
-router.post("/outcome", async (req, res) => {
+router.post("/outcome", ...burstChain, ...quotaChain, async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });

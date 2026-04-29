@@ -16,6 +16,83 @@ what ships to every store.
 
 ---
 
+## 0. Pinned extension ID & private-key custody
+
+The production extension ID is **pinned**, not store-assigned, so the API
+server's CORS allow-list (which only honours `chrome-extension://<id>` for
+the pinned ID) survives the Chrome Web Store upload and stays consistent
+across local "Load unpacked" dev installs, Chrome Web Store, and Edge.
+
+**Pinned extension ID:** `bhcdkolfchcihbiakkbkfpfpempgdgji`
+
+This ID is derived from the public half of an RSA-2048 keypair. The public
+half lives in the repo as the `key` field in
+[`extension/manifest.json`](./manifest.json) and is also baked into the
+api-server CORS allow-list at
+[`artifacts/api-server/src/lib/security/cors-source.mjs`](../artifacts/api-server/src/lib/security/cors-source.mjs)
+under `PINNED_EXTENSION_ID`. Both must always agree — if you ever change
+the `key` field, you must also update `PINNED_EXTENSION_ID` in the same PR
+or the production extension will start failing CORS preflights against its
+own backend.
+
+**Where the private key lives**
+
+The matching `.pem` private key is **not** committed to git. It is
+generated once and stored in two places out-of-band:
+
+1. The team's shared password manager (1Password vault `Vantward / Eng`),
+   under the entry **"EraseAI Firewall — extension signing key"**.
+2. A printed paper copy in the locked office drawer, as a disaster-recovery
+   backup if the vault is lost.
+
+When this repo was first set up the private key was generated locally and
+written to `.local/secrets/extension-signing-key.pem` (a path that is
+gitignored via the `.local/` rule). That file is the one-time staging
+location — **after generation it must be moved into the password manager
+and deleted from disk.** If you find the file still sitting in `.local/`,
+that is a bug: move it now.
+
+**Regenerating the key (only if compromised)**
+
+If the private key is ever leaked or lost:
+
+```sh
+# 1. Generate a new keypair.
+openssl genrsa -out new-extension-signing-key.pem 2048
+# 2. Extract the public-key DER and base64-encode it.
+openssl rsa -in new-extension-signing-key.pem -pubout -outform DER \
+  | base64 -w0 > new-extension-public-key.b64
+# 3. Compute the new chrome-extension://<id>.
+node -e '
+  const crypto = require("crypto");
+  const { execSync } = require("child_process");
+  const der = execSync("openssl rsa -in new-extension-signing-key.pem -pubout -outform DER");
+  const hash = crypto.createHash("sha256").update(der).digest("hex");
+  const id = hash.substring(0, 32).split("").map(c =>
+    String.fromCharCode("a".charCodeAt(0) + parseInt(c, 16))
+  ).join("");
+  console.log("new extension ID:", id);
+'
+```
+
+Then:
+- Replace the `key` field in `extension/manifest.json` with the new base64.
+- Replace `PINNED_EXTENSION_ID` in
+  `artifacts/api-server/src/lib/security/cors-source.mjs` with the new ID.
+- Move the new `.pem` into the password manager + paper backup.
+- Delete the local `.pem`.
+
+**⚠️ Warning — ID changes after Chrome Web Store publish**
+
+Once the extension is live in the Chrome Web Store, **changing the `key`
+field changes the extension ID, which the Chrome Web Store treats as a
+brand-new extension.** Existing users would not get the update; they would
+have to install the new listing manually and the old listing would have to
+be unpublished. Treat the keypair as permanent unless it is actually
+compromised.
+
+---
+
 ## 1. Cut a release
 
 1. Bump the `version` in `extension/manifest.json`. Use `MAJOR.MINOR.PATCH`.
@@ -166,10 +243,13 @@ listing goes live, then redeploy.
 ## 6. Quick checklist
 
 - [ ] Bump `extension/manifest.json` version
+- [ ] Confirm `manifest.json` `key` field still matches the pinned extension ID
+      (`bhcdkolfchcihbiakkbkfpfpempgdgji`); never edit it casually (see § 0)
 - [ ] Add a matching entry to `extension/CHANGELOG.json`
 - [ ] `pnpm --filter @workspace/api-server run build`
 - [ ] Verify `dist/eraseai-firewall-store-<version>.zip` has `manifest.json` at root
-- [ ] Smoke-test "Load unpacked" against `/extension`
+- [ ] Smoke-test "Load unpacked" against `/extension` and confirm Chrome
+      assigns the pinned ID `bhcdkolfchcihbiakkbkfpfpempgdgji`
 - [ ] Upload to Chrome Web Store dashboard, submit for review
 - [ ] Upload to Edge Add-ons dashboard, submit for review
 - [ ] (Firefox) requires polyfill work — see section 4
