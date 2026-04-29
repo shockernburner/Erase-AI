@@ -27,6 +27,62 @@ EXCEPTION WHEN undefined_table THEN
   NULL;
 END
 $$;
+
+-- Idempotent fixup: drop the legacy `dev_scans` table that predates
+-- `personal_scans` and is no longer in the Drizzle schema. If we don't
+-- drop it explicitly, `drizzle-kit push` asks an interactive y/n on every
+-- post-merge run. Any rows still in `dev_scans` are migrated into
+-- `personal_scans` first (transforming the old `issues` JSON shape into
+-- the new `flags` shape) so historical dev scans aren't lost. See task #129.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'dev_scans'
+  ) THEN
+    INSERT INTO personal_scans (user_id, content, risk_score, flags, suggestions, level, created_at)
+    SELECT
+      user_id,
+      input_text,
+      risk_score,
+      COALESCE(
+        (
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'type', i->>'category',
+              'severity', i->>'severity',
+              'detail', i->>'detail',
+              'matchedText', i->>'match',
+              'position', jsonb_build_object(
+                'start', COALESCE((i->>'start')::int, 0),
+                'end',   COALESCE((i->>'end')::int, 0)
+              )
+            )
+          )
+          FROM jsonb_array_elements(
+            CASE
+              WHEN issues IS NOT NULL
+                AND jsonb_typeof(issues::jsonb) = 'array'
+              THEN issues::jsonb
+              ELSE '[]'::jsonb
+            END
+          ) AS i
+        )::text,
+        '[]'
+      ),
+      '[]',
+      CASE
+        WHEN risk_score >= 70 THEN 'high'
+        WHEN risk_score >= 40 THEN 'medium'
+        ELSE 'low'
+      END,
+      created_at
+    FROM dev_scans;
+
+    DROP TABLE dev_scans;
+  END IF;
+END
+$$;
 SQL
 fi
 
