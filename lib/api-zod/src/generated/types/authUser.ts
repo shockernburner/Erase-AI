@@ -24,8 +24,4 @@ export interface AuthUser {
   planStartDate?: string | null;
   /** @nullable */
   planEndDate?: string | null;
-  /** @nullable */
-  termsAcceptedAt?: string | null;
-  /** @nullable */
-  termsVersion?: string | null;
 }

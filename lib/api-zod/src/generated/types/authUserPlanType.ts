@@ -11,6 +11,7 @@ export type AuthUserPlanType =
 
 export const AuthUserPlanType = {
   free: "free",
+  personal: "personal",
   pro: "pro",
   business: "business",
   enterprise: "enterprise",

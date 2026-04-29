@@ -1,6 +1,19 @@
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import type { AuthUserPlanType } from "@workspace/api-zod";
+
+export function toPlanType(value: string | null | undefined): AuthUserPlanType {
+  switch (value) {
+    case "personal":
+    case "pro":
+    case "business":
+    case "enterprise":
+      return value;
+    default:
+      return "free";
+  }
+}
 
 export function getUserPlan(req: Request): string {
   return req.user?.planType || "free";
@@ -97,7 +110,7 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
         .from(usersTable)
         .where(eq(usersTable.id, req.user.id));
       if (freshUser) {
-        req.user.planType = (freshUser.planType || "free") as "free" | "personal" | "pro" | "business" | "enterprise";
+        req.user.planType = toPlanType(freshUser.planType);
         if (freshUser.planEndDate) {
           req.user.planEndDate = freshUser.planEndDate.toISOString();
         }
