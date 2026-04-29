@@ -397,31 +397,40 @@ router.get("/admin/api-usage", async (req: Request, res: Response) => {
     const weekStart = new Date(now);
     weekStart.setDate(weekStart.getDate() - 7);
 
-    const [[totalThisMonth], [totalThisWeek], [totalAllTime]] = await Promise.all([
+    const [[totalThisMonth], [totalThisWeek], [totalAllTime], [spendThisMonth]] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(apiUsageTable).where(gte(apiUsageTable.createdAt, monthStart)),
       db.select({ count: sql<number>`count(*)::int` }).from(apiUsageTable).where(gte(apiUsageTable.createdAt, weekStart)),
       db.select({ count: sql<number>`count(*)::int` }).from(apiUsageTable),
+      db
+        .select({ total: sql<number>`COALESCE(SUM(${apiUsageTable.costMicros}), 0)::bigint` })
+        .from(apiUsageTable)
+        .where(gte(apiUsageTable.createdAt, monthStart)),
     ]);
 
+    // Top spenders MTD, sorted by cost (task #132).
     const topUsers = await db
       .select({
         userId: apiKeysTable.userId,
         email: usersTable.email,
         planType: usersTable.planType,
         requestCount: sql<number>`count(*)::int`,
+        spendMicros: sql<number>`COALESCE(SUM(${apiUsageTable.costMicros}), 0)::bigint`,
+        tokens: sql<number>`COALESCE(SUM(${apiUsageTable.tokens}), 0)::bigint`,
+        overrideMicros: usersTable.apiSpendOverrideMicros,
       })
       .from(apiUsageTable)
       .innerJoin(apiKeysTable, eq(apiUsageTable.apiKeyId, apiKeysTable.id))
       .innerJoin(usersTable, eq(apiKeysTable.userId, usersTable.id))
       .where(gte(apiUsageTable.createdAt, monthStart))
-      .groupBy(apiKeysTable.userId, usersTable.email, usersTable.planType)
-      .orderBy(sql`count(*) DESC`)
+      .groupBy(apiKeysTable.userId, usersTable.email, usersTable.planType, usersTable.apiSpendOverrideMicros)
+      .orderBy(sql`COALESCE(SUM(${apiUsageTable.costMicros}), 0) DESC`)
       .limit(10);
 
     const dailyTrend = await db
       .select({
         date: sql<string>`to_char(${apiUsageTable.createdAt}, 'YYYY-MM-DD')`,
         count: sql<number>`count(*)::int`,
+        spendMicros: sql<number>`COALESCE(SUM(${apiUsageTable.costMicros}), 0)::bigint`,
       })
       .from(apiUsageTable)
       .where(gte(apiUsageTable.createdAt, monthStart))
@@ -432,20 +441,83 @@ router.get("/admin/api-usage", async (req: Request, res: Response) => {
       thisMonth: totalThisMonth.count,
       thisWeek: totalThisWeek.count,
       allTime: totalAllTime.count,
+      thisMonthSpendMicros: Number(spendThisMonth?.total ?? 0),
+      thisMonthSpendUsd: Number(spendThisMonth?.total ?? 0) / 1_000_000,
       topUsers: topUsers.map((u) => ({
         userId: u.userId,
         email: u.email,
         planType: u.planType,
         requests: u.requestCount,
+        spendMicros: Number(u.spendMicros ?? 0),
+        spendUsd: Number(u.spendMicros ?? 0) / 1_000_000,
+        tokens: Number(u.tokens ?? 0),
+        spendOverrideMicros: u.overrideMicros === null || u.overrideMicros === undefined
+          ? null
+          : Number(u.overrideMicros),
       })),
       dailyTrend: dailyTrend.map((d) => ({
         date: d.date,
         requests: d.count,
+        spendMicros: Number(d.spendMicros ?? 0),
+        spendUsd: Number(d.spendMicros ?? 0) / 1_000_000,
       })),
     });
   } catch (err) {
     console.error("Admin API usage error:", err);
     res.status(500).json({ error: "Failed to fetch API usage stats" });
+  }
+});
+
+// Per-customer monthly spend cap override (task #132).
+// >=0 = cap in micro-USD, -1 = unlimited, null = clear (use plan default).
+router.patch("/admin/users/:id/spend-cap", async (req: Request, res: Response) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const { id } = req.params;
+    const body = req.body as { overrideMicros?: number | null };
+    const overrideMicros = body?.overrideMicros;
+
+    if (overrideMicros !== null && overrideMicros !== undefined) {
+      if (typeof overrideMicros !== "number" || !Number.isInteger(overrideMicros)) {
+        res.status(400).json({ error: "overrideMicros must be an integer or null" });
+        return;
+      }
+      if (overrideMicros < -1) {
+        res.status(400).json({ error: "overrideMicros must be >= -1 (-1 = unlimited, 0+ = cap in micro-USD)" });
+        return;
+      }
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set({ apiSpendOverrideMicros: overrideMicros ?? null })
+      .where(eq(usersTable.id, id))
+      .returning({
+        id: usersTable.id,
+        email: usersTable.email,
+        planType: usersTable.planType,
+        apiSpendOverrideMicros: usersTable.apiSpendOverrideMicros,
+      });
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({
+      user: {
+        id: updated.id,
+        email: updated.email,
+        planType: updated.planType,
+        spendOverrideMicros: updated.apiSpendOverrideMicros === null
+          ? null
+          : Number(updated.apiSpendOverrideMicros),
+      },
+    });
+  } catch (err) {
+    console.error("Admin spend-cap override error:", err);
+    res.status(500).json({ error: "Failed to update spend cap override" });
   }
 });
 

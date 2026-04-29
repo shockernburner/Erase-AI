@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { bigint, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 export const sessionsTable = pgTable(
   "sessions",
@@ -28,6 +28,12 @@ export const usersTable = pgTable("users", {
   planEndDate: timestamp("plan_end_date", { withTimezone: true }),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   termsVersion: varchar("terms_version", { length: 20 }),
+  // Admin-controlled per-customer override for the monthly vendor-spend cap
+  // enforced on /api/v1/* (stored in micro-USD, i.e. 1 = $0.000001). NULL
+  // means use the plan default from PLAN_SPEND_BUDGET_MICROS. Set to -1 to
+  // explicitly mark a customer as unlimited (e.g. negotiated enterprise
+  // contracts) without changing their planType.
+  apiSpendOverrideMicros: bigint("api_spend_override_micros", { mode: "number" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
@@ -70,6 +76,15 @@ export const apiUsageTable = pgTable("api_usage", {
   apiKeyId: varchar("api_key_id").notNull().references(() => apiKeysTable.id, { onDelete: "cascade" }),
   endpoint: varchar("endpoint", { length: 500 }).notNull(),
   responseStatus: integer("response_status"),
+  // Token + cost telemetry for the per-key monthly vendor-spend cap (task
+  // #132). `tokens` is the estimated total prompt+completion tokens this
+  // request would have cost a vendor (we approximate by request+response
+  // byte size / 4). `costMicros` is that token count multiplied by the
+  // plan's per-token rate, stored in micro-USD (1 = $0.000001) so we can
+  // sum it as a plain integer in SQL without floating-point drift. Both
+  // default to 0 for legacy rows and for non-vendor routes.
+  tokens: integer("tokens").notNull().default(0),
+  costMicros: bigint("cost_micros", { mode: "number" }).notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("idx_api_usage_key_created").on(table.apiKeyId, table.createdAt),

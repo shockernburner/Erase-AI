@@ -36,9 +36,28 @@ async function ensureApiUsageTable() {
       )
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_api_usage_key_created ON api_usage(api_key_id, created_at)`);
+    // Task #132 — vendor spend telemetry columns. Idempotent.
+    await db.execute(sql`ALTER TABLE api_usage ADD COLUMN IF NOT EXISTS tokens INTEGER NOT NULL DEFAULT 0`);
+    await db.execute(sql`ALTER TABLE api_usage ADD COLUMN IF NOT EXISTS cost_micros BIGINT NOT NULL DEFAULT 0`);
     logger.info("Startup migration: api_usage table ensured");
   } catch (err) {
     logger.warn({ err }, "Startup migration: api_usage table warning (non-fatal)");
+  }
+}
+
+async function ensureUsersSpendOverrideColumn() {
+  // Task #132 — admin per-customer spend cap override.
+  // null = plan default, -1 = unlimited, >= 0 = cap in micro-USD.
+  try {
+    await db.execute(
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS api_spend_override_micros BIGINT`,
+    );
+    logger.info("Startup migration: users.api_spend_override_micros column ensured");
+  } catch (err) {
+    logger.warn(
+      { err },
+      "Startup migration: users.api_spend_override_micros column warning (non-fatal)",
+    );
   }
 }
 
@@ -219,6 +238,7 @@ async function ensureContactInquiriesTable() {
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
+  await ensureUsersSpendOverrideColumn();
   await ensureWebhooksTable();
   await ensureWebhookDeliveriesTable();
   await ensurePersonalScansTable();

@@ -1,10 +1,16 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { randomBytes } from "crypto";
-import { db, apiKeysTable, apiUsageTable, webhooksTable, webhookDeliveriesTable } from "@workspace/db";
+import { db, apiKeysTable, apiUsageTable, usersTable, webhooksTable, webhookDeliveriesTable } from "@workspace/db";
 import { eq, and, isNull, desc, gte, sql } from "drizzle-orm";
 import { generateApiKey } from "../middlewares/apiKeyMiddleware";
 import { getUserPlan, refreshPlanFromDB } from "../middlewares/planMiddleware";
-import { PLAN_REQUEST_LIMITS, getMonthStart, getNextMonthStart } from "../middlewares/rateLimitMiddleware";
+import {
+  PLAN_REQUEST_LIMITS,
+  PLAN_SPEND_BUDGET_MICROS,
+  getMonthStart,
+  getNextMonthStart,
+} from "../middlewares/rateLimitMiddleware";
+import { resolveSpendBudget } from "../lib/security/spend-source.mjs";
 import { sendTestWebhook, resolveAndValidateUrl } from "../lib/webhookDispatcher";
 
 const router: IRouter = Router();
@@ -144,7 +150,11 @@ router.get("/usage", async (req: Request, res: Response) => {
 
   try {
     const [totalResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
+      .select({
+        count: sql<number>`count(*)::int`,
+        spend: sql<number>`COALESCE(SUM(${apiUsageTable.costMicros}), 0)::bigint`,
+        tokens: sql<number>`COALESCE(SUM(${apiUsageTable.tokens}), 0)::bigint`,
+      })
       .from(apiUsageTable)
       .innerJoin(apiKeysTable, eq(apiUsageTable.apiKeyId, apiKeysTable.id))
       .where(
@@ -155,6 +165,23 @@ router.get("/usage", async (req: Request, res: Response) => {
       );
 
     const used = totalResult?.count ?? 0;
+    const usedMicros = Number(totalResult?.spend ?? 0);
+    const tokensUsed = Number(totalResult?.tokens ?? 0);
+
+    const [overrideRow] = await db
+      .select({ override: usersTable.apiSpendOverrideMicros })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user!.id));
+    const override = overrideRow?.override ?? null;
+    const spendBudgetMicros = resolveSpendBudget({
+      plan,
+      override: override === null ? null : Number(override),
+    });
+    const spendUnlimited = spendBudgetMicros === -1;
+    const spendNoAccess = spendBudgetMicros === 0;
+    const spendPercent = spendUnlimited || spendBudgetMicros <= 0
+      ? 0
+      : Math.round((usedMicros / spendBudgetMicros) * 100);
 
     const dailyBreakdown = await db
       .select({
@@ -184,6 +211,21 @@ router.get("/usage", async (req: Request, res: Response) => {
         date: d.date,
         requests: d.count,
       })),
+      spend: {
+        usedMicros,
+        limitMicros: spendUnlimited ? null : (spendNoAccess ? 0 : spendBudgetMicros),
+        unlimited: spendUnlimited,
+        noAccess: spendNoAccess,
+        remainingMicros: spendUnlimited
+          ? null
+          : Math.max(0, spendBudgetMicros - usedMicros),
+        percentUsed: spendPercent,
+        tokensUsed,
+        overrideActive: override !== null,
+        // Convenience for the dashboard UI — same shape but in dollars.
+        usedUsd: usedMicros / 1_000_000,
+        limitUsd: spendUnlimited ? null : (spendNoAccess ? 0 : spendBudgetMicros / 1_000_000),
+      },
     });
   } catch (err) {
     console.error("Usage stats error:", err);

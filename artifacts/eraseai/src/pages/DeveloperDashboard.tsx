@@ -47,6 +47,83 @@ interface UsageData {
   periodStart: string;
   periodEnd: string;
   dailyBreakdown: { date: string; requests: number }[];
+  spend?: {
+    usedMicros: number;
+    limitMicros: number | null;
+    unlimited: boolean;
+    noAccess: boolean;
+    remainingMicros: number | null;
+    percentUsed: number;
+    tokensUsed: number;
+    overrideActive: boolean;
+    usedUsd: number;
+    limitUsd: number | null;
+  };
+}
+
+function formatUsd(amount: number): string {
+  if (amount >= 100) return `$${amount.toFixed(0)}`;
+  if (amount >= 1) return `$${amount.toFixed(2)}`;
+  return `$${amount.toFixed(4)}`;
+}
+
+function SpendMeter({ spend }: { spend: NonNullable<UsageData["spend"]> }) {
+  const { t } = useTranslation();
+  const percent = spend.unlimited ? 0 : spend.percentUsed;
+  const barColor = percent >= 90 ? "bg-red-500" : percent >= 75 ? "bg-yellow-500" : "bg-primary";
+
+  return (
+    <div className="space-y-3 pt-5 mt-5 border-t border-border/40">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-2xl font-bold text-foreground">
+            <Shield className="w-5 h-5 text-primary" />
+            {formatUsd(spend.usedUsd)}
+            {!spend.unlimited && spend.limitUsd !== null && (
+              <span className="text-base font-normal text-muted-foreground">
+                / {formatUsd(spend.limitUsd)}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("developer.spendThisMonth")}
+            {spend.overrideActive && (
+              <span className="ml-2 px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium align-middle">
+                {t("developer.spendOverrideActive")}
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="text-right">
+          {spend.unlimited ? (
+            <span className="text-sm font-medium text-green-400">{t("developer.unlimited")}</span>
+          ) : (
+            <span className={`text-sm font-medium ${percent >= 90 ? "text-red-400" : percent >= 75 ? "text-yellow-400" : "text-primary"}`}>
+              {spend.remainingMicros !== null ? formatUsd(spend.remainingMicros / 1_000_000) : ""} {t("developer.remaining")}
+            </span>
+          )}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {spend.tokensUsed.toLocaleString()} {t("developer.tokensUsed")}
+          </p>
+        </div>
+      </div>
+
+      {!spend.unlimited && (
+        <div className="w-full bg-muted/30 rounded-full h-3 overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${barColor}`}
+            initial={{ width: "0%" }}
+            animate={{ width: `${Math.min(percent, 100)}%` }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          />
+        </div>
+      )}
+
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        {t("developer.spendCapDescription")}
+      </p>
+    </div>
+  );
 }
 
 function UsageMeter({ usage, onUpgrade }: { usage: UsageData | null; onUpgrade?: () => void }) {
@@ -144,6 +221,8 @@ function UsageMeter({ usage, onUpgrade }: { usage: UsageData | null; onUpgrade?:
           </div>
         </div>
       )}
+
+      {usage.spend && <SpendMeter spend={usage.spend} />}
     </div>
   );
 }
@@ -516,6 +595,18 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
       date: new Date(Date.now() - (6 - i) * 86400000).toISOString().split("T")[0],
       requests: Math.floor(300 + Math.random() * 500),
     })),
+    spend: {
+      usedMicros: 14_237_000,
+      limitMicros: 50_000_000,
+      unlimited: false,
+      noAccess: false,
+      remainingMicros: 35_763_000,
+      percentUsed: 28,
+      tokensUsed: 2_847_400,
+      overrideActive: false,
+      usedUsd: 14.237,
+      limitUsd: 50,
+    },
   } : null);
 
   const plan = previewMode ? "pro" : (user?.planType || "free");

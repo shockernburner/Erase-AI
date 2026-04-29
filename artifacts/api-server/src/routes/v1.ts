@@ -11,7 +11,7 @@ import {
 import { sql, eq, and, desc, asc, ilike } from "drizzle-orm";
 import { apiKeyAuth } from "../middlewares/apiKeyMiddleware";
 import { getUserPlan, FREE_ROW_LIMIT } from "../middlewares/planMiddleware";
-import { apiRateLimit, trackApiUsage } from "../middlewares/rateLimitMiddleware";
+import { apiRateLimit, apiSpendCap, trackApiUsage } from "../middlewares/rateLimitMiddleware";
 import Papa from "papaparse";
 import { parseCSVBuffer, parseCSVFromRows } from "../lib/csvParser";
 
@@ -30,7 +30,6 @@ router.use((req: Request, res: Response, next) => {
   next();
 });
 
-router.use(trackApiUsage());
 router.use(apiRateLimit());
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -172,7 +171,9 @@ router.get("/datasets", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/datasets/:id/analyze", async (req: Request, res: Response) => {
+// Vendor-invoking route: spend cap + cost telemetry are scoped here
+// only — upload/list/result/download don't call third-party AI.
+router.post("/datasets/:id/analyze", apiSpendCap(), trackApiUsage(), async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid dataset ID" }); return; }
 
