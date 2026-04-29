@@ -15,6 +15,7 @@ import {
   SESSION_TTL,
   type SessionData,
 } from "../lib/auth";
+import { toPlanType } from "../middlewares/planMiddleware";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -69,7 +70,7 @@ function buildSessionUser(dbUser: {
     firstName: dbUser.firstName,
     lastName: dbUser.lastName,
     profileImageUrl: dbUser.profileImageUrl,
-    planType: (dbUser.planType as "free" | "pro" | "enterprise") || "free",
+    planType: toPlanType(dbUser.planType),
     role: (dbUser.role as "user" | "admin") || "user",
     planStartDate: dbUser.planStartDate?.toISOString() ?? null,
     planEndDate: dbUser.planEndDate?.toISOString() ?? null,
