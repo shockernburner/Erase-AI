@@ -11,6 +11,10 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { readFile } from "node:fs/promises";
+import crypto from "node:crypto";
 import express from "express";
 import {
   PINNED_EXTENSION_ID,
@@ -18,6 +22,36 @@ import {
   isOriginAllowed,
   createCorsMiddleware,
 } from "../src/lib/security/cors-source.mjs";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "../../..");
+
+// Drift-detector: the `key` field in extension/manifest.json must always
+// derive to the same chrome-extension://<id> that PINNED_EXTENSION_ID is
+// hard-coded to in cors-source.mjs. If they fall out of sync, the
+// production extension's CORS preflights will silently start failing
+// against its own backend — and the only signal would be user reports.
+// This test makes the drift loud at CI time.
+describe("manifest.json key ↔ PINNED_EXTENSION_ID drift guard", () => {
+  test("extension/manifest.json `key` derives to PINNED_EXTENSION_ID", async () => {
+    const manifest = JSON.parse(
+      await readFile(path.resolve(repoRoot, "extension/manifest.json"), "utf8"),
+    );
+    assert.ok(manifest.key, "manifest.json must carry a `key` field — it pins the extension ID across CWS, Edge, and unpacked dev installs");
+    const der = Buffer.from(manifest.key, "base64");
+    const hash = crypto.createHash("sha256").update(der).digest("hex");
+    const id = hash
+      .substring(0, 32)
+      .split("")
+      .map((c) => String.fromCharCode("a".charCodeAt(0) + parseInt(c, 16)))
+      .join("");
+    assert.equal(
+      id,
+      PINNED_EXTENSION_ID,
+      `manifest.json's public key derives to chrome-extension://${id}, but cors-source.mjs is pinned to chrome-extension://${PINNED_EXTENSION_ID}. They must match — or the deployed extension will fail CORS against its own API. Update PINNED_EXTENSION_ID in cors-source.mjs (and the references in extension/PUBLISHING.md § 0) to ${id}.`,
+    );
+  });
+});
 
 describe("buildAllowedOrigins", () => {
   test("includes the marketing site by default", () => {

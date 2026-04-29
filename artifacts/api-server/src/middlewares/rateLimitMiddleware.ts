@@ -1,13 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import { db, apiUsageTable, apiKeysTable } from "@workspace/db";
 import { eq, and, gte, sql } from "drizzle-orm";
-
-const PLAN_REQUEST_LIMITS: Record<string, number> = {
-  personal: 200,
-  pro: 1000,
-  business: 10000,
-  enterprise: -1,
-};
+import {
+  PLAN_REQUEST_LIMITS,
+  evaluateMonthlyQuota,
+} from "../lib/security/quota-source.mjs";
 
 function getMonthStart(): Date {
   const now = new Date();
@@ -28,17 +25,17 @@ export function apiRateLimit() {
     }
 
     const plan = req.user?.planType || "free";
-    const limit = PLAN_REQUEST_LIMITS[plan] ?? 0;
 
-    if (limit === -1) {
+    // Fast path: unlimited / no-access plans don't need the DB roundtrip.
+    const fastDecision = evaluateMonthlyQuota({ plan, used: 0 });
+    if (fastDecision.kind === "unlimited") {
       res.setHeader("X-RateLimit-Limit", "unlimited");
       res.setHeader("X-RateLimit-Remaining", "unlimited");
       res.setHeader("X-RateLimit-Reset", getNextMonthStart().toISOString());
       next();
       return;
     }
-
-    if (limit === 0) {
+    if (fastDecision.kind === "no-access") {
       res.status(403).json({ error: "API access not available on this plan" });
       return;
     }
@@ -59,24 +56,26 @@ export function apiRateLimit() {
 
       const used = result?.count ?? 0;
       const resetDate = getNextMonthStart();
+      const decision = evaluateMonthlyQuota({ plan, used });
 
-      if (used >= limit) {
-        res.setHeader("X-RateLimit-Limit", String(limit));
+      if (decision.kind === "exceeded") {
+        res.setHeader("X-RateLimit-Limit", String(decision.limit));
         res.setHeader("X-RateLimit-Remaining", "0");
         res.setHeader("X-RateLimit-Reset", resetDate.toISOString());
         res.status(429).json({
-          error: `Monthly API rate limit exceeded. Your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan allows ${limit.toLocaleString()} requests/month. Limit resets on ${resetDate.toLocaleDateString()}.`,
-          limit,
-          used,
+          error: `Monthly API rate limit exceeded. Your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan allows ${decision.limit.toLocaleString()} requests/month. Limit resets on ${resetDate.toLocaleDateString()}.`,
+          limit: decision.limit,
+          used: decision.used,
           resetDate: resetDate.toISOString(),
           upgrade: plan !== "enterprise",
         });
         return;
       }
 
-      const remaining = Math.max(0, limit - used - 1);
-      res.setHeader("X-RateLimit-Limit", String(limit));
-      res.setHeader("X-RateLimit-Remaining", String(remaining));
+      // decision.kind === "allowed"
+      const allowed = decision as { kind: "allowed"; limit: number; remaining: number };
+      res.setHeader("X-RateLimit-Limit", String(allowed.limit));
+      res.setHeader("X-RateLimit-Remaining", String(allowed.remaining));
       res.setHeader("X-RateLimit-Reset", resetDate.toISOString());
 
       next();
