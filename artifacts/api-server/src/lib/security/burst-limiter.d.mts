@@ -6,7 +6,15 @@ export interface BurstHitResult {
   remaining: number;
 }
 
-export class BurstLimiter {
+export interface BurstLimiterLike {
+  windowMs: number;
+  maxHits: number;
+  hit(key: string): BurstHitResult | Promise<BurstHitResult>;
+  reset(key?: string): void | Promise<void>;
+  size?(): number | Promise<number>;
+}
+
+export class BurstLimiter implements BurstLimiterLike {
   constructor(opts: {
     windowMs: number;
     maxHits: number;
@@ -24,11 +32,11 @@ export function hashIp(ip: string): string;
 export function createApiKeyBurstMiddleware(opts?: {
   windowMs?: number;
   maxHits?: number;
-  limiter?: BurstLimiter;
+  limiter?: BurstLimiterLike;
 }): RequestHandler;
 
 export function createIpBurstMiddleware(opts?: {
   windowMs?: number;
   maxHits?: number;
-  limiter?: BurstLimiter;
+  limiter?: BurstLimiterLike;
 }): RequestHandler;

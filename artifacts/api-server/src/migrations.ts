@@ -174,6 +174,30 @@ async function ensureFirewallOutcomesTable() {
   }
 }
 
+async function ensureBurstLimitHitsTable() {
+  // Backing store for the per-minute burst limiter. One row per request,
+  // pruned in-line by `PostgresBurstLimiter.hit()` (each call deletes its
+  // own key's expired rows). Lives in Postgres so the counters survive
+  // restarts and are shared across api-server instances — see task #131.
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS burst_limit_hits (
+        id BIGSERIAL PRIMARY KEY,
+        scope VARCHAR(32) NOT NULL,
+        bucket_key VARCHAR(128) NOT NULL,
+        hit_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_burst_limit_hits_lookup
+        ON burst_limit_hits(scope, bucket_key, hit_at)
+    `);
+    logger.info("Startup migration: burst_limit_hits table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: burst_limit_hits table warning (non-fatal)");
+  }
+}
+
 async function ensureContactInquiriesTable() {
   try {
     await db.execute(sql`
@@ -201,6 +225,7 @@ export async function runStartupMigrations() {
   await ensurePersonalAlertsTable();
   await ensureDevScansTable();
   await ensureFirewallOutcomesTable();
+  await ensureBurstLimitHitsTable();
   await ensureContactInquiriesTable();
   try {
     const demoDatasets = await db.execute(sql`

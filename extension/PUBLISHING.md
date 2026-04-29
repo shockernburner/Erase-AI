@@ -16,6 +16,41 @@ what ships to every store.
 
 ---
 
+## 0a. Where the per-minute rate-limit counters live (production)
+
+The api-server enforces two per-minute burst limits — **60 req/min per
+API key** and **30 req/min per IP on `/api/dev/ping`** — as the brake
+that keeps a leaked Pro/Business key (or an unauthenticated attacker)
+from running an infinite loop against our infra.
+
+Both counters live in **Postgres**, in the `burst_limit_hits` table
+(see `artifacts/api-server/src/lib/security/pg-burst-limiter.mjs` and the
+startup migration in `artifacts/api-server/src/migrations.ts`). One row
+per request, scoped by `(scope, bucket_key, hit_at)`; expired rows are
+pruned in-line by every `hit()` call, so the table doesn't grow without
+bound.
+
+Why this matters operationally:
+
+- **Counters survive restarts.** Before task #131 the buckets lived in
+  `Map`s in the api-server process and were wiped on every deploy — a
+  leaked key got a fresh 60-req/min budget every release. They no
+  longer do.
+- **Counters are shared across api-server instances.** When we scale
+  the api-server horizontally (more than one container behind the
+  load balancer), the per-key 60/min limit stays a real per-key
+  60/min limit instead of `60 × N instances`.
+- **Postgres outage = 503, not unlimited traffic.** The middleware
+  intentionally fails-closed: if the limiter query errors, the request
+  is rejected (the whole point of the brake is that it works under
+  load).
+
+The monthly per-plan quota (200 / 1,000 / 10,000 req/month) was already
+backed by `api_usage` in Postgres, so it had this property all along.
+Only the per-minute burst counters needed moving.
+
+---
+
 ## 0. Pinned extension ID & private-key custody
 
 The production extension ID is **pinned**, not store-assigned, so the API
