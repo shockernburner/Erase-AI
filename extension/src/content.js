@@ -226,6 +226,11 @@
 
   function addFilesFromList(list) {
     if (!list || typeof list.length !== "number") return;
+    // Reset BEFORE adding so a SPA navigation followed by an attachment
+    // doesn't drop the new file. Without this, getCachedFiles() would
+    // notice the URL change at send-time and clear the (just-added)
+    // file out of the cache, bypassing the entire scan pipeline.
+    maybeResetCacheForUrl();
     for (let i = 0; i < list.length; i += 1) {
       const file = list[i];
       if (!file || typeof file.name !== "string") continue;
@@ -812,16 +817,36 @@
     //     Cancel or Send Anyway. This prevents the UX bug where one
     //     "Sanitize & Send" click would ship a known-risk file because
     //     the sanitizer can only redact the prompt textarea.
-    const promptPieceLevel = Array.isArray(perPiece)
-      ? (perPiece.find((p) => p.source === "prompt") || {}).level
+    const promptPiece = Array.isArray(perPiece)
+      ? perPiece.find((p) => p.source === "prompt")
       : null;
-    const promptIsProblem = !promptPieceLevel
+    const promptPieceLevel = promptPiece ? promptPiece.level : null;
+    // If we have a prompt row, sanitize only makes sense when its level is
+    // caution/danger. If we have NO prompt row at all (empty prompt with
+    // just attachments) we conservatively assume the prompt isn't the
+    // fixable thing — the user attached files and there's nothing to
+    // rewrite. Pre-perPiece flow (no perPiece array) keeps the legacy
+    // "show sanitize" behavior so older single-piece flows don't change.
+    const promptIsProblem = !Array.isArray(perPiece)
       ? true
-      : LEVEL_RANK[promptPieceLevel] >= LEVEL_RANK.caution;
+      : (promptPieceLevel != null
+        && LEVEL_RANK[promptPieceLevel] >= LEVEL_RANK.caution);
+    // A file row is a blocker if EITHER:
+    //   * its level is caution/danger (analyzed risky content), OR
+    //   * it was skipped entirely (PDF/DOCX/oversize/unsupported — level
+    //     "skipped" is not in LEVEL_RANK), OR
+    //   * it carries a partialNotice (>50 KB truncated — the file's tail
+    //     was never scanned).
+    // Any of these means the file the firewall did NOT clear is still in
+    // the composer, so a sanitize-prompt action must not promise to send.
     const hasFileBlocker = Array.isArray(perPiece)
       && perPiece.some((p) => typeof p.source === "string"
         && p.source.startsWith("file:")
-        && LEVEL_RANK[p.level || "safe"] >= LEVEL_RANK.caution);
+        && (
+          LEVEL_RANK[p.level || "safe"] >= LEVEL_RANK.caution
+          || p.skipReason
+          || p.partialNotice
+        ));
     const showSanitize = promptIsProblem;
     const sanitizeLabel = hasFileBlocker
       ? "Sanitize Prompt" : "Sanitize &amp; Send";

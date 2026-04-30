@@ -211,6 +211,112 @@ describe("send-flow confirmation regressions", () => {
     expect(chromeStub.__analyzeMessages.length).toBe(2);
   });
 
+  it("still scans files attached AFTER an SPA navigation (URL change must not silently drop the cache)", async () => {
+    const csv = "ssn\n111-22-3333\n";
+    const chromeStub = makeChromeStub({
+      reply: (msg) => {
+        if (/123-45-6789|111-22-3333/.test(msg.text)) {
+          return {
+            riskScore: 25, level: "danger",
+            issues: [{ severity: "high", category: "ssn", text: "SSN detected" }],
+            suggestions: [{ text: "Redact" }],
+            summary: "SSN detected in attachment",
+          };
+        }
+        return { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" };
+      },
+    });
+    loadEraseAI(chromeStub);
+    await flushAsync();
+    const { textarea, fileInput } = setUpChatGPTComposer({ promptText: "look at this" });
+    await flushAsync();
+
+    // Simulate a SPA navigation BETWEEN extension load and file attachment.
+    // The bug we're guarding against: the cache key was the URL captured
+    // at IIFE init. After navigation, getCachedFiles() at send-time would
+    // notice the URL had changed and clear the (just-attached) file out
+    // of the cache, so the file would NEVER reach the analyzer.
+    window.history.pushState({}, "", "/c/new-thread-12345");
+    await flushAsync();
+
+    attachFile(fileInput, makeFile("data.csv", csv, "text/csv"));
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync(20);
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).toBeTruthy();
+    // The CSV must have reached the analyzer post-navigation.
+    const analyzeTexts = chromeStub.__analyzeMessages.map((m) => m.text);
+    expect(analyzeTexts.some((t) => t.includes("111-22-3333"))).toBe(true);
+    // And the file row shows up by name in the panel — the firewall
+    // didn't silently drop it.
+    expect(panel.textContent).toMatch(/data\.csv/);
+    // Worst level wins → warning panel, not the all-clear card.
+    expect(panel.querySelector("#eraseai-send-anyway")).toBeTruthy();
+    expect(panel.querySelector("#eraseai-clear-send")).toBeNull();
+  });
+
+  it("treats a skipped file (PDF) as a file blocker and hides the sanitize button when prompt is clean", async () => {
+    const chromeStub = makeChromeStub({
+      reply: () => ({
+        riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear",
+      }),
+    });
+    loadEraseAI(chromeStub);
+    await flushAsync();
+    const { textarea, fileInput } = setUpChatGPTComposer({ promptText: "summarise this" });
+    await flushAsync();
+
+    attachFile(fileInput, makeFile("scan.pdf", "%PDF-1.7", "application/pdf"));
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync(20);
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).toBeTruthy();
+    // Prompt is safe but the PDF is a skipped-file blocker → panel must
+    // appear (no auto-send) and Sanitize must NOT be offered (the prompt
+    // has nothing to fix — the user must remove the PDF chip themselves).
+    expect(panel.querySelector("#eraseai-send-anyway")).toBeTruthy();
+    expect(panel.querySelector("#eraseai-clear-send")).toBeNull();
+    expect(panel.querySelector("#eraseai-sanitize")).toBeNull();
+    // The PDF row appears with the "review manually" wording.
+    expect(panel.textContent).toMatch(/scan\.pdf/);
+    expect(panel.textContent).toMatch(/PDF detected/);
+  });
+
+  it("labels sanitize as 'Sanitize Prompt' when a skipped file (PDF) accompanies a risky prompt", async () => {
+    const chromeStub = makeChromeStub({
+      reply: () => ({
+        riskScore: 30, level: "danger",
+        issues: [{ severity: "high", category: "ssn", text: "SSN detected" }],
+        suggestions: [{ text: "Redact" }],
+        summary: "SSN detected",
+      }),
+    });
+    loadEraseAI(chromeStub);
+    await flushAsync();
+    const { textarea, fileInput } = setUpChatGPTComposer({
+      promptText: "my ssn is 111-22-3333 — extract from this pdf",
+    });
+    await flushAsync();
+
+    attachFile(fileInput, makeFile("resume.pdf", "%PDF-1.7", "application/pdf"));
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync(20);
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).toBeTruthy();
+    const sanitizeBtn = panel.querySelector("#eraseai-sanitize");
+    expect(sanitizeBtn).toBeTruthy();
+    // PDF is a file blocker even though it has level "skipped" not danger
+    // — the sanitize button must NOT promise to send.
+    expect(sanitizeBtn.textContent.trim()).toBe("Sanitize Prompt");
+    expect(sanitizeBtn.dataset.fileBlocker).toBe("true");
+  });
+
   it("does NOT morph 'Send Anyway' into 'Send Sanitized' when an attached file is also a blocker", async () => {
     const csv = "ssn\n111-22-3333\n";
     const chromeStub = makeChromeStub({
