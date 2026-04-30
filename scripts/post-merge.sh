@@ -28,6 +28,31 @@ EXCEPTION WHEN undefined_table THEN
 END
 $$;
 
+-- Idempotent fixup: any pre-existing `users.plan_type` value that is
+-- not one of the five live plan names is normalised to 'free' before
+-- `drizzle-kit push` adds the `plan_type_valid` CHECK constraint
+-- (task #138). Without this, the push would fail with a constraint
+-- violation on any historical bad row (e.g. "trial", "PRO", typos).
+-- The UPDATE is a no-op once all rows are clean, and the constraint
+-- itself prevents new bad values from being written. Guarded against
+-- the fresh-DB bootstrap case where `users` doesn't exist yet —
+-- `drizzle-kit push` will create it below.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'users'
+  ) THEN
+    UPDATE users
+    SET plan_type = 'free'
+    WHERE plan_type IS NULL
+       OR plan_type NOT IN ('free', 'personal', 'pro', 'business', 'enterprise');
+  END IF;
+EXCEPTION WHEN undefined_table THEN
+  NULL;
+END
+$$;
+
 -- Idempotent fixup: drop the legacy `dev_scans` table that predates
 -- `personal_scans` and is no longer in the Drizzle schema. If we don't
 -- drop it explicitly, `drizzle-kit push` asks an interactive y/n on every

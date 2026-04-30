@@ -3,6 +3,11 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { AuthUserPlanType } from "@workspace/api-zod";
 
+// Defensive boundary for HTTP/session payloads where the value is just an
+// untyped string (e.g. inbound API key requests, deserialised session data).
+// The DB column itself is constrained by `plan_type_valid` (task #138) so
+// values read straight off `usersTable.planType` are already narrowed and do
+// not need to flow through this helper.
 export function toPlanType(value: string | null | undefined): AuthUserPlanType {
   switch (value) {
     case "personal":
@@ -110,7 +115,10 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
         .from(usersTable)
         .where(eq(usersTable.id, req.user.id));
       if (freshUser) {
-        req.user.planType = toPlanType(freshUser.planType);
+        // `freshUser.planType` is `PlanType` (= `AuthUserPlanType`) thanks
+        // to the DB-level `plan_type_valid` CHECK constraint, so no runtime
+        // narrowing is needed here.
+        req.user.planType = freshUser.planType;
         if (freshUser.planEndDate) {
           req.user.planEndDate = freshUser.planEndDate.toISOString();
         }

@@ -4,7 +4,7 @@ import { sql, eq } from "drizzle-orm";
 import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
-import { refreshPlanFromDB, toPlanType } from "../middlewares/planMiddleware";
+import { refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { maskSecret } from "../lib/dev/secrets";
 import { hashApiKey } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
@@ -70,7 +70,7 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
       lastName: user.lastName,
       profileImageUrl: user.profileImageUrl,
       role: user.role as "user" | "admin",
-      planType: toPlanType(user.planType),
+      planType: user.planType,
       planStartDate: user.planStartDate?.toISOString() ?? null,
       planEndDate: user.planEndDate?.toISOString() ?? null,
     };

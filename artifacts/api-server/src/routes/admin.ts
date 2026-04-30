@@ -3,6 +3,7 @@ import { db, usersTable, feedbackTable, pageVisitsTable, apiUsageTable, apiKeysT
 import { eq, desc, count, sql, gte, and } from "drizzle-orm";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import { toPlanType } from "../middlewares/planMiddleware";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -209,7 +210,7 @@ router.post("/admin/users", async (req: Request, res: Response) => {
       res.status(400).json({ error: `Invalid planType. Must be one of: ${validPlans.join(", ")}` });
       return;
     }
-    const plan = planType || "free";
+    const plan = toPlanType(planType || "free");
     const subStatus = plan === "free" ? null : "active";
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -276,7 +277,7 @@ router.patch("/admin/users/:id", async (req: Request, res: Response) => {
         res.status(400).json({ error: `Invalid planType. Must be one of: ${validPlans.join(", ")}` });
         return;
       }
-      updates.planType = planType;
+      updates.planType = toPlanType(planType);
     }
 
     if (subscriptionStatus !== undefined) {

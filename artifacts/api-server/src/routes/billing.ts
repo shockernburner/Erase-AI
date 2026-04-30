@@ -13,6 +13,7 @@ import {
   isConfigured,
   getSdkEnv,
 } from "../lib/airwallex";
+import { toPlanType } from "../middlewares/planMiddleware";
 
 const router: IRouter = Router();
 
@@ -316,7 +317,7 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
 
     const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
     const rawPlan = intent.metadata?.plan || "pro";
-    const targetPlan = VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro";
+    const targetPlan = toPlanType(VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro");
     const rawPeriod = intent.metadata?.billing_period;
     const targetPeriod: BillingPeriod = isValidBillingPeriod(rawPeriod) ? rawPeriod : "monthly";
 
@@ -462,7 +463,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
       case "payment_intent.succeeded": {
         const VALID_PLANS = ["personal", "pro", "business"];
         const rawWebhookPlan = intentData.metadata?.plan || "pro";
-        const webhookPlan = VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro";
+        const webhookPlan = toPlanType(VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro");
         const rawWebhookPeriod = intentData.metadata?.billing_period;
         const webhookPeriod: BillingPeriod = isValidBillingPeriod(rawWebhookPeriod) ? rawWebhookPeriod : "monthly";
         if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {

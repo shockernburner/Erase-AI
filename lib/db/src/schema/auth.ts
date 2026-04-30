@@ -11,6 +11,15 @@ export const sessionsTable = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// The five live plan names. Kept here (rather than imported from
+// `@workspace/api-zod`) so the DB package has no dependency on the HTTP
+// layer. Mirror of `AuthUserPlanType` in lib/api-zod — keep them in sync.
+// Enforced at the DB level by the `plan_type_valid` CHECK constraint on
+// `users.plan_type` so the column can never hold e.g. "trial", "PRO", or
+// a typo (task #138).
+export const PLAN_TYPES = ["free", "personal", "pro", "business", "enterprise"] as const;
+export type PlanType = (typeof PLAN_TYPES)[number];
+
 export const usersTable = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: varchar("username"),
@@ -21,7 +30,7 @@ export const usersTable = pgTable("users", {
   passwordHash: varchar("password_hash"),
   authProvider: varchar("auth_provider", { length: 20 }).notNull().default("email"),
   role: varchar("role", { length: 20 }).notNull().default("user"),
-  planType: varchar("plan_type", { length: 20 }).notNull().default("free"),
+  planType: varchar("plan_type", { length: 20 }).$type<PlanType>().notNull().default("free"),
   subscriptionId: varchar("subscription_id"),
   subscriptionStatus: varchar("subscription_status", { length: 30 }),
   planStartDate: timestamp("plan_start_date", { withTimezone: true }),
@@ -36,7 +45,12 @@ export const usersTable = pgTable("users", {
   apiSpendOverrideMicros: bigint("api_spend_override_micros", { mode: "number" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  check(
+    "plan_type_valid",
+    sql`${table.planType} IN ('free', 'personal', 'pro', 'business', 'enterprise')`,
+  ),
+]);
 
 export type UpsertUser = typeof usersTable.$inferInsert;
 export type User = typeof usersTable.$inferSelect;
