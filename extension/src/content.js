@@ -174,6 +174,14 @@
   // at once. Both numbers are deliberately generous for real users.
   const MAX_ATTACHED_FILES = 16;
   const EXTRACT_CONCURRENCY = 4;
+  // Bounded fan-out for analyze ports. With attachments enabled, a single
+  // send can decompose into many short pieces (one port per chunk). The
+  // api-server's per-key burst limit is 60 req/min, so firing 100+ ports
+  // in parallel would trip rate limiting and surface as confusing
+  // "service unavailable" errors mid-scan. ANALYZE_CONCURRENCY caps how
+  // many analyze ports may be in flight at once; the rest queue up and
+  // start as earlier ones settle.
+  const ANALYZE_CONCURRENCY = 4;
   const fileCache = new Map(); // key -> File
   let fileCacheUrl = typeof window !== "undefined" ? window.location.href : "";
   // Maximum text length we send to /api/dev/analyze in a single call.
@@ -1328,7 +1336,31 @@
 
     let pieceResults;
     try {
-      pieceResults = await Promise.all(pieces.map((p) => analyzePieceViaPort(p, attemptId)));
+      // Bounded fan-out: never more than ANALYZE_CONCURRENCY analyze
+      // ports in flight at once. A small worker pool walks the `pieces`
+      // array via a shared cursor and writes each result back at the
+      // same index, preserving order so aggregatePieceResults still
+      // sees pieces in the order buildPieces produced them. This keeps
+      // a 50-chunk send well under the api-server's per-key burst
+      // ceiling instead of opening 50 ports simultaneously.
+      pieceResults = new Array(pieces.length);
+      let pieceCursor = 0;
+      const analyzeWorker = async () => {
+        while (pieceCursor < pieces.length) {
+          const idx = pieceCursor;
+          pieceCursor += 1;
+          // analyzePieceViaPort is hand-built to always resolve (never
+          // reject), so an awaited call here can't escape the worker
+          // and crash the Promise.all below — port-level transport
+          // failures come back as { error, __transportFailureReason }.
+          // eslint-disable-next-line no-await-in-loop
+          pieceResults[idx] = await analyzePieceViaPort(pieces[idx], attemptId);
+        }
+      };
+      const analyzeWorkerCount = Math.min(ANALYZE_CONCURRENCY, pieces.length) || 1;
+      const analyzeWorkers = [];
+      for (let i = 0; i < analyzeWorkerCount; i += 1) analyzeWorkers.push(analyzeWorker());
+      await Promise.all(analyzeWorkers);
     } catch {
       finishWithError(
         "Failed to connect to EraseAI service.",
