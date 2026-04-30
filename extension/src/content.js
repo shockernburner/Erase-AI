@@ -1,4 +1,17 @@
 (() => {
+  // If a previous evaluation of this IIFE is still alive in this realm
+  // (notably when our test suite re-evals content.js across cases), tear
+  // its document-level listeners down first so they don't pile up and
+  // leak ANALYZE messages between tests.
+  if (typeof globalThis !== "undefined" && typeof globalThis.__eraseAIContentTeardown === "function") {
+    try {
+      globalThis.__eraseAIContentTeardown();
+    } catch (_e) {
+      // best-effort: never let a stale teardown abort the new load
+    }
+    globalThis.__eraseAIContentTeardown = null;
+  }
+
   const PLATFORMS = {
     chatgpt: {
       hostPatterns: ["chat.openai.com", "chatgpt.com"],
@@ -1666,6 +1679,22 @@
         );
       }
     });
+  }
+
+  // Expose a teardown hook so re-evaluations of this IIFE (e.g. our
+  // test suite re-loading content.js for each case) can drop the
+  // document-level keydown / change / drop / paste listeners installed
+  // by attachListeners(). Without this, listeners from previous loads
+  // keep firing against stale fileCache/closure state and inflate the
+  // ANALYZE message count seen by later tests.
+  function teardown() {
+    if (document.readyState === "loading") {
+      document.removeEventListener("DOMContentLoaded", init);
+    }
+    detachListeners();
+  }
+  if (typeof globalThis !== "undefined") {
+    globalThis.__eraseAIContentTeardown = teardown;
   }
 
   if (document.readyState === "loading") {

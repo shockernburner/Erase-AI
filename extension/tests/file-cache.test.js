@@ -191,6 +191,15 @@ describe("file-cache + multi-piece scan", () => {
     delete globalThis.__eraseAIExtractor;
   });
   afterEach(() => {
+    // Drop the document-level keydown / change / drop / paste listeners
+    // installed by content.js's IIFE so the next test starts with a
+    // clean listener set. Without this, leaked listeners from prior
+    // cases keep firing against stale fileCache state and inflate the
+    // ANALYZE message count seen later in the suite.
+    if (typeof globalThis.__eraseAIContentTeardown === "function") {
+      globalThis.__eraseAIContentTeardown();
+    }
+    delete globalThis.__eraseAIContentTeardown;
     delete globalThis.chrome;
     delete globalThis.__eraseAIExtractor;
     document.body.innerHTML = "";
@@ -317,6 +326,11 @@ describe("file-cache + multi-piece scan", () => {
     await flushAsync(20);
 
     const analyzeTexts = chromeStub.__analyzeMessages.map((m) => m.text);
+    // Exactly two pieces: the prompt + the extracted PDF text. Anything
+    // higher means a previous test's document-level listeners leaked
+    // into this case (see #149) — the afterEach teardown is what keeps
+    // this assertion honest.
+    expect(analyzeTexts.length).toBe(2);
     expect(analyzeTexts.some((t) => t.includes("review this please"))).toBe(true);
     expect(analyzeTexts.some((t) => t.includes("123-45-6789"))).toBe(true);
 
@@ -391,12 +405,9 @@ describe("file-cache + multi-piece scan", () => {
     expect(chromeStub.__analyzeMessages.length).toBeGreaterThanOrEqual(1);
   });
 
-  // NOTE: empty-prompt-with-no-files fallthrough is covered by the
-  // existing content.test.js suite. It can't be added here because
-  // each `loadEraseAI()` re-evals the IIFE and installs another set of
-  // document-level keydown/change listeners; the previous closures
-  // (with their populated fileCache maps from earlier tests in this
-  // file) keep firing and re-triggering interceptSubmission. The
-  // jsdom realm is shared across tests inside one file, so there is
-  // no clean teardown for those listeners.
+  // empty-prompt-with-no-files fallthrough remains covered in
+  // content.test.js. The listener-leak that previously blocked porting
+  // it here is fixed in #149 (afterEach now invokes
+  // __eraseAIContentTeardown), but we keep that case in its existing
+  // suite to avoid duplicating coverage.
 });
