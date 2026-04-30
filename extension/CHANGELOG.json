@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "1.3.5",
+      "date": "2026-04-30",
+      "changes": [
+        "Firewall now scans file attachments (txt, csv, tsv, json, md, log, xml, html, yaml, ini, sql) before they leave your browser — the Send/Enter trigger is unchanged, but anything you've attached to the composer is read and analyzed alongside your prompt",
+        "Per-file results are listed in the warning panel so you can see exactly which file tripped which rule; the worst result across prompt + files determines the overall verdict",
+        "PDF, Word (.docx), Excel (.xlsx), images, and archives are detected by type and explicitly flagged 'review manually — content not scanned in this version' rather than being silently let through. You always have to make an explicit Cancel / Send Anyway choice when an unscannable file is attached",
+        "Per-file 5 MB cap, combined 15 MB cap; oversize files are surfaced with the same 'review manually' treatment so a 200 MB log can't crash the page or quietly slip past the firewall",
+        "Sanitize button is hidden when the only blocker is a file (it would only rewrite the prompt, leaving the file in place)"
+      ]
+    },
+    {
       "version": "1.3.4",
       "date": "2026-04-26",
       "changes": [

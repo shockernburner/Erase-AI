@@ -187,6 +187,12 @@ async function ensureFirewallOutcomesTable() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_firewall_outcomes_user_id ON firewall_outcomes(user_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_firewall_outcomes_api_key_day ON firewall_outcomes(api_key_id, created_at)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_firewall_outcomes_created_at ON firewall_outcomes(created_at)`);
+    // Task #142: extension 1.3.5 attaches a content-free `pieces` summary
+    // (counts of prompt + file pieces, per-piece level histogram) so we
+    // can answer "how often did file scanning fire?" without ever
+    // ingesting attachment text. Nullable for backward compatibility
+    // with 1.3.4 and earlier clients which never send the field.
+    await db.execute(sql`ALTER TABLE firewall_outcomes ADD COLUMN IF NOT EXISTS pieces JSONB`);
     logger.info("Startup migration: firewall_outcomes table ensured");
   } catch (err) {
     logger.warn({ err }, "Startup migration: firewall_outcomes table warning (non-fatal)");

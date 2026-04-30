@@ -352,3 +352,68 @@
   text-align: left;
   word-break: break-all;
 }
+
+/* Per-piece scan results — shown when a single submission was made up of
+   multiple pieces (the prompt + one or more attached files). One row per
+   piece so the user can see at a glance which file tripped which rule. */
+.eraseai-pieces {
+  margin: 0 24px 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+.eraseai-pieces h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.eraseai-piece-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+.eraseai-piece-row:first-of-type { border-top: none; }
+.eraseai-piece-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e4e4e7;
+  letter-spacing: 0.5px;
+}
+.eraseai-piece-safe .eraseai-piece-badge { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+.eraseai-piece-caution .eraseai-piece-badge { background: rgba(234, 179, 8, 0.20); color: #fde68a; }
+.eraseai-piece-danger .eraseai-piece-badge { background: rgba(239, 68, 68, 0.20); color: #fca5a5; }
+.eraseai-piece-skipped .eraseai-piece-badge { background: rgba(249, 115, 22, 0.20); color: #fed7aa; }
+.eraseai-piece-error .eraseai-piece-badge { background: rgba(239, 68, 68, 0.20); color: #fca5a5; }
+.eraseai-piece-label {
+  color: #e4e4e7;
+  word-break: break-all;
+}
+.eraseai-piece-chunk {
+  margin-left: 6px;
+  font-size: 10px;
+  color: #71717a;
+}
+.eraseai-piece-detail {
+  color: #a1a1aa;
+  font-size: 11px;
+  text-align: right;
+}
+.eraseai-piece-partial {
+  display: block;
+  margin-top: 2px;
+  color: #fde68a;
+  font-size: 11px;
+  font-style: italic;
+  text-align: right;
+}

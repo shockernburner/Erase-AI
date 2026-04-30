@@ -88,6 +88,28 @@ async function reportOutcome(payload) {
         : [],
   };
 
+  // Forward the optional content-free pieces summary so the api-server can
+  // record per-submission attachment counts. The shape is validated on the
+  // server side; here we only forward fields we know about and keep numeric
+  // fields finite to avoid wire-encoding NaN.
+  if (payload && payload.pieces && typeof payload.pieces === "object") {
+    const p = payload.pieces;
+    const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+    const levels = p.levels && typeof p.levels === "object" ? p.levels : {};
+    const cleanLevels = {};
+    for (const k of Object.keys(levels)) {
+      if (typeof k === "string" && k.length <= 16) {
+        cleanLevels[k] = num(levels[k]);
+      }
+    }
+    body.pieces = {
+      promptPieces: num(p.promptPieces),
+      filePieces: num(p.filePieces),
+      skippedFiles: num(p.skippedFiles),
+      levels: cleanLevels,
+    };
+  }
+
   if (!body.level || !body.action) {
     return { ok: false, error: "invalid_payload" };
   }

@@ -383,11 +383,15 @@ router.post("/outcome", ...burstChain, ...quotaChain, async (req, res) => {
       return;
     }
 
-    const { level, action, riskScore, categories } = validated.value;
+    const { level, action, riskScore, categories, pieces } = validated.value;
 
+    // pieces is a content-free per-submission summary attached by the
+    // 1.3.5 extension (task #142). NULL means the client didn't send it
+    // (older versions, or no attachments scanned).
+    const piecesJson = pieces ? JSON.stringify(pieces) : null;
     await db.execute(sql`
-      INSERT INTO firewall_outcomes (user_id, api_key_id, level, action, risk_score, categories, created_at)
-      VALUES (${req.user.id}, ${req.apiKeyId ?? null}, ${level}, ${action}, ${riskScore}, ${JSON.stringify(categories)}, NOW())
+      INSERT INTO firewall_outcomes (user_id, api_key_id, level, action, risk_score, categories, pieces, created_at)
+      VALUES (${req.user.id}, ${req.apiKeyId ?? null}, ${level}, ${action}, ${riskScore}, ${JSON.stringify(categories)}, ${piecesJson}, NOW())
     `);
 
     res.json({ ok: true, meta: buildMeta() });

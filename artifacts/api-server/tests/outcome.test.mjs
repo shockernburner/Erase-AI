@@ -12,11 +12,13 @@ import {
   validateOutcomePayload,
   normaliseCategories,
   normaliseRiskScore,
+  normalisePieces,
   aggregateFirewallOutcomes,
   VALID_OUTCOME_LEVELS,
   VALID_OUTCOME_ACTIONS,
   MAX_OUTCOME_CATEGORIES,
   MAX_CATEGORY_LENGTH,
+  MAX_PIECES_FILE_LEVELS,
 } from "../src/lib/dev/outcome-source.mjs";
 
 describe("validateOutcomePayload — accepted shapes", () => {
@@ -28,6 +30,7 @@ describe("validateOutcomePayload — accepted shapes", () => {
       action: "cancel",
       riskScore: null,
       categories: [],
+      pieces: null,
     });
   });
 
@@ -44,6 +47,29 @@ describe("validateOutcomePayload — accepted shapes", () => {
       action: "sanitize",
       riskScore: 42,
       categories: ["pii", "secrets"],
+      pieces: null,
+    });
+  });
+
+  test("accepts a payload with the 1.3.5 pieces telemetry summary", () => {
+    const r = validateOutcomePayload({
+      level: "caution",
+      action: "send-anyway",
+      riskScore: 70,
+      categories: ["pii"],
+      pieces: {
+        promptPieces: 1,
+        filePieces: 2,
+        skippedFiles: 1,
+        levels: { safe: 2, caution: 1 },
+      },
+    });
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.value.pieces, {
+      promptPieces: 1,
+      filePieces: 2,
+      skippedFiles: 1,
+      levels: { safe: 2, caution: 1 },
     });
   });
 
@@ -151,6 +177,99 @@ describe("normaliseCategories — bounded, deduped, string-only", () => {
     assert.equal(out.length, MAX_OUTCOME_CATEGORIES);
     assert.equal(out[0], "c0");
     assert.equal(out[MAX_OUTCOME_CATEGORIES - 1], `c${MAX_OUTCOME_CATEGORIES - 1}`);
+  });
+});
+
+describe("normalisePieces — extension 1.3.5 attachment-scan telemetry", () => {
+  test("returns null for missing / non-object input", () => {
+    assert.equal(normalisePieces(null), null);
+    assert.equal(normalisePieces(undefined), null);
+    assert.equal(normalisePieces("nope"), null);
+    assert.equal(normalisePieces(42), null);
+  });
+
+  test("returns null when every field is zero / empty (no signal worth storing)", () => {
+    assert.equal(
+      normalisePieces({ promptPieces: 0, filePieces: 0, skippedFiles: 0, levels: {} }),
+      null,
+    );
+    // Same outcome when fields are simply absent.
+    assert.equal(normalisePieces({}), null);
+  });
+
+  test("preserves a typical multi-piece payload", () => {
+    const out = normalisePieces({
+      promptPieces: 1,
+      filePieces: 3,
+      skippedFiles: 2,
+      levels: { safe: 2, caution: 1, danger: 1 },
+    });
+    assert.deepEqual(out, {
+      promptPieces: 1,
+      filePieces: 3,
+      skippedFiles: 2,
+      levels: { safe: 2, caution: 1, danger: 1 },
+    });
+  });
+
+  test("clamps wildly large counts to a fixed ceiling so a hostile client cannot grow the row", () => {
+    const out = normalisePieces({
+      promptPieces: 1e9,
+      filePieces: 999_999,
+      skippedFiles: 12345,
+      levels: { safe: 1e9, caution: 1e9 },
+    });
+    assert.equal(out.promptPieces, 256);
+    assert.equal(out.filePieces, 256);
+    assert.equal(out.skippedFiles, 256);
+    assert.equal(out.levels.safe, 256);
+    assert.equal(out.levels.caution, 256);
+  });
+
+  test("coerces fractional / negative / non-numeric counts to safe non-negative integers", () => {
+    const out = normalisePieces({
+      promptPieces: 2.9,
+      filePieces: -5,
+      skippedFiles: "not a number",
+      levels: { safe: 1.4, caution: -3, danger: NaN },
+    });
+    assert.equal(out.promptPieces, 2);
+    assert.equal(out.filePieces, 0);
+    assert.equal(out.skippedFiles, 0);
+    assert.equal(out.levels.safe, 1);
+    assert.equal(out.levels.caution, 0);
+    assert.equal(out.levels.danger, 0);
+  });
+
+  test("caps the number of distinct level keys and trims long key names", () => {
+    const levels = {};
+    for (let i = 0; i < MAX_PIECES_FILE_LEVELS + 10; i += 1) {
+      levels[`lvl${i}`] = i + 1;
+    }
+    levels["x".repeat(64)] = 1;
+    const out = normalisePieces({ promptPieces: 1, levels });
+    assert.ok(Object.keys(out.levels).length <= MAX_PIECES_FILE_LEVELS);
+    for (const key of Object.keys(out.levels)) {
+      assert.ok(key.length <= 16, `${key} should be trimmed to 16 chars`);
+    }
+  });
+
+  test("drops empty / whitespace-only / non-string level keys", () => {
+    const out = normalisePieces({
+      promptPieces: 1,
+      levels: { "": 5, "   ": 5, safe: 2 },
+    });
+    assert.deepEqual(Object.keys(out.levels).sort(), ["safe"]);
+  });
+
+  test("non-object levels field is treated as no levels (not a hard rejection)", () => {
+    const out = normalisePieces({ promptPieces: 1, levels: "not-an-object" });
+    assert.deepEqual(out, {
+      promptPieces: 1,
+      filePieces: 0,
+      skippedFiles: 0,
+      levels: {},
+    });
   });
 });
 

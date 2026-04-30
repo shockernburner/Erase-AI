@@ -275,6 +275,43 @@ listing goes live, then redeploy.
 
 ---
 
+## 5a. What we scan in attachments (extension ≥ 1.3.5)
+
+From version 1.3.5 the firewall scans **file attachments** dropped or
+selected into the ChatGPT, Claude, and Gemini composers in addition to
+the prompt text. The trigger is unchanged — Enter or Send click — so the
+user-visible flow is the same; the surface area is just wider.
+
+What gets scanned and how:
+
+| Attachment kind | Behaviour |
+| --- | --- |
+| `.txt` `.md` `.csv` `.tsv` `.json` `.log` `.xml` `.html` `.htm` `.yaml` `.yml` `.sql` | **Extracted as plain text** via `FileReader.readAsText` and analysed alongside the prompt. Each piece is sent on its own port to the background analyzer; the worst level wins for the panel verdict. |
+| `.pdf` | **Detected and blocked by default.** Surfaced in the panel as "PDF detected — content not scanned in this version, review manually" with a Send Anyway override. Full text extraction is a follow-up; pdf.js cannot be loaded under the MV3 default CSP. |
+| `.docx` | Same as PDF — detected, surfaced as "Word document detected …", blocked by default with Send Anyway. (mammoth uses `new Function`, also forbidden by MV3 CSP.) |
+| `.xlsx`, images (`.png` `.jpg` `.jpeg` `.gif` `.webp`), archives (`.zip` `.gz` `.tar` `.7z` `.rar`) | Detected, panel surfaces a "skipped" row with the file name, override via Send Anyway. |
+| Any other extension | Treated as unsupported — same skipped-row + Send Anyway treatment. |
+
+Hard limits enforced client-side (extracted text never leaves the browser
+beyond the analyze port, which runs against the user's own configured
+endpoint):
+
+- **5 MB** per file — anything larger is auto-blocked with "file too large".
+- **15 MB** total across all attachments in a single send — same treatment.
+- **50 KB** of extracted text per file — the rest is truncated and the
+  panel says so.
+- **8 KB** chunk size for analysis pieces; pieces above 10 KB are split.
+
+Telemetry: the OUTCOME event sent back to the api-server now carries an
+optional `pieces` summary (`{ promptPieces, filePieces, skippedFiles,
+levels }`), counts only — **no file contents and no file names**. The
+api-server clamps every field to 256 and rejects unrecognised shapes
+silently (the outcome row is still written; `pieces` is just NULL). See
+`artifacts/api-server/src/lib/dev/outcome-source.mjs` `normalisePieces`
+for the full contract.
+
+---
+
 ## 6. Quick checklist
 
 - [ ] Bump `extension/manifest.json` version

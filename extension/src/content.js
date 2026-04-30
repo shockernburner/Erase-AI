@@ -9,6 +9,16 @@
         "textarea[data-id]",
         "form textarea",
       ],
+      // Composer scope used by the file-attachment cache to ignore
+      // file inputs and drops that happen anywhere else on the page
+      // (avatar pickers, profile uploads, etc.). Wide enough to cover
+      // the prompt textarea, the toolbar with the paperclip, and the
+      // attachment chip row that ChatGPT renders above the textarea.
+      composerSelectors: [
+        'form:has(#prompt-textarea)',
+        'form:has(textarea[data-id])',
+        'main form',
+      ],
       sendButtonSelectors: [
         'button[data-testid="send-button"]',
         'button[data-testid="fruitjuice-send-button"]',
@@ -38,6 +48,11 @@
         'div[contenteditable="true"][data-placeholder]',
         'fieldset div[contenteditable="true"]',
       ],
+      composerSelectors: [
+        'fieldset',
+        'form:has(div[contenteditable="true"].ProseMirror)',
+        'main',
+      ],
       sendButtonSelectors: [
         'button[aria-label="Send Message"]',
         'button[aria-label="Send message"]',
@@ -59,6 +74,12 @@
         '.ql-editor[contenteditable="true"]',
         'div[contenteditable="true"][role="textbox"]',
         'rich-textarea div[contenteditable="true"]',
+      ],
+      composerSelectors: [
+        '.input-area-container',
+        '.input-area',
+        'rich-textarea',
+        'main',
       ],
       sendButtonSelectors: [
         'button[aria-label="Send message"]',
@@ -127,6 +148,338 @@
   let lastAnalysis = null;
   let outcomeReported = false;
 
+  // ---- File-attachment cache -------------------------------------------
+  //
+  // The firewall must scan the contents of files the user attached to the
+  // chat composer (CSV, PDF, etc.) before they leave the browser. Sites
+  // mount the attached file in their own UI long before the user clicks
+  // Send, so we shadow-track every file the user attaches to the composer
+  // (via paperclip-button file pickers, drag-drop into the composer, or
+  // paste of a file from the clipboard) and pull the cache when Send fires.
+  //
+  // Rules:
+  //   * Only files attached *inside the composer scope* (per-platform
+  //     selectors) are cached — keeps avatar/profile uploads out.
+  //   * Files are de-duplicated by name+size+lastModified so a paperclip
+  //     change re-firing for the same file doesn't double-scan.
+  //   * Cache is cleared after a successful send AND on URL change.
+  //   * 15 MB combined ceiling — see #142 task plan; oversize files are
+  //     still recorded so the panel can surface them with an explicit
+  //     "review manually" warning, but their text is not extracted.
+  const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+  // Hard ceilings on file fanout so a hostile/buggy page can't pin the tab
+  // by attaching thousands of files. Anything beyond MAX_ATTACHED_FILES is
+  // recorded as skipped without being read; FileReader concurrency is also
+  // bounded so we never have more than EXTRACT_CONCURRENCY readers running
+  // at once. Both numbers are deliberately generous for real users.
+  const MAX_ATTACHED_FILES = 16;
+  const EXTRACT_CONCURRENCY = 4;
+  const fileCache = new Map(); // key -> File
+  let fileCacheUrl = typeof window !== "undefined" ? window.location.href : "";
+  // Maximum text length we send to /api/dev/analyze in a single call.
+  // Anything bigger is sliced into ~PIECE_CHUNK_SIZE chunks per piece.
+  const ANALYZE_MAX_CHARS = 10000;
+  const PIECE_CHUNK_SIZE = 8000;
+  // Worst-level beats best-level when aggregating multi-piece results.
+  const LEVEL_RANK = { safe: 0, caution: 1, danger: 2 };
+
+  function fileCacheKey(file) {
+    if (!file || typeof file.name !== "string") return null;
+    return [
+      file.name,
+      typeof file.size === "number" ? file.size : -1,
+      typeof file.lastModified === "number" ? file.lastModified : 0,
+    ].join("\u0000");
+  }
+
+  function maybeResetCacheForUrl() {
+    if (typeof window === "undefined") return;
+    if (window.location.href !== fileCacheUrl) {
+      fileCache.clear();
+      fileCacheUrl = window.location.href;
+    }
+  }
+
+  function clearFileCache() {
+    fileCache.clear();
+  }
+
+  function getCachedFiles() {
+    maybeResetCacheForUrl();
+    return Array.from(fileCache.values());
+  }
+
+  function targetIsInComposer(target) {
+    if (!platform || !platform.composerSelectors || !target) return false;
+    if (typeof target.closest !== "function") return false;
+    for (const sel of platform.composerSelectors) {
+      try {
+        const match = target.closest(sel);
+        if (match) return true;
+      } catch {
+        // :has() on older browsers / jsdom may throw on parse — treat
+        // as a non-match and try the next selector.
+      }
+    }
+    return false;
+  }
+
+  function addFilesFromList(list) {
+    if (!list || typeof list.length !== "number") return;
+    for (let i = 0; i < list.length; i += 1) {
+      const file = list[i];
+      if (!file || typeof file.name !== "string") continue;
+      const key = fileCacheKey(file);
+      if (!key) continue;
+      fileCache.set(key, file);
+    }
+  }
+
+  function handleFileInputChange(e) {
+    const target = e && e.target ? e.target : null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "file") return;
+    if (!targetIsInComposer(target)) return;
+    addFilesFromList(target.files);
+  }
+
+  function handleComposerDrop(e) {
+    if (!e || !e.dataTransfer) return;
+    if (!targetIsInComposer(e.target)) return;
+    const files = e.dataTransfer.files;
+    if (files && files.length) addFilesFromList(files);
+  }
+
+  function handleComposerPaste(e) {
+    if (!e || !e.clipboardData) return;
+    if (!targetIsInComposer(e.target)) return;
+    const files = e.clipboardData.files;
+    if (files && files.length) addFilesFromList(files);
+  }
+  // ---- end file-attachment cache --------------------------------------
+
+  // ---- Multi-piece analyze pipeline -----------------------------------
+  //
+  // A "piece" is one self-contained chunk of text we send to the analyze
+  // endpoint, tagged with a source so the result panel can name what
+  // tripped which rule. Today's pieces are the prompt itself and one
+  // entry per attached file (chunked for files larger than the 10 KB
+  // analyze cap). Each piece is sent over its own short-lived port; the
+  // worst result determines the panel level.
+  function chunkText(text, chunkSize) {
+    if (!text || text.length <= chunkSize) return [text || ""];
+    const out = [];
+    for (let i = 0; i < text.length; i += chunkSize) {
+      out.push(text.slice(i, i + chunkSize));
+    }
+    return out;
+  }
+
+  function buildPieces(promptText, extractedFiles) {
+    const pieces = [];
+    if (promptText && promptText.trim().length >= 3) {
+      // Prompts under the analyze cap stay as a single piece — the most
+      // common case by far.
+      const slices = chunkText(promptText, ANALYZE_MAX_CHARS);
+      slices.forEach((s, i) => {
+        pieces.push({
+          source: "prompt",
+          label: "Prompt text",
+          chunkIndex: slices.length > 1 ? i : null,
+          chunkCount: slices.length,
+          text: s,
+        });
+      });
+    }
+    for (const f of extractedFiles) {
+      if (f.skipReason || !f.text) continue;
+      // Even though file-extractor.js caps the extracted text at 50 KB,
+      // we still chunk on the analyzer's per-request limit. A 50 KB CSV
+      // becomes ~7 chunks; the per-key 60 req/min burst limit absorbs
+      // this even with several files attached at once.
+      const slices = chunkText(f.text, PIECE_CHUNK_SIZE);
+      slices.forEach((s, i) => {
+        pieces.push({
+          source: `file:${f.name}`,
+          label: f.name,
+          fileName: f.name,
+          chunkIndex: slices.length > 1 ? i : null,
+          chunkCount: slices.length,
+          text: s,
+        });
+      });
+    }
+    return pieces;
+  }
+
+  function analyzePieceViaPort(piece, attemptId) {
+    return new Promise((resolve) => {
+      let port;
+      let resolved = false;
+      // `__transportFailureReason` is an internal hint to runMultiPieceAnalyze:
+      // when present, the failure came from the port plumbing itself
+      // (worker died, connect threw, disconnected before delivering a
+      // result) rather than from the analyze HTTP call. Those failures
+      // need to be reflected in chrome.storage.local.lastAttempt so the
+      // popup's "Last attempt" line stays accurate even when the
+      // background never got a chance to call recordLastAttempt itself.
+      const settle = (result) => {
+        if (resolved) return;
+        resolved = true;
+        resolve({ piece, result: result || { error: "No response" } });
+      };
+      try {
+        port = chrome.runtime.connect({ name: "analyze" });
+      } catch {
+        settle({
+          error: "Failed to connect to EraseAI service.",
+          __transportFailureReason: "Could not open analyze port (extension context invalidated?)",
+        });
+        return;
+      }
+      if (!port) {
+        settle({
+          error: "Failed to connect to EraseAI service.",
+          __transportFailureReason: "chrome.runtime.connect returned no port",
+        });
+        return;
+      }
+      port.onMessage.addListener((msg) => {
+        if (!msg || msg.type !== "ANALYZE_RESULT") return;
+        settle(msg.result);
+      });
+      port.onDisconnect.addListener(() => {
+        if (!resolved) settle({
+          error: "Failed to connect to EraseAI service.",
+          __transportFailureReason: "Background disconnected the analyze port before delivering a result",
+        });
+      });
+      try {
+        port.postMessage({ type: "ANALYZE", text: piece.text, attemptId });
+      } catch {
+        settle({
+          error: "Failed to connect to EraseAI service.",
+          __transportFailureReason: "Could not post ANALYZE message over the port",
+        });
+      }
+    });
+  }
+
+  // Aggregate per-piece results into one render-ready model. Returns the
+  // worst level seen, the union of categories, and a per-piece summary
+  // the panel uses to draw one row per piece. If any piece returned a
+  // bypass (firewall disabled mid-flight), that wins — the user wanted
+  // the prompt to go through.
+  function aggregatePieceResults(pieceResults, extractedFiles) {
+    let worstLevel = "safe";
+    let worstScore = 100;
+    let worstResult = null;
+    let firstError = null;
+    let bypass = false;
+    const allCategories = new Set();
+    const perPiece = [];
+
+    for (const { piece, result } of pieceResults) {
+      if (result && result.bypass) bypass = true;
+      if (result && result.error && !firstError) {
+        firstError = {
+          error: result.error,
+          code: result.code,
+          piece,
+          transportFailureReason: result.__transportFailureReason || null,
+        };
+        perPiece.push({
+          source: piece.source,
+          label: piece.label,
+          chunkIndex: piece.chunkIndex,
+          level: "error",
+          riskScore: null,
+          issueCount: 0,
+          summary: String(result.error),
+        });
+        continue;
+      }
+      const level = typeof result.level === "string" ? result.level : "safe";
+      const rank = LEVEL_RANK[level] != null ? LEVEL_RANK[level] : 0;
+      if (rank > LEVEL_RANK[worstLevel]) {
+        worstLevel = level;
+        worstScore = typeof result.riskScore === "number" ? result.riskScore : worstScore;
+        worstResult = result;
+      } else if (rank === LEVEL_RANK[worstLevel] && typeof result.riskScore === "number") {
+        if (result.riskScore < worstScore) {
+          worstScore = result.riskScore;
+          worstResult = result;
+        }
+      }
+      const categories = extractCategories(result);
+      for (const c of categories) allCategories.add(c);
+      perPiece.push({
+        source: piece.source,
+        label: piece.label,
+        chunkIndex: piece.chunkIndex,
+        level,
+        riskScore: typeof result.riskScore === "number" ? result.riskScore : null,
+        issueCount: Array.isArray(result.issues) ? result.issues.length : 0,
+        summary: typeof result.summary === "string" ? result.summary : "",
+        issues: Array.isArray(result.issues) ? result.issues.slice(0, 8) : [],
+        suggestions: Array.isArray(result.suggestions) ? result.suggestions.slice(0, 8) : [],
+      });
+    }
+
+    // Add rows for files that were detected but skipped (PDF, oversize,
+    // image, archive, etc.) so the user sees them in the panel and is
+    // forced to make an explicit Send Anyway / Cancel decision.
+    for (const f of extractedFiles) {
+      if (!f.skipReason) continue;
+      perPiece.push({
+        source: `file:${f.name}`,
+        label: f.name,
+        chunkIndex: null,
+        level: "skipped",
+        riskScore: null,
+        issueCount: 0,
+        summary: f.skipReason,
+        skipReason: f.skipReason,
+      });
+      // A skipped file is treated as a blocker — the user must opt in
+      // before sending. Bump the aggregate level to caution unless we
+      // already have danger.
+      if (worstLevel === "safe") worstLevel = "caution";
+    }
+
+    // Surface partial-scan files: a file whose extracted text was
+    // truncated at the 50 KB cap could hide sensitive content past that
+    // boundary. Tag the file's analyzed pieces with `partialNotice` so
+    // the panel renders a "only first 50 KB scanned" warning, and bump
+    // the worst level to caution if everything else looked safe — the
+    // user must make an explicit Send Anyway decision in that case.
+    const truncatedNames = new Set(
+      (extractedFiles || []).filter((f) => f.truncated && !f.skipReason).map((f) => f.name),
+    );
+    if (truncatedNames.size) {
+      for (const row of perPiece) {
+        if (typeof row.source === "string" && row.source.startsWith("file:")) {
+          const name = row.source.slice("file:".length);
+          if (truncatedNames.has(name)) {
+            row.partialNotice =
+              "only the first 50 KB was scanned — review the rest manually";
+          }
+        }
+      }
+      if (worstLevel === "safe") worstLevel = "caution";
+    }
+
+    return {
+      level: worstLevel,
+      riskScore: worstResult ? worstScore : 100,
+      bypass,
+      firstError,
+      categories: Array.from(allCategories),
+      perPiece,
+      worstResult,
+    };
+  }
+  // ---- end multi-piece analyze pipeline -------------------------------
+
   function extractCategories(result) {
     if (!result || !Array.isArray(result.issues)) return [];
     const seen = new Set();
@@ -151,6 +504,29 @@
     if (outcomeReported) return;
     if (!lastAnalysis || !lastAnalysis.level) return;
     outcomeReported = true;
+    // Build a content-free summary of the pieces we scanned. We deliberately
+    // do not include any actual prompt or file text in the outcome event —
+    // only counts and per-piece levels — so the firewall_outcomes table
+    // never holds user data.
+    let piecesSummary = null;
+    if (lastAggregated && Array.isArray(lastAggregated.perPiece) && lastAggregated.perPiece.length > 0) {
+      const counts = { prompt: 0, file: 0 };
+      const levels = {};
+      let skippedFiles = 0;
+      for (const p of lastAggregated.perPiece) {
+        if (p.source === "prompt") counts.prompt += 1;
+        else counts.file += 1;
+        const lv = p.level || "info";
+        levels[lv] = (levels[lv] || 0) + 1;
+        if (p.skipReason) skippedFiles += 1;
+      }
+      piecesSummary = {
+        promptPieces: counts.prompt,
+        filePieces: counts.file,
+        skippedFiles,
+        levels,
+      };
+    }
     try {
       chrome.runtime.sendMessage(
         {
@@ -160,6 +536,7 @@
             action,
             riskScore: typeof lastAnalysis.riskScore === "number" ? lastAnalysis.riskScore : null,
             categories: lastAnalysis.categories || [],
+            ...(piecesSummary ? { pieces: piecesSummary } : {}),
           },
         },
         () => {
@@ -348,11 +725,53 @@
     return escapeHtml(String(s));
   }
 
+  function renderPiecesBlock(perPiece) {
+    if (!Array.isArray(perPiece) || perPiece.length === 0) return "";
+    // Show the per-piece block whenever there are multiple rows OR even a
+    // single row that comes from a file — single-file scenarios still need
+    // the file name + truncation notice surfaced. We hide it only for the
+    // pure prompt-only case where the score ring at the top already says
+    // everything there is to say.
+    const hasFileRow = perPiece.some(
+      (p) => typeof p.source === "string" && p.source.startsWith("file:"),
+    );
+    if (perPiece.length <= 1 && !hasFileRow) return "";
+    const rows = perPiece.map((p) => {
+      const levelClass = `eraseai-piece-${p.level || "info"}`;
+      const labelText = p.label || p.source || "piece";
+      let detail = "";
+      if (p.skipReason) {
+        detail = `<span class="eraseai-piece-detail">${escapeHtml(p.skipReason)}</span>`;
+      } else if (p.level === "error") {
+        detail = `<span class="eraseai-piece-detail">${escapeHtml(p.summary || "scan failed")}</span>`;
+      } else {
+        const issueText = p.issueCount === 1 ? "1 issue" : `${p.issueCount || 0} issues`;
+        const score = typeof p.riskScore === "number" ? ` &middot; score ${p.riskScore}` : "";
+        detail = `<span class="eraseai-piece-detail">${issueText}${score}</span>`;
+      }
+      const partial = p.partialNotice
+        ? `<span class="eraseai-piece-partial">${escapeHtml(p.partialNotice)}</span>`
+        : "";
+      const badge = (p.level || "info").toUpperCase();
+      const chunkSuffix = p.chunkIndex != null ? ` <span class="eraseai-piece-chunk">part ${p.chunkIndex + 1}</span>` : "";
+      return `
+        <div class="eraseai-piece-row ${levelClass}">
+          <span class="eraseai-piece-badge">${escapeHtml(badge)}</span>
+          <span class="eraseai-piece-label">${escapeHtml(labelText)}${chunkSuffix}</span>
+          ${detail}
+          ${partial}
+        </div>`;
+    }).join("");
+    return `<div class="eraseai-pieces"><h4>What we scanned (${perPiece.length})</h4>${rows}</div>`;
+  }
+
   function renderResults(panel, result, inputEl) {
-    const { riskScore, level, issues, suggestions, summary } = result;
+    const { riskScore, level, issues, suggestions, summary, perPiece } = result;
     const color = getScoreColor(riskScore);
     const circumference = 2 * Math.PI * 26;
     const dashOffset = circumference * (1 - riskScore / 100);
+
+    const piecesHtml = renderPiecesBlock(perPiece);
 
     let issuesHtml = "";
     if (issues && issues.length > 0) {
@@ -378,6 +797,20 @@
     }
 
     const isDanger = level === "danger";
+    // Sanitize is a text-only operation — it rewrites the prompt textarea.
+    // When the panel only fired because of attached files (no prompt
+    // issues), sanitizing the prompt does NOT remove the file from the
+    // composer, which would mislead the user. Hide the button in that case
+    // and lean on Cancel / Send Anyway. We detect "only file pieces are
+    // problematic" by checking that the worst issue is associated with a
+    // file source; falling back to "show sanitize" when ambiguous.
+    const promptPieceLevel = Array.isArray(perPiece)
+      ? (perPiece.find((p) => p.source === "prompt") || {}).level
+      : null;
+    const promptIsProblem = !promptPieceLevel
+      ? true
+      : LEVEL_RANK[promptPieceLevel] >= LEVEL_RANK.caution;
+    const showSanitize = promptIsProblem;
 
     panel.innerHTML = `
       <div class="eraseai-header">
@@ -401,11 +834,12 @@
           <p>${escapeHtml(summary)}</p>
         </div>
       </div>
+      ${piecesHtml}
       ${issuesHtml}
       ${suggestionsHtml}
       <div class="eraseai-actions">
         <button class="eraseai-btn eraseai-btn-cancel" id="eraseai-cancel">Cancel</button>
-        <button class="eraseai-btn eraseai-btn-sanitize" id="eraseai-sanitize">Sanitize & Send</button>
+        ${showSanitize ? '<button class="eraseai-btn eraseai-btn-sanitize" id="eraseai-sanitize">Sanitize &amp; Send</button>' : ""}
         <button class="eraseai-btn eraseai-btn-send" id="eraseai-send-anyway">${isDanger ? "Send Anyway (Risky)" : "Send Anyway"}</button>
       </div>
     `;
@@ -427,10 +861,14 @@
       removeOverlay();
       bypassNext = true;
       isIntercepting = false;
+      // Clear cached files now so the next prompt starts fresh — even if
+      // the host page hasn't yet visibly removed the attachment chips.
+      clearFileCache();
       triggerSend();
     });
 
-    panel.querySelector("#eraseai-sanitize").addEventListener("click", () => {
+    const sanitizeBtn = panel.querySelector("#eraseai-sanitize");
+    if (sanitizeBtn) sanitizeBtn.addEventListener("click", () => {
       const btn = panel.querySelector("#eraseai-sanitize");
       btn.disabled = true;
       btn.textContent = "Sanitizing...";
@@ -575,6 +1013,7 @@
       removeOverlay();
       bypassNext = true;
       isIntercepting = false;
+      clearFileCache();
       triggerSend();
     };
 
@@ -644,6 +1083,7 @@
       removeOverlay();
       bypassNext = true;
       isIntercepting = false;
+      clearFileCache();
       triggerSend();
     });
     const openPopupBtn = panel.querySelector("#eraseai-open-popup");
@@ -660,6 +1100,269 @@
     if (sendBtn) {
       setTimeout(() => sendBtn.click(), 50);
     }
+  }
+
+  // Cache of the most recent aggregated render model so terminal action
+  // handlers (Cancel / Send Anyway) can re-derive the displayed perPiece
+  // rows when reporting the outcome telemetry.
+  let lastAggregated = null;
+
+  // Run the full multi-piece analyze flow. Pulled out of interceptSubmission
+  // so the prompt-only path and the prompt-plus-attachments path share a
+  // single implementation: a list of pieces is built, each is sent over its
+  // own short-lived port, and the worst level wins. With no attachments the
+  // pieces array is just [prompt] so behaviour is identical to the previous
+  // single-port flow (and the existing test suite passes unchanged).
+  async function runMultiPieceAnalyze({ promptText, files, panel, inputEl, attemptId }) {
+    let analyzeResponded = false;
+
+    const finishWithError = (errorMsg, persistReason) => {
+      if (analyzeResponded) return;
+      analyzeResponded = true;
+      if (analyzeTimer != null) {
+        clearTimeout(analyzeTimer);
+        analyzeTimer = null;
+      }
+      if (persistReason) {
+        persistLastAttempt({
+          status: "error",
+          reason: persistReason,
+          at: Date.now(),
+          attemptId,
+        });
+      }
+      renderError(panel, errorMsg, { kind: "network", showOpenPopup: true });
+      isIntercepting = false;
+    };
+
+    analyzeTimer = setTimeout(() => {
+      if (analyzeResponded) return;
+      analyzeResponded = true;
+      analyzeTimer = null;
+      persistLastAttempt({
+        status: "timeout",
+        reason: `No response from background within ${Math.round(ANALYZE_TIMEOUT_MS / 1000)}s`,
+        at: Date.now(),
+        attemptId,
+      });
+      renderError(
+        panel,
+        "Couldn't reach the EraseAI service in time. Check your API key and connection in the extension popup.",
+        { kind: "timeout", showOpenPopup: true },
+      );
+      isIntercepting = false;
+    }, ANALYZE_TIMEOUT_MS);
+
+    // Pre-extract attached files (best-effort; extractor errors come back as
+    // skipReason rows so the user always sees something for every file).
+    //
+    // Safety pass first — decide who is in/out BEFORE we open any FileReader,
+    // otherwise a page that attaches 1000 files (or 50×3MB files) would
+    // happily kick off thousands of concurrent reads and pin the tab. We
+    // skip in two passes:
+    //   * any file beyond MAX_ATTACHED_FILES (preserve the user's order so
+    //     the first N are scanned).
+    //   * any file whose cumulative size pushes total bytes above
+    //     MAX_TOTAL_ATTACHMENT_BYTES, walking smallest→largest so a single
+    //     huge file doesn't starve out a batch of small ones.
+    const extractor = globalThis.__eraseAIExtractor;
+    let extractedFiles = [];
+    if (files && files.length) {
+      const planned = files.map((f) => ({
+        file: f,
+        name: (f && f.name) || "(unnamed)",
+        mimeType: (f && f.type) || "",
+        sizeBytes: (f && f.size) || 0,
+        skipReason: null,
+      }));
+
+      // Pass 1: file-count ceiling.
+      for (let i = MAX_ATTACHED_FILES; i < planned.length; i += 1) {
+        planned[i].skipReason =
+          `skipped — only the first ${MAX_ATTACHED_FILES} attachments are scanned per send, review manually`;
+      }
+
+      // Pass 2: combined-bytes ceiling among the still-unskipped files.
+      const eligible = planned.filter((p) => !p.skipReason);
+      const sorted = [...eligible].sort((a, b) => a.sizeBytes - b.sizeBytes);
+      let running = 0;
+      for (const p of sorted) {
+        if (running + p.sizeBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
+          p.skipReason =
+            "skipped — combined attachment size exceeds 15 MB cap, review manually";
+        } else {
+          running += p.sizeBytes;
+        }
+      }
+
+      // Bounded-concurrency extraction. Each entry in `planned` either
+      // already has a skipReason (no read) or gets handed to the extractor
+      // through a small worker pool.
+      const results = new Array(planned.length);
+      const canExtract = extractor && typeof extractor.extractText === "function";
+      let cursor = 0;
+      async function worker() {
+        while (cursor < planned.length) {
+          const idx = cursor;
+          cursor += 1;
+          const p = planned[idx];
+          if (p.skipReason || !canExtract) {
+            results[idx] = {
+              name: p.name,
+              mimeType: p.mimeType,
+              sizeBytes: p.sizeBytes,
+              text: "",
+              truncated: false,
+              skipReason: p.skipReason || "extractor unavailable — review manually",
+            };
+            continue;
+          }
+          try {
+            results[idx] = await extractor.extractText(p.file);
+          } catch {
+            // A truly thrown extractor error (extractText is supposed to
+            // resolve, never reject) — surface as a skipped row so the
+            // user sees the file in the panel.
+            results[idx] = {
+              name: p.name,
+              mimeType: p.mimeType,
+              sizeBytes: p.sizeBytes,
+              text: "",
+              truncated: false,
+              skipReason: "extractor crashed — review manually",
+            };
+          }
+        }
+      }
+      const workerCount = Math.min(EXTRACT_CONCURRENCY, planned.length) || 1;
+      const workers = [];
+      for (let i = 0; i < workerCount; i += 1) workers.push(worker());
+      await Promise.all(workers);
+      extractedFiles = results;
+    }
+
+    const pieces = buildPieces(promptText, extractedFiles);
+
+    // Pathological case: no analyzable pieces at all (empty prompt + only
+    // skipped files). Treat as a forced-block warning panel so the user
+    // sees the "review manually" rows and explicitly chooses what to do.
+    if (pieces.length === 0) {
+      if (analyzeTimer != null) {
+        clearTimeout(analyzeTimer);
+        analyzeTimer = null;
+      }
+      analyzeResponded = true;
+      const aggregated = aggregatePieceResults([], extractedFiles);
+      // No analyzed pieces means level was bumped to "caution" only by
+      // the presence of skip rows. Make that explicit for the panel.
+      if (aggregated.level === "safe") aggregated.level = "caution";
+      lastAnalysis = {
+        level: aggregated.level,
+        riskScore: aggregated.riskScore,
+        categories: aggregated.categories,
+      };
+      lastAggregated = aggregated;
+      renderResults(panel, buildRenderModel(aggregated), inputEl);
+      isIntercepting = false;
+      return;
+    }
+
+    let pieceResults;
+    try {
+      pieceResults = await Promise.all(pieces.map((p) => analyzePieceViaPort(p, attemptId)));
+    } catch {
+      finishWithError(
+        "Failed to connect to EraseAI service.",
+        "Multi-piece analyze rejected unexpectedly",
+      );
+      return;
+    }
+
+    if (analyzeResponded) return; // timed out / cancelled mid-flight
+    analyzeResponded = true;
+    if (analyzeTimer != null) {
+      clearTimeout(analyzeTimer);
+      analyzeTimer = null;
+    }
+
+    const aggregated = aggregatePieceResults(pieceResults, extractedFiles);
+
+    if (aggregated.bypass) {
+      removeOverlay();
+      bypassNext = true;
+      isIntercepting = false;
+      clearFileCache();
+      triggerSend();
+      return;
+    }
+
+    if (aggregated.firstError) {
+      const err = aggregated.firstError.error;
+      const code = aggregated.firstError.code;
+      const transportReason = aggregated.firstError.transportFailureReason;
+      // Transport-level failures (port plumbing died before any HTTP
+      // call) need to be reflected in chrome.storage.local.lastAttempt
+      // so the popup's "Last attempt" line stays accurate even when
+      // the background never got a chance to call recordLastAttempt
+      // itself. Mirrors the persistLastAttempt() block that lived in
+      // the old single-port interceptSubmission.
+      if (transportReason) {
+        persistLastAttempt({
+          status: "error",
+          reason: transportReason,
+          at: Date.now(),
+          attemptId,
+        });
+      }
+      const isAuth =
+        /api key|unauthor|invalid|revoked|expired/i.test(String(err)) ||
+        (typeof code === "string" && code.startsWith("AUTH_"));
+      renderError(panel, err, {
+        kind: transportReason ? "network" : (isAuth ? "auth" : "server"),
+        showOpenPopup: true,
+      });
+      isIntercepting = false;
+      return;
+    }
+
+    lastAnalysis = {
+      level: aggregated.level,
+      riskScore: aggregated.riskScore,
+      categories: aggregated.categories,
+    };
+    lastAggregated = aggregated;
+
+    // The "All clear" auto-dismiss path is reserved for the simple case:
+    // prompt only, safe level, no skipped files. Anything else (even a
+    // safe-prompt+skipped-PDF) routes through the warning panel so the
+    // user can explicitly choose to send.
+    const onlyPromptPieces = aggregated.perPiece.every((p) => p.source === "prompt");
+    if (aggregated.level === "safe" && onlyPromptPieces) {
+      renderClearConfirmation(panel, aggregated.worstResult || { riskScore: 100, summary: "All clear" }, inputEl);
+      isIntercepting = false;
+      return;
+    }
+
+    renderResults(panel, buildRenderModel(aggregated), inputEl);
+    isIntercepting = false;
+  }
+
+  function buildRenderModel(aggregated) {
+    // Rebuild a server-result-shaped object from the worst piece so the
+    // existing renderResults DOM (score ring, issues block, suggestions
+    // block) keeps working. Attach the aggregated.perPiece array as a
+    // sibling field; renderResults uses it to draw the per-file table.
+    const worst = aggregated.worstResult || {};
+    return {
+      riskScore: typeof aggregated.riskScore === "number" ? aggregated.riskScore : 100,
+      level: aggregated.level,
+      issues: Array.isArray(worst.issues) ? worst.issues : [],
+      suggestions: Array.isArray(worst.suggestions) ? worst.suggestions : [],
+      summary: typeof worst.summary === "string" && worst.summary
+        ? worst.summary
+        : (aggregated.level === "safe" ? "All clear" : "Issues detected in prompt or attachments"),
+      perPiece: aggregated.perPiece,
+    };
   }
 
   function interceptSubmission(e) {
@@ -679,7 +1382,13 @@
     if (!inputEl) return;
 
     const text = platform.getInputText(inputEl).trim();
-    if (!text || text.length < 3) return;
+    const cachedFiles = getCachedFiles();
+
+    // Allow submission to proceed when there's truly nothing to scan —
+    // empty prompt with no attachments. If there ARE attached files we
+    // intercept even with an empty prompt so the firewall can read them
+    // (this is the demo failure mode we're fixing in #142).
+    if ((!text || text.length < 3) && cachedFiles.length === 0) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -690,6 +1399,7 @@
     // most one outcome event tied to its own analysis result.
     lastAnalysis = null;
     outcomeReported = false;
+    lastAggregated = null;
 
     chrome.runtime.sendMessage({ type: "GET_CONFIG" }, (configResult) => {
       if (chrome.runtime.lastError || !configResult) {
@@ -707,174 +1417,15 @@
       }
 
       const { panel } = createOverlayBackdrop();
-
-      // Hard client-side ceiling — true safety net now that ANALYZE goes
-      // over a long-lived port (see below). The port keeps the MV3 service
-      // worker alive for the duration of the in-flight fetch, so this
-      // timer is not expected to fire under normal conditions; it only
-      // catches pathological cases (port creation throws, worker crash
-      // before responding, etc.). attemptId correlates the timeout record
-      // with the matching late background response so we can suppress
-      // stale same-attempt overwrites (see recordLastAttempt in
-      // background.js).
       const attemptId = newAttemptId();
-      let analyzeResponded = false;
 
-      const finalizeWithResult = (result) => {
-        if (analyzeResponded) return;
-        analyzeResponded = true;
-        if (analyzeTimer != null) {
-          clearTimeout(analyzeTimer);
-          analyzeTimer = null;
-        }
-
-        if (!result) {
-          renderError(
-            panel,
-            "Failed to connect to EraseAI service.",
-            { kind: "network", showOpenPopup: true },
-          );
-          isIntercepting = false;
-          return;
-        }
-
-        if (result.bypass) {
-          removeOverlay();
-          bypassNext = true;
-          isIntercepting = false;
-          triggerSend();
-          return;
-        }
-
-        if (result.error) {
-          const isAuth =
-            /api key|unauthor|invalid|revoked|expired/i.test(String(result.error)) ||
-            (typeof result.code === "string" && result.code.startsWith("AUTH_"));
-          renderError(panel, result.error, {
-            kind: isAuth ? "auth" : "server",
-            showOpenPopup: true,
-          });
-          isIntercepting = false;
-          return;
-        }
-
-        // Capture the analysis result so terminal-action handlers can
-        // attribute the outcome event back to the level/categories the user
-        // actually saw.
-        lastAnalysis = {
-          level: typeof result.level === "string" ? result.level : null,
-          riskScore: typeof result.riskScore === "number" ? result.riskScore : null,
-          categories: extractCategories(result),
-        };
-
-        // Safe prompts get an "All clear" confirmation that auto-sends
-        // after a short window; never a silent skip.
-        if (result.level === "safe") {
-          renderClearConfirmation(panel, result, inputEl);
-          isIntercepting = false;
-          return;
-        }
-
-        renderResults(panel, result, inputEl);
-        isIntercepting = false;
-      };
-
-      const finalizeWithError = (errorMsg, persistReason) => {
-        if (analyzeResponded) return;
-        analyzeResponded = true;
-        if (analyzeTimer != null) {
-          clearTimeout(analyzeTimer);
-          analyzeTimer = null;
-        }
-        // Keep the popup's "Last attempt" status line accurate when the
-        // port path fails before delivering a result (background crashed,
-        // extension context invalidated, port creation threw, etc.). The
-        // background's recordLastAttempt() never runs in these cases
-        // because the worker either died or never received the message.
-        if (persistReason) {
-          persistLastAttempt({
-            status: "error",
-            reason: persistReason,
-            at: Date.now(),
-            attemptId,
-          });
-        }
-        renderError(
-          panel,
-          errorMsg,
-          { kind: "network", showOpenPopup: true },
-        );
-        isIntercepting = false;
-      };
-
-      analyzeTimer = setTimeout(() => {
-        if (analyzeResponded) return;
-        analyzeResponded = true;
-        analyzeTimer = null;
-        persistLastAttempt({
-          status: "timeout",
-          reason: `No response from background within ${Math.round(ANALYZE_TIMEOUT_MS / 1000)}s`,
-          at: Date.now(),
-          attemptId,
-        });
-        renderError(
-          panel,
-          "Couldn't reach the EraseAI service in time. Check your API key and connection in the extension popup.",
-          { kind: "timeout", showOpenPopup: true },
-        );
-        isIntercepting = false;
-      }, ANALYZE_TIMEOUT_MS);
-
-      // Long-lived port transport. While this port is connected, Chrome
-      // keeps the MV3 service worker alive, so the analyze fetch can
-      // complete even if the worker would otherwise have been suspended
-      // mid-flight. The background-side onConnect handler posts back a
-      // single { type: "ANALYZE_RESULT", result } message and then
-      // disconnects, releasing the keep-alive.
-      let analyzePort = null;
-      try {
-        analyzePort = chrome.runtime.connect({ name: "analyze" });
-      } catch (err) {
-        finalizeWithError(
-          "Failed to connect to EraseAI service.",
-          "Could not open analyze port (extension context invalidated?)",
-        );
-        return;
-      }
-      if (!analyzePort) {
-        finalizeWithError(
-          "Failed to connect to EraseAI service.",
-          "chrome.runtime.connect returned no port",
-        );
-        return;
-      }
-
-      analyzePort.onMessage.addListener((msg) => {
-        if (!msg || msg.type !== "ANALYZE_RESULT") return;
-        finalizeWithResult(msg.result);
+      runMultiPieceAnalyze({
+        promptText: text,
+        files: cachedFiles,
+        panel,
+        inputEl,
+        attemptId,
       });
-
-      analyzePort.onDisconnect.addListener(() => {
-        // If we've already rendered a result this is the normal teardown
-        // (background disconnects after posting). Otherwise something
-        // tore the port down before we got a result — surface it as a
-        // network error rather than letting the spinner ride out the 15s
-        // safety-net timer.
-        if (analyzeResponded) return;
-        finalizeWithError(
-          "Failed to connect to EraseAI service.",
-          "Background disconnected the analyze port before delivering a result",
-        );
-      });
-
-      try {
-        analyzePort.postMessage({ type: "ANALYZE", text, attemptId });
-      } catch (err) {
-        finalizeWithError(
-          "Failed to connect to EraseAI service.",
-          "Could not post ANALYZE message over the port",
-        );
-      }
     });
   }
 
@@ -905,6 +1456,14 @@
     listenersAttached = true;
 
     document.addEventListener("keydown", handleKeyDown, true);
+    // File-attachment capture: composer-scoped paperclip clicks fire a
+    // change event on a hidden <input type="file">; drag-drop and pasted
+    // files surface via drop and paste on the composer container. Use
+    // capture-phase listeners on document so we see the event regardless
+    // of which descendant of the composer it actually targeted.
+    document.addEventListener("change", handleFileInputChange, true);
+    document.addEventListener("drop", handleComposerDrop, true);
+    document.addEventListener("paste", handleComposerPaste, true);
 
     hookSendButtons();
 
@@ -920,6 +1479,9 @@
     listenersAttached = false;
 
     document.removeEventListener("keydown", handleKeyDown, true);
+    document.removeEventListener("change", handleFileInputChange, true);
+    document.removeEventListener("drop", handleComposerDrop, true);
+    document.removeEventListener("paste", handleComposerPaste, true);
 
     if (observer) {
       observer.disconnect();
@@ -930,6 +1492,7 @@
       el.removeEventListener("click", interceptSubmission, true);
       delete el.dataset.eraseaiHooked;
     });
+    clearFileCache();
   }
 
   function init() {
