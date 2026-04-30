@@ -7,7 +7,7 @@
       typeof data === "object" &&
       data.type === REQ_TYPE &&
       typeof data.id === "string" &&
-      (data.kind === "pdf" || data.kind === "docx" || data.kind === "xlsx") &&
+      (data.kind === "pdf" || data.kind === "docx" || data.kind === "xlsx" || data.kind === "pptx") &&
       (data.bytes instanceof ArrayBuffer || ArrayBuffer.isView(data.bytes))
     );
   }
@@ -19,7 +19,8 @@
       let text;
       if (req.kind === "pdf") text = await ext.extractPdfText(req.bytes);
       else if (req.kind === "docx") text = await ext.extractDocxText(req.bytes);
-      else text = await ext.extractXlsxText(req.bytes);
+      else if (req.kind === "xlsx") text = await ext.extractXlsxText(req.bytes);
+      else text = await ext.extractPptxText(req.bytes);
       return { ok: true, text: typeof text === "string" ? text : "" };
     } catch (err) {
       return { ok: false, error: (err && err.message) || String(err) };

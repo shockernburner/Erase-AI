@@ -29,6 +29,7 @@ describe("sandbox-extractor — globals", () => {
     expect(typeof globalThis.__eraseAISandboxExtractor.extractDocxText).toBe("function");
     expect(typeof globalThis.__eraseAISandboxExtractor.extractPdfText).toBe("function");
     expect(typeof globalThis.__eraseAISandboxExtractor.extractXlsxText).toBe("function");
+    expect(typeof globalThis.__eraseAISandboxExtractor.extractPptxText).toBe("function");
   });
 });
 
@@ -263,6 +264,100 @@ describe("sandbox-extractor — extractXlsxText() with DEFLATE-compressed entrie
       compressed: true,
     });
     const text = await globalThis.__eraseAISandboxExtractor.extractXlsxText(bytes);
+    expect(text).toMatch(/Confidential/);
+    expect(text).toMatch(/444-22-1111/);
+  });
+});
+
+describe("sandbox-extractor — extractPptxText() with stored-mode fixtures", () => {
+  it("rejects buffers without a PK header", async () => {
+    const not = new TextEncoder().encode("definitely not a zip");
+    await expect(
+      globalThis.__eraseAISandboxExtractor.extractPptxText(not),
+    ).rejects.toThrow(/PPTX/);
+  });
+
+  it("extracts an SSN from a slide body", async () => {
+    const bytes = await buildPptxBytes({
+      slides: [
+        ["Quarterly Review", "Employee SSN 123-45-6789 in slide body"],
+      ],
+      notes: [],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractPptxText(bytes);
+    expect(text).toMatch(/Quarterly Review/);
+    expect(text).toMatch(/123-45-6789/);
+  });
+
+  it("extracts an SSN from speaker notes", async () => {
+    const bytes = await buildPptxBytes({
+      slides: [["Title only"]],
+      notes: [["Reminder: customer SSN 555-12-3456 — do not share"]],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractPptxText(bytes);
+    expect(text).toMatch(/555-12-3456/);
+  });
+
+  it("walks every slide in deck order and includes notes after slides", async () => {
+    const bytes = await buildPptxBytes({
+      slides: [
+        ["first-slide-marker"],
+        ["second-slide-marker"],
+        ["third-slide-marker"],
+      ],
+      notes: [["notes-marker-A"], ["notes-marker-B"], ["notes-marker-C"]],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractPptxText(bytes);
+    expect(text).toMatch(/first-slide-marker/);
+    expect(text).toMatch(/second-slide-marker/);
+    expect(text).toMatch(/third-slide-marker/);
+    expect(text).toMatch(/notes-marker-A/);
+    expect(text.indexOf("first-slide-marker"))
+      .toBeLessThan(text.indexOf("second-slide-marker"));
+    expect(text.indexOf("second-slide-marker"))
+      .toBeLessThan(text.indexOf("third-slide-marker"));
+    expect(text.indexOf("third-slide-marker"))
+      .toBeLessThan(text.indexOf("notes-marker-A"));
+  });
+
+  it("decodes XML entities inside <a:t>", async () => {
+    const bytes = await buildPptxBytes({
+      slides: [["A &amp; B Co. — quarterly &lt;draft&gt;"]],
+      notes: [],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractPptxText(bytes);
+    expect(text).toMatch(/A & B Co\./);
+    expect(text).toMatch(/<draft>/);
+  });
+
+  it("ignores plain <t> tags from non-DrawingML namespaces", async () => {
+    // Only `<a:t>` (DrawingML) should be picked up — bare `<t>` runs in pptx
+    // metadata files would just be noise.
+    const slideXml =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"` +
+      ` xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+      `<p:cSld><p:spTree>` +
+      `<p:sp><p:txBody><a:p><a:r><a:t>Real slide text 444-22-1111</a:t></a:r></a:p></p:txBody></p:sp>` +
+      `</p:spTree></p:cSld>` +
+      `<extras><t>Should not be picked up</t></extras>` +
+      `</p:sld>`;
+    const bytes = await buildZip([
+      { name: "ppt/slides/slide1.xml", data: slideXml },
+    ]);
+    const text = await globalThis.__eraseAISandboxExtractor.extractPptxText(bytes);
+    expect(text).toMatch(/Real slide text/);
+    expect(text).toMatch(/444-22-1111/);
+    expect(text).not.toMatch(/Should not be picked up/);
+  });
+
+  it("decompresses DEFLATE-compressed slide entries", async () => {
+    const bytes = await buildPptxBytes({
+      slides: [["Confidential SSN 444-22-1111 inside flate slide"]],
+      notes: [],
+      compressed: true,
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractPptxText(bytes);
     expect(text).toMatch(/Confidential/);
     expect(text).toMatch(/444-22-1111/);
   });
@@ -521,6 +616,39 @@ function buildSharedStringsXml(strings) {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` +
     `count="${strings.length}" uniqueCount="${strings.length}">${items}</sst>`;
+}
+
+function buildSlideXml(textRuns) {
+  const runs = textRuns.map((t) =>
+    `<a:p><a:r><a:t xml:space="preserve">${escapeXml(t)}</a:t></a:r></a:p>`,
+  ).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"` +
+    ` xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+    `<p:cSld><p:spTree><p:sp><p:txBody>${runs}</p:txBody></p:sp></p:spTree></p:cSld>` +
+    `</p:sld>`;
+}
+
+function buildNotesSlideXml(textRuns) {
+  const runs = textRuns.map((t) =>
+    `<a:p><a:r><a:t xml:space="preserve">${escapeXml(t)}</a:t></a:r></a:p>`,
+  ).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<p:notes xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"` +
+    ` xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+    `<p:cSld><p:spTree><p:sp><p:txBody>${runs}</p:txBody></p:sp></p:spTree></p:cSld>` +
+    `</p:notes>`;
+}
+
+async function buildPptxBytes({ slides, notes, compressed = false }) {
+  const files = [];
+  slides.forEach((runs, idx) => {
+    files.push({ name: `ppt/slides/slide${idx + 1}.xml`, data: buildSlideXml(runs) });
+  });
+  (notes || []).forEach((runs, idx) => {
+    files.push({ name: `ppt/notesSlides/notesSlide${idx + 1}.xml`, data: buildNotesSlideXml(runs) });
+  });
+  return buildZip(files, { compressed });
 }
 
 async function buildXlsxBytes({ sharedStrings, sheets, compressed = false }) {

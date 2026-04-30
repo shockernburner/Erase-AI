@@ -160,15 +160,19 @@
       .replace(/&amp;/g, "&");
   }
 
-  function extractTContent(xml) {
+  function extractTagContent(xml, tagName) {
     const out = [];
-    const re = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g;
+    const re = new RegExp("<" + tagName + "(?:\\s[^>]*)?>([\\s\\S]*?)</" + tagName + ">", "g");
     let m;
     while ((m = re.exec(xml)) !== null) {
       const txt = decodeXmlEntities(m[1]);
       if (txt.length) out.push(txt);
     }
     return out.join(" ");
+  }
+
+  function extractTContent(xml) {
+    return extractTagContent(xml, "t");
   }
 
   async function extractXlsxText(input) {
@@ -200,9 +204,41 @@
     return parts.join("\n").trim();
   }
 
+  async function extractPptxText(input) {
+    const data = asUint8(input);
+    if (data.length < 4) throw new Error("not a PPTX (too short)");
+    if (data[0] !== 0x50 || data[1] !== 0x4b) throw new Error("not a PPTX (missing PK header)");
+
+    const entries = parseZipCentralDirectory(data);
+    const slideEntries = entries
+      .filter((e) => /^ppt\/slides\/slide[^/]+\.xml$/i.test(e.name))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    const notesEntries = entries
+      .filter((e) => /^ppt\/notesSlides\/notesSlide[^/]+\.xml$/i.test(e.name))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    const decoder = new TextDecoder();
+    const parts = [];
+
+    for (const slide of slideEntries) {
+      const bytes = await readZipEntry(data, slide);
+      const text = extractTagContent(decoder.decode(bytes), "a:t");
+      if (text) parts.push(text);
+    }
+
+    for (const note of notesEntries) {
+      const bytes = await readZipEntry(data, note);
+      const text = extractTagContent(decoder.decode(bytes), "a:t");
+      if (text) parts.push(text);
+    }
+
+    return parts.join("\n").trim();
+  }
+
   globalThis.__eraseAISandboxExtractor = {
     extractDocxText,
     extractPdfText,
     extractXlsxText,
+    extractPptxText,
   };
 })();

@@ -53,6 +53,8 @@ describe("file-extractor — classify()", () => {
     ["resume.pdf", "application/pdf", "pdf"],
     ["letter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"],
     ["sheet.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"],
+    ["deck.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"],
+    ["legacy.ppt", "application/vnd.ms-powerpoint", "pptx"],
     ["pic.png", "image/png", "image"],
     ["pic.jpeg", "image/jpeg", "image"],
     ["bundle.zip", "application/zip", "archive"],
@@ -178,6 +180,64 @@ describe("file-extractor — extractText()", () => {
     expect(out.skipReason).toBeUndefined();
     expect(out.text).toContain("123-45-6789");
     expect(out.name).toBe("payroll.xlsx");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("extracts PPTX text via the sandbox bridge and returns no skipReason", async () => {
+    let lastKind = null;
+    let lastBytes = null;
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind, bytes) => {
+      lastKind = kind;
+      lastBytes = bytes;
+      return { ok: true, text: "Slide 1: Customer SSN 123-45-6789" };
+    });
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "deck.pptx",
+        "PK\u0003\u0004 placeholder bytes",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ),
+    );
+    expect(lastKind).toBe("pptx");
+    expect(lastBytes instanceof ArrayBuffer).toBe(true);
+    expect(out.skipReason).toBeUndefined();
+    expect(out.text).toContain("123-45-6789");
+    expect(out.name).toBe("deck.pptx");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("falls back to skipReason for PPTX when the bridge fails (e.g. legacy .ppt or password-protected)", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({
+      ok: false,
+      error: "not a PPTX (missing PK header)",
+    }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "legacy.ppt",
+        "\xD0\xCF\x11\xE0",
+        "application/vnd.ms-powerpoint",
+      ),
+    );
+    expect(out.skipReason).toBe(
+      globalThis.__eraseAIExtractor.SKIP_REASONS.pptxNotYetSupported,
+    );
+    expect(out.text).toBe("");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("truncates sandbox-extracted PPTX text at the 50 KB cap", async () => {
+    const big = "a".repeat(60 * 1024);
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: big }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "huge.pptx",
+        "PK\u0003\u0004",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ),
+    );
+    expect(out.skipReason).toBeUndefined();
+    expect(out.truncated).toBe(true);
+    expect(out.text.length).toBe(50 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(null);
   });
 

@@ -11,6 +11,7 @@
   const PDF_EXT = new Set(["pdf"]);
   const DOCX_EXT = new Set(["docx"]);
   const XLSX_EXT = new Set(["xlsx", "xls"]);
+  const PPTX_EXT = new Set(["pptx", "ppt"]);
   const IMAGE_EXT = new Set([
     "png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "svg", "heic", "heif",
   ]);
@@ -27,6 +28,7 @@
     pdfNotYetSupported: "couldn't read the PDF — review manually",
     docxNotYetSupported: "couldn't read the Word document — review manually",
     xlsxNotYetSupported: "couldn't read the spreadsheet — review manually",
+    pptxNotYetSupported: "couldn't read the slide deck — review manually",
     image: "image — visual content not scanned, review manually",
     archive: "archive — contents not scanned, review manually",
     unsupported: "file type not supported, review manually",
@@ -166,6 +168,10 @@
       file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
       file.type === "application/vnd.ms-excel"
     ) return "xlsx";
+    if (PPTX_EXT.has(ext) ||
+      file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+      file.type === "application/vnd.ms-powerpoint"
+    ) return "pptx";
     if (IMAGE_EXT.has(ext) || (file.type && file.type.startsWith("image/"))) return "image";
     if (ARCHIVE_EXT.has(ext) ||
       file.type === "application/zip" ||
@@ -222,7 +228,7 @@
     }
 
     const kind = classify(file);
-    if (kind === "pdf" || kind === "docx" || kind === "xlsx") {
+    if (kind === "pdf" || kind === "docx" || kind === "xlsx" || kind === "pptx") {
       return extractViaSandbox(file, kind, sizeBytes);
     }
     if (kind === "image") return makeSkipResult(file, SKIP_REASONS.image);
@@ -246,7 +252,8 @@
     let fallbackReason;
     if (kind === "pdf") fallbackReason = SKIP_REASONS.pdfNotYetSupported;
     else if (kind === "docx") fallbackReason = SKIP_REASONS.docxNotYetSupported;
-    else fallbackReason = SKIP_REASONS.xlsxNotYetSupported;
+    else if (kind === "xlsx") fallbackReason = SKIP_REASONS.xlsxNotYetSupported;
+    else fallbackReason = SKIP_REASONS.pptxNotYetSupported;
     const buf = await readAsArrayBuffer(file);
     if (!buf.ok || !buf.bytes) return makeSkipResult(file, SKIP_REASONS.readError);
     let result;
