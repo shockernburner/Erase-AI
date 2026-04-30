@@ -285,6 +285,16 @@
   margin: 0;
 }
 
+/* Queued-progress hint (#145) — only injected when a single send fans
+ * out into more than ~5 analyze pieces, so users see forward progress
+ * instead of a static spinner while the bounded worker pool drains. */
+.eraseai-scan-progress {
+  margin-top: 8px !important;
+  font-size: 12px !important;
+  color: #71717a !important;
+  font-variant-numeric: tabular-nums;
+}
+
 .eraseai-error-msg {
   padding: 20px 24px;
   text-align: center;

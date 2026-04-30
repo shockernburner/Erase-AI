@@ -1334,6 +1334,31 @@
       return;
     }
 
+    // Queued-progress hint (#145). With ANALYZE_CONCURRENCY=4 a 51-piece
+    // send naturally serialises into ~13 batches, which can take 10s+
+    // wall-clock — long enough that a static "Analyzing…" spinner reads
+    // as "hung". Above SCAN_PROGRESS_THRESHOLD pieces we inject a small
+    // "Scanning X of N…" line under the spinner that ticks up as each
+    // piece completes, so users see forward progress. Single-piece /
+    // small-batch sends keep the original copy unchanged.
+    const SCAN_PROGRESS_THRESHOLD = 5;
+    let progressEl = null;
+    let completedCount = 0;
+    if (pieces.length > SCAN_PROGRESS_THRESHOLD) {
+      const scanningContainer = panel.querySelector(".eraseai-scanning");
+      if (scanningContainer) {
+        progressEl = document.createElement("p");
+        progressEl.className = "eraseai-scan-progress";
+        progressEl.textContent = `Scanning 0 of ${pieces.length}\u2026`;
+        scanningContainer.appendChild(progressEl);
+      }
+    }
+    const updateScanProgress = () => {
+      if (!progressEl || !progressEl.isConnected) return;
+      progressEl.textContent =
+        `Scanning ${completedCount} of ${pieces.length}\u2026`;
+    };
+
     let pieceResults;
     try {
       // Bounded fan-out: never more than ANALYZE_CONCURRENCY analyze
@@ -1355,6 +1380,8 @@
           // failures come back as { error, __transportFailureReason }.
           // eslint-disable-next-line no-await-in-loop
           pieceResults[idx] = await analyzePieceViaPort(pieces[idx], attemptId);
+          completedCount += 1;
+          updateScanProgress();
         }
       };
       const analyzeWorkerCount = Math.min(ANALYZE_CONCURRENCY, pieces.length) || 1;
