@@ -817,20 +817,18 @@
     //     Cancel or Send Anyway. This prevents the UX bug where one
     //     "Sanitize & Send" click would ship a known-risk file because
     //     the sanitizer can only redact the prompt textarea.
-    const promptPiece = Array.isArray(perPiece)
-      ? perPiece.find((p) => p.source === "prompt")
-      : null;
-    const promptPieceLevel = promptPiece ? promptPiece.level : null;
-    // If we have a prompt row, sanitize only makes sense when its level is
-    // caution/danger. If we have NO prompt row at all (empty prompt with
-    // just attachments) we conservatively assume the prompt isn't the
-    // fixable thing — the user attached files and there's nothing to
-    // rewrite. Pre-perPiece flow (no perPiece array) keeps the legacy
-    // "show sanitize" behavior so older single-piece flows don't change.
+    // Sanitize only makes sense when at least one prompt piece is itself
+    // caution/danger. We use .some() (not .find()) so a long chunked
+    // prompt where chunk 0 looks safe but chunk 3 is risky still offers
+    // sanitize. If there's NO prompt row at all (empty prompt + just
+    // attachments) we hide sanitize — the user attached files, there's
+    // nothing in the prompt to rewrite.
+    // Pre-perPiece (no perPiece array) keeps legacy "show sanitize"
+    // behavior so older single-piece flows don't change.
     const promptIsProblem = !Array.isArray(perPiece)
       ? true
-      : (promptPieceLevel != null
-        && LEVEL_RANK[promptPieceLevel] >= LEVEL_RANK.caution);
+      : perPiece.some((p) => p.source === "prompt"
+        && LEVEL_RANK[p.level || "safe"] >= LEVEL_RANK.caution);
     // A file row is a blocker if EITHER:
     //   * its level is caution/danger (analyzed risky content), OR
     //   * it was skipped entirely (PDF/DOCX/oversize/unsupported — level
