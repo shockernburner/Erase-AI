@@ -47,17 +47,19 @@ function makeFakePort({ onPosted } = {}) {
 // ChatGPT analyze-result programmer: returns a function that replies to the
 // Nth ANALYZE message with the matching planned response. Each piece gets
 // its own port (the multi-piece flow), so we accumulate them.
-function makeChromeStub({ enabled = true, apiKey = "eak_test", reply } = {}) {
+function makeChromeStub({ enabled = true, apiKey = "eak_test", reply, sanitizeReply } = {}) {
   const ports = [];
   const analyzeMessages = [];
+  const sanitizeMessages = [];
   const outcomes = [];
   return {
     __ports: ports,
     __analyzeMessages: analyzeMessages,
+    __sanitizeMessages: sanitizeMessages,
     __outcomes: outcomes,
     runtime: {
       lastError: undefined,
-      connect: vi.fn(() => {
+      connect: vi.fn((opts) => {
         const port = makeFakePort({
           onPosted: (msg, p) => {
             if (msg && msg.type === "ANALYZE") {
@@ -67,9 +69,23 @@ function makeChromeStub({ enabled = true, apiKey = "eak_test", reply } = {}) {
                 p.__deliverAnalyzeResult(r);
                 p.disconnect();
               });
+              return;
+            }
+            if (msg && msg.type === "SANITIZE") {
+              sanitizeMessages.push(msg);
+              const r = typeof sanitizeReply === "function"
+                ? sanitizeReply(msg, sanitizeMessages.length - 1)
+                : { sanitized: msg.text, changes: [] };
+              queueMicrotask(() => {
+                for (const fn of p.onMessage.addListener.mock.calls.map(c => c[0])) {
+                  fn({ type: "SANITIZE_RESULT", result: r });
+                }
+                p.disconnect();
+              });
             }
           },
         });
+        port.name = (opts && opts.name) || "analyze";
         ports.push(port);
         return port;
       }),

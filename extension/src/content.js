@@ -797,20 +797,34 @@
     }
 
     const isDanger = level === "danger";
-    // Sanitize is a text-only operation — it rewrites the prompt textarea.
-    // When the panel only fired because of attached files (no prompt
-    // issues), sanitizing the prompt does NOT remove the file from the
-    // composer, which would mislead the user. Hide the button in that case
-    // and lean on Cancel / Send Anyway. We detect "only file pieces are
-    // problematic" by checking that the worst issue is associated with a
-    // file source; falling back to "show sanitize" when ambiguous.
+    // Sanitize is a text-only operation — it rewrites the prompt textarea
+    // and does NOT touch attached file chips. Two distinct cases:
+    //
+    //   * `showSanitize`  — show the button at all. We only show it when
+    //     the prompt itself has a problem to sanitize. When the panel
+    //     only fired because of attached files, sanitizing the prompt
+    //     would be misleading and is hidden entirely.
+    //
+    //   * `hasFileBlocker` — at least one attached file is caution/danger
+    //     /skipped/truncated. In that case the sanitize button is
+    //     "Sanitize Prompt" (terminal — does NOT morph into "Send
+    //     Sanitized") and the user must still deal with the file via
+    //     Cancel or Send Anyway. This prevents the UX bug where one
+    //     "Sanitize & Send" click would ship a known-risk file because
+    //     the sanitizer can only redact the prompt textarea.
     const promptPieceLevel = Array.isArray(perPiece)
       ? (perPiece.find((p) => p.source === "prompt") || {}).level
       : null;
     const promptIsProblem = !promptPieceLevel
       ? true
       : LEVEL_RANK[promptPieceLevel] >= LEVEL_RANK.caution;
+    const hasFileBlocker = Array.isArray(perPiece)
+      && perPiece.some((p) => typeof p.source === "string"
+        && p.source.startsWith("file:")
+        && LEVEL_RANK[p.level || "safe"] >= LEVEL_RANK.caution);
     const showSanitize = promptIsProblem;
+    const sanitizeLabel = hasFileBlocker
+      ? "Sanitize Prompt" : "Sanitize &amp; Send";
 
     panel.innerHTML = `
       <div class="eraseai-header">
@@ -839,7 +853,7 @@
       ${suggestionsHtml}
       <div class="eraseai-actions">
         <button class="eraseai-btn eraseai-btn-cancel" id="eraseai-cancel">Cancel</button>
-        ${showSanitize ? '<button class="eraseai-btn eraseai-btn-sanitize" id="eraseai-sanitize">Sanitize &amp; Send</button>' : ""}
+        ${showSanitize ? `<button class="eraseai-btn eraseai-btn-sanitize" id="eraseai-sanitize" data-file-blocker="${hasFileBlocker ? "true" : "false"}">${sanitizeLabel}</button>` : ""}
         <button class="eraseai-btn eraseai-btn-send" id="eraseai-send-anyway">${isDanger ? "Send Anyway (Risky)" : "Send Anyway"}</button>
       </div>
     `;
@@ -918,7 +932,25 @@
         sanitizedApplied = true;
 
         const sendBtn = panel.querySelector("#eraseai-send-anyway");
-        if (sendBtn) {
+        // If a file is also a blocker, do NOT morph Send Anyway into
+        // "Send Sanitized" — the file the firewall flagged is still in
+        // the composer, so a single click would exfiltrate it. Surface
+        // a notice instead and leave the user with Cancel / Send Anyway
+        // (still labelled as "Send Anyway (Risky)" / "Send Anyway").
+        if (btn.dataset.fileBlocker === "true") {
+          const actionsDiv = panel.querySelector(".eraseai-actions");
+          if (actionsDiv && !panel.querySelector("#eraseai-sanitize-file-notice")) {
+            actionsDiv.insertAdjacentHTML("beforebegin", `
+              <div class="eraseai-issues" id="eraseai-sanitize-file-notice">
+                <h4>Prompt sanitized — attached file still flagged</h4>
+                <div class="eraseai-issue-item">
+                  <span class="eraseai-issue-badge eraseai-badge-medium">action needed</span>
+                  <span>Remove the attached file from the composer before sending. Sanitize only rewrites the prompt text.</span>
+                </div>
+              </div>
+            `);
+          }
+        } else if (sendBtn) {
           sendBtn.textContent = "Send Sanitized";
           sendBtn.className = "eraseai-btn eraseai-btn-sanitize";
         }
@@ -965,11 +997,14 @@
     });
   }
 
-  function renderClearConfirmation(panel, result, inputEl) {
+  function renderClearConfirmation(panel, result, inputEl, perPiece) {
     const { riskScore, summary } = result;
     const score = typeof riskScore === "number" ? riskScore : 100;
-    const message = (summary && String(summary).trim()) ||
+    const headline = (summary && String(summary).trim()) ||
       "No issues detected. Your prompt looks safe.";
+    // Render the per-piece block on the all-clear card too so users still
+    // see which files were scanned (and that they came back clean).
+    const piecesHtml = renderPiecesBlock(perPiece);
 
     panel.innerHTML = `
       <div class="eraseai-header">
@@ -990,10 +1025,11 @@
         </div>
         <div class="eraseai-score-info">
           <h3>Low Risk \u2014 Safe</h3>
-          <p>${escapeHtml(message)}</p>
+          <p>${escapeHtml(headline)}</p>
           <p id="eraseai-clear-countdown" style="margin-top:6px;font-size:12px;color:#71717a;">Sending automatically in a moment\u2026</p>
         </div>
       </div>
+      ${piecesHtml}
       <div class="eraseai-actions">
         <button class="eraseai-btn eraseai-btn-cancel" id="eraseai-clear-cancel">Cancel</button>
         <button class="eraseai-btn eraseai-btn-sanitize" id="eraseai-clear-send">Send now</button>
@@ -1332,13 +1368,18 @@
     };
     lastAggregated = aggregated;
 
-    // The "All clear" auto-dismiss path is reserved for the simple case:
-    // prompt only, safe level, no skipped files. Anything else (even a
-    // safe-prompt+skipped-PDF) routes through the warning panel so the
-    // user can explicitly choose to send.
-    const onlyPromptPieces = aggregated.perPiece.every((p) => p.source === "prompt");
-    if (aggregated.level === "safe" && onlyPromptPieces) {
-      renderClearConfirmation(panel, aggregated.worstResult || { riskScore: 100, summary: "All clear" }, inputEl);
+    // Auto-send fires whenever EVERY scanned piece — prompt and each
+    // attached file — comes back safe. Skipped files (PDF/DOCX/oversize)
+    // and truncated extracts are already bumped off "safe" inside
+    // aggregatePieceResults, so a green aggregated.level means there is
+    // nothing in the composer the firewall couldn't fully clear.
+    if (aggregated.level === "safe") {
+      renderClearConfirmation(
+        panel,
+        aggregated.worstResult || { riskScore: 100, summary: "All clear" },
+        inputEl,
+        aggregated.perPiece,
+      );
       isIntercepting = false;
       return;
     }
