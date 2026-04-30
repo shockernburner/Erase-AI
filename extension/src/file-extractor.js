@@ -1,48 +1,9 @@
-// File-attachment extractor for the EraseAI Firewall content script.
-//
-// Loaded as a content_script entry BEFORE content.js (see manifest.json), in
-// the same isolated world. Attaches `globalThis.__eraseAIExtractor` so
-// content.js can call into it without a module import (content scripts are
-// not ESM in this extension).
-//
-// Responsibilities:
-//   * Decide whether a given File is something we can scan in the browser.
-//   * Read text out of supported plain-text formats.
-//   * Truncate to a hard 50 KB cap so a 200 MB log file can't OOM the page
-//     or blow past the api-server's 10 KB analyze limit when it is sliced
-//     into pieces by the caller.
-//
-// Returns the same { name, mimeType, sizeBytes, text, truncated, skipReason? }
-// shape for every file so the result panel can render one row per piece
-// regardless of whether it was successfully scanned.
-//
-// IMPORTANT — why pdf.js / mammoth are NOT bundled here:
-//   Both libraries call `new Function(...)` and `eval`. MV3 extensions are
-//   forced onto a CSP that forbids those in extension pages. Adding them
-//   requires a sandboxed iframe (with relaxed CSP) acting as a postMessage
-//   RPC shim, which is significant separate work + tests. Until that lands,
-//   .pdf and .docx files are *detected* and the user sees a per-file row in
-//   the panel telling them the file wasn't scanned and that they must
-//   review manually before clicking Send Anyway. We deliberately do NOT
-//   silently let the file through.
 (() => {
   if (globalThis.__eraseAIExtractor) return;
 
-  // Hard cap on the per-file text we hand to the analyzer. The analyze
-  // endpoint enforces a 10 KB ceiling per request; the caller chunks
-  // anything bigger into 8 KB slices. Capping the *extracted* text at
-  // 50 KB bounds the worst case to ~7 slices per file, which fits
-  // comfortably under the per-key 60 req/min burst limit even with
-  // several files attached.
   const MAX_EXTRACTED_BYTES = 50 * 1024;
-  // Per-file soft cap. Files larger than this aren't scanned by default —
-  // see SKIP_REASONS.tooLarge. The cap is intentionally below the size
-  // where a typical FileReader.readAsText would slow the page noticeably
-  // even for plain text.
   const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
-  // Extension → category map. The mime-type sniff is a fallback because
-  // many sites set an empty mimeType on dropped/pasted files.
   const PLAIN_TEXT_EXT = new Set([
     "txt", "md", "markdown", "csv", "tsv", "json", "log", "xml", "html",
     "htm", "yaml", "yml", "ini", "conf", "rtf", "tex", "sql",
@@ -63,8 +24,8 @@
 
   const SKIP_REASONS = {
     tooLarge: "too large to scan in the browser — review manually",
-    pdfNotYetSupported: "PDF detected — content not scanned in this version, review manually",
-    docxNotYetSupported: "Word document detected — content not scanned in this version, review manually",
+    pdfNotYetSupported: "couldn't read the PDF — review manually",
+    docxNotYetSupported: "couldn't read the Word document — review manually",
     xlsxNotYetSupported: "Spreadsheet detected — content not scanned in this version, review manually",
     image: "image — visual content not scanned, review manually",
     archive: "archive — contents not scanned, review manually",
@@ -72,6 +33,115 @@
     empty: "file is empty",
     readError: "couldn't read the file",
   };
+
+  const SANDBOX_PATH = "src/sandbox.html";
+  const SANDBOX_REQUEST_TIMEOUT_MS = 15000;
+  const SANDBOX_LOAD_TIMEOUT_MS = 5000;
+
+  let sandboxBridge = null;
+  let sandboxState = null;
+
+  function newRequestId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return "r-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+  }
+
+  function ensureSandbox() {
+    if (sandboxState) return sandboxState;
+    if (typeof chrome === "undefined" || !chrome.runtime || typeof chrome.runtime.getURL !== "function") {
+      return null;
+    }
+    if (typeof document === "undefined" || !document.body) return null;
+    let url;
+    try {
+      url = chrome.runtime.getURL(SANDBOX_PATH);
+    } catch {
+      return null;
+    }
+    const iframe = document.createElement("iframe");
+    iframe.src = url;
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.cssText =
+      "position:absolute;width:1px;height:1px;border:0;left:-9999px;top:-9999px;visibility:hidden;";
+
+    let markReady;
+    const ready = new Promise((resolve, reject) => {
+      const loadTimer = setTimeout(() => reject(new Error("sandbox iframe load timeout")), SANDBOX_LOAD_TIMEOUT_MS);
+      markReady = () => { clearTimeout(loadTimer); resolve(); };
+      iframe.addEventListener("load", () => { setTimeout(() => markReady(), 0); }, { once: true });
+      iframe.addEventListener("error", () => reject(new Error("sandbox iframe failed to load")), { once: true });
+    });
+
+    const readyListener = (event) => {
+      if (event.source !== iframe.contentWindow) return;
+      if (event.data && event.data.type === "ERASEAI_SANDBOX_READY" && markReady) markReady();
+    };
+    window.addEventListener("message", readyListener, false);
+
+    document.body.appendChild(iframe);
+    sandboxState = { iframe, ready, readyListener };
+    return sandboxState;
+  }
+
+  async function sandboxExtract(kind, arrayBuffer) {
+    if (sandboxBridge) return sandboxBridge(kind, arrayBuffer);
+    const state = ensureSandbox();
+    if (!state) return { ok: false, error: "sandbox unavailable" };
+    try {
+      await state.ready;
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || "sandbox not ready" };
+    }
+    const id = newRequestId();
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { channel.port1.close(); } catch { /* ignore */ }
+        resolve(value);
+      };
+      const timer = setTimeout(
+        () => finish({ ok: false, error: "sandbox request timed out" }),
+        SANDBOX_REQUEST_TIMEOUT_MS,
+      );
+      channel.port1.onmessage = (event) => {
+        const data = event.data;
+        if (!data || typeof data !== "object" || data.id !== id) return;
+        finish(data);
+      };
+      try {
+        state.iframe.contentWindow.postMessage(
+          { type: "ERASEAI_EXTRACT", id, kind, bytes: arrayBuffer },
+          "*",
+          [channel.port2, arrayBuffer],
+        );
+      } catch (err) {
+        finish({ ok: false, error: (err && err.message) || "postMessage failed" });
+      }
+    });
+  }
+
+  function readAsArrayBuffer(file) {
+    return new Promise((resolve) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const value = reader.result instanceof ArrayBuffer ? reader.result : null;
+          resolve({ ok: !!value, bytes: value });
+        };
+        reader.onerror = () => resolve({ ok: false });
+        reader.onabort = () => resolve({ ok: false });
+        reader.readAsArrayBuffer(file);
+      } catch {
+        resolve({ ok: false });
+      }
+    });
+  }
 
   function getExtension(name) {
     if (!name || typeof name !== "string") return "";
@@ -115,9 +185,6 @@
         };
         reader.onerror = () => resolve({ ok: false });
         reader.onabort = () => resolve({ ok: false });
-        // A 5 MB plain-text slice fits comfortably; readAsText with no
-        // size cap would still finish on a 50 MB log but tie up the page
-        // for noticeable seconds. The caller has already gated on size.
         reader.readAsText(file);
       } catch {
         resolve({ ok: false });
@@ -127,9 +194,6 @@
 
   function truncateUtf8(text, maxBytes) {
     if (!text) return { text: "", truncated: false };
-    // Cheap byte estimate: most "documents" are ASCII so one char ~ one
-    // byte. For multibyte content we over-truncate slightly which is
-    // safer than under-truncating into the analyzer.
     if (text.length <= maxBytes) return { text, truncated: false };
     return { text: text.slice(0, maxBytes), truncated: true };
   }
@@ -158,8 +222,9 @@
     }
 
     const kind = classify(file);
-    if (kind === "pdf") return makeSkipResult(file, SKIP_REASONS.pdfNotYetSupported);
-    if (kind === "docx") return makeSkipResult(file, SKIP_REASONS.docxNotYetSupported);
+    if (kind === "pdf" || kind === "docx") {
+      return extractViaSandbox(file, kind, sizeBytes);
+    }
     if (kind === "xlsx") return makeSkipResult(file, SKIP_REASONS.xlsxNotYetSupported);
     if (kind === "image") return makeSkipResult(file, SKIP_REASONS.image);
     if (kind === "archive") return makeSkipResult(file, SKIP_REASONS.archive);
@@ -178,11 +243,41 @@
     };
   }
 
+  async function extractViaSandbox(file, kind, sizeBytes) {
+    const fallbackReason = kind === "pdf"
+      ? SKIP_REASONS.pdfNotYetSupported
+      : SKIP_REASONS.docxNotYetSupported;
+    const buf = await readAsArrayBuffer(file);
+    if (!buf.ok || !buf.bytes) return makeSkipResult(file, SKIP_REASONS.readError);
+    let result;
+    try {
+      result = await sandboxExtract(kind, buf.bytes);
+    } catch {
+      return makeSkipResult(file, fallbackReason);
+    }
+    if (!result || !result.ok || typeof result.text !== "string") {
+      return makeSkipResult(file, fallbackReason);
+    }
+    const stripped = result.text.replace(/\s+/g, " ").trim();
+    if (!stripped) return makeSkipResult(file, fallbackReason);
+    const { text, truncated } = truncateUtf8(stripped, MAX_EXTRACTED_BYTES);
+    return {
+      name: file.name,
+      mimeType: file.type || "",
+      sizeBytes,
+      text,
+      truncated,
+    };
+  }
+
   globalThis.__eraseAIExtractor = {
     classify,
     extractText,
     SKIP_REASONS,
     MAX_EXTRACTED_BYTES,
     MAX_FILE_BYTES,
+    setSandboxBridge(fn) {
+      sandboxBridge = typeof fn === "function" ? fn : null;
+    },
   };
 })();

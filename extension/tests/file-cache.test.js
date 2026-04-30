@@ -244,10 +244,12 @@ describe("file-cache + multi-piece scan", () => {
     expect(panel.querySelector(".eraseai-score-section").className).toMatch(/danger|caution/);
   });
 
-  it("forces a warning panel for an attached PDF even when prompt is clean", async () => {
+  it("falls back to a skip row for an attached PDF when the sandbox bridge can't be reached", async () => {
+    // The chrome stub doesn't implement runtime.getURL, so
+    // file-extractor.js can't mount its sandbox iframe — every PDF/DOCX
+    // is surfaced as a per-piece skip row exactly as in the previous
+    // release.
     const chromeStub = makeChromeStub({
-      // Every analyzed piece looks safe; the PDF is never sent to analyze
-      // (it's marked as a skipped piece by the extractor).
       reply: () => ({
         riskScore: 100,
         level: "safe",
@@ -273,14 +275,56 @@ describe("file-cache + multi-piece scan", () => {
 
     const panel = document.getElementById("eraseai-overlay-panel");
     expect(panel).toBeTruthy();
-    // The PDF row should appear in the per-piece block with the
-    // "review manually" wording from SKIP_REASONS.pdfNotYetSupported.
     expect(panel.textContent).toMatch(/scan\.pdf/);
-    expect(panel.textContent).toMatch(/PDF detected/);
+    expect(panel.textContent).toMatch(/couldn't read the PDF/);
     // Send Anyway is the explicit override; the auto-send confirmation
     // path must NOT have fired.
     expect(panel.querySelector("#eraseai-send-anyway")).toBeTruthy();
     expect(panel.querySelector("#eraseai-clear-send")).toBeNull();
+  });
+
+  it("scans an attached PDF end-to-end when the sandbox bridge is wired up", async () => {
+    const chromeStub = makeChromeStub({
+      reply: (msg) => {
+        if (/123-45-6789/.test(msg.text)) {
+          return {
+            riskScore: 30,
+            level: "danger",
+            issues: [{ severity: "high", category: "ssn", text: "SSN detected" }],
+            suggestions: [{ text: "Redact" }],
+            summary: "SSN found in attachment",
+          };
+        }
+        return { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" };
+      },
+    });
+
+    loadEraseAI(chromeStub);
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind) => {
+      expect(kind).toBe("pdf");
+      return { ok: true, text: "Employee record SSN: 123-45-6789" };
+    });
+    await flushAsync();
+
+    const { textarea, fileInput } = setUpChatGPTComposer({
+      promptText: "review this please",
+    });
+    await flushAsync();
+
+    attachFile(fileInput, makeFile("resume.pdf", "%PDF-1.7", "application/pdf"));
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync(20);
+
+    const analyzeTexts = chromeStub.__analyzeMessages.map((m) => m.text);
+    expect(analyzeTexts.some((t) => t.includes("review this please"))).toBe(true);
+    expect(analyzeTexts.some((t) => t.includes("123-45-6789"))).toBe(true);
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).toBeTruthy();
+    expect(panel.textContent).toMatch(/resume\.pdf/);
+    expect(panel.querySelector(".eraseai-score-section").className).toMatch(/danger/);
+    expect(panel.textContent).not.toMatch(/couldn't read the PDF/);
   });
 
   it("renders the per-piece block (file name + truncation notice) even with a single file attachment", async () => {

@@ -10,6 +10,8 @@
   },
   "devDependencies": {
     "jsdom": "^25.0.1",
+    "mammoth": "1.7.2",
+    "pdfjs-dist": "3.11.174",
     "vitest": "^2.1.9"
   }
 }

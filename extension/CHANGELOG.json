@@ -1,6 +1,25 @@
 {
   "entries": [
     {
+      "version": "1.3.7",
+      "date": "2026-04-30",
+      "changes": [
+        "PDF text extraction now uses pdf.js (vendored under extension/vendor/pdfjs/), so the firewall reads CMap-encoded fonts, hex strings, TJ kern arrays, and other real-world PDF shapes — not just hand-laid-out content streams",
+        "Word (.docx) text extraction now uses mammoth (vendored under extension/vendor/mammoth/), covering more complex documents than the previous minimal ZIP/XML walker",
+        "Sandbox replies now travel over a private MessageChannel transferred per request, so extracted text never lands on the host page's window message bus"
+      ]
+    },
+    {
+      "version": "1.3.6",
+      "date": "2026-04-30",
+      "changes": [
+        "PDF and Word (.docx) attachments are now read inside the browser and analyzed alongside the prompt — no more 'review manually — content not scanned' rows for those file types in the common case",
+        "Extraction runs inside a sandboxed iframe (manifest.sandbox.pages → src/sandbox.html) over a postMessage RPC, so the parsing code lives in its own opaque-origin context separate from the host AI page",
+        "If the sandbox can't be reached or the file can't be parsed (encrypted PDF, image-only scan, malformed docx) the row is still surfaced as a 'review manually' skip, never silently passed through",
+        "Per-file 5 MB / combined 15 MB / 50 KB-extracted-text caps continue to apply; nothing changed about the burst-rate or analyze-port plumbing"
+      ]
+    },
+    {
       "version": "1.3.5",
       "date": "2026-04-30",
       "changes": [

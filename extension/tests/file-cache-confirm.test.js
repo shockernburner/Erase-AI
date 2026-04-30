@@ -284,9 +284,11 @@ describe("send-flow confirmation regressions", () => {
     expect(panel.querySelector("#eraseai-send-anyway")).toBeTruthy();
     expect(panel.querySelector("#eraseai-clear-send")).toBeNull();
     expect(panel.querySelector("#eraseai-sanitize")).toBeNull();
-    // The PDF row appears with the "review manually" wording.
+    // The PDF row appears with the "review manually" wording. The
+    // sandbox bridge isn't wired up in this test so extraction falls
+    // back to the SKIP_REASONS.pdfNotYetSupported message.
     expect(panel.textContent).toMatch(/scan\.pdf/);
-    expect(panel.textContent).toMatch(/PDF detected/);
+    expect(panel.textContent).toMatch(/couldn't read the PDF/);
   });
 
   it("labels sanitize as 'Sanitize Prompt' when a skipped file (PDF) accompanies a risky prompt", async () => {

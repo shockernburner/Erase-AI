@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>EraseAI Firewall — attachment extractor (sandbox)</title>
+  </head>
+  <body>
+    <script src="../vendor/pdfjs/pdf.min.js"></script>
+    <script src="../vendor/mammoth/mammoth.browser.min.js"></script>
+    <script>
+      if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs/pdf.worker.min.js";
+      }
+    </script>
+    <script src="sandbox-extractor.js"></script>
+    <script src="sandbox.js"></script>
+  </body>
+</html>

@@ -287,8 +287,8 @@ What gets scanned and how:
 | Attachment kind | Behaviour |
 | --- | --- |
 | `.txt` `.md` `.csv` `.tsv` `.json` `.log` `.xml` `.html` `.htm` `.yaml` `.yml` `.sql` | **Extracted as plain text** via `FileReader.readAsText` and analysed alongside the prompt. Each piece is sent on its own port to the background analyzer; the worst level wins for the panel verdict. |
-| `.pdf` | **Detected and blocked by default.** Surfaced in the panel as "PDF detected — content not scanned in this version, review manually" with a Send Anyway override. Full text extraction is a follow-up; pdf.js cannot be loaded under the MV3 default CSP. |
-| `.docx` | Same as PDF — detected, surfaced as "Word document detected …", blocked by default with Send Anyway. (mammoth uses `new Function`, also forbidden by MV3 CSP.) |
+| `.pdf` | **Extracted via a sandboxed iframe** (`src/sandbox.html` + `src/sandbox-extractor.js`) using vendored Mozilla `pdf.js` 3.11.174 (`extension/vendor/pdfjs/`, Apache-2.0). Extracted text is analysed alongside the prompt, same per-piece "What we scanned" row as a CSV. The sandbox iframe runs under the manifest `sandbox.pages` CSP so `pdf.js` can use its worker; the host page communicates with it over a private `MessageChannel` per request. If the sandbox can't be reached, the PDF is unreadable, or the file is image-only, the row falls back to "couldn't read the PDF — review manually" with a Send Anyway override. |
+| `.docx` | **Extracted via the same sandboxed iframe** using vendored `mammoth` 1.7.2 browser bundle (`extension/vendor/mammoth/`, BSD-2-Clause). Same per-piece treatment as PDF; same "couldn't read the Word document — review manually" fallback. |
 | `.xlsx`, images (`.png` `.jpg` `.jpeg` `.gif` `.webp`), archives (`.zip` `.gz` `.tar` `.7z` `.rar`) | Detected, panel surfaces a "skipped" row with the file name, override via Send Anyway. |
 | Any other extension | Treated as unsupported — same skipped-row + Send Anyway treatment. |
 

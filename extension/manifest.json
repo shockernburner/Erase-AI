@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "EraseAI Firewall",
-  "version": "1.3.5",
+  "version": "1.3.7",
   "description": "AI Firewall — Analyze prompts for privacy risks before sending to AI platforms",
   "author": "Vantward Solutions Pte. Ltd.",
   "homepage_url": "https://eraseai.ai/ai-firewall",
@@ -45,5 +45,20 @@
     "https://gemini.google.com/*",
     "https://replit.com/*",
     "https://eraseai.ai/*"
+  ],
+  "sandbox": {
+    "pages": ["src/sandbox.html"]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/sandbox.html", "src/sandbox.js", "src/sandbox-extractor.js"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://replit.com/*"
+      ]
+    }
   ]
 }

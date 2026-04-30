@@ -91,7 +91,8 @@ describe("file-extractor — extractText()", () => {
     expect(out.text).toBe(json);
   });
 
-  it("returns pdfNotYetSupported skipReason for PDFs (no extraction)", async () => {
+  it("falls back to skipReason for PDFs when no sandbox bridge is available", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile("resume.pdf", "%PDF-1.7 dummy", "application/pdf"),
     );
@@ -102,17 +103,82 @@ describe("file-extractor — extractText()", () => {
     expect(out.name).toBe("resume.pdf");
   });
 
-  it("returns docxNotYetSupported skipReason for Word documents", async () => {
+  it("falls back to skipReason for Word documents when the bridge fails", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({
+      ok: false,
+      error: "boom",
+    }));
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile(
         "letter.docx",
-        "PK", // ZIP magic bytes — irrelevant, we never read it
+        "PK",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ),
     );
     expect(out.skipReason).toBe(
       globalThis.__eraseAIExtractor.SKIP_REASONS.docxNotYetSupported,
     );
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("extracts PDF text via the sandbox bridge and returns no skipReason", async () => {
+    let lastKind = null;
+    let lastBytes = null;
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind, bytes) => {
+      lastKind = kind;
+      lastBytes = bytes;
+      return { ok: true, text: "REDACTED resume — phone 555-867-5309" };
+    });
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("resume.pdf", "%PDF-1.7 placeholder bytes", "application/pdf"),
+    );
+    expect(lastKind).toBe("pdf");
+    expect(lastBytes instanceof ArrayBuffer).toBe(true);
+    expect(out.skipReason).toBeUndefined();
+    expect(out.text).toContain("555-867-5309");
+    expect(out.truncated).toBe(false);
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("extracts DOCX text via the sandbox bridge and returns no skipReason", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind) => {
+      expect(kind).toBe("docx");
+      return { ok: true, text: "Employee SSN: 123-45-6789" };
+    });
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "hr.docx",
+        "PK\u0003\u0004",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ),
+    );
+    expect(out.skipReason).toBeUndefined();
+    expect(out.text).toContain("123-45-6789");
+    expect(out.name).toBe("hr.docx");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("treats an empty extraction result as a skipReason row (image-only PDF case)", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: "   \n  " }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("scan.pdf", "%PDF-1.7", "application/pdf"),
+    );
+    expect(out.skipReason).toBe(
+      globalThis.__eraseAIExtractor.SKIP_REASONS.pdfNotYetSupported,
+    );
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("truncates sandbox-extracted text at the 50 KB cap (PDF path)", async () => {
+    const big = "a".repeat(60 * 1024);
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: big }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("huge.pdf", "%PDF-1.7", "application/pdf"),
+    );
+    expect(out.skipReason).toBeUndefined();
+    expect(out.truncated).toBe(true);
+    expect(out.text.length).toBe(50 * 1024);
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
   });
 
   it("returns image skipReason for image attachments", async () => {
