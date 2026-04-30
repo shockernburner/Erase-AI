@@ -23,6 +23,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// concurrency-config.js exposes globalThis.EraseAIConcurrency. content.js
+// consumes it for its analyze fan-out cap and won't initialize without
+// it loaded first, mirroring the manifest's content_scripts.js order.
+const CONFIG_SRC = fs.readFileSync(
+  path.resolve(__dirname, "..", "src", "concurrency-config.js"),
+  "utf8",
+);
 const CONTENT_SRC = fs.readFileSync(
   path.resolve(__dirname, "..", "src", "content.js"),
   "utf8",
@@ -153,6 +160,8 @@ function loadContentScriptInJsdom(chromeStub) {
   // listener attachment via chrome.storage.local.get. eval-ing in the
   // current realm gives the script the same `document` and `window` we
   // assert against.
+  // eslint-disable-next-line no-eval
+  (0, eval)(CONFIG_SRC);
   // eslint-disable-next-line no-eval
   (0, eval)(CONTENT_SRC);
 }

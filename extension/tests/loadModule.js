@@ -49,8 +49,26 @@ export function loadBackgroundModule({ chrome, fetch }) {
   );
 }
 
+// concurrency-config.js exposes `globalThis.EraseAIConcurrency`. Both
+// content.js and popup.js consume it, so any test that evaluates either
+// of those sources must load this first. Returning the raw source lets
+// each test prepend it inside its own evaluation context (vm.Sandbox,
+// `new Function`, jsdom `eval`, etc) without us having to know which.
+export function loadConcurrencyConfigSource() {
+  return fs.readFileSync(path.join(SRC_DIR, "concurrency-config.js"), "utf8");
+}
+
 export function loadPopupSource() {
-  return fs.readFileSync(path.join(SRC_DIR, "popup.js"), "utf8");
+  // Prepend the shared concurrency config so popup.js's references to
+  // globalThis.EraseAIConcurrency resolve. The IIFE inside the config
+  // file is idempotent (guarded by `if (globalThis.EraseAIConcurrency)
+  // return`), so re-loading across tests is safe.
+  const config = loadConcurrencyConfigSource();
+  const popup = fs.readFileSync(path.join(SRC_DIR, "popup.js"), "utf8");
+  // Trailing newline + semicolon on its OWN line keeps popup.js's first
+  // line at column 0 so existing regex sweeps anchored with /^const …/m
+  // (e.g. the CANONICAL_*_URL audit) keep matching.
+  return `${config}\n;\n${popup}`;
 }
 
 export function loadPopupHtml() {

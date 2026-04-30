@@ -1,21 +1,14 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"url":"https://chatgpt.com/"}
 //
-// Concurrency cap test for #144. With the 1.3.5 attachment-scanning
-// release, a single send can decompose into many small analyze pieces
-// (one chrome.runtime.connect("analyze") port per chunk). Without a
-// bounded queue, a long prompt or several files can trip the
-// api-server's per-key 60 req/min burst limit and surface mid-scan
-// "service unavailable" errors. content.js wraps analyzePieceViaPort
-// in a small worker pool capped at ANALYZE_CONCURRENCY (4); this test
-// asserts that 51 pieces never produce more than 4 in-flight ports at
-// once.
-//
-// This file deliberately lives outside file-cache.test.js because that
-// suite shares a jsdom realm across tests and each loadEraseAI() leaks
-// keydown/change listeners from previous closures (see the trailing
-// NOTE in file-cache.test.js). A throttling assertion needs a clean
-// realm so only one closure is processing the synthetic Enter event.
+// Settings-driven concurrency cap (#146) — clamping to MAX.
+// A user (or a corrupted storage write) putting 999 in
+// chrome.storage.local.analyzeConcurrency must NOT be able to fan out
+// 999 ports — the [MIN=1, MAX=16] clamp in content.js should pin the
+// effective cap at 16 even when there are plenty of pieces to schedule.
+// Lives in its own file because the analyze-throttle suites all share
+// jsdom realms across tests and document-level keydown listeners leak
+// between loadEraseAI() calls (see file-cache.test.js NOTE).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
@@ -33,9 +26,7 @@ function makeFakePort({ onPosted } = {}) {
   let disconnected = false;
   const port = {
     name: "analyze",
-    postMessage: vi.fn((msg) => {
-      if (typeof onPosted === "function") onPosted(msg, port);
-    }),
+    postMessage: vi.fn((msg) => { if (typeof onPosted === "function") onPosted(msg, port); }),
     disconnect: vi.fn(() => {
       if (disconnected) return;
       disconnected = true;
@@ -50,11 +41,14 @@ function makeFakePort({ onPosted } = {}) {
   return port;
 }
 
-function makeChromeStub({ enabled = true, apiKey = "eak_test", reply } = {}) {
+function makeChromeStub({
+  enabled = true, apiKey = "eak_test", analyzeConcurrency, reply, delayMs = 0,
+} = {}) {
   const ports = [];
   const analyzeMessages = [];
+  const storedValues = { enabled };
+  if (typeof analyzeConcurrency !== "undefined") storedValues.analyzeConcurrency = analyzeConcurrency;
   return {
-    __ports: ports,
     __analyzeMessages: analyzeMessages,
     runtime: {
       lastError: undefined,
@@ -63,11 +57,10 @@ function makeChromeStub({ enabled = true, apiKey = "eak_test", reply } = {}) {
           onPosted: (msg, p) => {
             if (msg && msg.type === "ANALYZE") {
               analyzeMessages.push(msg);
-              const r = reply(msg, analyzeMessages.length - 1);
-              queueMicrotask(() => {
-                p.__deliverAnalyzeResult(r);
-                p.disconnect();
-              });
+              const r = reply(msg);
+              const dispatch = () => { p.__deliverAnalyzeResult(r); p.disconnect(); };
+              if (delayMs > 0) setTimeout(dispatch, delayMs);
+              else queueMicrotask(dispatch);
             }
           },
         });
@@ -76,22 +69,21 @@ function makeChromeStub({ enabled = true, apiKey = "eak_test", reply } = {}) {
         return port;
       }),
       sendMessage: vi.fn((msg, cb) => {
-        if (msg.type === "GET_CONFIG") {
-          queueMicrotask(() => cb({ apiKey, enabled }));
-          return;
-        }
-        if (msg.type === "OUTCOME") {
-          if (cb) queueMicrotask(() => cb({ ok: true }));
-          return;
-        }
+        if (msg.type === "GET_CONFIG") { queueMicrotask(() => cb({ apiKey, enabled })); return; }
+        if (msg.type === "OUTCOME") { if (cb) queueMicrotask(() => cb({ ok: true })); return; }
         if (cb) queueMicrotask(() => cb({}));
       }),
       openOptionsPage: vi.fn(),
     },
     storage: {
       local: {
-        get: vi.fn((keys, cb) => queueMicrotask(() => cb({ enabled }))),
-        set: vi.fn((_obj, cb) => { if (cb) queueMicrotask(cb); }),
+        get: vi.fn((keys, cb) => queueMicrotask(() => {
+          const out = {};
+          const list = Array.isArray(keys) ? keys : [keys];
+          for (const k of list) if (k in storedValues) out[k] = storedValues[k];
+          cb(out);
+        })),
+        set: vi.fn((obj, cb) => { Object.assign(storedValues, obj); if (cb) queueMicrotask(cb); }),
       },
       onChanged: { addListener: vi.fn() },
     },
@@ -109,7 +101,7 @@ function loadEraseAI(chromeStub) {
   (0, eval)(CONTENT_SRC);
 }
 
-function setUpChatGPTComposer({ promptText = "" } = {}) {
+function setUpComposer({ promptText = "" } = {}) {
   document.body.innerHTML = "";
   const main = document.createElement("main");
   const form = document.createElement("form");
@@ -123,19 +115,14 @@ function setUpChatGPTComposer({ promptText = "" } = {}) {
   const sendBtn = document.createElement("button");
   sendBtn.setAttribute("data-testid", "send-button");
   sendBtn.type = "button";
-  sendBtn.textContent = "Send";
   form.appendChild(sendBtn);
   main.appendChild(form);
   document.body.appendChild(main);
-  return { main, form, textarea, fileInput, sendBtn };
+  return { textarea };
 }
 
 function dispatchEnterOn(el) {
-  el.dispatchEvent(new window.KeyboardEvent("keydown", {
-    key: "Enter",
-    bubbles: true,
-    cancelable: true,
-  }));
+  el.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
 }
 
 async function flushAsync(steps = 12) {
@@ -145,35 +132,22 @@ async function flushAsync(steps = 12) {
   }
 }
 
-describe("analyze-port throttle", () => {
-  beforeEach(() => {
-    document.body.innerHTML = "";
-    delete globalThis.__eraseAIExtractor;
-  });
+describe("analyze-port throttle — clamps too-high stored value to MAX (#146)", () => {
+  beforeEach(() => { document.body.innerHTML = ""; delete globalThis.__eraseAIExtractor; });
   afterEach(() => {
     delete globalThis.chrome;
     delete globalThis.__eraseAIExtractor;
     document.body.innerHTML = "";
   });
 
-  it("caps concurrent analyze ports when 50+ chunks are sent at once", async () => {
-    // ANALYZE_MAX_CHARS in content.js is 10000. A 510,000-char prompt
-    // splits into ⌈510000/10000⌉ = 51 prompt pieces — comfortably past
-    // both the 4-worker pool and the api-server's 60 req/min burst
-    // limit. With the bounded queue in place, no more than 4 analyze
-    // ports should ever be open simultaneously regardless of how many
-    // chunks the page produces.
+  it("clamps analyzeConcurrency=999 to MAX=16 even with 51 pieces queued", async () => {
     let activePorts = 0;
     let maxActivePorts = 0;
     const chromeStub = makeChromeStub({
-      reply: () => ({
-        riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear",
-      }),
+      analyzeConcurrency: 999,
+      delayMs: 10,
+      reply: () => ({ riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "" }),
     });
-    // Wrap chrome.runtime.connect so we can observe the lifecycle of
-    // every analyze port. Sanitize ports use the same connect path
-    // but get filtered out by name so a post-scan sanitize call
-    // can't pollute the active-port count.
     const realConnect = chromeStub.runtime.connect;
     chromeStub.runtime.connect = vi.fn((opts) => {
       const port = realConnect(opts);
@@ -181,32 +155,23 @@ describe("analyze-port throttle", () => {
         activePorts += 1;
         if (activePorts > maxActivePorts) maxActivePorts = activePorts;
         const realDisconnect = port.disconnect;
-        port.disconnect = vi.fn(() => {
-          activePorts -= 1;
-          return realDisconnect();
-        });
+        port.disconnect = vi.fn(() => { activePorts -= 1; return realDisconnect(); });
       }
       return port;
     });
 
     loadEraseAI(chromeStub);
     await flushAsync();
-
-    const longPrompt = "a".repeat(510000);
-    const { textarea } = setUpChatGPTComposer({ promptText: longPrompt });
+    const { textarea } = setUpComposer({ promptText: "a".repeat(510000) });
     await flushAsync();
-
     dispatchEnterOn(textarea);
-    await flushAsync(120);
+    await flushAsync(200);
 
-    // Every chunk got analyzed — the queue throttled but never dropped
-    // any work.
     expect(chromeStub.__analyzeMessages.length).toBe(51);
-    // Concurrency cap held: at least one port was opened, and at no
-    // point were more than ANALYZE_CONCURRENCY (4) in flight.
-    expect(maxActivePorts).toBeGreaterThan(0);
-    expect(maxActivePorts).toBeLessThanOrEqual(4);
-    // No leaked ports.
-    expect(activePorts).toBe(0);
+    // The hard ceiling MUST hold regardless of the (corrupted) stored value.
+    expect(maxActivePorts).toBeLessThanOrEqual(16);
+    // And it MUST still be loosened past the default (otherwise the clamp
+    // would be silently snapping to 4 and we wouldn't notice).
+    expect(maxActivePorts).toBeGreaterThan(4);
   });
 });

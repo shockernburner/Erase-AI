@@ -33,7 +33,7 @@
         "https://gemini.google.com/*",
         "https://replit.com/*"
       ],
-      "js": ["src/file-extractor.js", "src/content.js"],
+      "js": ["src/concurrency-config.js", "src/file-extractor.js", "src/content.js"],
       "css": ["src/overlay.css"],
       "run_at": "document_idle"
     }

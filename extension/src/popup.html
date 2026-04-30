@@ -444,10 +444,41 @@
     </div>
   </div>
 
+  <div class="section">
+    <div class="section-title">Advanced</div>
+    <div class="input-group">
+      <label for="analyze-concurrency-input">
+        Concurrent analyze requests (1–16)
+      </label>
+      <div class="input-row">
+        <input
+          type="number"
+          class="input-field"
+          id="analyze-concurrency-input"
+          min="1"
+          max="16"
+          step="1"
+          value="4"
+        >
+        <button class="btn btn-primary" id="save-concurrency-btn">Save</button>
+      </div>
+      <div class="diag-detail" style="margin-top:8px">
+        How many analyze requests the firewall may have in flight at once
+        when a long prompt or attachment is split into many chunks.
+        Default is 4, which stays under the api-server's 60 req/min
+        per-key burst limit. Business / Enterprise plans on higher
+        per-key limits can raise this (e.g. 8–12) to finish large
+        multi-file scans faster.
+      </div>
+      <div id="concurrency-status" class="status-text" style="display:none"></div>
+    </div>
+  </div>
+
   <div class="footer">
     <a href="#" id="dashboard-link">Open EraseAI Dashboard →</a>
   </div>
 
+  <script src="concurrency-config.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -23,13 +23,19 @@ describe("manifest.json", () => {
     expect(typeof manifest.version).toBe("string");
   });
 
-  it("loads file-extractor.js BEFORE content.js so the extractor is on globalThis when content.js runs", () => {
+  it("loads file-extractor.js and concurrency-config.js BEFORE content.js so their globals are ready when content.js runs", () => {
     const cs = manifest.content_scripts[0];
-    expect(cs.js[0]).toBe("src/file-extractor.js");
+    expect(cs.js).toContain("src/file-extractor.js");
     expect(cs.js).toContain("src/content.js");
-    // file-extractor must come first so the extractor IIFE has run by
-    // the time content.js queries globalThis.__eraseAIExtractor.
+    expect(cs.js).toContain("src/concurrency-config.js");
+    // file-extractor must come before content.js so the extractor IIFE
+    // has run by the time content.js queries globalThis.__eraseAIExtractor.
     expect(cs.js.indexOf("src/file-extractor.js"))
+      .toBeLessThan(cs.js.indexOf("src/content.js"));
+    // concurrency-config must come before content.js so
+    // globalThis.EraseAIConcurrency exists when content.js reads its
+    // DEFAULT/MIN/MAX/coerce values at IIFE init time (#146).
+    expect(cs.js.indexOf("src/concurrency-config.js"))
       .toBeLessThan(cs.js.indexOf("src/content.js"));
   });
 

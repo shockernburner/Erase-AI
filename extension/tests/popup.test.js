@@ -431,6 +431,108 @@ describe("popup.renderDiagnosis is XSS-safe", () => {
   });
 });
 
+describe("popup analyze-concurrency Advanced setting (#146)", () => {
+  // The Advanced section lets the user override
+  // chrome.storage.local.analyzeConcurrency. The save handler must
+  // validate, clamp, and persist — the popup.html input has min=1,
+  // max=16 hardcoded but a user typing into a number input can still
+  // submit out-of-range or non-numeric values, so the JS must defend.
+
+  it("loads the stored analyzeConcurrency value into the input on open", async () => {
+    // Re-seed storage with a non-default value and reload the popup so
+    // loadState() picks it up. The default beforeEach wires up an empty
+    // chrome storage, so we rebuild the world here for this case.
+    setUpDom();
+    chromeStub = makeChromeStub({ analyzeConcurrency: 12 });
+    globalThis.chrome = chromeStub;
+    popup = loadPopup();
+    // loadState() awaits chrome.storage.local.get; flush microtasks so
+    // the input reads from storage before we assert.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const input = document.getElementById("analyze-concurrency-input");
+    expect(input).not.toBeNull();
+    expect(input.value).toBe("12");
+  });
+
+  it("falls back to default 4 in the input when no value is stored", async () => {
+    // Storage starts empty (the default chromeStub used by beforeEach).
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const input = document.getElementById("analyze-concurrency-input");
+    expect(input).not.toBeNull();
+    expect(input.value).toBe("4");
+  });
+
+  it("persists a valid value to chrome.storage.local on Save", async () => {
+    const input = document.getElementById("analyze-concurrency-input");
+    const saveBtn = document.getElementById("save-concurrency-btn");
+    input.value = "8";
+    saveBtn.click();
+    // Flush the async save handler (it awaits chrome.storage.local.set).
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(chromeStub.storage.local.set).toHaveBeenCalledWith({ analyzeConcurrency: 8 });
+    expect(chromeStub.__storage.analyzeConcurrency).toBe(8);
+  });
+
+  it("clamps an above-MAX value down to 16 before saving", async () => {
+    const input = document.getElementById("analyze-concurrency-input");
+    const saveBtn = document.getElementById("save-concurrency-btn");
+    input.value = "999";
+    saveBtn.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Out-of-range values surface an error status — they're rejected
+    // BEFORE the storage write so a user can see what went wrong rather
+    // than silently getting their value snapped to the cap.
+    expect(chromeStub.storage.local.set).not.toHaveBeenCalled();
+    const status = document.getElementById("concurrency-status");
+    expect(status.style.display).toBe("block");
+    expect(status.className).toContain("error");
+  });
+
+  it("rejects below-MIN values with an error status", async () => {
+    const input = document.getElementById("analyze-concurrency-input");
+    const saveBtn = document.getElementById("save-concurrency-btn");
+    input.value = "0";
+    saveBtn.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(chromeStub.storage.local.set).not.toHaveBeenCalled();
+    const status = document.getElementById("concurrency-status");
+    expect(status.className).toContain("error");
+  });
+
+  it("rejects non-integer / non-numeric values with an error status", async () => {
+    const input = document.getElementById("analyze-concurrency-input");
+    const saveBtn = document.getElementById("save-concurrency-btn");
+    input.value = "abc";
+    saveBtn.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(chromeStub.storage.local.set).not.toHaveBeenCalled();
+    const status = document.getElementById("concurrency-status");
+    expect(status.className).toContain("error");
+
+    // A fractional value (3.5) should also be rejected — the cap is a
+    // worker count, not a fraction.
+    chromeStub.storage.local.set.mockClear();
+    input.value = "3.5";
+    saveBtn.click();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(chromeStub.storage.local.set).not.toHaveBeenCalled();
+  });
+});
+
 describe("popup.renderLastAttempt — last-attempt status line (task #122)", () => {
   // Frozen wall-clock so the relative-time renderer ("4s ago", "10s ago", …)
   // is bit-for-bit deterministic regardless of how loaded the test runner is.

@@ -178,10 +178,21 @@
   // send can decompose into many short pieces (one port per chunk). The
   // api-server's per-key burst limit is 60 req/min, so firing 100+ ports
   // in parallel would trip rate limiting and surface as confusing
-  // "service unavailable" errors mid-scan. ANALYZE_CONCURRENCY caps how
+  // "service unavailable" errors mid-scan. The current cap controls how
   // many analyze ports may be in flight at once; the rest queue up and
   // start as earlier ones settle.
-  const ANALYZE_CONCURRENCY = 4;
+  //
+  // The cap defaults to EraseAIConcurrency.DEFAULT (4) — safe for the
+  // free / personal 60 req/min burst — but is overridable from the popup
+  // (chrome.storage.local.analyzeConcurrency) so Business / Enterprise
+  // customers on higher per-key limits can finish large multi-file scans
+  // faster. The value is clamped to [MIN, MAX] anywhere it is read so a
+  // hand-edited storage value can never make us open hundreds of ports
+  // in parallel. Constants + clamp helper live in concurrency-config.js
+  // so popup.js stays in lockstep.
+  const ANALYZE_CONCURRENCY_DEFAULT = globalThis.EraseAIConcurrency.DEFAULT;
+  const coerceAnalyzeConcurrency = globalThis.EraseAIConcurrency.coerce;
+  let analyzeConcurrency = ANALYZE_CONCURRENCY_DEFAULT;
   const fileCache = new Map(); // key -> File
   let fileCacheUrl = typeof window !== "undefined" ? window.location.href : "";
   // Maximum text length we send to /api/dev/analyze in a single call.
@@ -1361,13 +1372,14 @@
 
     let pieceResults;
     try {
-      // Bounded fan-out: never more than ANALYZE_CONCURRENCY analyze
-      // ports in flight at once. A small worker pool walks the `pieces`
-      // array via a shared cursor and writes each result back at the
-      // same index, preserving order so aggregatePieceResults still
-      // sees pieces in the order buildPieces produced them. This keeps
-      // a 50-chunk send well under the api-server's per-key burst
-      // ceiling instead of opening 50 ports simultaneously.
+      // Bounded fan-out: never more than `analyzeConcurrency` analyze
+      // ports in flight at once (clamped to [MIN, MAX]). A small worker
+      // pool walks the `pieces` array via a shared cursor and writes
+      // each result back at the same index, preserving order so
+      // aggregatePieceResults still sees pieces in the order
+      // buildPieces produced them. This keeps a 50-chunk send well
+      // under the api-server's per-key burst ceiling instead of
+      // opening 50 ports simultaneously.
       pieceResults = new Array(pieces.length);
       let pieceCursor = 0;
       const analyzeWorker = async () => {
@@ -1384,7 +1396,11 @@
           updateScanProgress();
         }
       };
-      const analyzeWorkerCount = Math.min(ANALYZE_CONCURRENCY, pieces.length) || 1;
+      // Re-clamp at use time so a stale in-memory value can never escape
+      // the [MIN, MAX] envelope, even if storage somehow returns garbage
+      // before the onChanged listener overwrites it.
+      const concurrencyCap = coerceAnalyzeConcurrency(analyzeConcurrency);
+      const analyzeWorkerCount = Math.min(concurrencyCap, pieces.length) || 1;
       const analyzeWorkers = [];
       for (let i = 0; i < analyzeWorkerCount; i += 1) analyzeWorkers.push(analyzeWorker());
       await Promise.all(analyzeWorkers);
@@ -1622,8 +1638,11 @@
     platform = detectPlatform();
     if (!platform) return;
 
-    chrome.storage.local.get(["enabled"], (result) => {
+    chrome.storage.local.get(["enabled", "analyzeConcurrency"], (result) => {
       if (chrome.runtime.lastError) return;
+      if ("analyzeConcurrency" in result) {
+        analyzeConcurrency = coerceAnalyzeConcurrency(result.analyzeConcurrency);
+      }
       if (result.enabled === false) return;
       attachListeners();
     });
@@ -1635,6 +1654,16 @@
         } else {
           attachListeners();
         }
+      }
+      if (changes.analyzeConcurrency) {
+        // Re-coerce the new value so an out-of-bounds or non-numeric
+        // write from elsewhere can never widen the cap past MAX. Falls
+        // back to the default when the setting is removed.
+        analyzeConcurrency = coerceAnalyzeConcurrency(
+          "newValue" in changes.analyzeConcurrency
+            ? changes.analyzeConcurrency.newValue
+            : ANALYZE_CONCURRENCY_DEFAULT,
+        );
       }
     });
   }

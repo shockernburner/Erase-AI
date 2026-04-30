@@ -9,6 +9,19 @@ const keyStatus = document.getElementById("key-status");
 const toggleEnabled = document.getElementById("toggle-enabled");
 const scanSummary = document.getElementById("scan-summary");
 const dashboardLink = document.getElementById("dashboard-link");
+const analyzeConcurrencyInput = document.getElementById("analyze-concurrency-input");
+const saveConcurrencyBtn = document.getElementById("save-concurrency-btn");
+const concurrencyStatus = document.getElementById("concurrency-status");
+
+// Bounds + clamp helper for the analyze-concurrency setting are loaded
+// from concurrency-config.js (see popup.html script tag order). Sharing
+// a single source of truth means content.js and popup.js can never drift
+// — bumping MAX in concurrency-config.js automatically updates the popup
+// validator AND the in-flight cap.
+const ANALYZE_CONCURRENCY_DEFAULT = globalThis.EraseAIConcurrency.DEFAULT;
+const ANALYZE_CONCURRENCY_MIN = globalThis.EraseAIConcurrency.MIN;
+const ANALYZE_CONCURRENCY_MAX = globalThis.EraseAIConcurrency.MAX;
+const coerceAnalyzeConcurrency = globalThis.EraseAIConcurrency.coerce;
 
 const diagCard = document.getElementById("diag-card");
 const diagTitle = document.getElementById("diag-title");
@@ -21,6 +34,14 @@ function showKeyStatus(msg, type) {
   keyStatus.className = `status-text ${type}`;
   keyStatus.style.display = "block";
   setTimeout(() => { keyStatus.style.display = "none"; }, 4000);
+}
+
+function showConcurrencyStatus(msg, type) {
+  if (!concurrencyStatus) return;
+  concurrencyStatus.textContent = msg;
+  concurrencyStatus.className = `status-text ${type}`;
+  concurrencyStatus.style.display = "block";
+  setTimeout(() => { concurrencyStatus.style.display = "none"; }, 4000);
 }
 
 function setDiagState(state) {
@@ -303,6 +324,7 @@ async function loadState() {
     "enabled",
     "lastScan",
     "lastAttempt",
+    "analyzeConcurrency",
   ]);
 
   if (data.apiKey) {
@@ -313,6 +335,13 @@ async function loadState() {
   toggleEnabled.checked = data.enabled !== false;
   renderLastScan(data.lastScan);
   renderLastAttempt(data.lastAttempt);
+
+  if (analyzeConcurrencyInput) {
+    const stored = "analyzeConcurrency" in data
+      ? coerceAnalyzeConcurrency(data.analyzeConcurrency)
+      : ANALYZE_CONCURRENCY_DEFAULT;
+    analyzeConcurrencyInput.value = String(stored);
+  }
 
   // Footer link always points at the canonical dashboard.
   dashboardLink.href = CANONICAL_DASHBOARD_URL;
@@ -356,5 +385,30 @@ saveKeyBtn.addEventListener("click", async () => {
 toggleEnabled.addEventListener("change", () => {
   chrome.storage.local.set({ enabled: toggleEnabled.checked });
 });
+
+if (saveConcurrencyBtn && analyzeConcurrencyInput) {
+  saveConcurrencyBtn.addEventListener("click", async () => {
+    const raw = analyzeConcurrencyInput.value;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || Math.floor(parsed) !== parsed) {
+      showConcurrencyStatus(
+        `Enter a whole number between ${ANALYZE_CONCURRENCY_MIN} and ${ANALYZE_CONCURRENCY_MAX}`,
+        "error",
+      );
+      return;
+    }
+    if (parsed < ANALYZE_CONCURRENCY_MIN || parsed > ANALYZE_CONCURRENCY_MAX) {
+      showConcurrencyStatus(
+        `Value must be between ${ANALYZE_CONCURRENCY_MIN} and ${ANALYZE_CONCURRENCY_MAX}`,
+        "error",
+      );
+      return;
+    }
+    const clamped = coerceAnalyzeConcurrency(parsed);
+    analyzeConcurrencyInput.value = String(clamped);
+    await chrome.storage.local.set({ analyzeConcurrency: clamped });
+    showConcurrencyStatus(`Saved (cap: ${clamped})`, "success");
+  });
+}
 
 loadState();
