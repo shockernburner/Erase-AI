@@ -7,7 +7,7 @@
       typeof data === "object" &&
       data.type === REQ_TYPE &&
       typeof data.id === "string" &&
-      (data.kind === "pdf" || data.kind === "docx") &&
+      (data.kind === "pdf" || data.kind === "docx" || data.kind === "xlsx") &&
       (data.bytes instanceof ArrayBuffer || ArrayBuffer.isView(data.bytes))
     );
   }
@@ -16,9 +16,10 @@
     const ext = globalThis.__eraseAISandboxExtractor;
     if (!ext) return { ok: false, error: "sandbox extractor not loaded" };
     try {
-      const text = req.kind === "pdf"
-        ? await ext.extractPdfText(req.bytes)
-        : await ext.extractDocxText(req.bytes);
+      let text;
+      if (req.kind === "pdf") text = await ext.extractPdfText(req.bytes);
+      else if (req.kind === "docx") text = await ext.extractDocxText(req.bytes);
+      else text = await ext.extractXlsxText(req.bytes);
       return { ok: true, text: typeof text === "string" ? text : "" };
     } catch (err) {
       return { ok: false, error: (err && err.message) || String(err) };

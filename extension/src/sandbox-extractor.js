@@ -87,8 +87,122 @@
     return typeof result.value === "string" ? result.value : "";
   }
 
+  function findEocd(data) {
+    const minPos = Math.max(0, data.length - 22 - 65535);
+    for (let i = data.length - 22; i >= minPos; i -= 1) {
+      if (
+        data[i] === 0x50 && data[i + 1] === 0x4b &&
+        data[i + 2] === 0x05 && data[i + 3] === 0x06
+      ) return i;
+    }
+    throw new Error("ZIP end-of-central-directory not found");
+  }
+
+  function parseZipCentralDirectory(data) {
+    const eocd = findEocd(data);
+    const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    const totalEntries = dv.getUint16(eocd + 10, true);
+    const cdOffset = dv.getUint32(eocd + 16, true);
+    const entries = [];
+    let p = cdOffset;
+    const decoder = new TextDecoder();
+    for (let i = 0; i < totalEntries; i += 1) {
+      if (dv.getUint32(p, true) !== 0x02014b50) {
+        throw new Error("bad ZIP central-directory signature");
+      }
+      const method = dv.getUint16(p + 10, true);
+      const compressedSize = dv.getUint32(p + 20, true);
+      const uncompressedSize = dv.getUint32(p + 24, true);
+      const nameLen = dv.getUint16(p + 28, true);
+      const extraLen = dv.getUint16(p + 30, true);
+      const commentLen = dv.getUint16(p + 32, true);
+      const localHeaderOffset = dv.getUint32(p + 42, true);
+      const name = decoder.decode(data.subarray(p + 46, p + 46 + nameLen));
+      entries.push({ name, method, compressedSize, uncompressedSize, localHeaderOffset });
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    return entries;
+  }
+
+  async function readZipEntry(data, entry) {
+    const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    const lh = entry.localHeaderOffset;
+    if (dv.getUint32(lh, true) !== 0x04034b50) {
+      throw new Error("bad ZIP local-header signature");
+    }
+    const nameLen = dv.getUint16(lh + 26, true);
+    const extraLen = dv.getUint16(lh + 28, true);
+    const dataOffset = lh + 30 + nameLen + extraLen;
+    const compressed = data.subarray(dataOffset, dataOffset + entry.compressedSize);
+    if (entry.method === 0) return compressed;
+    if (entry.method === 8) {
+      if (typeof DecompressionStream === "undefined") {
+        throw new Error("DecompressionStream unavailable for DEFLATE entry");
+      }
+      const ds = new DecompressionStream("deflate-raw");
+      const writer = ds.writable.getWriter();
+      writer.write(compressed);
+      writer.close();
+      const buf = await new Response(ds.readable).arrayBuffer();
+      return new Uint8Array(buf);
+    }
+    throw new Error("unsupported ZIP compression method " + entry.method);
+  }
+
+  function decodeXmlEntities(s) {
+    return s
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&apos;/g, "'")
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)))
+      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+      .replace(/&amp;/g, "&");
+  }
+
+  function extractTContent(xml) {
+    const out = [];
+    const re = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null) {
+      const txt = decodeXmlEntities(m[1]);
+      if (txt.length) out.push(txt);
+    }
+    return out.join(" ");
+  }
+
+  async function extractXlsxText(input) {
+    const data = asUint8(input);
+    if (data.length < 4) throw new Error("not an XLSX (too short)");
+    if (data[0] !== 0x50 || data[1] !== 0x4b) throw new Error("not an XLSX (missing PK header)");
+
+    const entries = parseZipCentralDirectory(data);
+    const sharedEntry = entries.find((e) => e.name === "xl/sharedStrings.xml");
+    const sheetEntries = entries
+      .filter((e) => /^xl\/worksheets\/sheet[^/]+\.xml$/i.test(e.name))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    const decoder = new TextDecoder();
+    const parts = [];
+
+    if (sharedEntry) {
+      const bytes = await readZipEntry(data, sharedEntry);
+      const text = extractTContent(decoder.decode(bytes));
+      if (text) parts.push(text);
+    }
+
+    for (const sheet of sheetEntries) {
+      const bytes = await readZipEntry(data, sheet);
+      const text = extractTContent(decoder.decode(bytes));
+      if (text) parts.push(text);
+    }
+
+    return parts.join("\n").trim();
+  }
+
   globalThis.__eraseAISandboxExtractor = {
     extractDocxText,
     extractPdfText,
+    extractXlsxText,
   };
 })();

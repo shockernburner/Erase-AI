@@ -26,7 +26,7 @@
     tooLarge: "too large to scan in the browser — review manually",
     pdfNotYetSupported: "couldn't read the PDF — review manually",
     docxNotYetSupported: "couldn't read the Word document — review manually",
-    xlsxNotYetSupported: "Spreadsheet detected — content not scanned in this version, review manually",
+    xlsxNotYetSupported: "couldn't read the spreadsheet — review manually",
     image: "image — visual content not scanned, review manually",
     archive: "archive — contents not scanned, review manually",
     unsupported: "file type not supported, review manually",
@@ -222,10 +222,9 @@
     }
 
     const kind = classify(file);
-    if (kind === "pdf" || kind === "docx") {
+    if (kind === "pdf" || kind === "docx" || kind === "xlsx") {
       return extractViaSandbox(file, kind, sizeBytes);
     }
-    if (kind === "xlsx") return makeSkipResult(file, SKIP_REASONS.xlsxNotYetSupported);
     if (kind === "image") return makeSkipResult(file, SKIP_REASONS.image);
     if (kind === "archive") return makeSkipResult(file, SKIP_REASONS.archive);
     if (kind === "unknown") return makeSkipResult(file, SKIP_REASONS.unsupported);
@@ -244,9 +243,10 @@
   }
 
   async function extractViaSandbox(file, kind, sizeBytes) {
-    const fallbackReason = kind === "pdf"
-      ? SKIP_REASONS.pdfNotYetSupported
-      : SKIP_REASONS.docxNotYetSupported;
+    let fallbackReason;
+    if (kind === "pdf") fallbackReason = SKIP_REASONS.pdfNotYetSupported;
+    else if (kind === "docx") fallbackReason = SKIP_REASONS.docxNotYetSupported;
+    else fallbackReason = SKIP_REASONS.xlsxNotYetSupported;
     const buf = await readAsArrayBuffer(file);
     if (!buf.ok || !buf.bytes) return makeSkipResult(file, SKIP_REASONS.readError);
     let result;

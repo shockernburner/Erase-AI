@@ -28,6 +28,7 @@ describe("sandbox-extractor — globals", () => {
     expect(globalThis.__eraseAISandboxExtractor).toBeTruthy();
     expect(typeof globalThis.__eraseAISandboxExtractor.extractDocxText).toBe("function");
     expect(typeof globalThis.__eraseAISandboxExtractor.extractPdfText).toBe("function");
+    expect(typeof globalThis.__eraseAISandboxExtractor.extractXlsxText).toBe("function");
   });
 });
 
@@ -182,6 +183,91 @@ describe("sandbox-extractor — pdf.js integration with a redacted-sample PDF", 
   });
 });
 
+describe("sandbox-extractor — extractXlsxText() with stored-mode fixtures", () => {
+  it("rejects buffers without a PK header", async () => {
+    const not = new TextEncoder().encode("definitely not a zip");
+    await expect(
+      globalThis.__eraseAISandboxExtractor.extractXlsxText(not),
+    ).rejects.toThrow(/XLSX/);
+  });
+
+  it("extracts an SSN from a sharedStrings entry", async () => {
+    const bytes = await buildXlsxBytes({
+      sharedStrings: ["Employee SSN", "123-45-6789", "unrelated header"],
+      sheets: [
+        // Sheet1 references the shared strings — the cell tags themselves
+        // hold no plaintext, so extraction must read sharedStrings.xml.
+        [
+          [{ t: "s", v: 0 }, { t: "s", v: 1 }],
+          [{ t: "s", v: 2 }, { v: 42 }],
+        ],
+      ],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractXlsxText(bytes);
+    expect(text).toMatch(/Employee SSN/);
+    expect(text).toMatch(/123-45-6789/);
+    expect(text).toMatch(/unrelated header/);
+  });
+
+  it("extracts inline strings from a sheet (no sharedStrings.xml)", async () => {
+    const bytes = await buildXlsxBytes({
+      sharedStrings: null,
+      sheets: [
+        [
+          [{ inline: "Customer email" }, { inline: "carol@example.com" }],
+          [{ inline: "Phone" }, { inline: "555-867-5309" }],
+        ],
+      ],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractXlsxText(bytes);
+    expect(text).toMatch(/Customer email/);
+    expect(text).toMatch(/carol@example\.com/);
+    expect(text).toMatch(/555-867-5309/);
+  });
+
+  it("decodes XML entities and preserves whitespace inside <t>", async () => {
+    const bytes = await buildXlsxBytes({
+      sharedStrings: ["A &amp; B Co.", "  spaced  "],
+      sheets: [[[{ t: "s", v: 0 }, { t: "s", v: 1 }]]],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractXlsxText(bytes);
+    expect(text).toMatch(/A & B Co\./);
+    expect(text).toMatch(/spaced/);
+  });
+
+  it("walks every sheet in workbook order", async () => {
+    const bytes = await buildXlsxBytes({
+      sharedStrings: null,
+      sheets: [
+        [[{ inline: "first-sheet-marker" }]],
+        [[{ inline: "second-sheet-marker" }]],
+        [[{ inline: "third-sheet-marker" }]],
+      ],
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractXlsxText(bytes);
+    expect(text).toMatch(/first-sheet-marker/);
+    expect(text).toMatch(/second-sheet-marker/);
+    expect(text).toMatch(/third-sheet-marker/);
+    expect(text.indexOf("first-sheet-marker"))
+      .toBeLessThan(text.indexOf("second-sheet-marker"));
+    expect(text.indexOf("second-sheet-marker"))
+      .toBeLessThan(text.indexOf("third-sheet-marker"));
+  });
+});
+
+describe("sandbox-extractor — extractXlsxText() with DEFLATE-compressed entries", () => {
+  it("decompresses sharedStrings.xml and sheet1.xml that were deflated", async () => {
+    const bytes = await buildXlsxBytes({
+      sharedStrings: ["Confidential SSN 444-22-1111 inside flate stream"],
+      sheets: [[[{ t: "s", v: 0 }]]],
+      compressed: true,
+    });
+    const text = await globalThis.__eraseAISandboxExtractor.extractXlsxText(bytes);
+    expect(text).toMatch(/Confidential/);
+    expect(text).toMatch(/444-22-1111/);
+  });
+});
+
 describe("sandbox-extractor — mammoth integration with a real DOCX (SSN)", () => {
   let mammothShim;
   beforeAll(async () => {
@@ -304,6 +390,148 @@ function buildStoredZip(files) {
   for (const c of cdChunks) { out.set(c, p); p += c.length; }
   out.set(eocd, p);
   return out;
+}
+
+async function deflateRaw(bytes) {
+  const cs = new CompressionStream("deflate-raw");
+  const writer = cs.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const buf = await new Response(cs.readable).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+async function buildZip(files, { compressed = false } = {}) {
+  const enc = new TextEncoder();
+  const localChunks = [];
+  const cdChunks = [];
+  let offset = 0;
+  let totalLocal = 0;
+  for (const file of files) {
+    const nameBytes = enc.encode(file.name);
+    const raw = file.data instanceof Uint8Array ? file.data : enc.encode(file.data);
+    const crc = crc32(raw);
+    const useDeflate = compressed && raw.length > 0;
+    const stored = useDeflate ? await deflateRaw(raw) : raw;
+    const method = useDeflate ? 8 : 0;
+
+    const local = new Uint8Array(30 + nameBytes.length + stored.length);
+    const dvL = new DataView(local.buffer);
+    dvL.setUint32(0, 0x04034b50, true);
+    dvL.setUint16(4, 20, true);
+    dvL.setUint16(6, 0, true);
+    dvL.setUint16(8, method, true);
+    dvL.setUint16(10, 0, true);
+    dvL.setUint16(12, 0, true);
+    dvL.setUint32(14, crc, true);
+    dvL.setUint32(18, stored.length, true);
+    dvL.setUint32(22, raw.length, true);
+    dvL.setUint16(26, nameBytes.length, true);
+    dvL.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    local.set(stored, 30 + nameBytes.length);
+    localChunks.push(local);
+
+    const central = new Uint8Array(46 + nameBytes.length);
+    const dvC = new DataView(central.buffer);
+    dvC.setUint32(0, 0x02014b50, true);
+    dvC.setUint16(4, 20, true);
+    dvC.setUint16(6, 20, true);
+    dvC.setUint16(8, 0, true);
+    dvC.setUint16(10, method, true);
+    dvC.setUint16(12, 0, true);
+    dvC.setUint16(14, 0, true);
+    dvC.setUint32(16, crc, true);
+    dvC.setUint32(20, stored.length, true);
+    dvC.setUint32(24, raw.length, true);
+    dvC.setUint16(28, nameBytes.length, true);
+    dvC.setUint16(30, 0, true);
+    dvC.setUint16(32, 0, true);
+    dvC.setUint16(34, 0, true);
+    dvC.setUint16(36, 0, true);
+    dvC.setUint32(38, 0, true);
+    dvC.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    cdChunks.push(central);
+
+    offset += local.length;
+    totalLocal += local.length;
+  }
+
+  const cdSize = cdChunks.reduce((a, c) => a + c.length, 0);
+  const eocd = new Uint8Array(22);
+  const dvE = new DataView(eocd.buffer);
+  dvE.setUint32(0, 0x06054b50, true);
+  dvE.setUint16(4, 0, true);
+  dvE.setUint16(6, 0, true);
+  dvE.setUint16(8, files.length, true);
+  dvE.setUint16(10, files.length, true);
+  dvE.setUint32(12, cdSize, true);
+  dvE.setUint32(16, totalLocal, true);
+  dvE.setUint16(20, 0, true);
+
+  const total = totalLocal + cdSize + eocd.length;
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const c of localChunks) { out.set(c, p); p += c.length; }
+  for (const c of cdChunks) { out.set(c, p); p += c.length; }
+  out.set(eocd, p);
+  return out;
+}
+
+function escapeXml(s) {
+  return String(s)
+    .replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildSheetXml(rows) {
+  const rowsXml = rows.map((cells, rIdx) => {
+    const cellsXml = cells.map((cell, cIdx) => {
+      const ref = colLetter(cIdx) + (rIdx + 1);
+      if (cell.inline !== undefined) {
+        return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(cell.inline)}</t></is></c>`;
+      }
+      if (cell.t === "s") {
+        return `<c r="${ref}" t="s"><v>${cell.v}</v></c>`;
+      }
+      return `<c r="${ref}"><v>${cell.v}</v></c>`;
+    }).join("");
+    return `<row r="${rIdx + 1}">${cellsXml}</row>`;
+  }).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+    `<sheetData>${rowsXml}</sheetData></worksheet>`;
+}
+
+function colLetter(i) {
+  let n = i + 1;
+  let s = "";
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+function buildSharedStringsXml(strings) {
+  const items = strings.map((s) => `<si><t xml:space="preserve">${escapeXml(s)}</t></si>`).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+    `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ` +
+    `count="${strings.length}" uniqueCount="${strings.length}">${items}</sst>`;
+}
+
+async function buildXlsxBytes({ sharedStrings, sheets, compressed = false }) {
+  const files = [];
+  if (sharedStrings && sharedStrings.length) {
+    files.push({ name: "xl/sharedStrings.xml", data: buildSharedStringsXml(sharedStrings) });
+  }
+  sheets.forEach((rows, idx) => {
+    files.push({ name: `xl/worksheets/sheet${idx + 1}.xml`, data: buildSheetXml(rows) });
+  });
+  return buildZip(files, { compressed });
 }
 
 function buildDocxBytes(plainBodyText) {

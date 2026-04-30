@@ -158,6 +158,64 @@ describe("file-extractor — extractText()", () => {
     globalThis.__eraseAIExtractor.setSandboxBridge(null);
   });
 
+  it("extracts XLSX text via the sandbox bridge and returns no skipReason", async () => {
+    let lastKind = null;
+    let lastBytes = null;
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind, bytes) => {
+      lastKind = kind;
+      lastBytes = bytes;
+      return { ok: true, text: "Employee SSN 123-45-6789 in cell A1" };
+    });
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "payroll.xlsx",
+        "PK\u0003\u0004 placeholder bytes",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ),
+    );
+    expect(lastKind).toBe("xlsx");
+    expect(lastBytes instanceof ArrayBuffer).toBe(true);
+    expect(out.skipReason).toBeUndefined();
+    expect(out.text).toContain("123-45-6789");
+    expect(out.name).toBe("payroll.xlsx");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("falls back to skipReason for XLSX when the bridge fails (e.g. legacy .xls or password-protected)", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({
+      ok: false,
+      error: "not an XLSX (missing PK header)",
+    }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "old.xls",
+        "\xD0\xCF\x11\xE0",
+        "application/vnd.ms-excel",
+      ),
+    );
+    expect(out.skipReason).toBe(
+      globalThis.__eraseAIExtractor.SKIP_REASONS.xlsxNotYetSupported,
+    );
+    expect(out.text).toBe("");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("truncates sandbox-extracted XLSX text at the 50 KB cap", async () => {
+    const big = "a".repeat(60 * 1024);
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: big }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile(
+        "huge.xlsx",
+        "PK\u0003\u0004",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ),
+    );
+    expect(out.skipReason).toBeUndefined();
+    expect(out.truncated).toBe(true);
+    expect(out.text.length).toBe(50 * 1024);
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
   it("treats an empty extraction result as a skipReason row (image-only PDF case)", async () => {
     globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: "   \n  " }));
     const out = await globalThis.__eraseAIExtractor.extractText(
