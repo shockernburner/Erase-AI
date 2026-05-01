@@ -18,6 +18,14 @@ async function ensureApiKeysTable() {
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash)`);
+    // Task #158 — demo-key columns. Idempotent.
+    await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`);
+    await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS request_quota INTEGER`);
+    await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(32)`);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_api_keys_ip_hash_created
+        ON api_keys(ip_hash, created_at)
+    `);
     logger.info("Startup migration: api_keys table ensured");
   } catch (err) {
     logger.warn({ err }, "Startup migration: api_keys table warning (non-fatal)");
@@ -253,31 +261,27 @@ export async function runStartupMigrations() {
   await ensureFirewallOutcomesTable();
   await ensureBurstLimitHitsTable();
   await ensureContactInquiriesTable();
+  await ensureDemoUser();
+}
+
+// Task #158 — single shared "demo" account that public-visitor demo
+// API keys (POST /api/dev/demo-key) are bound to. Idempotent. The user
+// is created with planType="personal" so the v1 router's "free plans
+// can't call /api/v1/*" gate doesn't block demo-key calls; the actual
+// 50-request lifetime cap on each demo key is enforced separately by
+// apiKeyAuth via api_keys.request_quota.
+const DEMO_USER_ID = "system-demo-user";
+
+async function ensureDemoUser() {
   try {
-    const demoDatasets = await db.execute(sql`
-      SELECT id FROM datasets WHERE user_id = 'system-demo-user'
+    await db.execute(sql`
+      INSERT INTO users (id, email, first_name, last_name, plan_type, auth_provider, role)
+      VALUES (${DEMO_USER_ID}, 'demo@eraseai.local', 'Demo', 'User', 'personal', 'system', 'user')
+      ON CONFLICT (id) DO UPDATE
+        SET plan_type = 'personal'
     `);
-
-    if (demoDatasets.rows.length > 0) {
-      const ids = demoDatasets.rows.map((r: Record<string, unknown>) => r.id as string);
-      for (const id of ids) {
-        await db.execute(sql`DELETE FROM analysis_results WHERE dataset_id = ${id}`);
-        await db.execute(sql`DELETE FROM dataset_operations WHERE dataset_id = ${id}`);
-
-        const versions = await db.execute(sql`SELECT id FROM dataset_versions WHERE dataset_id = ${id}`);
-        for (const v of versions.rows) {
-          await db.execute(sql`DELETE FROM dataset_rows WHERE version_id = ${(v as Record<string, unknown>).id}`);
-        }
-        await db.execute(sql`DELETE FROM dataset_versions WHERE dataset_id = ${id}`);
-        await db.execute(sql`DELETE FROM datasets WHERE id = ${id}`);
-      }
-    }
-
-    await db.execute(sql`DELETE FROM feedback WHERE user_id = 'system-demo-user'`);
-    await db.execute(sql`DELETE FROM users WHERE id = 'system-demo-user'`);
-
-    logger.info("Startup migration: cleaned up legacy demo user data");
+    logger.info("Startup migration: demo user ensured");
   } catch (err) {
-    logger.warn({ err }, "Startup migration warning (non-fatal)");
+    logger.warn({ err }, "Startup migration: demo user warning (non-fatal)");
   }
 }

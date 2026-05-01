@@ -13,6 +13,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import DeveloperDashboard from "@/pages/DeveloperDashboard";
 import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import PersonalMode from "@/pages/PersonalMode";
+import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
 import SocialPosts from "@/pages/SocialPosts";
 import AdContent from "@/pages/AdContent";
 import ApiDocs from "@/pages/ApiDocs";
@@ -132,7 +133,13 @@ const queryClient = new QueryClient({
 });
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "publishingChecklist" | "terms" | "license" | "privacy" | "contact";
-type PreviewMode = "developer" | "enterprise" | "personal" | null;
+// Task #158 — `enterprise` and `dataset-sanitizer` both render the
+// Dataset Sanitizer (the "Try Enterprise" / "Try Business" landing
+// card now opens the sanitizer in preview mode rather than the
+// analytics dashboard). The two names are kept distinct so the
+// landing-card analytics + the deep-link routes (`/enterprise`,
+// `/business`, `/dataset-sanitizer`) keep their human-readable intent.
+type PreviewMode = "developer" | "enterprise" | "dataset-sanitizer" | "personal" | null;
 
 function SeoLoadingFallback() {
   return (
@@ -203,11 +210,31 @@ function PreviewPage({ mode, onBack }: { mode: PreviewMode; onBack: () => void }
 
       <div className="relative z-10">
         {mode === "developer" && <DeveloperDashboard onBack={onBack} previewMode />}
-        {mode === "enterprise" && <AnalyticsDashboard onBack={onBack} onUpgrade={noop} previewMode />}
+        {(mode === "enterprise" || mode === "dataset-sanitizer") && (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
+            <DatasetSanitizer previewMode onNavigatePricing={noop} />
+          </div>
+        )}
         {mode === "personal" && <PersonalMode onBack={onBack} onUpgrade={noop} previewMode />}
       </div>
     </div>
   );
+}
+
+// Task #158 — wrapper for Wouter deep-link routes (e.g. /developer,
+// /dataset-sanitizer). Renders the same PreviewPage chrome a visitor
+// sees after clicking a card on PublicLanding, but with a "Back" that
+// returns to `/` (so the URL stays clean).
+function PreviewRoute({ mode }: { mode: NonNullable<PreviewMode> }) {
+  const goHome = () => {
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", "/");
+      // Wouter listens to popstate, not pushState, so we trigger a
+      // synthetic popstate to make the router re-evaluate the path.
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  };
+  return <PreviewPage mode={mode} onBack={goHome} />;
 }
 
 function getDefaultViewForPlan(planType: string | undefined): AppView {
@@ -454,6 +481,30 @@ function App() {
                 <ContactPage onBack={() => window.history.back()} />
               </Route>
               <Route path="/status" component={StatusPage} />
+              {/* Task #158 — explicit deep-link routes for the public-visitor
+                   preview pages. These render BEFORE the catch-all so that
+                   /personal, /developer, /dev, /dataset-sanitizer, /enterprise,
+                   and /business open the matching preview directly instead of
+                   falling into AuthGate (which would redirect signed-in users
+                   to their dashboard and force visitors through PublicLanding). */}
+              <Route path="/personal">
+                <PreviewRoute mode="personal" />
+              </Route>
+              <Route path="/developer">
+                <PreviewRoute mode="developer" />
+              </Route>
+              <Route path="/dev">
+                <PreviewRoute mode="developer" />
+              </Route>
+              <Route path="/dataset-sanitizer">
+                <PreviewRoute mode="dataset-sanitizer" />
+              </Route>
+              <Route path="/enterprise">
+                <PreviewRoute mode="enterprise" />
+              </Route>
+              <Route path="/business">
+                <PreviewRoute mode="enterprise" />
+              </Route>
               <Route>
                 <AuthGate />
               </Route>

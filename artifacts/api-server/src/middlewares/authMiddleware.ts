@@ -18,6 +18,7 @@ declare global {
 
       user?: User | undefined;
       apiKeyId?: string;
+      apiKeyHasQuota?: boolean;
     }
 
     export interface AuthedRequest {

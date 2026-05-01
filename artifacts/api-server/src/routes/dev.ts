@@ -6,13 +6,19 @@ import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
 import { refreshPlanFromDB } from "../middlewares/planMiddleware";
 import { maskSecret } from "../lib/dev/secrets";
-import { hashApiKey } from "../middlewares/apiKeyMiddleware";
+import { hashApiKey, enforceApiKeyTtlAndQuota } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
 import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
 import { trackApiUsage, apiRateLimit } from "../middlewares/rateLimitMiddleware";
 import { apiKeyBurstLimit, ipBurstLimit } from "../middlewares/burstLimitMiddleware";
+import demoKeyRouter from "./demo-key";
 
 const router = Router();
+
+// Task #158 — public-visitor demo API key endpoint. Mounted BEFORE
+// sessionOrApiKeyAuth so unauthenticated visitors on the developer
+// preview page can mint a key.
+router.use(demoKeyRouter);
 
 async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -42,6 +48,14 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
       res.status(401).json({ error: "API key has been revoked", code: "AUTH_REVOKED_KEY", meta: buildMeta() });
       return;
     }
+
+    // Task #158 — TTL + quota gate (shared with apiKeyAuth on /api/v1/*).
+    const enforcement = await enforceApiKeyTtlAndQuota(apiKey, req);
+    if (!enforcement.ok) {
+      res.status(enforcement.status).json({ ...enforcement.body, meta: buildMeta() });
+      return;
+    }
+    req.apiKeyHasQuota = apiKey.requestQuota != null;
 
     const [user] = await db
       .select()

@@ -108,6 +108,13 @@ export function trackApiUsage() {
       next();
       return;
     }
+    // Demo keys (req.apiKeyHasQuota) are already counted by the auth
+    // middleware on every endpoint (task #158). Skip here to avoid
+    // double-counting against the per-key quota.
+    if (req.apiKeyHasQuota) {
+      next();
+      return;
+    }
 
     // Falls back to Content-Length when the body parser hasn't
     // materialised a buffer (e.g. multipart streaming).

@@ -1,8 +1,12 @@
 import { createHash, randomBytes } from "crypto";
 import type { Request, Response, NextFunction } from "express";
-import { db, apiKeysTable, usersTable } from "@workspace/db";
-import { eq, and, isNull } from "drizzle-orm";
+import { db, apiKeysTable, apiUsageTable, usersTable } from "@workspace/db";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { toPlanType } from "./planMiddleware";
+import {
+  createApiKeyEnforcer,
+  type EnforcementResult,
+} from "./api-key-enforcement-source.mjs";
 
 export function generateApiKey(): { raw: string; hash: string; prefix: string } {
   const raw = `eak_${randomBytes(32).toString("hex")}`;
@@ -13,6 +17,43 @@ export function generateApiKey(): { raw: string; hash: string; prefix: string } 
 
 export function hashApiKey(raw: string): string {
   return createHash("sha256").update(raw).digest("hex");
+}
+
+// Task #158 — shared demo-key TTL + quota gate. Bound by both
+// apiKeyAuth (/api/v1/*) and sessionOrApiKeyAuth (/api/dev/*).
+//
+// For demo keys (requestQuota != null) the auth middleware is the
+// single canonical writer of api_usage rows, so the quota covers
+// every endpoint regardless of whether trackApiUsage is mounted.
+// trackApiUsage detects req.apiKeyHasQuota and skips logging to
+// avoid double-counting.
+export type ApiKeyEnforcementResult = EnforcementResult;
+
+const apiKeyEnforcer = createApiKeyEnforcer({
+  async countUsage(apiKeyId: string): Promise<number> {
+    const [usage] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(apiUsageTable)
+      .where(eq(apiUsageTable.apiKeyId, apiKeyId));
+    return usage?.count ?? 0;
+  },
+  async insertUsage({ apiKeyId, endpoint }: { apiKeyId: string; endpoint: string }) {
+    await db.insert(apiUsageTable).values({
+      apiKeyId,
+      endpoint,
+      responseStatus: null,
+    });
+  },
+});
+
+export async function enforceApiKeyTtlAndQuota(
+  apiKey: typeof apiKeysTable.$inferSelect,
+  req: Pick<Request, "method" | "path">,
+): Promise<ApiKeyEnforcementResult> {
+  return apiKeyEnforcer(
+    { id: apiKey.id, expiresAt: apiKey.expiresAt, requestQuota: apiKey.requestQuota },
+    { method: req.method, path: req.path },
+  );
 }
 
 export async function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
@@ -39,6 +80,16 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
     res.status(401).json({ error: "Invalid or revoked API key" });
     return;
   }
+
+  // Task #158 — TTL + quota gate (shared with sessionOrApiKeyAuth).
+  const enforcement = await enforceApiKeyTtlAndQuota(apiKey, req);
+  if (!enforcement.ok) {
+    res.status(enforcement.status).json(enforcement.body);
+    return;
+  }
+  // Demo keys (with quota) are counted here on every endpoint;
+  // trackApiUsage uses this flag to avoid double-logging the request.
+  req.apiKeyHasQuota = apiKey.requestQuota != null;
 
   const [user] = await db
     .select()

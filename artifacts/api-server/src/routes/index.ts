@@ -19,7 +19,9 @@ import extensionRouter from "./extension";
 // hit by the browser extension and the in-app Go-Live checklist; gating it
 // behind terms acceptance would make the popup report a "server unreachable"
 // state for fully signed-in users.
-const TERMS_BYPASS_PATHS = new Set<string>(["/dev/ping"]);
+// /dev/demo-key (task #158) is a public, unauthenticated endpoint for
+// public-visitor demo key issuance — terms acceptance doesn't apply.
+const TERMS_BYPASS_PATHS = new Set<string>(["/dev/ping", "/dev/demo-key"]);
 
 function requireTermsAcceptance(req: Request, res: Response, next: NextFunction) {
   if (TERMS_BYPASS_PATHS.has(req.path)) {

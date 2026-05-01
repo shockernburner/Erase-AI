@@ -35,6 +35,16 @@ export function createApiRateLimitMiddleware({
       return;
     }
 
+    // Demo keys (task #158) have their own per-key quota enforced by
+    // the auth middleware. They are all bound to a shared
+    // system-demo-user, so applying the per-user monthly cap here
+    // would let any one visitor exhaust the shared pool and 429 the
+    // rest. The auth middleware's per-key quota is the right cap.
+    if (req.apiKeyHasQuota) {
+      next();
+      return;
+    }
+
     const plan = req.user?.planType || "free";
     const reset = getNextMonthStart(now()).toISOString();
 

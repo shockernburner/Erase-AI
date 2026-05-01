@@ -572,10 +572,9 @@ function EndpointDoc() {
 export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: { onBack: () => void; onUpgrade?: () => void; previewMode?: boolean }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [keys, setKeys] = useState<ApiKeyInfo[]>(previewMode ? [
-    { id: "demo-1", prefix: "era_demo", name: "Production API", createdAt: new Date().toISOString(), lastUsedAt: new Date().toISOString(), revokedAt: null, active: true },
-    { id: "demo-2", prefix: "era_test", name: "Staging", createdAt: new Date().toISOString(), lastUsedAt: null, revokedAt: null, active: true },
-  ] : []);
+  // Task #158 — preview no longer seeds mock keys; the demo flow mints
+  // a real eak_… key via the panel below.
+  const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
   const [loading, setLoading] = useState(!previewMode);
   const [creating, setCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
@@ -583,6 +582,15 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Task #158 — anonymous demo key state. Surfaces expiresAt + retryAt
+  // so visitors see when their key dies / when they can mint another.
+  const [demoKey, setDemoKey] = useState<string | null>(null);
+  const [demoKeyLoading, setDemoKeyLoading] = useState(false);
+  const [demoKeyError, setDemoKeyError] = useState<string | null>(null);
+  const [demoKeyExpiresAt, setDemoKeyExpiresAt] = useState<string | null>(null);
+  const [demoKeyQuotaRemaining, setDemoKeyQuotaRemaining] = useState<number | null>(null);
+  const [demoKeyRetryAt, setDemoKeyRetryAt] = useState<string | null>(null);
+  const [demoKeyCopied, setDemoKeyCopied] = useState(false);
   const [usage, setUsage] = useState<UsageData | null>(previewMode ? {
     used: 2847,
     limit: 10000,
@@ -669,6 +677,78 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
       setError(t("developer.createFailed"));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const requestDemoKey = async () => {
+    setDemoKeyLoading(true);
+    setDemoKeyError(null);
+    setDemoKeyRetryAt(null);
+    try {
+      const res = await fetch(`${API_BASE}/dev/demo-key`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 429) {
+          const retryAt = typeof data?.retryAt === "string" ? data.retryAt : null;
+          setDemoKeyRetryAt(retryAt);
+          const hoursUntilRetry = retryAt
+            ? Math.max(1, Math.ceil((new Date(retryAt).getTime() - Date.now()) / (60 * 60 * 1000)))
+            : null;
+          setDemoKeyError(
+            hoursUntilRetry !== null
+              ? t("developer.demoKeyRateLimitedWithRetry", {
+                  defaultValue:
+                    "Your active demo key is still valid. You can mint another in about {{hours}} hour(s).",
+                  hours: hoursUntilRetry,
+                })
+              : t("developer.demoKeyRateLimited", {
+                  defaultValue:
+                    "You've already claimed a demo key recently. Please try again tomorrow.",
+                }),
+          );
+        } else {
+          setDemoKeyError(data?.error || t("developer.demoKeyFailed", { defaultValue: "Could not generate a demo key. Please try again." }));
+        }
+        return;
+      }
+      setDemoKey(data.key);
+      setDemoKeyExpiresAt(data.expiresAt ?? null);
+      setDemoKeyQuotaRemaining(typeof data.quotaRemaining === "number" ? data.quotaRemaining : null);
+      setDemoKeyCopied(false);
+    } catch {
+      setDemoKeyError(t("developer.demoKeyFailed", { defaultValue: "Could not generate a demo key. Please try again." }));
+    } finally {
+      setDemoKeyLoading(false);
+    }
+  };
+
+  const formatDemoKeyExpiry = (iso: string | null): string => {
+    if (!iso) return "";
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) {
+      return t("developer.demoKeyExpired", { defaultValue: "expired" });
+    }
+    const totalMin = Math.floor(ms / 60_000);
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    return t("developer.demoKeyExpiresIn", {
+      defaultValue: "expires in {{h}}h {{m}}m",
+      h: hours,
+      m: minutes,
+    });
+  };
+
+  const copyDemoKey = async () => {
+    if (!demoKey) return;
+    try {
+      await navigator.clipboard.writeText(demoKey);
+      setDemoKeyCopied(true);
+      setTimeout(() => setDemoKeyCopied(false), 2000);
+    } catch {
+      // Clipboard can fail on insecure origins; key is still visible on-screen.
     }
   };
 
@@ -901,8 +981,102 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
             <WebhookSection previewMode={previewMode} />
           </div>
 
-          <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">
-            <CodeSnippet apiKey={newKeyValue} />
+          <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md space-y-4">
+            {previewMode && (
+              <div
+                className="rounded-lg border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                data-testid="demo-key-panel"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground mb-0.5">
+                    {t("developer.demoKeyTitle", { defaultValue: "Try the API right now" })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {demoKey
+                      ? t("developer.demoKeyReady", {
+                          defaultValue:
+                            "Your demo key is ready. It works for 24 hours and 50 requests, then sign up for a real key.",
+                        })
+                      : t("developer.demoKeyDesc", {
+                          defaultValue:
+                            "Generate a sandbox API key (24-hour, 50-request limit) so you can run the curl example below without signing up.",
+                        })}
+                  </p>
+                  {demoKey && (
+                    <div className="mt-2 space-y-1.5" data-testid="demo-key-display">
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        <code
+                          className="bg-black/40 text-green-400 px-2 py-1 rounded font-mono break-all flex-1 min-w-[12rem]"
+                          data-testid="demo-key-value"
+                        >
+                          {demoKey}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={copyDemoKey}
+                          data-testid="demo-key-copy"
+                          aria-label={t("developer.demoKeyCopyAria", { defaultValue: "Copy demo API key" })}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border/40 text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors shrink-0"
+                        >
+                          {demoKeyCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {demoKeyCopied
+                            ? t("developer.copied", { defaultValue: "Copied" })
+                            : t("developer.copy", { defaultValue: "Copy" })}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                        {demoKeyExpiresAt && (
+                          <span className="whitespace-nowrap" data-testid="demo-key-expiry">
+                            {formatDemoKeyExpiry(demoKeyExpiresAt)}
+                          </span>
+                        )}
+                        {demoKeyQuotaRemaining !== null && (
+                          <span className="whitespace-nowrap">
+                            {t("developer.demoKeyQuota", {
+                              defaultValue: "{{remaining}} requests left",
+                              remaining: demoKeyQuotaRemaining,
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {demoKeyError && (
+                    <p className="mt-2 text-xs text-destructive" data-testid="demo-key-error">
+                      {demoKeyError}
+                    </p>
+                  )}
+                  {demoKeyRetryAt && !demoKey && (
+                    <p
+                      className="mt-1 text-[11px] text-muted-foreground/80"
+                      data-testid="demo-key-retry-at"
+                    >
+                      {t("developer.demoKeyRetryAt", {
+                        defaultValue: "Next mint allowed at {{time}}",
+                        time: new Date(demoKeyRetryAt).toLocaleString(),
+                      })}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={requestDemoKey}
+                  disabled={demoKeyLoading}
+                  data-testid="demo-key-button"
+                  className="inline-flex items-center justify-center gap-2 shrink-0 px-4 py-2 rounded-lg text-sm font-bold text-black bg-gradient-to-r from-primary to-cyan-400 hover:from-primary/90 hover:to-cyan-400/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                >
+                  {demoKeyLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Key className="w-3.5 h-3.5" />
+                  )}
+                  {demoKey
+                    ? t("developer.demoKeyRegenerate", { defaultValue: "Generate again" })
+                    : t("developer.demoKeyButton", { defaultValue: "Get a demo API key" })}
+                </button>
+              </div>
+            )}
+            <CodeSnippet apiKey={previewMode ? demoKey : newKeyValue} />
           </div>
 
           <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">

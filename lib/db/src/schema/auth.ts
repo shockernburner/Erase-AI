@@ -77,9 +77,20 @@ export const apiKeysTable = pgTable("api_keys", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  // Task #158 — public-visitor demo keys minted by /api/dev/demo-key.
+  // For normal user-created keys these are NULL and behave as before.
+  // - expiresAt: hard expiry; the key is rejected after this timestamp.
+  // - requestQuota: total requests this key may serve over its lifetime
+  //   (counted from api_usage rows for this key_id).
+  // - ipHash: short SHA-256 of the issuing IP, used to enforce a
+  //   1-issuance-per-IP-per-24h cap on the mint endpoint.
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  requestQuota: integer("request_quota"),
+  ipHash: varchar("ip_hash", { length: 32 }),
 }, (table) => [
   index("idx_api_keys_user_id").on(table.userId),
   index("idx_api_keys_key_hash").on(table.keyHash),
+  index("idx_api_keys_ip_hash_created").on(table.ipHash, table.createdAt),
 ]);
 
 export type ApiKey = typeof apiKeysTable.$inferSelect;

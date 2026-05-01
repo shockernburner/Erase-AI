@@ -201,7 +201,43 @@ const ISSUE_ICONS: Record<string, { icon: React.ReactNode; color: string; bg: st
   quality: { icon: <AlertTriangle className="w-4 h-4" />, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
 };
 
-export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: () => void }) {
+// Task #158 — sample dataset pre-loaded when DatasetSanitizer renders in
+// previewMode. Hand-picked to demonstrate the four issue categories the
+// analyzer flags (PII, toxicity, duplicates, quality), without needing
+// the visitor to upload anything or call the backend.
+const PREVIEW_SAMPLE_DATASET: DatasetInfo = {
+  id: -1,
+  name: "sample_customer_feedback.csv",
+  format: "csv",
+  created_at: new Date().toISOString(),
+};
+
+const PREVIEW_SAMPLE_ROWS: DatasetRow[] = [
+  { id: 1, row_index: 0, content: "Great product, exceeded expectations!", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 2, row_index: 1, content: "Contact me at john.doe@example.com for follow-up.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 3, row_index: 2, content: "Customer service was helpful and professional.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 4, row_index: 3, content: "Call me at +1-555-123-4567 anytime.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 5, row_index: 4, content: "This is the worst! You guys are so stupid.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 6, row_index: 5, content: "Great product, exceeded expectations!", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 7, row_index: 6, content: "Shipping was on time and packaging was secure.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 8, row_index: 7, content: "I hate this product, it's an absolute disaster.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 9, row_index: 8, content: "Email support@example.com if you need help.", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 10, row_index: 9, content: "Five stars, would recommend to anyone!", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 11, row_index: 10, content: "", is_removed: false, is_redacted: false, removed_reason: null },
+  { id: 12, row_index: 11, content: "Five stars, would recommend to anyone!", is_removed: false, is_redacted: false, removed_reason: null },
+];
+
+const PREVIEW_SAMPLE_VERSIONS: VersionInfo[] = [
+  { id: 1, version_number: 1, parent_version_id: null, created_at: new Date().toISOString() },
+];
+
+export function DatasetSanitizer({
+  onNavigatePricing,
+  previewMode = false,
+}: {
+  onNavigatePricing?: () => void;
+  previewMode?: boolean;
+}) {
   const { t } = useTranslation();
   const ISSUE_META: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
     pii: { label: t("dataset.piiIssue"), ...ISSUE_ICONS.pii },
@@ -210,10 +246,10 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     duplicate: { label: t("dataset.duplicateIssue"), ...ISSUE_ICONS.duplicate },
     quality: { label: t("dataset.qualityIssue"), ...ISSUE_ICONS.quality },
   };
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [dataset, setDataset] = useState<DatasetInfo | null>(null);
-  const [rows, setRows] = useState<DatasetRow[]>([]);
-  const [versions, setVersions] = useState<VersionInfo[]>([]);
+  const [phase, setPhase] = useState<Phase>(previewMode ? "loaded" : "idle");
+  const [dataset, setDataset] = useState<DatasetInfo | null>(previewMode ? PREVIEW_SAMPLE_DATASET : null);
+  const [rows, setRows] = useState<DatasetRow[]>(previewMode ? PREVIEW_SAMPLE_ROWS : []);
+  const [versions, setVersions] = useState<VersionInfo[]>(previewMode ? PREVIEW_SAMPLE_VERSIONS : []);
   const [currentVersion, setCurrentVersion] = useState(1);
   const [latestVersion, setLatestVersion] = useState(1);
   const [operations, setOperations] = useState<OperationInfo[]>([]);
@@ -271,6 +307,13 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
 
 
   const uploadFile = async (file: File) => {
+    if (previewMode) {
+      // In preview mode the visitor isn't logged in — surface the upgrade
+      // prompt instead of silently calling the (auth-protected) backend.
+      setUpgradeNeeded("preview");
+      setError(t("dataset.previewSignUpToUpload", { defaultValue: "Sign up to upload your own dataset." }));
+      return;
+    }
     setPhase("loading");
     setError("");
     setUpgradeNeeded(null);
@@ -329,6 +372,11 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
 
   const executeErase = async () => {
     if (!dataset || !keyword.trim()) return;
+    if (previewMode) {
+      setUpgradeNeeded("preview");
+      setError(t("dataset.previewSignUpToErase", { defaultValue: "Sign up to run erase actions on real data." }));
+      return;
+    }
     setPhase("erasing");
     setError("");
 
@@ -647,7 +695,36 @@ export function DatasetSanitizer({ onNavigatePricing }: { onNavigatePricing?: ()
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="dataset-sanitizer-root" data-preview-mode={previewMode ? "true" : "false"}>
+      {previewMode && (
+        <div
+          data-testid="dataset-sanitizer-preview-banner"
+          className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 to-cyan-400/10 p-4 flex items-start gap-3"
+        >
+          <div className="bg-primary/20 p-2 rounded-lg shrink-0">
+            <Eye className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0 text-sm">
+            <p className="font-semibold text-foreground mb-0.5">
+              {t("dataset.previewBannerTitle", { defaultValue: "You're viewing a live demo" })}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("dataset.previewBannerDesc", {
+                defaultValue:
+                  "Browse the sample dataset to see how EraseAI flags PII, toxicity, duplicates, and quality issues. Sign up to upload your own data.",
+              })}
+            </p>
+          </div>
+          <Button
+            onClick={() => onNavigatePricing?.()}
+            size="sm"
+            className="gap-1.5 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shrink-0"
+          >
+            <Crown className="w-3.5 h-3.5" />
+            {t("dataset.signUpFree", { defaultValue: "Sign up free" })}
+          </Button>
+        </div>
+      )}
       <AnimatePresence mode="wait">
         {error && (
           <motion.div

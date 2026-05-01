@@ -93,6 +93,7 @@ async function startApp(handlerChain) {
       const parsed = JSON.parse(seed);
       req.user = parsed.user;
       req.apiKeyId = parsed.apiKeyId;
+      req.apiKeyHasQuota = parsed.apiKeyHasQuota;
     }
     next();
   });
@@ -207,6 +208,37 @@ describe("apiRateLimit() middleware — dev-route wiring with mocked usage", () 
       assert.equal(res.headers["x-ratelimit-limit"], "unlimited");
       assert.equal(res.headers["x-ratelimit-remaining"], "unlimited");
       assert.equal(lookupCalls, 0, "enterprise must not trigger the DB lookup");
+    } finally {
+      await new Promise((r) => server.close(r));
+    }
+  });
+
+  test("Demo key (req.apiKeyHasQuota) bypasses per-user monthly cap entirely — own per-key quota applies upstream", async () => {
+    let lookupCalls = 0;
+    const middleware = createApiRateLimitMiddleware({
+      lookupMonthlyUsage: async () => {
+        lookupCalls++;
+        return 999_999;
+      },
+    });
+    const { server, port } = await startApp([middleware]);
+    try {
+      // All demo keys share system-demo-user with plan_type=personal
+      // (200/mo cap). If apiRateLimit applied, every demo visitor
+      // would 429 after the first 200 requests system-wide. The
+      // bypass here is the fix for the reviewer's blocking finding.
+      const res = await send({
+        port,
+        seed: {
+          user: { id: "system-demo-user", planType: "personal" },
+          apiKeyId: "demo-k-1",
+          apiKeyHasQuota: true,
+        },
+        body: { text: "hello" },
+      });
+      assert.equal(res.status, 200, "demo key must not trip the per-user monthly cap");
+      assert.equal(res.body.ran, "analyze");
+      assert.equal(lookupCalls, 0, "demo keys must skip the per-user lookup entirely");
     } finally {
       await new Promise((r) => server.close(r));
     }
