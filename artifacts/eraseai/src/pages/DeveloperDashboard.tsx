@@ -500,6 +500,61 @@ function WebhookSection({ previewMode }: { previewMode?: boolean }) {
   );
 }
 
+// Task #160 — replaces the curl-example panel once a visitor's demo
+// key is exhausted (DEMO_KEY_QUOTA_EXCEEDED) or expired
+// (DEMO_KEY_EXPIRED). The key is unusable from this point on, so
+// "copy this curl" is no longer the right CTA — converting them is.
+function DemoKeySignUpCta({
+  kind,
+  onSignUp,
+}: {
+  kind: "exhausted" | "expired";
+  onSignUp: () => void;
+}) {
+  const { t } = useTranslation();
+  const headline =
+    kind === "expired"
+      ? t("developer.demoKeyCtaTitleExpired", {
+          defaultValue: "Your 24-hour demo key has expired",
+        })
+      : t("developer.demoKeyCtaTitleExhausted", {
+          defaultValue: "You've hit the demo limit",
+        });
+  const body =
+    kind === "expired"
+      ? t("developer.demoKeyCtaBodyExpired", {
+          defaultValue:
+            "Sign up free to keep going — you'll get your own key with a higher quota and no expiry.",
+        })
+      : t("developer.demoKeyCtaBodyExhausted", {
+          defaultValue:
+            "You used all 50 sandbox requests. Sign up free to keep going with your own key and a higher monthly quota.",
+        });
+
+  return (
+    <div
+      className="rounded-lg border border-primary/40 bg-gradient-to-br from-primary/10 to-cyan-500/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+      data-testid="demo-key-cta-panel"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <AlertCircle className="w-4 h-4 text-primary shrink-0" />
+          <h4 className="text-sm font-semibold text-foreground">{headline}</h4>
+        </div>
+        <p className="text-xs text-muted-foreground">{body}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onSignUp}
+        data-testid="demo-key-cta-signup"
+        className="inline-flex items-center justify-center gap-2 shrink-0 px-5 py-2.5 rounded-lg text-sm font-bold text-black bg-gradient-to-r from-primary to-cyan-400 hover:from-primary/90 hover:to-cyan-400/90 transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+      >
+        {t("developer.demoKeyCtaSignUp", { defaultValue: "Sign up free to keep going" })}
+      </button>
+    </div>
+  );
+}
+
 function CodeSnippet({ apiKey }: { apiKey: string | null }) {
   const { t } = useTranslation();
   const displayKey = apiKey || "eak_your_api_key_here";
@@ -584,13 +639,19 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
   const [error, setError] = useState<string | null>(null);
   // Task #158 — anonymous demo key state. Surfaces expiresAt + retryAt
   // so visitors see when their key dies / when they can mint another.
+  // Task #160 — also tracks live quota (polled), exhausted, expired so
+  // we can swap the curl-example panel for a sign-up CTA the moment
+  // the key is unusable.
   const [demoKey, setDemoKey] = useState<string | null>(null);
   const [demoKeyLoading, setDemoKeyLoading] = useState(false);
   const [demoKeyError, setDemoKeyError] = useState<string | null>(null);
   const [demoKeyExpiresAt, setDemoKeyExpiresAt] = useState<string | null>(null);
+  const [demoKeyQuota, setDemoKeyQuota] = useState<number | null>(null);
   const [demoKeyQuotaRemaining, setDemoKeyQuotaRemaining] = useState<number | null>(null);
   const [demoKeyRetryAt, setDemoKeyRetryAt] = useState<string | null>(null);
   const [demoKeyCopied, setDemoKeyCopied] = useState(false);
+  const [demoKeyExhausted, setDemoKeyExhausted] = useState(false);
+  const [demoKeyExpired, setDemoKeyExpired] = useState(false);
   const [usage, setUsage] = useState<UsageData | null>(previewMode ? {
     used: 2847,
     limit: 10000,
@@ -684,6 +745,8 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
     setDemoKeyLoading(true);
     setDemoKeyError(null);
     setDemoKeyRetryAt(null);
+    setDemoKeyExhausted(false);
+    setDemoKeyExpired(false);
     try {
       const res = await fetch(`${API_BASE}/dev/demo-key`, {
         method: "POST",
@@ -716,6 +779,7 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
       }
       setDemoKey(data.key);
       setDemoKeyExpiresAt(data.expiresAt ?? null);
+      setDemoKeyQuota(typeof data.quota === "number" ? data.quota : null);
       setDemoKeyQuotaRemaining(typeof data.quotaRemaining === "number" ? data.quotaRemaining : null);
       setDemoKeyCopied(false);
     } catch {
@@ -724,6 +788,75 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
       setDemoKeyLoading(false);
     }
   };
+
+  // Task #160 — poll the non-mutating status endpoint every 10s while
+  // a demo key is active so the badge ("X of 50 left") and the curl
+  // panel CTA stay in sync with what the visitor is doing in their
+  // own terminal. Stops once the key is exhausted/expired (state is
+  // terminal until they mint a new one).
+  useEffect(() => {
+    if (!previewMode || !demoKey) return;
+    if (demoKeyExhausted || demoKeyExpired) return;
+
+    let cancelled = false;
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/dev/demo-key/status`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${demoKey}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok) {
+          // 401 here means our key was revoked or wiped server-side.
+          // Treat it like the expired path so the CTA appears.
+          if (res.status === 401 || res.status === 410) {
+            setDemoKeyExpired(true);
+          }
+          return;
+        }
+        if (typeof data?.quota === "number") setDemoKeyQuota(data.quota);
+        if (typeof data?.quotaRemaining === "number") {
+          setDemoKeyQuotaRemaining(data.quotaRemaining);
+        }
+        if (typeof data?.expiresAt === "string" || data?.expiresAt === null) {
+          setDemoKeyExpiresAt(data.expiresAt ?? null);
+        }
+        if (data?.code === "DEMO_KEY_EXPIRED" || data?.expired === true) {
+          setDemoKeyExpired(true);
+        } else if (
+          data?.code === "DEMO_KEY_QUOTA_EXCEEDED" ||
+          data?.exhausted === true
+        ) {
+          setDemoKeyExhausted(true);
+        }
+      } catch {
+        // Transient network errors are silent; the next poll retries.
+      }
+    };
+    fetchStatus();
+    const id = window.setInterval(fetchStatus, 10_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [previewMode, demoKey, demoKeyExhausted, demoKeyExpired]);
+
+  // Task #160 — also flip to "expired" the moment the local clock
+  // crosses expiresAt, even if the next poll hasn't fired yet. This
+  // matters for the visitor who minted a key, walked away, and came
+  // back ~24h later.
+  useEffect(() => {
+    if (!previewMode || !demoKey || !demoKeyExpiresAt) return;
+    if (demoKeyExpired) return;
+    const ms = new Date(demoKeyExpiresAt).getTime() - Date.now();
+    if (ms <= 0) {
+      setDemoKeyExpired(true);
+      return;
+    }
+    const id = window.setTimeout(() => setDemoKeyExpired(true), ms);
+    return () => window.clearTimeout(id);
+  }, [previewMode, demoKey, demoKeyExpiresAt, demoKeyExpired]);
 
   const formatDemoKeyExpiry = (iso: string | null): string => {
     if (!iso) return "";
@@ -992,7 +1125,17 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
                     {t("developer.demoKeyTitle", { defaultValue: "Try the API right now" })}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {demoKey
+                    {demoKey && (demoKeyExhausted || demoKeyExpired)
+                      ? demoKeyExpired
+                        ? t("developer.demoKeyExpiredDesc", {
+                            defaultValue:
+                              "Your 24-hour demo key has expired. Sign up free to keep going with your own key.",
+                          })
+                        : t("developer.demoKeyExhaustedDesc", {
+                            defaultValue:
+                              "You've used all 50 demo requests. Sign up free to keep going with your own key.",
+                          })
+                      : demoKey
                       ? t("developer.demoKeyReady", {
                           defaultValue:
                             "Your demo key is ready. It works for 24 hours and 50 requests, then sign up for a real key.",
@@ -1024,18 +1167,36 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
                             : t("developer.copy", { defaultValue: "Copy" })}
                         </button>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      <div className="flex items-center gap-3 text-xs flex-wrap">
                         {demoKeyExpiresAt && (
-                          <span className="whitespace-nowrap" data-testid="demo-key-expiry">
+                          <span
+                            className={`whitespace-nowrap ${demoKeyExpired ? "text-red-400 font-semibold" : "text-muted-foreground"}`}
+                            data-testid="demo-key-expiry"
+                          >
                             {formatDemoKeyExpiry(demoKeyExpiresAt)}
                           </span>
                         )}
                         {demoKeyQuotaRemaining !== null && (
-                          <span className="whitespace-nowrap">
-                            {t("developer.demoKeyQuota", {
-                              defaultValue: "{{remaining}} requests left",
-                              remaining: demoKeyQuotaRemaining,
-                            })}
+                          <span
+                            className={`whitespace-nowrap ${
+                              demoKeyExhausted || demoKeyQuotaRemaining === 0
+                                ? "text-red-400 font-semibold"
+                                : demoKeyQuotaRemaining <= 10
+                                ? "text-yellow-400 font-semibold"
+                                : "text-muted-foreground"
+                            }`}
+                            data-testid="demo-key-quota-remaining"
+                          >
+                            {demoKeyQuota !== null
+                              ? t("developer.demoKeyQuotaOf", {
+                                  defaultValue: "{{remaining}} of {{quota}} requests left",
+                                  remaining: demoKeyQuotaRemaining,
+                                  quota: demoKeyQuota,
+                                })
+                              : t("developer.demoKeyQuota", {
+                                  defaultValue: "{{remaining}} requests left",
+                                  remaining: demoKeyQuotaRemaining,
+                                })}
                           </span>
                         )}
                       </div>
@@ -1076,7 +1237,14 @@ export default function DeveloperDashboard({ onBack, onUpgrade, previewMode }: {
                 </button>
               </div>
             )}
-            <CodeSnippet apiKey={previewMode ? demoKey : newKeyValue} />
+            {previewMode && demoKey && (demoKeyExhausted || demoKeyExpired) ? (
+              <DemoKeySignUpCta
+                kind={demoKeyExpired ? "expired" : "exhausted"}
+                onSignUp={onBack}
+              />
+            ) : (
+              <CodeSnippet apiKey={previewMode ? demoKey : newKeyValue} />
+            )}
           </div>
 
           <div className="bg-card/50 border border-border/50 rounded-xl p-6 backdrop-blur-md">

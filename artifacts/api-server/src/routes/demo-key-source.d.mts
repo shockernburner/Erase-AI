@@ -39,3 +39,23 @@ export interface CreateDemoKeyHandlerDeps {
 export function createDemoKeyHandler(
   deps: CreateDemoKeyHandlerDeps,
 ): RequestHandler;
+
+export function isWellFormedDemoKey(token: unknown): boolean;
+
+export interface DemoKeyStatusRow {
+  id: string;
+  revokedAt: Date | null;
+  expiresAt: Date | null;
+  requestQuota: number | null;
+}
+
+export interface CreateDemoKeyStatusHandlerDeps {
+  findApiKeyByHash: (keyHash: string) => Promise<DemoKeyStatusRow | null>;
+  countUsage: (apiKeyId: string) => Promise<number>;
+  hashApiKey: (token: string) => string;
+  now?: () => number;
+}
+
+export function createDemoKeyStatusHandler(
+  deps: CreateDemoKeyStatusHandlerDeps,
+): RequestHandler;

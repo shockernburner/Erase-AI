@@ -1,13 +1,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, apiKeysTable } from "@workspace/db";
-import { and, eq, gte } from "drizzle-orm";
-import { generateApiKey } from "../middlewares/apiKeyMiddleware";
+import { db, apiKeysTable, apiUsageTable } from "@workspace/db";
+import { and, eq, gte, sql } from "drizzle-orm";
+import { generateApiKey, hashApiKey } from "../middlewares/apiKeyMiddleware";
 import { ipBurstLimit } from "../middlewares/burstLimitMiddleware";
 import { hashIp } from "../lib/security/burst-limiter.mjs";
 import { logger } from "../lib/logger";
 import { pruneExpiredDemoKeysOnce } from "../lib/demoKeyCleanup";
 import {
   createDemoKeyHandler,
+  createDemoKeyStatusHandler,
   DEMO_USER_ID,
   DEMO_KEY_TTL_MS,
   DEMO_KEY_REQUEST_QUOTA,
@@ -89,5 +90,39 @@ router.post("/demo-key/cleanup", async (req: Request, res: Response) => {
     });
   }
 });
+
+// Task #160 — non-mutating live status read for an issued demo key.
+// The developer preview polls this every ~10s to keep the
+// "X of 50 requests left" badge accurate and to swap the curl panel
+// for a sign-up CTA the moment the key is exhausted or expires.
+//
+// This is intentionally a separate handler (not piggybacked on
+// apiKeyAuth) so that polling never consumes any of the key's 50-request
+// lifetime budget. The shared TTL/quota enforcer in apiKeyMiddleware
+// remains the single canonical writer of api_usage rows.
+const demoKeyStatusHandler = createDemoKeyStatusHandler({
+  hashApiKey,
+  async findApiKeyByHash(keyHash: string) {
+    const [row] = await db
+      .select({
+        id: apiKeysTable.id,
+        revokedAt: apiKeysTable.revokedAt,
+        expiresAt: apiKeysTable.expiresAt,
+        requestQuota: apiKeysTable.requestQuota,
+      })
+      .from(apiKeysTable)
+      .where(eq(apiKeysTable.keyHash, keyHash));
+    return row ?? null;
+  },
+  async countUsage(apiKeyId: string) {
+    const [usage] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(apiUsageTable)
+      .where(eq(apiUsageTable.apiKeyId, apiKeyId));
+    return usage?.count ?? 0;
+  },
+});
+
+router.get("/demo-key/status", ipBurstLimit(), demoKeyStatusHandler);
 
 export default router;

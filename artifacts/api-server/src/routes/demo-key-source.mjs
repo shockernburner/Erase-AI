@@ -27,6 +27,128 @@ export function buildCurlExample(origin, key) {
   -F "file=@dataset.csv"`;
 }
 
+// Task #160 — non-mutating live status read for a demo key. Lets the
+// developer preview poll quotaRemaining + expiresAt without consuming
+// any of the key's 50-request lifetime budget. Returns the canonical
+// DEMO_KEY_EXPIRED / DEMO_KEY_QUOTA_EXCEEDED codes (same vocabulary as
+// the auth-time enforcer) so the UI can wire one switch on `code`.
+
+const WELL_FORMED_KEY = /^eak_[A-Za-z0-9_-]{8,}$/;
+
+export function isWellFormedDemoKey(token) {
+  return typeof token === "string" && WELL_FORMED_KEY.test(token);
+}
+
+/**
+ * @param {object} deps
+ * @param {(keyHash: string) => Promise<null | {
+ *   id: string,
+ *   revokedAt: Date|null,
+ *   expiresAt: Date|null,
+ *   requestQuota: number|null,
+ * }>} deps.findApiKeyByHash
+ * @param {(apiKeyId: string) => Promise<number>} deps.countUsage
+ * @param {(token: string) => string} deps.hashApiKey
+ * @param {() => number} [deps.now]
+ */
+export function createDemoKeyStatusHandler({
+  findApiKeyByHash,
+  countUsage,
+  hashApiKey,
+  now = () => Date.now(),
+}) {
+  if (
+    typeof findApiKeyByHash !== "function" ||
+    typeof countUsage !== "function" ||
+    typeof hashApiKey !== "function"
+  ) {
+    throw new Error(
+      "createDemoKeyStatusHandler requires { findApiKeyByHash, countUsage, hashApiKey }",
+    );
+  }
+
+  return async function demoKeyStatusHandler(req, res) {
+    const authHeader = req.headers?.authorization;
+    if (typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({
+        error: "Missing or invalid Authorization header. Use: Bearer <demo key>",
+        code: "AUTH_REQUIRED",
+      });
+      return;
+    }
+    const token = authHeader.slice(7).trim();
+    if (!token) {
+      res.status(401).json({ error: "API key is empty", code: "AUTH_INVALID_FORMAT" });
+      return;
+    }
+    if (!isWellFormedDemoKey(token)) {
+      res.status(401).json({
+        error: "API key format is invalid. Expected an eak_… key.",
+        code: "AUTH_INVALID_FORMAT",
+      });
+      return;
+    }
+
+    const keyHash = hashApiKey(token);
+    let apiKey;
+    try {
+      apiKey = await findApiKeyByHash(keyHash);
+    } catch {
+      res.status(500).json({
+        error: "Could not read demo key status right now. Please try again shortly.",
+        code: "DEMO_KEY_STATUS_FAILED",
+      });
+      return;
+    }
+    if (!apiKey) {
+      res.status(401).json({ error: "Demo key not recognized", code: "AUTH_INVALID_KEY" });
+      return;
+    }
+    if (apiKey.revokedAt) {
+      res.status(401).json({ error: "Demo key has been revoked", code: "AUTH_REVOKED_KEY" });
+      return;
+    }
+    if (apiKey.requestQuota == null) {
+      res.status(400).json({
+        error: "This endpoint only reports status for demo keys.",
+        code: "NOT_A_DEMO_KEY",
+      });
+      return;
+    }
+
+    let used = 0;
+    try {
+      used = await countUsage(apiKey.id);
+    } catch {
+      // Treat a counter read failure as 0 used; the auth-time enforcer
+      // is still the source of truth that blocks usage. We never want a
+      // status poll to falsely report exhaustion.
+      used = 0;
+    }
+
+    const quota = apiKey.requestQuota;
+    const remaining = Math.max(0, quota - used);
+    const expiresAtMs = apiKey.expiresAt ? apiKey.expiresAt.getTime() : null;
+    const expired = expiresAtMs != null && expiresAtMs <= now();
+    const exhausted = !expired && used >= quota;
+    const code = expired
+      ? "DEMO_KEY_EXPIRED"
+      : exhausted
+      ? "DEMO_KEY_QUOTA_EXCEEDED"
+      : "DEMO_KEY_OK";
+
+    res.json({
+      quota,
+      used,
+      quotaRemaining: remaining,
+      expiresAt: apiKey.expiresAt ? apiKey.expiresAt.toISOString() : null,
+      expired,
+      exhausted,
+      code,
+    });
+  };
+}
+
 /**
  * Build the demo-key Express handler.
  *
