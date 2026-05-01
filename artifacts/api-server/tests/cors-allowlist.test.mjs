@@ -82,6 +82,36 @@ describe("buildAllowedOrigins", () => {
     assert.equal(set.has("http://eraseai.ai"), false, "http:// must not match https://");
     assert.equal(set.has("chrome-extension://other-extension-id"), false);
   });
+
+  // Task #157 — once the extension is published to the Chrome Web Store
+  // (and Edge / Firefox), the Store assigns its own permanent ID. The
+  // pinned dev unpacked ID must keep working alongside the published
+  // ID(s) so engineers can keep dev-loading against the live api-server.
+  test("accepts a list of additional published extension IDs alongside the pinned dev ID", () => {
+    const cwsId = "abcdefghijklmnopabcdefghijklmnop"; // CWS-style 32 lowercase a-p
+    const edgeId = "ponmlkjihgponmlkjihgponmlkjihgpo";
+    const set = buildAllowedOrigins({
+      extensionIds: [cwsId, "  ", edgeId, ""],
+    });
+    // Pinned dev ID still allowed.
+    assert.ok(set.has(`chrome-extension://${PINNED_EXTENSION_ID}`));
+    assert.ok(set.has(`moz-extension://${PINNED_EXTENSION_ID}`));
+    // Published IDs added too.
+    assert.ok(set.has(`chrome-extension://${cwsId}`));
+    assert.ok(set.has(`moz-extension://${cwsId}`));
+    assert.ok(set.has(`chrome-extension://${edgeId}`));
+    assert.ok(set.has(`moz-extension://${edgeId}`));
+    // Empty / whitespace entries silently dropped — no chrome-extension:// origin.
+    assert.equal(set.has("chrome-extension://"), false);
+    assert.equal(set.has("chrome-extension://  "), false);
+  });
+
+  test("a non-array extensionIds value is silently ignored (defensive)", () => {
+    // Belt-and-braces: misconfigured env var read shouldn't crash the server.
+    const set = buildAllowedOrigins({ extensionIds: "not-an-array" });
+    assert.ok(set.has(`chrome-extension://${PINNED_EXTENSION_ID}`));
+    assert.equal(set.has("chrome-extension://not-an-array"), false);
+  });
 });
 
 describe("isOriginAllowed", () => {

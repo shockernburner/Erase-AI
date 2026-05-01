@@ -11,7 +11,7 @@ globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
-async function packExtensionZip(distDir) {
+export async function packExtensionZip(distDir) {
   const extensionDir = path.resolve(artifactDir, "../../extension");
   try {
     await access(extensionDir);
@@ -64,16 +64,43 @@ async function packExtensionZip(distDir) {
   // 2) Store-upload zip — flat layout with manifest.json at the zip root.
   //    This is the package shape required by the Chrome Web Store, the Edge
   //    Add-ons store, and Firefox AMO. Upload this file to the store dashboards.
+  //
+  //    The Chrome Web Store rejects any upload whose manifest carries a
+  //    `key` field with "key field is not allowed in manifest". Our source
+  //    manifest deliberately keeps `key` so the unpacked dev install always
+  //    resolves to the pinned extension ID (see PUBLISHING.md § 0). We strip
+  //    it from the store zip only — the manual-install zip above keeps it,
+  //    so dev "Load unpacked" continues to work.
   const storeZip = new AdmZip();
-  storeZip.addLocalFolder(extensionDir, "", includeFilter);
+  storeZip.addLocalFolder(extensionDir, "", (filename) => {
+    if (!includeFilter(filename)) return false;
+    // Exclude manifest.json; we add a stripped copy below.
+    if (filename === "manifest.json" || filename.endsWith("/manifest.json")) return false;
+    return true;
+  });
+  const storeManifest = { ...manifest };
+  if ("key" in storeManifest) delete storeManifest.key;
+  const storeManifestBuf = Buffer.from(JSON.stringify(storeManifest, null, 2) + "\n", "utf8");
+  storeZip.addFile("manifest.json", storeManifestBuf);
   const storeEntryCount = storeZip.getEntries().length;
   if (storeEntryCount === 0) {
     throw new Error(`[build] extension folder ${extensionDir} produced an empty store zip — aborting build.`);
   }
+  // Belt-and-braces: the whole point of this branch is that the upload
+  // succeeds. Re-parse the manifest entry we just inserted and abort the
+  // build loudly if `key` ever leaks back in (e.g. via a future refactor).
+  const writtenManifestEntry = storeZip.getEntry("manifest.json");
+  if (!writtenManifestEntry) {
+    throw new Error(`[build] store zip is missing manifest.json after rebuild — aborting build.`);
+  }
+  const writtenManifest = JSON.parse(writtenManifestEntry.getData().toString("utf8"));
+  if ("key" in writtenManifest) {
+    throw new Error(`[build] store zip manifest.json still contains a "key" field — Chrome Web Store will reject the upload. Aborting.`);
+  }
   const storeFilename = `eraseai-firewall-store-${version}.zip`;
   const storeOutPath = path.resolve(distDir, storeFilename);
   storeZip.writeZip(storeOutPath);
-  console.log(`[build] packed store-upload extension to ${storeOutPath} (${storeEntryCount} entries)`);
+  console.log(`[build] packed store-upload extension to ${storeOutPath} (${storeEntryCount} entries, key field stripped from manifest)`);
 
   // Metadata sidecar consumed by /api/extension/version and
   // /api/extension/download. The download route serves the manual-install
@@ -216,7 +243,14 @@ async function buildAndPack() {
   await packExtensionZip(distDir);
 }
 
-buildAndPack().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Only run the full build when invoked directly (e.g. `node build.mjs` or
+// `pnpm run build`). When this module is imported (e.g. by a test that
+// only wants `packExtensionZip`), the import is side-effect free.
+const invokedDirectly = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) {
+  buildAndPack().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

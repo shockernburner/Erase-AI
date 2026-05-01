@@ -4,6 +4,7 @@ export const PINNED_EXTENSION_ID: string;
 
 export function buildAllowedOrigins(opts?: {
   extensionId?: string | null;
+  extensionIds?: string[] | null;
   devOrigins?: string[];
 }): Set<string>;
 

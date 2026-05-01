@@ -151,7 +151,60 @@ compromised.
      at the zip root. **This is the file you upload to every store.**
 
 5. Verify the store zip by extracting it locally and confirming `manifest.json`
-   is at the root (not inside an `extension/` folder).
+   is at the root (not inside an `extension/` folder) **and** that it has
+   no `key` field (see § 1a below).
+
+---
+
+## 1a. Why the store zip must not contain `manifest.key`
+
+The Chrome Web Store rejects any upload whose `manifest.json` carries a
+`key` field with the error **"key field is not allowed in manifest"**.
+Edge Add-ons and Firefox AMO behave the same way.
+
+Our source `manifest.json` deliberately keeps `key` so the unpacked dev
+install always resolves to the pinned extension ID
+(`bhcdkolfchcihbiakkbkfpfpempgdgji`) and the api-server CORS allow-list
+keeps working in dev (see § 0). The build pipeline therefore strips the
+`key` field from the **store-upload zip only**:
+
+| Zip | Layout | `manifest.key` | Purpose |
+| --- | --- | --- | --- |
+| `eraseai-firewall-<v>.zip` | `extension/` folder | **kept** | Manual install via "Load unpacked"; pinned dev ID |
+| `eraseai-firewall-store-<v>.zip` | flat (manifest at root) | **stripped** | Upload to Chrome Web Store / Edge Add-ons / Firefox AMO |
+
+This stripping happens automatically inside `packExtensionZip` in
+`artifacts/api-server/build.mjs`. The build also re-parses the rewritten
+`manifest.json` and aborts loudly if `key` is somehow still present
+(`store zip manifest.json still contains a "key" field — Chrome Web
+Store will reject the upload. Aborting.`), so a future refactor can't
+silently regress the contract. The `extension-store-zip` test in
+`artifacts/api-server/tests/extension-store-zip.test.mjs` pins the
+behaviour at CI time as well.
+
+**Reminder:** never zip the `extension/` folder by hand for upload —
+`zip -r foo.zip extension/` produces a working dev zip but a Web-Store-
+rejecting upload zip. Always use `pnpm --filter @workspace/api-server run
+build` and upload the `…-store-<v>.zip` it produces.
+
+### After the first publish: allow-listing the published extension ID
+
+Once the Chrome Web Store assigns the published extension a permanent
+ID, that ID is **different** from the dev unpacked ID we pin via `key`.
+The api-server CORS allow-list accepts both via the
+`PUBLISHED_EXTENSION_IDS` environment variable
+(`artifacts/api-server/src/middlewares/corsMiddleware.ts`):
+
+```sh
+# Comma-separated; supports the Edge and Firefox IDs too once those
+# stores assign them.
+PUBLISHED_EXTENSION_IDS=ohejlkkojlfajopmoeppdgnchpkjojfm,abcdefghijklmnopabcdefghijklmnop
+```
+
+Set this on the api-server's production environment after each store
+goes live (Chrome → Edge → Firefox) and redeploy. The dev unpacked ID
+stays in the allow-list automatically — no risk of orphaning local
+development.
 
 ---
 
@@ -321,7 +374,7 @@ for the full contract.
       (`bhcdkolfchcihbiakkbkfpfpempgdgji`); never edit it casually (see § 0)
 - [ ] Add a matching entry to `extension/CHANGELOG.json`
 - [ ] `pnpm --filter @workspace/api-server run build`
-- [ ] Verify `dist/eraseai-firewall-store-<version>.zip` has `manifest.json` at root
+- [ ] Verify `dist/eraseai-firewall-store-<version>.zip` has `manifest.json` at root **and** no `key` field (the build will already abort if `key` slipped through; this is just a final eyeball — see § 1a)
 - [ ] Smoke-test "Load unpacked" against `/extension` and confirm Chrome
       assigns the pinned ID `bhcdkolfchcihbiakkbkfpfpempgdgji`
 - [ ] Upload to Chrome Web Store dashboard, submit for review
