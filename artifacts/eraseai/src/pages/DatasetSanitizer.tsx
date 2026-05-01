@@ -39,6 +39,11 @@ import {
   Columns3,
 } from "lucide-react";
 
+import {
+  SAMPLE_DATASET_FILENAME,
+  SAMPLE_FEEDBACK_ROWS,
+} from "@/lib/sample-dataset";
+
 const BASE = import.meta.env.BASE_URL;
 
 interface DatasetRow {
@@ -207,25 +212,19 @@ const ISSUE_ICONS: Record<string, { icon: React.ReactNode; color: string; bg: st
 // the visitor to upload anything or call the backend.
 const PREVIEW_SAMPLE_DATASET: DatasetInfo = {
   id: -1,
-  name: "sample_customer_feedback.csv",
+  name: SAMPLE_DATASET_FILENAME,
   format: "csv",
   created_at: new Date().toISOString(),
 };
 
-const PREVIEW_SAMPLE_ROWS: DatasetRow[] = [
-  { id: 1, row_index: 0, content: "Great product, exceeded expectations!", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 2, row_index: 1, content: "Contact me at john.doe@example.com for follow-up.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 3, row_index: 2, content: "Customer service was helpful and professional.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 4, row_index: 3, content: "Call me at +1-555-123-4567 anytime.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 5, row_index: 4, content: "This is the worst! You guys are so stupid.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 6, row_index: 5, content: "Great product, exceeded expectations!", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 7, row_index: 6, content: "Shipping was on time and packaging was secure.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 8, row_index: 7, content: "I hate this product, it's an absolute disaster.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 9, row_index: 8, content: "Email support@example.com if you need help.", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 10, row_index: 9, content: "Five stars, would recommend to anyone!", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 11, row_index: 10, content: "", is_removed: false, is_redacted: false, removed_reason: null },
-  { id: 12, row_index: 11, content: "Five stars, would recommend to anyone!", is_removed: false, is_redacted: false, removed_reason: null },
-];
+const PREVIEW_SAMPLE_ROWS: DatasetRow[] = SAMPLE_FEEDBACK_ROWS.map((content, i) => ({
+  id: i + 1,
+  row_index: i,
+  content,
+  is_removed: false,
+  is_redacted: false,
+  removed_reason: null,
+}));
 
 const PREVIEW_SAMPLE_VERSIONS: VersionInfo[] = [
   { id: 1, version_number: 1, parent_version_id: null, created_at: new Date().toISOString() },
@@ -354,6 +353,8 @@ export function DatasetSanitizer({
     if (file) uploadFile(file);
     e.target.value = "";
   };
+
+  const sampleCsvUrl = `${BASE}${SAMPLE_DATASET_FILENAME}`;
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); };
   const handleDragLeave = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); };
@@ -715,6 +716,15 @@ export function DatasetSanitizer({
               })}
             </p>
           </div>
+          <a
+            href={sampleCsvUrl}
+            download={SAMPLE_DATASET_FILENAME}
+            data-testid="dataset-sanitizer-download-sample"
+            className="inline-flex items-center justify-center gap-1.5 shrink-0 h-8 px-3 rounded-md text-sm font-medium border border-border bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {t("dataset.downloadSample", { defaultValue: "Download sample dataset" })}
+          </a>
           <Button
             onClick={() => onNavigatePricing?.()}
             size="sm"
