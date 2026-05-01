@@ -378,6 +378,7 @@
     "download": "Download",
     "downloadClean": "Clean only",
     "downloadFull": "Full dataset",
+    "downloadSample": "Download sample dataset",
     "analyze": "Analyze",
     "analyzing": "Analyzing...",
     "analysisResults": "Analysis Results",

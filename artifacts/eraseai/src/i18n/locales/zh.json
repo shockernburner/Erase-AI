@@ -378,6 +378,7 @@
     "download": "下载",
     "downloadClean": "仅清洗数据",
     "downloadFull": "完整数据集",
+    "downloadSample": "下载示例数据集",
     "analyze": "分析",
     "analyzing": "分析中...",
     "analysisResults": "分析结果",

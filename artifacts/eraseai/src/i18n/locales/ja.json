@@ -378,6 +378,7 @@
     "download": "ダウンロード",
     "downloadClean": "クリーンのみ",
     "downloadFull": "全データセット",
+    "downloadSample": "サンプルデータセットをダウンロード",
     "analyze": "分析",
     "analyzing": "分析中...",
     "analysisResults": "分析結果",
