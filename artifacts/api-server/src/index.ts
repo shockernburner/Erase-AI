@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDemoData } from "./seed";
 import { runStartupMigrations } from "./migrations";
+import { startDemoKeyCleanupSchedule } from "./lib/demoKeyCleanup";
 
 const rawPort = process.env["PORT"];
 
@@ -26,6 +27,10 @@ const server = app.listen(port, async (err) => {
   logger.info({ port }, "Server listening");
   await runStartupMigrations();
   await seedDemoData();
+  // Task #161 — kick off the nightly cleanup of expired
+  // public-visitor demo API keys. Runs once shortly after startup
+  // and then every 24h thereafter.
+  startDemoKeyCleanupSchedule();
 });
 
 server.on("error", (err: NodeJS.ErrnoException) => {

@@ -1,10 +1,11 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { db, apiKeysTable } from "@workspace/db";
 import { and, eq, gte } from "drizzle-orm";
 import { generateApiKey } from "../middlewares/apiKeyMiddleware";
 import { ipBurstLimit } from "../middlewares/burstLimitMiddleware";
 import { hashIp } from "../lib/security/burst-limiter.mjs";
 import { logger } from "../lib/logger";
+import { pruneExpiredDemoKeysOnce } from "../lib/demoKeyCleanup";
 import {
   createDemoKeyHandler,
   DEMO_USER_ID,
@@ -57,5 +58,36 @@ const demoKeyHandler = createDemoKeyHandler({
 });
 
 router.post("/demo-key", ipBurstLimit(), demoKeyHandler);
+
+// Task #161 — admin-only manual trigger for the nightly demo-key
+// cleanup. The cleanup also runs automatically on a 24h timer (see
+// `lib/demoKeyCleanup.ts`); this endpoint exists so an operator (or
+// an external cloud scheduler hitting it with an admin session) can
+// force a pass without waiting for the next interval.
+router.post("/demo-key/cleanup", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  const userRole = (req.user as { role?: string } | undefined)?.role;
+  if (userRole !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+  try {
+    const { deletedCount, cutoff } = await pruneExpiredDemoKeysOnce();
+    res.json({
+      ok: true,
+      deletedCount,
+      cutoff: cutoff.toISOString(),
+    });
+  } catch (err) {
+    logger.error({ err }, "Manual demo-key cleanup failed");
+    res.status(500).json({
+      error: "Demo-key cleanup failed",
+      code: "DEMO_KEY_CLEANUP_FAILED",
+    });
+  }
+});
 
 export default router;
