@@ -217,14 +217,17 @@ function looksLikeCredentialValue(value) {
   return true;
 }
 
-function pushCasualSecretIssues(text, issues) {
+// Walk CASUAL_SECRET_PATTERNS and yield validated {start,end,match,parsed}
+// entries with overlapping matches deduped (longer/multi-word wins).
+// Shared by issue collection (pushCasualSecretIssues) and the storage-side
+// value masker (maskCasualSecretsInText) so both stay in lock-step with
+// the entropy / prose-denylist rules.
+function collectCasualSecretMatches(text) {
   const candidates = [];
   for (const cfg of CASUAL_SECRET_PATTERNS) {
     for (const m of findMatches(text, cfg.pattern)) {
       const parsed = parseCasualSecretMatch(m.match);
       if (!parsed) continue;
-      // Permissive for explicit assignment connectors; entropy-guarded
-      // for the natural-language "is"/"are".
       if (parsed.connector === "is" || parsed.connector === "are") {
         if (!looksLikeCredentialValue(parsed.value)) continue;
       }
@@ -234,18 +237,60 @@ function pushCasualSecretIssues(text, issues) {
         match: m.match,
         severity: cfg.severity,
         detail: cfg.detail,
+        parsed,
       });
     }
   }
-  // Dedupe overlapping matches (multi-word pattern should win over the
-  // narrower single-word one when both fire on the same span). Sort by
-  // start asc, then by length desc so the longer match is kept first.
   candidates.sort(
     (a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start),
   );
+  const kept = [];
   let lastEnd = -1;
   for (const c of candidates) {
     if (c.start < lastEnd) continue;
+    kept.push(c);
+    lastEnd = c.end;
+  }
+  return kept;
+}
+
+// Storage-side helper (task #173). Replaces the disclosed credential
+// VALUE with `***` while leaving the surrounding noun phrase intact, so
+// the redacted scan history reads "my api key is ***" instead of
+// persisting the raw secret. The noun phrase is intentionally preserved
+// so users browsing their own scan history can still tell what kind of
+// disclosure was caught.
+export function maskCasualSecretsInText(text) {
+  const matches = collectCasualSecretMatches(text);
+  if (matches.length === 0) return text;
+  const spans = [];
+  for (const c of matches) {
+    // Locate the value substring inside the original match span. We
+    // search from the right so a value that incidentally repeats text
+    // earlier in the noun phrase still resolves to the trailing copy.
+    const idxInMatch = c.match.lastIndexOf(c.parsed.value);
+    if (idxInMatch < 0) continue;
+    const valueStart = c.start + idxInMatch;
+    const valueEnd = valueStart + c.parsed.value.length;
+    spans.push({ start: valueStart, end: valueEnd });
+  }
+  spans.sort((a, b) => a.start - b.start);
+  let out = "";
+  let cursor = 0;
+  for (const s of spans) {
+    if (s.start < cursor) continue;
+    out += text.slice(cursor, s.start) + "***";
+    cursor = s.end;
+  }
+  out += text.slice(cursor);
+  return out;
+}
+
+function pushCasualSecretIssues(text, issues) {
+  // collectCasualSecretMatches() already validates + dedupes overlaps
+  // (multi-word noun phrases win over single-word ones), so we can just
+  // map straight into the issue shape.
+  for (const c of collectCasualSecretMatches(text)) {
     issues.push({
       category: "secret_exposure",
       severity: c.severity,
@@ -254,7 +299,6 @@ function pushCasualSecretIssues(text, issues) {
       start: c.start,
       end: c.end,
     });
-    lastEnd = c.end;
   }
 }
 

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
 import { refreshPlanFromDB } from "../middlewares/planMiddleware";
-import { maskSecret } from "../lib/dev/secrets";
+import { redactInputForStorage } from "../lib/dev/store-redact";
 import { hashApiKey, enforceApiKeyTtlAndQuota } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
 import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
@@ -235,16 +235,6 @@ const burstChain = [apiKeyBurstLimit()];
 const quotaChain = [trackApiUsage(), apiRateLimit()];
 
 const FREE_DAILY_LIMIT = 10;
-
-function redactInputForStorage(text: string): string {
-  let redacted = text.substring(0, 500);
-  redacted = redacted.replace(/\b(sk-|ghp_|xoxb-|pk_live_|sk_live_|AKIA)[A-Za-z0-9_\-]{8,}/g, (m) => maskSecret(m));
-  redacted = redacted.replace(/(postgres(ql)?|mysql|mongodb(\+srv)?|redis):\/\/[^\s'"]+/gi, "[DB_URL_REDACTED]");
-  redacted = redacted.replace(/-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END/g, "[PRIVATE_KEY_REDACTED]");
-  redacted = redacted.replace(/eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_\-]{10,}/g, "[JWT_REDACTED]");
-  if (text.length > 500) redacted += "...";
-  return redacted;
-}
 
 async function getDailyUsageCount(userId: string): Promise<number> {
   const todayStart = new Date();

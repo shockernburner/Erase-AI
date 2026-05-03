@@ -28,3 +28,4 @@ export interface SafetyResult {
 }
 
 export function analyzePromptSafety(text: string): SafetyResult;
+export function maskCasualSecretsInText(text: string): string;
