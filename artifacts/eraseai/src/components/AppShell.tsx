@@ -35,6 +35,7 @@ export type AppView =
   | "developer"
   | "analytics"
   | "personal"
+  | "datasetSanitizer"
   | "social"
   | "adContent"
   | "docs"
@@ -191,6 +192,8 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const isAdmin = user?.role === "admin";
   const isOwner = user?.email === ADMIN_EMAIL;
+  const plan = user?.planType || "free";
+  const isPaidDev = plan === "pro" || plan === "business" || plan === "enterprise";
 
   useEffect(() => {
     try {
@@ -213,12 +216,15 @@ export function AppShell({
       label: t("appShell.groupFirewall", { defaultValue: "Firewall" }),
       items: [
         { id: "firewallHub", labelKey: "appShell.firewallHub", icon: <Shield className="w-4 h-4" />, match: ["firewallHub", "firewallDocs", "publishingChecklist"] },
+        ...(isPaidDev
+          ? [{ id: "developer" as AppView, labelKey: "appShell.devKeys", icon: <LayoutDashboard className="w-4 h-4" />, match: ["developer"] as AppView[] }]
+          : []),
       ],
     },
     {
       label: t("appShell.groupSanitizers", { defaultValue: "Dataset Sanitizers" }),
       items: [
-        { id: "developer", labelKey: "appShell.sanitizerHome", icon: <Database className="w-4 h-4" />, match: ["developer", "home"] },
+        { id: "datasetSanitizer", labelKey: "appShell.sanitizerHome", icon: <Database className="w-4 h-4" />, match: ["datasetSanitizer", "home"] },
       ],
     },
     {
@@ -242,7 +248,7 @@ export function AppShell({
         { id: "contact", labelKey: "nav.contact", icon: <Phone className="w-4 h-4" />, match: ["contact"] },
       ],
     },
-  ], [t]);
+  ], [t, isPaidDev]);
 
   const adminGroup = useMemo<{ label: string; items: NavItem[] } | null>(() => {
     if (!isAdmin) return null;

@@ -252,7 +252,7 @@ function getDefaultViewForPlan(planType: string | undefined): AppView {
     case "enterprise":
       return "analytics";
     default:
-      return "home";
+      return "datasetSanitizer";
   }
 }
 
@@ -269,7 +269,7 @@ function AuthGate() {
       return "checkout-success";
     }
     const viewParam = params.get("view");
-    const allowedDeepLinks: AppView[] = ["developer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub"];
+    const allowedDeepLinks: AppView[] = ["developer", "datasetSanitizer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub"];
     if (viewParam && (allowedDeepLinks as string[]).includes(viewParam)) {
       return viewParam as AppView;
     }
@@ -293,10 +293,7 @@ function AuthGate() {
     if (isAuthenticated && user && !initialViewSet && view === "home") {
       const params = new URLSearchParams(window.location.search);
       if (!params.get("admin") && !params.get("checkout")) {
-        const plan = user.planType || "free";
-        if (plan !== "free") {
-          setView(getDefaultViewForPlan(plan));
-        }
+        setView(getDefaultViewForPlan(user.planType));
       }
       setInitialViewSet(true);
     }
@@ -387,6 +384,9 @@ function AuthGate() {
     case "personal":
       inner = <PersonalMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
       break;
+    case "datasetSanitizer":
+      inner = <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
+      break;
     case "social":
       inner = <SocialPosts onBack={() => setView("home")} />;
       break;
@@ -436,8 +436,28 @@ function AuthGate() {
     case "contact":
       inner = <ContactPage onBack={() => setView("home")} />;
       break;
+    case "home": {
+      const planDefault = getDefaultViewForPlan(user?.planType);
+      if (planDefault !== "home") {
+        inner = (() => {
+          switch (planDefault) {
+            case "personal":
+              return <PersonalMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+            case "developer":
+              return <DeveloperDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+            case "analytics":
+              return <AnalyticsDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+            default:
+              return <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
+          }
+        })();
+      } else {
+        inner = <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
+      }
+      break;
+    }
     default:
-      inner = <Home onNavigate={setView} />;
+      inner = <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
   }
 
   return (
