@@ -1,4 +1,4 @@
-# Airwallex Payment Gateway — Integration Guide
+1,# Airwallex Payment Gateway — Integration Guide
 
 A drop-in recipe for integrating **Airwallex Hosted Payment Page** (drop-in checkout via the Components SDK) into a TypeScript / Express + React app. This is the exact pattern that ships in production at eraseai.ai.
 
