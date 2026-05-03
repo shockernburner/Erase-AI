@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DIR = path.resolve(__dirname, "..", "src");
+const CONFIG_SRC = fs.readFileSync(path.join(SRC_DIR, "concurrency-config.js"), "utf8");
 const EXTRACTOR_SRC = fs.readFileSync(path.join(SRC_DIR, "file-extractor.js"), "utf8");
 const CONTENT_SRC = fs.readFileSync(path.join(SRC_DIR, "content.js"), "utf8");
 
@@ -98,6 +99,8 @@ function makeChromeStub({ enabled = true, apiKey = "eak_test" } = {}) {
 function loadEraseAI(chromeStub) {
   globalThis.chrome = chromeStub;
   if (!document.execCommand) document.execCommand = () => true;
+  // eslint-disable-next-line no-eval
+  (0, eval)(CONFIG_SRC);
   // eslint-disable-next-line no-eval
   (0, eval)(EXTRACTOR_SRC);
   // eslint-disable-next-line no-eval

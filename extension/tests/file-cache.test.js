@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { analyzePromptSafety } from "../../artifacts/api-server/src/lib/dev/safety-source.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DIR = path.resolve(__dirname, "..", "src");
@@ -410,4 +411,89 @@ describe("file-cache + multi-piece scan", () => {
   // it here is fixed in #149 (afterEach now invokes
   // __eraseAIContentTeardown), but we keep that case in its existing
   // suite to avoid duplicating coverage.
+
+  // Task #174: casual credential phrases pasted into an attached file
+  // (a CSV cell or a .txt blob) must trip the same casual-credential
+  // rules as the typed-prompt path. The pipeline already routes every
+  // piece — prompt + each extracted file chunk — through the analyze
+  // port, so the same analyzePromptSafety() that catches "my api key
+  // is hunter2" in the composer must also catch it inside an attached
+  // .txt / .csv. We wire the *real* analyzer into the chrome stub's
+  // reply callback so this is a true end-to-end check, not a mock.
+  it("flags casual credential phrases inside an attached .txt the same way it does typed prompts", async () => {
+    const fileBody = "release notes\nfyi my api key is hunter2 — please rotate after deploy\n";
+    const chromeStub = makeChromeStub({
+      reply: (msg) => analyzePromptSafety(msg.text || ""),
+    });
+
+    loadEraseAI(chromeStub);
+    await flushAsync();
+
+    const { textarea, fileInput } = setUpChatGPTComposer({
+      promptText: "summarise the attached release notes",
+    });
+    await flushAsync();
+
+    attachFile(fileInput, makeFile("notes.txt", fileBody, "text/plain"));
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync(20);
+
+    // Sanity: both pieces (prompt + file) made it to the analyzer.
+    const analyzeTexts = chromeStub.__analyzeMessages.map((m) => m.text);
+    expect(analyzeTexts.length).toBe(2);
+    expect(analyzeTexts.some((t) => t.includes("my api key is hunter2"))).toBe(true);
+
+    // Direct cross-check: the same phrase typed into the composer would
+    // be flagged with a "Credential disclosed" issue, so the file piece
+    // must produce the identical result when analyzePromptSafety runs
+    // against the extracted attachment text.
+    const direct = analyzePromptSafety(fileBody);
+    expect(direct.issues.some((i) => /Credential disclosed/.test(i.detail))).toBe(true);
+    expect(direct.level).not.toBe("safe");
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).toBeTruthy();
+    // Panel surfaces the file by name in the per-piece block and
+    // names the disclosure as the issue that tripped the warning.
+    expect(panel.textContent).toMatch(/notes\.txt/);
+    expect(panel.textContent).toMatch(/Credential disclosed/);
+    // Worst-level wins → the aggregate verdict is off "safe" so the
+    // user is forced into an explicit Send Anyway / Sanitize choice.
+    expect(panel.querySelector(".eraseai-score-section").className).toMatch(/danger|caution/);
+    expect(panel.querySelector("#eraseai-send-anyway")).toBeTruthy();
+    expect(panel.querySelector("#eraseai-clear-send")).toBeNull();
+  });
+
+  // CSV variant: same rule, different file type. Verifies the casual
+  // credential phrase is still caught when it lives inside a CSV cell
+  // rather than a free-form .txt body — the analyzer doesn't see the
+  // CSV structure, just the cell text the extractor lifted out.
+  it("flags casual credential phrases inside an attached .csv cell", async () => {
+    const csv = "ticket,note\nT-101,my api key is hunter2 please rotate\n";
+    const chromeStub = makeChromeStub({
+      reply: (msg) => analyzePromptSafety(msg.text || ""),
+    });
+
+    loadEraseAI(chromeStub);
+    await flushAsync();
+
+    const { textarea, fileInput } = setUpChatGPTComposer({
+      promptText: "look at this ticket",
+    });
+    await flushAsync();
+
+    attachFile(fileInput, makeFile("tickets.csv", csv, "text/csv"));
+    await flushAsync();
+    dispatchEnterOn(textarea);
+    await flushAsync(20);
+
+    const analyzeTexts = chromeStub.__analyzeMessages.map((m) => m.text);
+    expect(analyzeTexts.some((t) => t.includes("my api key is hunter2"))).toBe(true);
+
+    const panel = document.getElementById("eraseai-overlay-panel");
+    expect(panel).toBeTruthy();
+    expect(panel.textContent).toMatch(/tickets\.csv/);
+    expect(panel.textContent).toMatch(/Credential disclosed/);
+  });
 });
