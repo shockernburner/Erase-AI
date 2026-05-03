@@ -591,16 +591,6 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />
               {t("nav.seeHow")}
             </button>
-
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
-              <Globe className="w-3.5 h-3.5 text-primary" />
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              {t("nav.live")}
-            </div>
-
-            <LanguageSelector />
-            <FeedbackButton />
-            <UserMenu onNavigate={onNavigate} />
           </div>
         </motion.header>
 

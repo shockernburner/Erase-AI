@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import { extractProfileFile, type ProfileSection } from "@/lib/profile-extract";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1283,20 +1284,78 @@ export default function PersonalMode({
     analyzeMutation.mutate(text.trim());
   };
 
+  const [profileExtracting, setProfileExtracting] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSections, setProfileSections] = useState<ProfileSection[]>([]);
+  const [profileSectionResults, setProfileSectionResults] = useState<Record<string, ScanResult | { error: string }>>({});
+  const [profileTruncated, setProfileTruncated] = useState(false);
+  const [profileScanning, setProfileScanning] = useState<string | null>(null);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (e.target) e.target.value = "";
     if (!file) return;
-    try {
-      const content = await extractTextFromFile(file);
-      const truncated = content.substring(0, 5000);
-      setText(truncated);
-      setScanMode("profile");
-      setResult(null);
-      analyzeMutation.mutate(truncated);
-    } catch {
-      setText("");
+    if (previewMode) { onUpgrade(); return; }
+    if (file.size > 25 * 1024 * 1024) {
+      setProfileError(t("profileScan.fileTooLarge"));
+      return;
     }
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setProfileError(null);
+    setProfileSections([]);
+    setProfileSectionResults({});
+    setProfileTruncated(false);
+    setScanMode("profile");
+    setProfileExtracting(true);
+    try {
+      const { text: extracted, sections, warning } = await extractProfileFile(file);
+      setProfileTruncated(warning === "TRUNCATED");
+      const useSections: ProfileSection[] = sections.length > 0
+        ? sections
+        : [{ id: "full", label: t("profileScan.sectionTitle"), text: extracted.slice(0, 8000) }];
+      setProfileSections(useSections);
+      setText(extracted.slice(0, 5000));
+
+      for (const section of useSections) {
+        setProfileScanning(section.id);
+        try {
+          const sectionText = section.text.slice(0, 8000);
+          const res = await fetch(`${API_BASE}/personal/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ text: sectionText }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            if (data.upgrade) { onUpgrade(); break; }
+            if (data.limit && data.used) { setLimitError({ used: data.used, limit: data.limit }); break; }
+            setProfileSectionResults((prev) => ({ ...prev, [section.id]: { error: data.error || "scan failed" } }));
+            continue;
+          }
+          const sr = (await res.json()) as ScanResult;
+          setProfileSectionResults((prev) => ({ ...prev, [section.id]: sr }));
+          if (section === useSections[0]) {
+            setResult(sr);
+            setAnalysisText(sectionText);
+          }
+        } catch (err) {
+          setProfileSectionResults((prev) => ({
+            ...prev,
+            [section.id]: { error: err instanceof Error ? err.message : "scan failed" },
+          }));
+        }
+      }
+      setProfileScanning(null);
+      queryClient.invalidateQueries({ queryKey: ["personal-history"] });
+      queryClient.invalidateQueries({ queryKey: ["personal-trends"] });
+    } catch (err) {
+      const msg = err instanceof Error && err.message === "UNSUPPORTED_FILE_TYPE"
+        ? t("profileScan.unsupported")
+        : t("profileScan.extractFailed");
+      setProfileError(msg);
+    } finally {
+      setProfileExtracting(false);
+    }
   };
 
   const lastScore = historyQuery.data?.scans?.[0];
@@ -1479,10 +1538,110 @@ export default function PersonalMode({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".txt,.csv,.json,.jsonl"
+          accept=".pdf,.docx,.zip,.txt,.csv,.tsv,.json,.jsonl,.md,.log"
           onChange={handleFileUpload}
           className="hidden"
         />
+
+        {(profileExtracting || profileSections.length > 0 || profileError) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 bg-card/50 border border-primary/20 rounded-2xl p-6 backdrop-blur-md"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <UserCheck className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">{t("profileScan.title")}</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">{t("profileScan.subtitle")}</p>
+
+            {profileError && (
+              <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                {profileError}
+              </div>
+            )}
+
+            {profileExtracting && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                {t("profileScan.extracting")}
+              </div>
+            )}
+
+            {profileTruncated && (
+              <div className="mb-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-300/90">
+                {t("profileScan.truncatedNote")}
+              </div>
+            )}
+
+            {profileSections.length > 0 && (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {t("profileScan.sectionsFound", { count: profileSections.length })}
+                </p>
+                <div className="space-y-3">
+                  {profileSections.map((section) => {
+                    const sr = profileSectionResults[section.id];
+                    const isScanning = profileScanning === section.id;
+                    const hasError = sr && "error" in sr;
+                    const scan = sr && !("error" in sr) ? sr : null;
+                    return (
+                      <details
+                        key={section.id}
+                        className="bg-background/40 border border-border/30 rounded-xl overflow-hidden"
+                        open={!!scan && scan.flags.length > 0}
+                      >
+                        <summary className="cursor-pointer flex items-center gap-2 px-4 py-3 text-sm font-medium hover:bg-muted/20">
+                          <span className="flex-1 text-foreground">{section.label}</span>
+                          {isScanning && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                          {scan && (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                scan.level === "low"
+                                  ? "bg-emerald-500/15 text-emerald-400"
+                                  : scan.level === "medium"
+                                    ? "bg-yellow-500/15 text-yellow-400"
+                                    : "bg-red-500/15 text-red-400"
+                              }`}
+                            >
+                              {scan.riskScore}/100
+                            </span>
+                          )}
+                          {hasError && (
+                            <span className="text-xs text-destructive">!</span>
+                          )}
+                        </summary>
+                        <div className="px-4 pb-4 space-y-3">
+                          {scan && scan.flags.length === 0 && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                              {t("profileScan.noFlags")}
+                            </p>
+                          )}
+                          {scan && scan.flags.length > 0 && (
+                            <>
+                              <div className="space-y-2">
+                                {scan.flags.map((flag, i) => (
+                                  <FlagBadge key={i} flag={flag} />
+                                ))}
+                              </div>
+                              <RewritePanel
+                                text={section.text.slice(0, 8000)}
+                                flags={scan.flags}
+                                onUpgrade={onUpgrade}
+                                previewMode={previewMode}
+                              />
+                            </>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           {scanMode && (

@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, type ReactElement } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +20,10 @@ import ApiDocs from "@/pages/ApiDocs";
 import DevMode from "@/pages/DevMode";
 import Certifications from "@/pages/Certifications";
 import FirewallDocs from "@/pages/FirewallDocs";
+import FirewallHub from "@/pages/FirewallHub";
+import DocumentationsHub from "@/pages/DocumentationsHub";
+import BlogsHub from "@/pages/BlogsHub";
+import { AppShell, type AppView as ShellView } from "@/components/AppShell";
 import PublishingChecklist from "@/pages/PublishingChecklist";
 import TermsOfService from "@/pages/TermsOfService";
 import LicenseAgreement from "@/pages/LicenseAgreement";
@@ -132,7 +136,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "publishingChecklist" | "terms" | "license" | "privacy" | "contact";
+type AppView = ShellView;
 // Task #158 — `enterprise` and `dataset-sanitizer` both render the
 // Dataset Sanitizer (the "Try Enterprise" / "Try Business" landing
 // card now opens the sanitizer in preview mode rather than the
@@ -265,7 +269,7 @@ function AuthGate() {
       return "checkout-success";
     }
     const viewParam = params.get("view");
-    const allowedDeepLinks: AppView[] = ["developer", "firewallDocs", "publishingChecklist"];
+    const allowedDeepLinks: AppView[] = ["developer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub"];
     if (viewParam && (allowedDeepLinks as string[]).includes(viewParam)) {
       return viewParam as AppView;
     }
@@ -328,22 +332,6 @@ function AuthGate() {
     return <PublicLanding onPreview={setPreviewMode} />;
   }
 
-  if (view === "terms") {
-    return <TermsOfService onBack={() => setView("home")} onViewLicense={() => setView("license")} />;
-  }
-
-  if (view === "license") {
-    return <LicenseAgreement onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
-  }
-
-  if (view === "privacy") {
-    return <PrivacyPolicy onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
-  }
-
-  if (view === "contact") {
-    return <ContactPage onBack={() => setView("home")} />;
-  }
-
   if (termsAccepted === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -356,99 +344,117 @@ function AuthGate() {
   }
 
   const trialExpired = isTrialExpiredFrontend(user);
+  const isOwner = user?.email === "firdous.mahmood26@gmail.com";
+  const isAdmin = user?.role === "admin";
 
-  if (view === "admin" && user?.role !== "admin") {
-    return <Home onNavigate={setView} />;
+  // Compute the effective view, downgrading to "home" if the user lacks
+  // permission. This MUST happen before the switch so the unauthorized
+  // page never renders even for one frame.
+  let effectiveView: AppView = view;
+  if (effectiveView === "admin" && !isAdmin) effectiveView = "home";
+  if ((effectiveView === "social" || effectiveView === "adContent") && !(isAdmin && isOwner)) {
+    effectiveView = "home";
   }
 
-  if (view === "checkout-success") {
+  // Legal/contact pages must remain reachable even when the terms or trial
+  // gate is active so the user can read what they're being asked to accept.
+  const isLegalView =
+    effectiveView === "terms" ||
+    effectiveView === "license" ||
+    effectiveView === "privacy" ||
+    effectiveView === "contact";
+
+  if (effectiveView === "checkout-success") {
     return <CheckoutSuccess onDone={() => setView("home")} />;
   }
 
-  if (view === "pricing") {
+  if (effectiveView === "pricing") {
     return <PricingPage onBack={() => setView("home")} />;
   }
 
-  if (!termsAccepted) {
-    return (
-      <>
-        <Home onNavigate={setView} />
+  // Pages rendered inside the AppShell.
+  let inner: ReactElement;
+  switch (effectiveView) {
+    case "admin":
+      inner = <AdminDashboard onBack={() => setView("home")} />;
+      break;
+    case "developer":
+      inner = <DeveloperDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+      break;
+    case "analytics":
+      inner = <AnalyticsDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+      break;
+    case "personal":
+      inner = <PersonalMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
+      break;
+    case "social":
+      inner = <SocialPosts onBack={() => setView("home")} />;
+      break;
+    case "adContent":
+      inner = <AdContent onBack={() => setView("home")} />;
+      break;
+    case "docs":
+      inner = <ApiDocs onBack={() => setView("docsHub")} onUpgrade={() => setView("pricing")} onDevMode={() => setView("devMode")} />;
+      break;
+    case "devMode":
+      inner = <DevMode onBack={() => setView("docsHub")} onUpgrade={() => setView("pricing")} />;
+      break;
+    case "firewallDocs":
+      inner = (
+        <FirewallDocs
+          onBack={() => setView("firewallHub")}
+          onUpgrade={() => setView("pricing")}
+          onDevMode={() => setView("devMode")}
+          onOpenPublishing={() => setView("publishingChecklist")}
+        />
+      );
+      break;
+    case "firewallHub":
+      inner = <FirewallHub onNavigate={setView} />;
+      break;
+    case "docsHub":
+      inner = <DocumentationsHub onNavigate={setView} />;
+      break;
+    case "blogsHub":
+      inner = <BlogsHub />;
+      break;
+    case "publishingChecklist":
+      inner = <PublishingChecklist onBack={() => setView("firewallHub")} />;
+      break;
+    case "certifications":
+      inner = <Certifications onBack={() => setView("docsHub")} />;
+      break;
+    case "terms":
+      inner = <TermsOfService onBack={() => setView("home")} onViewLicense={() => setView("license")} />;
+      break;
+    case "license":
+      inner = <LicenseAgreement onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
+      break;
+    case "privacy":
+      inner = <PrivacyPolicy onBack={() => setView("home")} onViewTerms={() => setView("terms")} />;
+      break;
+    case "contact":
+      inner = <ContactPage onBack={() => setView("home")} />;
+      break;
+    default:
+      inner = <Home onNavigate={setView} />;
+  }
+
+  return (
+    <AppShell view={effectiveView} onNavigate={setView}>
+      {inner}
+      {!termsAccepted && !isLegalView && (
         <TermsAcceptanceModal
           onAccepted={() => setTermsAccepted(true)}
           onViewTerms={() => setView("terms")}
           onViewLicense={() => setView("license")}
         />
-      </>
-    );
-  }
-
-  if (trialExpired) {
-    return (
-      <>
-        <Home onNavigate={setView} />
+      )}
+      {trialExpired && !isLegalView && (
         <TrialExpiredModal onChoosePlan={() => setView("pricing")} onLogout={logout} />
-      </>
-    );
-  }
-
-  if (view === "admin") {
-    return <AdminDashboard onBack={() => setView("home")} />;
-  }
-
-  if (view === "developer") {
-    return <DeveloperDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-  }
-
-  if (view === "analytics") {
-    return <AnalyticsDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-  }
-
-  if (view === "personal") {
-    return <PersonalMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-  }
-
-  if (view === "social") {
-    if (user?.email !== "firdous.mahmood26@gmail.com") {
-      return <Home onNavigate={setView} />;
-    }
-    return <SocialPosts onBack={() => setView("home")} />;
-  }
-
-  if (view === "adContent") {
-    if (user?.email !== "firdous.mahmood26@gmail.com") {
-      return <Home onNavigate={setView} />;
-    }
-    return <AdContent onBack={() => setView("home")} />;
-  }
-
-  if (view === "docs") {
-    return <ApiDocs onBack={() => setView("home")} onUpgrade={() => setView("pricing")} onDevMode={() => setView("devMode")} />;
-  }
-
-  if (view === "devMode") {
-    return <DevMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-  }
-
-  if (view === "firewallDocs") {
-    return (
-      <FirewallDocs
-        onBack={() => setView("home")}
-        onUpgrade={() => setView("pricing")}
-        onDevMode={() => setView("devMode")}
-        onOpenPublishing={() => setView("publishingChecklist")}
-      />
-    );
-  }
-
-  if (view === "publishingChecklist") {
-    return <PublishingChecklist onBack={() => setView("firewallDocs")} />;
-  }
-
-  if (view === "certifications") {
-    return <Certifications onBack={() => setView("home")} />;
-  }
-
-  return <Home onNavigate={setView} />;
+      )}
+    </AppShell>
+  );
 }
 
 function App() {
