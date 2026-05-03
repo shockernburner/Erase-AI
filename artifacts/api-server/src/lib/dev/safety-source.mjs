@@ -176,27 +176,45 @@ function parseCasualSecretMatch(matchStr) {
   return null;
 }
 
-// Entropy heuristic for natural-language ("is"/"are") connectors. A
-// pure-letter token like "required" / "valid" / "public" / "strong" /
-// "optional" is prose, not a credential. We also have to reject:
-//   - prose with terminal punctuation ("valid.", "optional,",
-//     "public!") — strip surrounding quotes/brackets and trailing
-//     sentence punctuation before the entropy check so `.` `,` `!`
-//     don't get counted as "credential entropy".
-//   - Title Case single words ("Required", "Optional", "Paris") —
-//     these are still prose, not credentials.
+// Common-prose words that follow an "is"/"are" connector after a
+// credential noun WITHOUT being a credential disclosure. Used as a
+// targeted denylist so we don't over-suppress true positives like
+// "the secret is qwerty" or "my api key is abcdefgh" — those are real
+// alphabetic credential values that the firewall is supposed to catch.
+const CASUAL_SECRET_PROSE_DENYLIST = new Set([
+  "required", "optional", "valid", "invalid", "public", "private",
+  "strong", "weak", "expired", "missing", "broken", "correct",
+  "incorrect", "configured", "unconfigured", "set", "unset",
+  "present", "absent", "available", "unavailable", "important",
+  "needed", "mandatory", "ready", "working", "secure", "insecure",
+  "encrypted", "decrypted", "hidden", "exposed", "leaked", "rotated",
+  "active", "inactive", "enabled", "disabled", "empty", "blank",
+  "null", "undefined", "good", "bad", "fine", "okay",
+]);
+
+// Heuristic for natural-language ("is"/"are") connectors only —
+// explicit `=`/`:` connectors skip this check because they are very
+// rarely used in prose for these nouns. We strip surrounding quotes /
+// brackets and trailing sentence punctuation first so values like
+// "valid." / "optional," / "public!" normalize to "valid" / "optional"
+// / "public" before the prose check.
+//
+// Acceptance rules (after normalization):
+//   1. <4 chars → reject (matches the regex's own \S{4,} floor).
+//   2. Has digit / underscore / dash / special char → accept.
+//   3. Pure-letter, lowercase-form is in the prose denylist → reject.
+//   4. Title Case single word ("Required", "Paris") → reject.
+//   5. Otherwise (e.g. "abcdefgh", "qwerty", "plaintext", "Hunter2",
+//      "GoCubsGo") → accept.
 function looksLikeCredentialValue(value) {
   const v = value
     .replace(/^["'`(\[<{]+/, "")
     .replace(/["'`)\]>}.,;:!?]+$/, "");
   if (v.length < 4) return false;
-  // Has a digit, underscore, dash, or other special char → credential-y.
   if (/[\d_\-!@#$%^&*+/=]/.test(v)) return true;
-  // Title Case single word ("Required", "Paris") is prose.
+  if (CASUAL_SECRET_PROSE_DENYLIST.has(v.toLowerCase())) return false;
   if (/^[A-Z][a-z]+$/.test(v)) return false;
-  // All-letters: must be genuinely mixed case (multiple case transitions)
-  // to count as a credential.
-  return /[a-z]/.test(v) && /[A-Z]/.test(v);
+  return true;
 }
 
 function pushCasualSecretIssues(text, issues) {

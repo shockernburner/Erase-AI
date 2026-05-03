@@ -296,6 +296,15 @@ describe("casual credential phrasing (task #172) — natural-language API keys /
     test("'credentials: admin/hunter2' is flagged", () => {
       expectFlagged("credentials: admin/hunter2", /Credential disclosed/);
     });
+    test("'my api key is abcdefgh' is flagged (alphabetic value, not a prose word)", () => {
+      expectFlagged("my api key is abcdefgh", /Credential disclosed/);
+    });
+    test("'the secret is qwerty' is flagged (alphabetic keyboard-walk value)", () => {
+      expectFlagged("the secret is qwerty", /Credential disclosed/);
+    });
+    test("'token is plaintext' is flagged (alphabetic value, not a prose adjective)", () => {
+      expectFlagged("token is plaintext", /Credential disclosed/);
+    });
   });
 
   describe("category routes through secret_exposure so the existing suggestion fires", () => {
