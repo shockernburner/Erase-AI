@@ -235,6 +235,157 @@ describe("casual sensitive content (new in v1.3.3) — positive + negative per p
   });
 });
 
+describe("casual credential phrasing (task #172) — natural-language API keys / tokens / secrets", () => {
+  function expectFlagged(text, detailRe) {
+    const r = analyzePromptSafety(text);
+    assert.ok(
+      r.issues.length >= 1,
+      `expected '${text}' to be flagged but got 0 issues`,
+    );
+    assert.notEqual(r.level, "safe");
+    assert.ok(r.riskScore < 70, `expected score < 70 for '${text}', got ${r.riskScore}`);
+    if (detailRe) {
+      const matched = r.issues.some((i) => detailRe.test(i.detail));
+      assert.ok(
+        matched,
+        `expected one of the issues to match ${detailRe} for '${text}', got: ${r.issues
+          .map((i) => i.detail)
+          .join(" | ")}`,
+      );
+    }
+  }
+  function expectClean(text) {
+    const r = analyzePromptSafety(text);
+    assert.equal(
+      r.issues.length,
+      0,
+      `expected '${text}' to have NO issues but got: ${r.issues
+        .map((i) => `${i.severity} ${i.detail} (match=${i.match})`)
+        .join(" | ")}`,
+    );
+  }
+
+  describe("multi-word credential phrases", () => {
+    test("'my api key is hunter2' is flagged", () => {
+      expectFlagged("my api key is hunter2", /api\/access\/secret\/auth\/refresh\/bearer/);
+    });
+    test("'API_KEY = abcd1234' is flagged", () => {
+      expectFlagged("API_KEY = abcd1234efgh", /Credential disclosed/);
+    });
+    test("'access key: AKIA-test-1234' is flagged", () => {
+      expectFlagged("access key: AKIA-test-1234", /Credential disclosed/);
+    });
+    test("'client secret = supersecret' is flagged", () => {
+      expectFlagged("client secret = supersecretvalue", /Credential disclosed/);
+    });
+    test("'bearer token is abcdef1234' is flagged", () => {
+      expectFlagged("the bearer token is abcdef1234", /Credential disclosed/);
+    });
+    test("'refresh-token: rt-9999-zzzz' is flagged", () => {
+      expectFlagged("refresh-token: rt-9999-zzzz", /Credential disclosed/);
+    });
+  });
+
+  describe("single-word credential nouns", () => {
+    test("'the secret is hunter2' is flagged", () => {
+      expectFlagged("the secret is hunter2", /secret\/token\/credentials/);
+    });
+    test("'token = eyJabcd1234' is flagged", () => {
+      expectFlagged("token = eyJabcd1234efgh", /Credential disclosed/);
+    });
+    test("'credentials: admin/hunter2' is flagged", () => {
+      expectFlagged("credentials: admin/hunter2", /Credential disclosed/);
+    });
+  });
+
+  describe("category routes through secret_exposure so the existing suggestion fires", () => {
+    test("issue is categorised as secret_exposure (not pii)", () => {
+      const r = analyzePromptSafety("my api key is hunter2");
+      assert.ok(
+        r.issues.some((i) => i.category === "secret_exposure"),
+        `expected a secret_exposure issue, got: ${r.issues.map((i) => i.category).join(",")}`,
+      );
+    });
+    test("a 'secret_exposure' suggestion is emitted", () => {
+      const r = analyzePromptSafety("my api key is hunter2");
+      assert.ok(
+        r.suggestions.some((s) => s.category === "secret_exposure"),
+        `expected a secret_exposure suggestion, got: ${JSON.stringify(r.suggestions)}`,
+      );
+    });
+  });
+
+  describe("negative cases — natural prose without a disclosed value stays clean", () => {
+    test("'I forgot my api key' is NOT flagged (no value)", () => {
+      expectClean("I forgot my api key");
+    });
+    test("'use the API to fetch users' is NOT flagged (bare 'api')", () => {
+      expectClean("use the API to fetch users");
+    });
+    test("'the api is slow today' is NOT flagged (bare 'api', no key/token follower)", () => {
+      expectClean("the api is slow today");
+    });
+    test("'the API key parameter accepts a string' is NOT flagged (no is/=/: + value)", () => {
+      expectClean("the API key parameter accepts a string");
+    });
+    test("'what is an api key?' is NOT flagged (question, no value)", () => {
+      expectClean("what is an api key?");
+    });
+    test("'token expires tomorrow' is NOT flagged (no connector + value)", () => {
+      expectClean("token expires tomorrow");
+    });
+    test("'check the secret menu' is NOT flagged (no connector + value)", () => {
+      expectClean("check the secret menu");
+    });
+    test("'the api key is required' is NOT flagged (prose value)", () => {
+      expectClean("the api key is required");
+    });
+    test("'token is valid' is NOT flagged (prose value)", () => {
+      expectClean("token is valid");
+    });
+    test("'the secret is public' is NOT flagged (prose value)", () => {
+      expectClean("the secret is public");
+    });
+    test("'credentials are strong' is NOT flagged (prose value)", () => {
+      expectClean("credentials are strong");
+    });
+    test("'api token is optional' is NOT flagged (prose value, no entropy)", () => {
+      expectClean("api token is optional");
+    });
+    test("'the api key is Required' is NOT flagged (Title Case prose)", () => {
+      expectClean("the api key is Required");
+    });
+    test("'the api key is Paris' is NOT flagged (Title Case proper noun)", () => {
+      expectClean("the api key is Paris");
+    });
+    test("'api token is Optional' is NOT flagged (Title Case prose)", () => {
+      expectClean("api token is Optional");
+    });
+    test("'token is valid.' is NOT flagged (terminal period must not score as entropy)", () => {
+      expectClean("token is valid.");
+    });
+    test("'credentials are optional,' is NOT flagged (terminal comma)", () => {
+      expectClean("credentials are optional,");
+    });
+    test("'the secret is public!' is NOT flagged (terminal exclamation)", () => {
+      expectClean("the secret is public!");
+    });
+  });
+
+  describe("dedupe — overlapping multi-word + single-word matches collapse", () => {
+    test("'api token is abc1234xyz' produces exactly one issue (multi-word wins)", () => {
+      const r = analyzePromptSafety("api token is abc1234xyz");
+      const ours = r.issues.filter((i) => /Credential disclosed/.test(i.detail));
+      assert.equal(
+        ours.length,
+        1,
+        `expected exactly 1 credential issue, got: ${ours.map((i) => i.detail).join(" | ")}`,
+      );
+      assert.match(ours[0].detail, /api\/access\/secret\/auth\/refresh\/bearer/);
+    });
+  });
+});
+
 describe("existing high-confidence detections still fire at the same severity", () => {
   test("real-shaped OpenAI key (40 chars after sk-) is still flagged", () => {
     const r = analyzePromptSafety(

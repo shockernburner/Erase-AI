@@ -116,6 +116,130 @@ const CASUAL_PII_PATTERNS = [
   },
 ];
 
+// Casually-typed credential disclosures (added task #172).
+// Real users type "my api key is hunter2" / "the prod token is xyz" /
+// "credentials: admin / hunter2" rather than the strict `key=value` shape
+// the existing generic_api_key / generic_secret regex requires. Without
+// these the firewall lets natural-language credential leaks through.
+//
+// Pattern shape mirrors the established casual rules: a fixed credential
+// noun phrase, then an explicit assignment-style connector (is | are | =
+// | :), then a value. We require the connector + value so prose like
+// "I forgot my api key" / "what's an api key?" / "the api is slow" /
+// "the API key parameter accepts a string" stays clean.
+//
+// Additionally, when the connector is the natural-language "is"/"are"
+// (which is high false-positive surface — "api key is required",
+// "token is valid", "credentials are strong"), the value must also look
+// credential-shaped: contain a digit / underscore / dash / special char,
+// or be mixed-case. A pure-letter dictionary word is treated as prose.
+// Explicit assignment connectors (= or :) stay permissive because they
+// are very rarely used in natural prose for these nouns.
+//
+// Pushed into the "secret_exposure" category in analyzePromptSafety()
+// so the existing suggestion text ("Remove or mask all secrets…") fires
+// without any new suggestion plumbing. Multi-word matches take priority
+// over single-word ones via overlap dedupe so "api token is X" produces
+// exactly one issue.
+const CASUAL_SECRET_PATTERNS = [
+  {
+    // Multi-word credential nouns: "api key", "api token", "access key",
+    // "secret key", "client secret", "bearer token", "refresh token",
+    // "auth token". Separator between the two words is space, hyphen,
+    // or underscore so "api_key is X" and "api-token = X" both fire.
+    pattern: /\b(?:api[_\s-]?(?:key|token)|access[_\s-]?key|secret[_\s-]?key|client[_\s-]?secret|bearer[_\s-]?token|refresh[_\s-]?token|auth[_\s-]?token)\s*(?:is|are|=|:)\s*["']?\S{4,}/gi,
+    severity: "high",
+    detail: "Credential disclosed in plain text (api/access/secret/auth/refresh/bearer)",
+  },
+  {
+    // Single-word nouns "secret" / "token" / "credentials" — same shape,
+    // entropy guard handles the wider false-positive surface.
+    pattern: /\b(?:credentials?|secret|token)\s*(?:is|are|=|:)\s*["']?\S{4,}/gi,
+    severity: "high",
+    detail: "Credential disclosed in plain text (secret/token/credentials)",
+  },
+];
+
+// Parse a casual-secret regex match into its connector + value parts so
+// the entropy guard below can decide whether the value looks like a real
+// credential or just continuing prose.
+function parseCasualSecretMatch(matchStr) {
+  // The original regex (above) already anchors the connector after the
+  // credential noun. Here we re-extract it: prefer the symbolic
+  // connectors (= / :) which are non-word chars and therefore have no
+  // \b around them; fall back to whole-word "is" / "are" so we don't
+  // accidentally match the "is" inside another word.
+  const sym = /([=:])\s*["']?(\S+)/.exec(matchStr);
+  if (sym) return { connector: sym[1], value: sym[2].replace(/["']$/, "") };
+  const word = /\b(is|are)\b\s*["']?(\S+)/i.exec(matchStr);
+  if (word) return { connector: word[1].toLowerCase(), value: word[2].replace(/["']$/, "") };
+  return null;
+}
+
+// Entropy heuristic for natural-language ("is"/"are") connectors. A
+// pure-letter token like "required" / "valid" / "public" / "strong" /
+// "optional" is prose, not a credential. We also have to reject:
+//   - prose with terminal punctuation ("valid.", "optional,",
+//     "public!") — strip surrounding quotes/brackets and trailing
+//     sentence punctuation before the entropy check so `.` `,` `!`
+//     don't get counted as "credential entropy".
+//   - Title Case single words ("Required", "Optional", "Paris") —
+//     these are still prose, not credentials.
+function looksLikeCredentialValue(value) {
+  const v = value
+    .replace(/^["'`(\[<{]+/, "")
+    .replace(/["'`)\]>}.,;:!?]+$/, "");
+  if (v.length < 4) return false;
+  // Has a digit, underscore, dash, or other special char → credential-y.
+  if (/[\d_\-!@#$%^&*+/=]/.test(v)) return true;
+  // Title Case single word ("Required", "Paris") is prose.
+  if (/^[A-Z][a-z]+$/.test(v)) return false;
+  // All-letters: must be genuinely mixed case (multiple case transitions)
+  // to count as a credential.
+  return /[a-z]/.test(v) && /[A-Z]/.test(v);
+}
+
+function pushCasualSecretIssues(text, issues) {
+  const candidates = [];
+  for (const cfg of CASUAL_SECRET_PATTERNS) {
+    for (const m of findMatches(text, cfg.pattern)) {
+      const parsed = parseCasualSecretMatch(m.match);
+      if (!parsed) continue;
+      // Permissive for explicit assignment connectors; entropy-guarded
+      // for the natural-language "is"/"are".
+      if (parsed.connector === "is" || parsed.connector === "are") {
+        if (!looksLikeCredentialValue(parsed.value)) continue;
+      }
+      candidates.push({
+        start: m.start,
+        end: m.end,
+        match: m.match,
+        severity: cfg.severity,
+        detail: cfg.detail,
+      });
+    }
+  }
+  // Dedupe overlapping matches (multi-word pattern should win over the
+  // narrower single-word one when both fire on the same span). Sort by
+  // start asc, then by length desc so the longer match is kept first.
+  candidates.sort(
+    (a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start),
+  );
+  let lastEnd = -1;
+  for (const c of candidates) {
+    if (c.start < lastEnd) continue;
+    issues.push({
+      category: "secret_exposure",
+      severity: c.severity,
+      detail: c.detail,
+      match: c.match,
+      start: c.start,
+      end: c.end,
+    });
+    lastEnd = c.end;
+  }
+}
+
 const PROPRIETARY_PATTERNS = [
   // "internal" alone matches lots of harmless prose ("internal combustion
   // engine", "internal monologue", "internal organs"). Require a
@@ -186,6 +310,7 @@ export function analyzePromptSafety(text) {
 
   pushPatternIssues(text, PII_PATTERNS, "pii", issues);
   pushPatternIssues(text, CASUAL_PII_PATTERNS, "pii", issues);
+  pushCasualSecretIssues(text, issues);
   pushPatternIssues(text, PROPRIETARY_PATTERNS, "proprietary_logic", issues);
   pushPatternIssues(text, TOXICITY_PATTERNS, "toxicity", issues);
 
