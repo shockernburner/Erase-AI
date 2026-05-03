@@ -21,8 +21,8 @@
     "certifications": "Hoja de ruta de cumplimiento",
     "firewallDocs": "Configurar Extensión",
     "termsLegal": "Términos Legales",
-    "privacyPolicy": "Privacy Policy",
-    "contact": "Contact Us",
+    "privacyPolicy": "Política de privacidad",
+    "contact": "Contáctanos",
     "adContent": "Estrategia Publicitaria"
   },
   "landing": {
@@ -598,7 +598,9 @@
     "apiTopUsers": "Principales usuarios de API",
     "apiDailyTrend": "Tendencia diaria de API",
     "apiRequests": "solicitudes",
-    "noApiUsage": "Sin datos de uso de API"
+    "noApiUsage": "Sin datos de uso de API",
+    "savedLeaks": "Fugas guardadas",
+    "savedLeaksSub": "Hoy: {{shown}} avisos mostrados · {{saved}} guardados · {{dismissed}} descartados"
   },
   "docs": {
     "title": "Documentación API",
@@ -1497,5 +1499,86 @@
     "successDesc": "Thank you for reaching out. We'll get back to you within 1-2 business days.",
     "sendAnother": "Send another message",
     "errorMsg": "Failed to send message. Please try again or email us directly."
+  },
+  "appShell": {
+    "account": "Cuenta",
+    "adminTools": "Admin",
+    "blogsHub": "Blog",
+    "collapse": "Contraer",
+    "devKeys": "Claves API y uso",
+    "docsHub": "Documentación",
+    "expand": "Expandir",
+    "firewallHub": "Centro Firewall",
+    "groupBlogs": "Blog",
+    "groupDocs": "Documentación",
+    "groupFirewall": "Firewall",
+    "groupLegal": "Legal",
+    "groupPersonal": "Personal",
+    "groupSanitizers": "Saneadores de datasets",
+    "licenseAgreement": "Acuerdo de licencia",
+    "openNav": "Abrir navegación",
+    "sanitizerHome": "Saneador de datasets"
+  },
+  "blogsHub": {
+    "title": "Blog",
+    "subtitle": "Notas de campo, guías de seguridad y novedades de EraseAI.",
+    "read": "Leer",
+    "aiFirewallTitle": "¿Qué es un firewall de IA?",
+    "aiFirewallDesc": "Introducción a la prevención de pérdida de datos en el lado del prompt.",
+    "apiKeysTitle": "Por qué las claves API acaban en ChatGPT",
+    "apiKeysDesc": "Cómo los desarrolladores filtran credenciales y cómo detenerlo en el navegador.",
+    "preventLeaksTitle": "Cómo prevenir fugas de datos a herramientas de IA",
+    "preventLeaksDesc": "Lista de verificación de 7 pasos para equipos de seguridad que despliegan IA al personal.",
+    "indexTitle": "Todas las publicaciones",
+    "indexDesc": "Explora el archivo completo: guías, casos de estudio y novedades del producto."
+  },
+  "docsHub": {
+    "title": "Documentación",
+    "subtitle": "Todo lo que necesitas para integrar, instalar y verificar EraseAI en producción.",
+    "apiDesc": "Endpoints, formas de solicitud, autenticación y ejemplos de código para la API de EraseAI.",
+    "firewallDesc": "Manifiesto de la extensión, pasos de instalación y matriz de compatibilidad.",
+    "devModeDesc": "Prueba los endpoints analyze y sanitize en vivo con cargas útiles de ejemplo.",
+    "certsDesc": "Declaraciones de postura SOC 2, ISO 27001 y RGPD.",
+    "publishingTitle": "Lista de verificación de publicación",
+    "publishingDesc": "Pasos previos al envío de la extensión a la Chrome Web Store."
+  },
+  "firewallHub": {
+    "title": "Firewall",
+    "subtitle": "Instala la extensión de navegador de EraseAI para escanear prompts y adjuntos antes de que salgan del navegador.",
+    "whatItDoesTitle": "Qué bloquea el firewall",
+    "bullet1": "Claves API, credenciales y tokens copiados al prompt.",
+    "bullet2": "Adjuntos CSV / PDF / DOCX riesgosos antes de subirlos.",
+    "bullet3": "PII, nombres de host internos y secretos estructurados.",
+    "storeCardTitle": "Chrome Web Store (pendiente)",
+    "storeCardDesc": "Estamos en cola de revisión. Mientras tanto, usa la instalación manual de arriba.",
+    "openStore": "Abrir tienda",
+    "manualTitle": "Instalación manual (.zip)",
+    "manualSubtitle": "Mientras esperamos la aprobación de la tienda, instala la extensión manualmente en 60 segundos.",
+    "downloadCta": "Descargar extensión (.zip)",
+    "step1": "Descomprime el archivo descargado.",
+    "step2": "Abre chrome://extensions y activa el modo desarrollador (arriba a la derecha).",
+    "step3": "Haz clic en \"Cargar descomprimida\" y elige la carpeta descomprimida.",
+    "step4": "Fija el icono de EraseAI Firewall y recarga ChatGPT/Claude/Gemini.",
+    "manualNote": "Las instalaciones manuales se ejecutan con permisos completos en los sitios de IA compatibles. Instala solo desde esta página.",
+    "docsCardTitle": "Referencia completa y API",
+    "docsCardDesc": "Endpoints, compatibilidad de navegador, configuración y changelog."
+  },
+  "profileScan": {
+    "title": "Escaneo de riesgo de LinkedIn/perfil",
+    "subtitle": "Sube tu LinkedIn .pdf, .docx o exportación completa .zip — lo dividimos por sección y marcamos entradas riesgosas.",
+    "uploadCta": "Elegir archivo de perfil",
+    "dropHint": "o suelta un .pdf / .docx / .zip aquí",
+    "fileTooLarge": "El archivo es demasiado grande. Máx. 25 MB.",
+    "unsupported": "Tipo de archivo no compatible. Usa .pdf, .docx, .zip, .txt, .csv, .json o .md.",
+    "extracting": "Extrayendo perfil…",
+    "extractFailed": "No se pudo extraer texto de este archivo.",
+    "truncatedNote": "El archivo era muy grande; solo se escanearon los primeros 200.000 caracteres.",
+    "noSections": "No se encontraron secciones reconocibles — tu archivo puede no ser una exportación de LinkedIn.",
+    "sectionsFound": "Se encontraron {{count}} secciones",
+    "scanning": "Escaneando {{label}}…",
+    "overallTitle": "Riesgo en todo el perfil",
+    "sectionTitle": "Hallazgos por sección",
+    "noFlags": "No se detectaron problemas en esta sección.",
+    "rewriteSection": "Reescribir esta sección"
   }
 }

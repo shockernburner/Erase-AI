@@ -21,8 +21,8 @@
     "certifications": "コンプライアンスロードマップ",
     "firewallDocs": "拡張機能設定",
     "termsLegal": "利用規約",
-    "privacyPolicy": "Privacy Policy",
-    "contact": "Contact Us",
+    "privacyPolicy": "プライバシーポリシー",
+    "contact": "お問い合わせ",
     "adContent": "広告戦略"
   },
   "landing": {
@@ -598,7 +598,9 @@
     "apiTopUsers": "APIトップユーザー",
     "apiDailyTrend": "API日次トレンド",
     "apiRequests": "リクエスト",
-    "noApiUsage": "API使用データがありません"
+    "noApiUsage": "API使用データがありません",
+    "savedLeaks": "保存された漏洩",
+    "savedLeaksSub": "本日: {{shown}}件の警告を表示 · {{saved}}件保存 · {{dismissed}}件却下"
   },
   "docs": {
     "title": "APIドキュメント",
@@ -1497,5 +1499,86 @@
     "successDesc": "Thank you for reaching out. We'll get back to you within 1-2 business days.",
     "sendAnother": "Send another message",
     "errorMsg": "Failed to send message. Please try again or email us directly."
+  },
+  "appShell": {
+    "account": "アカウント",
+    "adminTools": "管理",
+    "blogsHub": "ブログ",
+    "collapse": "折りたたむ",
+    "devKeys": "APIキー＆使用量",
+    "docsHub": "ドキュメント",
+    "expand": "展開",
+    "firewallHub": "ファイアウォールハブ",
+    "groupBlogs": "ブログ",
+    "groupDocs": "ドキュメント",
+    "groupFirewall": "ファイアウォール",
+    "groupLegal": "法的事項",
+    "groupPersonal": "パーソナル",
+    "groupSanitizers": "データセットサニタイザー",
+    "licenseAgreement": "ライセンス契約",
+    "openNav": "ナビゲーションを開く",
+    "sanitizerHome": "データセットサニタイザー"
+  },
+  "blogsHub": {
+    "title": "ブログ",
+    "subtitle": "現場レポート、セキュリティ入門、EraseAIリリースニュース。",
+    "read": "読む",
+    "aiFirewallTitle": "AIファイアウォールとは？",
+    "aiFirewallDesc": "プロンプト側のデータ漏洩防止の入門書。",
+    "apiKeysTitle": "なぜAPIキーはChatGPTに流出するのか",
+    "apiKeysDesc": "開発者が認証情報を漏らす仕組みと、ブラウザで止める方法。",
+    "preventLeaksTitle": "AIツールへのデータ漏洩を防ぐ",
+    "preventLeaksDesc": "従業員にAIを展開するセキュリティチーム向けの7ステップチェックリスト。",
+    "indexTitle": "すべての投稿",
+    "indexDesc": "ガイド、ケーススタディ、製品アップデートのアーカイブをすべて閲覧。"
+  },
+  "docsHub": {
+    "title": "ドキュメント",
+    "subtitle": "本番環境でEraseAIを統合・インストール・検証するために必要なすべて。",
+    "apiDesc": "EraseAI APIのエンドポイント、リクエスト形式、認証、コード例。",
+    "firewallDesc": "ブラウザ拡張機能のマニフェスト、インストール手順、互換性マトリックス。",
+    "devModeDesc": "サンプルペイロードでanalyze＋sanitizeエンドポイントをライブで試す。",
+    "certsDesc": "SOC 2、ISO 27001、GDPRのポスチャ声明。",
+    "publishingTitle": "公開チェックリスト",
+    "publishingDesc": "Chrome Web Storeに拡張機能を公開する前のプリフライト手順。"
+  },
+  "firewallHub": {
+    "title": "ファイアウォール",
+    "subtitle": "EraseAIブラウザ拡張機能をインストールし、プロンプトと添付ファイルがブラウザを離れる前にスキャンします。",
+    "whatItDoesTitle": "ファイアウォールがブロックするもの",
+    "bullet1": "プロンプトに貼り付けられたAPIキー、認証情報、トークン。",
+    "bullet2": "アップロード前のリスクのあるCSV/PDF/DOCX添付ファイル。",
+    "bullet3": "個人情報、内部ホスト名、構造化されたシークレット。",
+    "storeCardTitle": "Chrome ウェブストア（審査中）",
+    "storeCardDesc": "現在審査待ちです。それまでは上記の手動インストールをご利用ください。",
+    "openStore": "ストアを開く",
+    "manualTitle": "手動インストール (.zip)",
+    "manualSubtitle": "ストア承認を待つ間、60秒で拡張機能をサイドロードしてください。",
+    "downloadCta": "拡張機能をダウンロード (.zip)",
+    "step1": "ダウンロードしたファイルを解凍します。",
+    "step2": "chrome://extensions を開き、デベロッパーモード（右上）を有効にします。",
+    "step3": "「パッケージ化されていない拡張機能を読み込む」をクリックし、解凍したフォルダを選択します。",
+    "step4": "EraseAIファイアウォールアイコンをピン留めし、ChatGPT/Claude/Geminiを再読み込みします。",
+    "manualNote": "手動インストールは対応AIサイトで完全な権限で実行されます。このページからのみインストールしてください。",
+    "docsCardTitle": "完全リファレンス＆API",
+    "docsCardDesc": "エンドポイント、ブラウザ互換性、設定、変更履歴。"
+  },
+  "profileScan": {
+    "title": "LinkedIn / プロフィールリスクスキャン",
+    "subtitle": "LinkedInの.pdf、.docx、または完全データエクスポート.zipをアップロード — セクションごとに分割し、リスクのある項目をフラグ付けします。",
+    "uploadCta": "プロフィールファイルを選択",
+    "dropHint": "または .pdf / .docx / .zip をここにドロップ",
+    "fileTooLarge": "ファイルが大きすぎます。最大25MB。",
+    "unsupported": "サポートされていないファイル形式です。.pdf、.docx、.zip、.txt、.csv、.json、.md を使用してください。",
+    "extracting": "プロフィールを抽出中…",
+    "extractFailed": "このファイルからテキストを抽出できませんでした。",
+    "truncatedNote": "ファイルが非常に大きかったため、最初の200,000文字のみをスキャンしました。",
+    "noSections": "認識可能なセクションが見つかりません — LinkedInのエクスポートではない可能性があります。",
+    "sectionsFound": "{{count}}個のセクションが見つかりました",
+    "scanning": "{{label}}をスキャン中…",
+    "overallTitle": "プロフィール全体のリスク",
+    "sectionTitle": "セクション別の検出結果",
+    "noFlags": "このセクションでは問題は検出されませんでした。",
+    "rewriteSection": "このセクションを書き換える"
   }
 }

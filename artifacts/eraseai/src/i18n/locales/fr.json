@@ -21,8 +21,8 @@
     "certifications": "Feuille de route conformité",
     "firewallDocs": "Configuration Extension",
     "termsLegal": "Mentions Légales",
-    "privacyPolicy": "Privacy Policy",
-    "contact": "Contact Us",
+    "privacyPolicy": "Politique de confidentialité",
+    "contact": "Nous contacter",
     "adContent": "Stratégie Publicitaire"
   },
   "landing": {
@@ -598,7 +598,9 @@
     "apiTopUsers": "Principaux utilisateurs API",
     "apiDailyTrend": "Tendance quotidienne API",
     "apiRequests": "requêtes",
-    "noApiUsage": "Aucune donnée d'utilisation API"
+    "noApiUsage": "Aucune donnée d'utilisation API",
+    "savedLeaks": "Fuites enregistrées",
+    "savedLeaksSub": "Aujourd'hui : {{shown}} alertes affichées · {{saved}} enregistrées · {{dismissed}} ignorées"
   },
   "docs": {
     "title": "Documentation API",
@@ -1497,5 +1499,86 @@
     "successDesc": "Thank you for reaching out. We'll get back to you within 1-2 business days.",
     "sendAnother": "Send another message",
     "errorMsg": "Failed to send message. Please try again or email us directly."
+  },
+  "appShell": {
+    "account": "Compte",
+    "adminTools": "Admin",
+    "blogsHub": "Blog",
+    "collapse": "Réduire",
+    "devKeys": "Clés API & utilisation",
+    "docsHub": "Documentation",
+    "expand": "Développer",
+    "firewallHub": "Centre Firewall",
+    "groupBlogs": "Blog",
+    "groupDocs": "Documentation",
+    "groupFirewall": "Firewall",
+    "groupLegal": "Mentions légales",
+    "groupPersonal": "Personnel",
+    "groupSanitizers": "Assainisseurs de jeux de données",
+    "licenseAgreement": "Contrat de licence",
+    "openNav": "Ouvrir la navigation",
+    "sanitizerHome": "Assainisseur de jeu de données"
+  },
+  "blogsHub": {
+    "title": "Blog",
+    "subtitle": "Notes de terrain, guides de sécurité et actualités EraseAI.",
+    "read": "Lire",
+    "aiFirewallTitle": "Qu'est-ce qu'un pare-feu IA ?",
+    "aiFirewallDesc": "Introduction à la prévention des pertes de données côté prompt.",
+    "apiKeysTitle": "Pourquoi les clés API se retrouvent dans ChatGPT",
+    "apiKeysDesc": "Comment les développeurs divulguent leurs identifiants et comment l'arrêter dans le navigateur.",
+    "preventLeaksTitle": "Prévenir les fuites de données vers les outils d'IA",
+    "preventLeaksDesc": "Une checklist en 7 étapes pour les équipes de sécurité qui déploient l'IA aux collaborateurs.",
+    "indexTitle": "Tous les articles",
+    "indexDesc": "Parcourez l'archive complète — guides, études de cas et mises à jour produit."
+  },
+  "docsHub": {
+    "title": "Documentation",
+    "subtitle": "Tout ce dont vous avez besoin pour intégrer, installer et vérifier EraseAI en production.",
+    "apiDesc": "Endpoints, formats de requêtes, auth et exemples de code pour l'API EraseAI.",
+    "firewallDesc": "Manifeste de l'extension navigateur, étapes d'installation et matrice de compatibilité.",
+    "devModeDesc": "Essayez les endpoints analyze et sanitize en direct avec des payloads d'exemple.",
+    "certsDesc": "Déclarations de posture SOC 2, ISO 27001 et RGPD.",
+    "publishingTitle": "Checklist de publication",
+    "publishingDesc": "Étapes préalables avant publication de l'extension sur le Chrome Web Store."
+  },
+  "firewallHub": {
+    "title": "Firewall",
+    "subtitle": "Installez l'extension navigateur EraseAI pour scanner prompts et pièces jointes avant qu'ils ne quittent votre navigateur.",
+    "whatItDoesTitle": "Ce que le pare-feu bloque",
+    "bullet1": "Clés API, identifiants et tokens copiés-collés dans le prompt.",
+    "bullet2": "Pièces jointes CSV / PDF / DOCX risquées avant leur envoi.",
+    "bullet3": "Données personnelles, noms d'hôtes internes et secrets structurés.",
+    "storeCardTitle": "Chrome Web Store (en attente)",
+    "storeCardDesc": "Nous sommes dans la file d'attente d'examen. En attendant, utilisez l'installation manuelle ci-dessus.",
+    "openStore": "Ouvrir le store",
+    "manualTitle": "Installation manuelle (.zip)",
+    "manualSubtitle": "En attendant l'approbation du store, installez l'extension manuellement en 60 secondes.",
+    "downloadCta": "Télécharger l'extension (.zip)",
+    "step1": "Décompressez le fichier téléchargé.",
+    "step2": "Ouvrez chrome://extensions et activez le mode développeur (en haut à droite).",
+    "step3": "Cliquez sur « Charger l'extension non empaquetée » et choisissez le dossier décompressé.",
+    "step4": "Épinglez l'icône EraseAI Firewall et rechargez ChatGPT/Claude/Gemini.",
+    "manualNote": "Les installations manuelles s'exécutent avec toutes les permissions sur les sites d'IA pris en charge. N'installez qu'à partir de cette page.",
+    "docsCardTitle": "Référence complète & API",
+    "docsCardDesc": "Endpoints, compatibilité navigateur, configuration et changelog."
+  },
+  "profileScan": {
+    "title": "Analyse de risque LinkedIn/profil",
+    "subtitle": "Importez votre LinkedIn .pdf, .docx ou export complet .zip — nous le découpons par section et signalons les entrées à risque.",
+    "uploadCta": "Choisir le fichier de profil",
+    "dropHint": "ou déposez un .pdf / .docx / .zip ici",
+    "fileTooLarge": "Fichier trop volumineux. Maximum 25 Mo.",
+    "unsupported": "Type de fichier non pris en charge. Utilisez .pdf, .docx, .zip, .txt, .csv, .json ou .md.",
+    "extracting": "Extraction du profil…",
+    "extractFailed": "Impossible d'extraire le texte de ce fichier.",
+    "truncatedNote": "Fichier très volumineux ; seuls les 200 000 premiers caractères ont été analysés.",
+    "noSections": "Aucune section identifiable trouvée — votre fichier n'est peut-être pas un export LinkedIn.",
+    "sectionsFound": "{{count}} sections trouvées",
+    "scanning": "Analyse de {{label}}…",
+    "overallTitle": "Risque sur l'ensemble du profil",
+    "sectionTitle": "Résultats par section",
+    "noFlags": "Aucun problème détecté dans cette section.",
+    "rewriteSection": "Réécrire cette section"
   }
 }
