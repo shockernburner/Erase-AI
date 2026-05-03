@@ -293,3 +293,9 @@ id = "noiWzd1ChMqydswYoXE1q"
 uri = "file://attached_assets/medium-cover/hallway-missing-door-master-2400x1200.png"
 type = "image"
 title = "Stock-alternative — hallway with missing door (2400×1200 hi-res master)"
+
+[[outputs]]
+id = "dgCEc5QjbxLCaoPTSeIK-"
+uri = "file://docs/handoff/AIRWALLEX_INTEGRATION.md"
+type = "text"
+title = "Airwallex Integration Guide (for the other Replit Agents)"
