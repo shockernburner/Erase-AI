@@ -117,9 +117,6 @@ function UserPill({ onNavigate }: { onNavigate: (v: AppView) => void }) {
       .join("")
       .toUpperCase() || (user.email?.[0]?.toUpperCase() ?? "U");
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Account";
-  const isAdmin = user.role === "admin";
-  const isOwner = user.email === ADMIN_EMAIL;
-
   return (
     <div className="relative">
       <button
@@ -163,46 +160,6 @@ function UserPill({ onNavigate }: { onNavigate: (v: AppView) => void }) {
               {plan === "free" ? t("nav.upgradePlan") : t("nav.managePlan")}
             </button>
 
-            {isAdmin && (
-              <>
-                <div className="px-3 pt-2 pb-1 text-[10px] uppercase font-bold tracking-wider text-muted-foreground/60">
-                  {t("appShell.adminTools", { defaultValue: "Admin" })}
-                </div>
-                <button
-                  onClick={() => { setOpen(false); onNavigate("admin"); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  {t("nav.adminDashboard")}
-                </button>
-                <button
-                  onClick={() => { setOpen(false); onNavigate("analytics"); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  {t("nav.analytics")}
-                </button>
-                {isOwner && (
-                  <>
-                    <button
-                      onClick={() => { setOpen(false); onNavigate("social"); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                    >
-                      <Megaphone className="w-4 h-4" />
-                      {t("nav.socialPosts")}
-                    </button>
-                    <button
-                      onClick={() => { setOpen(false); onNavigate("adContent"); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
-                    >
-                      <TrendingUp className="w-4 h-4" />
-                      {t("nav.adContent")}
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-
             <div className="border-t border-border/30 mt-1 pt-1">
               <button
                 onClick={() => { setOpen(false); logout(); }}
@@ -229,8 +186,11 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [open, setOpen] = useState<boolean>(loadInitial());
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isAdmin = user?.role === "admin";
+  const isOwner = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     try {
@@ -283,6 +243,21 @@ export function AppShell({
       ],
     },
   ], [t]);
+
+  const adminGroup = useMemo<{ label: string; items: NavItem[] } | null>(() => {
+    if (!isAdmin) return null;
+    const items: NavItem[] = [
+      { id: "admin", labelKey: "nav.adminDashboard", icon: <LayoutDashboard className="w-4 h-4" />, match: ["admin"] },
+      { id: "analytics", labelKey: "nav.analytics", icon: <BarChart3 className="w-4 h-4" />, match: ["analytics"] },
+    ];
+    if (isOwner) {
+      items.push(
+        { id: "social", labelKey: "nav.socialPosts", icon: <Megaphone className="w-4 h-4" />, match: ["social"] },
+        { id: "adContent", labelKey: "nav.adContent", icon: <TrendingUp className="w-4 h-4" />, match: ["adContent"] },
+      );
+    }
+    return { label: t("appShell.groupAdmin", { defaultValue: "Admin" }), items };
+  }, [isAdmin, isOwner, t]);
 
   const sidebarWidth = open ? "w-60" : "w-16";
 
@@ -337,6 +312,36 @@ export function AppShell({
             </div>
           </div>
         ))}
+
+        {adminGroup && (
+          <div className="mt-auto pt-3 border-t border-border/30" data-testid="sidebar-admin-group">
+            {open && (
+              <div className="px-4 pb-1 text-[10px] uppercase font-bold tracking-wider text-yellow-400/70">
+                {adminGroup.label}
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {adminGroup.items.map((item) => {
+                const active = item.match?.includes(view) ?? false;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    title={!open ? t(item.labelKey) : undefined}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 mx-1.5 rounded-lg text-sm transition-all ${
+                      active
+                        ? "bg-yellow-500/15 text-yellow-400 border border-yellow-500/30"
+                        : "text-muted-foreground hover:bg-yellow-500/10 hover:text-yellow-400 border border-transparent"
+                    } ${open ? "justify-start" : "justify-center"}`}
+                  >
+                    <span className="shrink-0">{item.icon}</span>
+                    {open && <span className="truncate">{t(item.labelKey)}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <button

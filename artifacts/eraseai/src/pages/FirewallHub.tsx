@@ -1,14 +1,143 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Shield, Download, Chrome, AlertTriangle, FileCode, ExternalLink, Book } from "lucide-react";
+import {
+  Shield,
+  Download,
+  Chrome,
+  AlertTriangle,
+  ExternalLink,
+  Book,
+  Code2,
+  KeyRound,
+  Loader2,
+  Copy,
+  Check,
+} from "lucide-react";
 import type { AppView } from "@/components/AppShell";
 
 const BASE = import.meta.env.BASE_URL;
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) || "/api";
 
 interface ExtensionMeta {
   version: string;
   zipUrl?: string;
+}
+
+interface ApiKey {
+  id: number;
+  prefix: string;
+  createdAt: string;
+}
+
+function KeyManagementCard() {
+  const { t } = useTranslation();
+  const [keys, setKeys] = useState<ApiKey[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API_BASE}/dev/keys`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => setKeys(d.keys ?? []))
+      .catch(() => setError(t("firewallHub.km.loadFailed", { defaultValue: "Sign in to manage your API keys." })))
+      .finally(() => setLoading(false));
+  }, [t]);
+
+  const create = async () => {
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/dev/keys`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Firewall Extension" }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "create failed");
+      }
+      const d = await res.json();
+      setCreatedKey(d.key);
+      setKeys((prev) => (prev ? [...prev, { id: d.id, prefix: d.prefix, createdAt: new Date().toISOString() }] : prev));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "create failed");
+    }
+  };
+
+  const copy = () => {
+    if (!createdKey) return;
+    navigator.clipboard.writeText(createdKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="bg-card/60 border border-border/40 rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <KeyRound className="w-5 h-5 text-yellow-400" />
+        <h3 className="font-bold text-foreground">
+          {t("firewallHub.km.title", { defaultValue: "Key Management" })}
+        </h3>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        {t("firewallHub.km.desc", { defaultValue: "Issue and rotate the API key your extension uses to call the firewall." })}
+      </p>
+
+      {loading && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+
+      {error && (
+        <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-2 mb-3">
+          {error}
+        </div>
+      )}
+
+      {keys && keys.length > 0 && (
+        <ul className="space-y-1.5 mb-3">
+          {keys.map((k) => (
+            <li
+              key={k.id}
+              className="flex items-center gap-2 text-xs font-mono bg-background/40 border border-border/30 rounded-lg px-3 py-2"
+              data-testid="firewall-key-row"
+            >
+              <span className="text-muted-foreground">{k.prefix}…</span>
+              <span className="ml-auto text-muted-foreground/60">{new Date(k.createdAt).toLocaleDateString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {createdKey && (
+        <div className="mb-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs">
+          <div className="font-semibold text-emerald-400 mb-1">
+            {t("firewallHub.km.copyOnce", { defaultValue: "Copy this now — we won't show it again." })}
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 font-mono break-all text-foreground">{createdKey}</code>
+            <button
+              onClick={copy}
+              className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? t("firewallHub.km.copied", { defaultValue: "Copied" }) : t("firewallHub.km.copy", { defaultValue: "Copy" })}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={create}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 text-sm font-semibold transition-colors"
+        data-testid="firewall-key-create"
+      >
+        <KeyRound className="w-4 h-4" />
+        {t("firewallHub.km.createBtn", { defaultValue: "Create new API key" })}
+      </button>
+    </div>
+  );
 }
 
 export default function FirewallHub({ onNavigate }: { onNavigate: (v: AppView) => void }) {
@@ -41,6 +170,53 @@ export default function FirewallHub({ onNavigate }: { onNavigate: (v: AppView) =
           {t("firewallHub.subtitle", { defaultValue: "Install the EraseAI browser extension to scan prompts and attachments before they leave your browser." })}
         </p>
       </motion.header>
+
+      {/* Three primary surfaces: Browser / IDE / Key Management */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" data-testid="firewall-primary-cards">
+        <div className="bg-card/60 border border-border/40 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Chrome className="w-5 h-5 text-cyan-400" />
+            <h3 className="font-bold text-foreground">
+              {t("firewallHub.bp.title", { defaultValue: "Browser Protection" })}
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-3">
+            {t("firewallHub.bp.desc", { defaultValue: "Chrome / Edge / Firefox extension that intercepts prompts and attachments on ChatGPT, Claude and Gemini." })}
+          </p>
+          <a
+            href={`${BASE}api/extension/download`}
+            download
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-primary text-black font-semibold text-sm hover:opacity-90 transition-opacity"
+            data-testid="firewall-bp-download"
+          >
+            <Download className="w-4 h-4" />
+            {t("firewallHub.bp.cta", { defaultValue: "Download (.zip)" })}
+            {meta?.version && <span className="opacity-80 text-xs">v{meta.version}</span>}
+          </a>
+        </div>
+
+        <div className="bg-card/60 border border-border/40 rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Code2 className="w-5 h-5 text-violet-400" />
+            <h3 className="font-bold text-foreground">
+              {t("firewallHub.ide.title", { defaultValue: "IDE Protection" })}
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-3">
+            {t("firewallHub.ide.desc", { defaultValue: "Wrap any IDE assistant (Cursor, VS Code Copilot Chat, Replit) with the same firewall via our developer SDK." })}
+          </p>
+          <button
+            onClick={() => onNavigate("devMode")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 text-sm font-semibold transition-colors"
+            data-testid="firewall-ide-open"
+          >
+            <ExternalLink className="w-4 h-4" />
+            {t("firewallHub.ide.cta", { defaultValue: "Open Dev Mode" })}
+          </button>
+        </div>
+
+        <KeyManagementCard />
+      </div>
 
       {/* Manual install panel — visible by default */}
       <motion.section
@@ -99,59 +275,21 @@ export default function FirewallHub({ onNavigate }: { onNavigate: (v: AppView) =
         </div>
       </motion.section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <button
-          onClick={() => onNavigate("firewallDocs")}
-          className="text-left bg-card/50 border border-border/40 rounded-2xl p-5 hover:border-primary/40 transition-all"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Book className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-foreground">
-              {t("firewallHub.docsCardTitle", { defaultValue: "Full reference & API" })}
-            </h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {t("firewallHub.docsCardDesc", { defaultValue: "Endpoints, browser compatibility, configuration and changelog." })}
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary">
-            {t("home.openSection")} <ExternalLink className="w-3 h-3" />
-          </div>
-        </button>
-
-        <a
-          href="https://chrome.google.com/webstore"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-left bg-card/50 border border-border/40 rounded-2xl p-5 hover:border-primary/40 transition-all"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Chrome className="w-5 h-5 text-cyan-400" />
-            <h3 className="font-bold text-foreground">
-              {t("firewallHub.storeCardTitle", { defaultValue: "Chrome Web Store (pending)" })}
-            </h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {t("firewallHub.storeCardDesc", { defaultValue: "We're in the review queue. Until then, use the manual install above." })}
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-cyan-400">
-            {t("firewallHub.openStore", { defaultValue: "Open store" })} <ExternalLink className="w-3 h-3" />
-          </div>
-        </a>
-      </div>
-
-      <div className="bg-card/40 border border-border/30 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <FileCode className="w-5 h-5 text-muted-foreground" />
-          <h3 className="font-semibold text-foreground text-sm">
-            {t("firewallHub.whatItDoesTitle", { defaultValue: "What the firewall blocks" })}
+      <button
+        onClick={() => onNavigate("firewallDocs")}
+        className="w-full text-left bg-card/40 border border-border/30 rounded-2xl p-5 hover:border-primary/40 transition-all"
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <Book className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-foreground">
+            {t("firewallHub.docsCardTitle", { defaultValue: "Full reference & API" })}
           </h3>
+          <ExternalLink className="w-3.5 h-3.5 text-primary ml-auto" />
         </div>
-        <ul className="text-sm text-muted-foreground space-y-1.5 ml-1">
-          <li>• {t("firewallHub.bullet1", { defaultValue: "API keys, credentials and tokens copy-pasted into the prompt." })}</li>
-          <li>• {t("firewallHub.bullet2", { defaultValue: "Risky CSV / PDF / DOCX attachments before they upload." })}</li>
-          <li>• {t("firewallHub.bullet3", { defaultValue: "PII, internal hostnames and structured secrets." })}</li>
-        </ul>
-      </div>
+        <p className="text-sm text-muted-foreground">
+          {t("firewallHub.docsCardDesc", { defaultValue: "Endpoints, browser compatibility, configuration and changelog." })}
+        </p>
+      </button>
     </div>
   );
 }
