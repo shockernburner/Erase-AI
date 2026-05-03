@@ -224,7 +224,7 @@ export function AppShell({
     {
       label: t("appShell.groupSanitizers", { defaultValue: "Dataset Sanitizers" }),
       items: [
-        { id: "datasetSanitizer", labelKey: "appShell.sanitizerHome", icon: <Database className="w-4 h-4" />, match: ["datasetSanitizer", "home"] },
+        { id: "datasetSanitizer", labelKey: "appShell.sanitizerHome", icon: <Database className="w-4 h-4" />, match: ["datasetSanitizer"] },
       ],
     },
     {

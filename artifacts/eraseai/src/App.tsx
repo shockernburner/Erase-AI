@@ -352,6 +352,11 @@ function AuthGate() {
   if ((effectiveView === "social" || effectiveView === "adContent") && !(isAdmin && isOwner)) {
     effectiveView = "home";
   }
+  // Resolve `home` to the user's plan-default surface so the AppShell
+  // active-state highlight always tracks the page actually rendered.
+  if (effectiveView === "home") {
+    effectiveView = getDefaultViewForPlan(user?.planType);
+  }
 
   // Legal/contact pages must remain reachable even when the terms or trial
   // gate is active so the user can read what they're being asked to accept.
@@ -436,26 +441,6 @@ function AuthGate() {
     case "contact":
       inner = <ContactPage onBack={() => setView("home")} />;
       break;
-    case "home": {
-      const planDefault = getDefaultViewForPlan(user?.planType);
-      if (planDefault !== "home") {
-        inner = (() => {
-          switch (planDefault) {
-            case "personal":
-              return <PersonalMode onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-            case "developer":
-              return <DeveloperDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-            case "analytics":
-              return <AnalyticsDashboard onBack={() => setView("home")} onUpgrade={() => setView("pricing")} />;
-            default:
-              return <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
-          }
-        })();
-      } else {
-        inner = <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
-      }
-      break;
-    }
     default:
       inner = <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;
   }
