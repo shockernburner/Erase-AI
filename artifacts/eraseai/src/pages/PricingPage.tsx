@@ -40,6 +40,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showPaymentsMaintenance, setShowPaymentsMaintenance] = useState(false);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
 
@@ -165,63 +166,11 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     }
   };
 
-  const handleCheckout = async (plan: string) => {
-    setCheckoutLoading(plan);
-    try {
-      const successUrl = window.location.origin + import.meta.env.BASE_URL + "?checkout=success";
-      const res = await fetch(`${import.meta.env.BASE_URL}api/billing/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          plan,
-          billingPeriod,
-          returnUrl: successUrl,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || t("pricing.failedCheckout"));
-        return;
-      }
-
-      if (data.intentId && data.clientSecret) {
-        sessionStorage.setItem("eraseai_checkout_intent", data.intentId);
-
-        try {
-          const { init } = await import("@airwallex/components-sdk");
-          const sdkEnv = data.airwallexEnv || "prod";
-          const { payments } = await init({
-            env: sdkEnv,
-            enabledElements: ["payments"],
-          });
-          if (!payments) {
-            console.error("Airwallex SDK: payments element unavailable");
-            alert(t("pricing.somethingWrong"));
-            return;
-          }
-          await payments.redirectToCheckout({
-            intent_id: data.intentId,
-            client_secret: data.clientSecret,
-            currency: data.currency || "USD",
-            country_code: "US",
-            successUrl,
-            failUrl: successUrl,
-          });
-        } catch (sdkErr) {
-          console.error("Airwallex SDK redirect failed:", sdkErr);
-          alert(t("pricing.somethingWrong"));
-        }
-        return;
-      }
-
-      alert(t("pricing.failedCheckoutSession"));
-    } catch {
-      alert(t("pricing.somethingWrong"));
-    } finally {
-      setCheckoutLoading(null);
-    }
+  const handleCheckout = (_plan: string) => {
+    setShowPaymentsMaintenance(true);
   };
+  void checkoutLoading;
+  void setCheckoutLoading;
 
   return (
     <div className="min-h-screen w-full relative">
@@ -532,6 +481,42 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   )}
                 </Button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showPaymentsMaintenance && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowPaymentsMaintenance(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="payments-maintenance-title"
+              className="bg-card border border-border rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                <h3 id="payments-maintenance-title" className="text-xl font-bold text-foreground">
+                  {t("pricing.maintenanceTitle")}
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                {t("pricing.maintenanceBody")}
+              </p>
+              <Button
+                onClick={() => setShowPaymentsMaintenance(false)}
+                className="w-full"
+                autoFocus
+              >
+                {t("pricing.maintenanceOk")}
+              </Button>
             </motion.div>
           </motion.div>
         )}

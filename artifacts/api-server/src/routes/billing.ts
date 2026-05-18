@@ -196,89 +196,15 @@ router.get("/pricing", (_req: Request, res: Response) => {
 router.post("/checkout", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
-  const { plan, returnUrl, billingPeriod } = req.body as {
-    plan?: string;
-    returnUrl?: string;
-    billingPeriod?: string;
-  };
-
-  const period: BillingPeriod = isValidBillingPeriod(billingPeriod) ? billingPeriod : "monthly";
-
-  if (!plan || !PLAN_PRICING[plan]) {
-    res.status(400).json({ error: "Only 'personal', 'pro', and 'business' plans are available for self-serve checkout" });
-    return;
-  }
-
-  const amount = priceFor(plan, period);
-  const currency = PLAN_PRICING[plan].currency;
-  if (amount === null || amount <= 0) {
-    res.status(400).json({ error: "Invalid plan/billing period combination" });
-    return;
-  }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
-
-  if (user.planType === plan && user.subscriptionStatus === "active") {
-    res.status(400).json({ error: `You already have an active ${plan} subscription` });
-    return;
-  }
-
-  if (!isConfigured()) {
-    res.status(503).json({ error: "Payment provider is not configured" });
-    return;
-  }
-
-  const rand = crypto.randomBytes(4).toString("hex");
-  const merchantOrderId = `ea_${plan}_${period}_${Date.now()}_${rand}`;
-  const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol || "https";
-  const host = req.get("host") || "";
-  const origin = `${proto}://${host}`;
-  let successUrl = `${origin}/`;
-  if (returnUrl) {
-    try {
-      const parsed = new URL(returnUrl);
-      if (parsed.host === host) {
-        successUrl = returnUrl;
-      }
-    } catch {
-    }
-  }
-
-  try {
-    const result = await createCheckoutSession({
-      amount,
-      currency,
-      userId: req.user!.id,
-      merchantOrderId,
-      returnUrl: successUrl,
-      plan,
-      billingPeriod: period,
-    });
-
-    await db.update(usersTable).set({
-      subscriptionId: result.intentId,
-      subscriptionStatus: "pending",
-    }).where(eq(usersTable.id, req.user!.id));
-
-    res.json({
-      intentId: result.intentId,
-      clientSecret: result.clientSecret,
-      checkoutUrl: "",
-      provider: "airwallex",
-      airwallexEnv: getSdkEnv(),
-      amount,
-      currency,
-      plan,
-      billingPeriod: period,
-    });
-  } catch (err) {
-    console.error("Airwallex checkout error:", err);
-    res.status(500).json({ error: "Failed to create checkout session. Please try again." });
-  }
+  // Payments temporarily disabled — frontend shows a maintenance modal and
+  // never reaches Airwallex. Server short-circuits as defense-in-depth so
+  // direct API hits also return the same maintenance message.
+  // The full checkout implementation is preserved in git history and can be
+  // restored by reverting this change.
+  res.status(503).json({
+    error: "Payment integration is undergoing a maintenance, sorry for the inconvenience.",
+    code: "PAYMENTS_MAINTENANCE",
+  });
 });
 
 router.get("/checkout-status", async (req: Request, res: Response) => {

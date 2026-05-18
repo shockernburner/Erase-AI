@@ -348,7 +348,10 @@
     "tierPersonalF2": "Unbegrenzte Inhaltsrisikoanalyse",
     "tierPersonalF3": "KI-gestützte Inhaltsumschreibung",
     "tierPersonalF4": "Risikotrend-Überwachung und Warnungen",
-    "tierPersonalF5": "Vollständiger Scanverlauf und Analysen"
+    "tierPersonalF5": "Vollständiger Scanverlauf und Analysen",
+    "maintenanceTitle": "Zahlungen in Wartung",
+    "maintenanceBody": "Die Zahlungsintegration wird gerade gewartet. Entschuldigen Sie die Unannehmlichkeiten.",
+    "maintenanceOk": "OK"
   },
   "dataset": {
     "title": "Datensatz-Bereiniger",

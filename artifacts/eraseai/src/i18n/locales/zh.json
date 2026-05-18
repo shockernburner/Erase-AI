@@ -348,7 +348,10 @@
     "tierPersonalF2": "无限内容风险扫描",
     "tierPersonalF3": "AI内容重写",
     "tierPersonalF4": "风险趋势监控和警报",
-    "tierPersonalF5": "完整扫描历史和分析"
+    "tierPersonalF5": "完整扫描历史和分析",
+    "maintenanceTitle": "支付维护中",
+    "maintenanceBody": "支付集成正在维护中,给您带来不便,敬请谅解。",
+    "maintenanceOk": "确定"
   },
   "dataset": {
     "title": "数据集清洗器",

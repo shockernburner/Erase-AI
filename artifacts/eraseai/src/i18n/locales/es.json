@@ -348,7 +348,10 @@
     "tierPersonalF2": "Escaneo de riesgo ilimitado",
     "tierPersonalF3": "Reescritura de contenido con IA",
     "tierPersonalF4": "Monitoreo de tendencias y alertas",
-    "tierPersonalF5": "Historial completo y análisis"
+    "tierPersonalF5": "Historial completo y análisis",
+    "maintenanceTitle": "Pagos en mantenimiento",
+    "maintenanceBody": "La integración de pagos está en mantenimiento, disculpe las molestias.",
+    "maintenanceOk": "Aceptar"
   },
   "dataset": {
     "title": "Limpiador de datos",

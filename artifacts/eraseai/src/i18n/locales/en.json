@@ -348,7 +348,10 @@
     "tierPersonalF3": "AI-powered content rewriting",
     "tierPersonalF4": "Risk trend monitoring & alerts",
     "tierPersonalF5": "Full scan history & analytics",
-    "tierEnterpriseF6": "Custom data retention"
+    "tierEnterpriseF6": "Custom data retention",
+    "maintenanceTitle": "Payments under maintenance",
+    "maintenanceBody": "Payment integration is undergoing a maintenance, sorry for the inconvenience.",
+    "maintenanceOk": "OK"
   },
   "dataset": {
     "title": "Dataset Sanitizer",

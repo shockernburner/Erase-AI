@@ -348,7 +348,10 @@
     "tierPersonalF2": "Analyse de contenu illimitée",
     "tierPersonalF3": "Réécriture de contenu par IA",
     "tierPersonalF4": "Surveillance des tendances et alertes",
-    "tierPersonalF5": "Historique complet et analyses"
+    "tierPersonalF5": "Historique complet et analyses",
+    "maintenanceTitle": "Paiements en maintenance",
+    "maintenanceBody": "L'intégration des paiements est en cours de maintenance, désolé pour la gêne occasionnée.",
+    "maintenanceOk": "OK"
   },
   "dataset": {
     "title": "Nettoyeur de données",
