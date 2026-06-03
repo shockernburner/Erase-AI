@@ -252,11 +252,11 @@ print(response.json())`,
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
             <div className="text-primary font-bold text-lg">5</div>
-            <div className="text-muted-foreground">Pro</div>
+            <div className="text-muted-foreground">Developer</div>
           </div>
           <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
             <div className="text-violet-400 font-bold text-lg">20</div>
-            <div className="text-muted-foreground">Business</div>
+            <div className="text-muted-foreground">Team</div>
           </div>
           <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
             <div className="text-yellow-400 font-bold text-lg">100</div>
@@ -913,8 +913,8 @@ function RateLimitsSection() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { plan: "Pro", limit: "1,000", color: "text-primary border-primary/30" },
-          { plan: "Business", limit: "10,000", color: "text-violet-400 border-violet-400/30" },
+          { plan: "Developer", limit: "10,000", color: "text-primary border-primary/30" },
+          { plan: "Team", limit: "100,000", color: "text-violet-400 border-violet-400/30" },
           { plan: "Enterprise", limit: t("docs.unlimitedLabel"), color: "text-yellow-400 border-yellow-400/30" },
         ].map((p) => (
           <div key={p.plan} className={`bg-card/40 border rounded-xl p-4 text-center ${p.color}`}>
@@ -962,9 +962,9 @@ function RateLimitsSection() {
 
       <CodeBlock
         code={`{
-  "error": "Monthly API rate limit exceeded. Your Pro plan allows 1,000 requests/month. Limit resets on 5/1/2026.",
-  "limit": 1000,
-  "used": 1000,
+  "error": "Monthly API rate limit exceeded. Your Developer plan allows 10,000 requests/month. Limit resets on 5/1/2026.",
+  "limit": 10000,
+  "used": 10000,
   "resetDate": "2026-05-01T00:00:00.000Z",
   "upgrade": true
 }`}

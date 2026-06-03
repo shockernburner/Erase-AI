@@ -24,7 +24,7 @@ export function UpgradePrompt({ feature, message, onUpgrade, onDismiss }: Upgrad
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground mb-1">
-          {feature} — Pro Feature
+          {feature} — Developer Feature
         </p>
         <p className="text-xs text-muted-foreground mb-3">{message}</p>
         <Button
@@ -33,7 +33,7 @@ export function UpgradePrompt({ feature, message, onUpgrade, onDismiss }: Upgrad
           className="gap-1.5 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
         >
           <Crown className="w-3.5 h-3.5" />
-          Upgrade to Pro
+          Get API Key
         </Button>
       </div>
     </div>

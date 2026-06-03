@@ -264,7 +264,8 @@ router.post("/personal/alerts/:id/read", refreshPlanFromDB, requirePersonalOrHig
       return;
     }
 
-    const alertId = parseInt(req.params.id);
+    const alertIdParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const alertId = Number.parseInt(alertIdParam, 10);
     if (isNaN(alertId)) {
       res.status(400).json({ error: "Invalid alert ID" });
       return;
