@@ -1,1 +1,2 @@
 - [Git writes blocked in main agent](git-main-agent-guard.md) — sandbox forbids ALL destructive `.git` writes (merge, commit, even `rm .git/*.lock`) from main agent; route git ops to a background Project Task.
+- [Git merge + auto-checkpoint clobber](git-merge-checkpoint-clobber.md) — leaving an in-progress merge across a turn boundary lets the auto-checkpoint commit it as a plain commit (drops MERGE_HEAD) → non-ff push loop; have the user run the whole merge+commit+push as ONE atomic script.
