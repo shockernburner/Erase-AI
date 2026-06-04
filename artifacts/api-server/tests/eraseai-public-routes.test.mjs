@@ -183,11 +183,11 @@ describe("DeveloperDashboard.tsx — demo-key panel UX (review fixes)", () => {
 });
 
 describe("PublicLanding.tsx — Enterprise card click handler", () => {
-  test('Enterprise card still emits onPreview("enterprise")', () => {
+  test("Enterprise card routes to the contact/Book Demo flow", () => {
     assert.match(
       PUBLIC_LANDING_TSX,
-      /onPreview\(["']enterprise["']\)/,
-      "PublicLanding must call onPreview('enterprise') for the Enterprise card",
+      /window\.location\.href\s*=\s*`\$\{baseUrl\}contact`/,
+      "PublicLanding Enterprise 'Book Demo' button must route to the contact page",
     );
   });
 });
