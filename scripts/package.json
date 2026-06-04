@@ -8,6 +8,9 @@
     "seed-stripe": "tsx ./src/seed-products.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "stripe": "20.0.0"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:"
