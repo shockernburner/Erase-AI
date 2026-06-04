@@ -261,7 +261,13 @@ router.patch("/admin/users/:id", async (req: Request, res: Response) => {
   try {
     if (!requireAdmin(req, res)) return;
 
-    const { id } = req.params;
+    const idParam = req.params.id;
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
+    if (!id) {
+      res.status(400).json({ error: "Invalid user id" });
+      return;
+    }
+
     const { planType, subscriptionStatus } = req.body as {
       planType?: string;
       subscriptionStatus?: string;

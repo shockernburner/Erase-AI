@@ -1279,11 +1279,11 @@ print(response.json())  # {"ok": true, "meta": {...}}`} lang="python" />
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
             <div className="text-primary font-bold text-lg">5</div>
-            <div className="text-muted-foreground">Pro</div>
+            <div className="text-muted-foreground">Developer</div>
           </div>
           <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
             <div className="text-violet-400 font-bold text-lg">20</div>
-            <div className="text-muted-foreground">Business</div>
+            <div className="text-muted-foreground">Team</div>
           </div>
           <div className="bg-card/40 border border-border/20 rounded-lg p-3 text-center">
             <div className="text-yellow-400 font-bold text-lg">100</div>
