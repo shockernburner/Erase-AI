@@ -49,3 +49,8 @@ Thumbs.db
 .local/
 attached_assets/
 !replit.md
+# Large demo/marketing media exports at repo root (not used by the app)
+/*.mp4
+/*.mov
+/*.webm
+/EraseAI_Project_Hero.png
