@@ -5,6 +5,7 @@ import { authMiddleware } from "./middlewares/authMiddleware";
 import { corsMiddleware } from "./middlewares/corsMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { getStripeSync } from "./lib/stripe";
 
 const app: Express = express();
 
@@ -39,13 +40,38 @@ app.use(
 );
 app.use(corsMiddleware());
 app.use(cookieParser());
-app.use(express.json({
-  verify: (req: express.Request, _res, buf) => {
-    if (req.url?.includes("/billing/webhook")) {
-      (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+
+// Stripe webhook MUST be registered before express.json() — stripe-replit-sync
+// verifies the signature against the raw request body, so it needs the
+// untouched Buffer. Once express.json() parses the body the signature check
+// fails. Keep this route above the JSON parser.
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      res.status(400).json({ error: "Missing stripe-signature" });
+      return;
+    }
+    if (!Buffer.isBuffer(req.body)) {
+      logger.error("Stripe webhook body is not a Buffer — express.json() ran first");
+      res.status(500).json({ error: "Webhook processing error" });
+      return;
+    }
+    try {
+      const sig = Array.isArray(signature) ? signature[0] : signature;
+      const sync = await getStripeSync();
+      await sync.processWebhook(req.body, sig);
+      res.status(200).json({ received: true });
+    } catch (err) {
+      logger.error({ err }, "Stripe webhook processing failed");
+      res.status(400).json({ error: "Webhook processing error" });
     }
   },
-}));
+);
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(authMiddleware);
 

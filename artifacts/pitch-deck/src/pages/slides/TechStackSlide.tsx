@@ -98,7 +98,7 @@ export default function TechStackSlide() {
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-display text-[1.3vw] font-bold text-text">Auth + Airwallex Payments</h4>
+                  <h4 className="font-display text-[1.3vw] font-bold text-text">Auth + Stripe Payments</h4>
                   <p className="font-body text-[1vw] text-muted">OAuth (Google/Apple), i18n across 6 languages</p>
                 </div>
               </div>

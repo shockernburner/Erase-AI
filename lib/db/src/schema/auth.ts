@@ -33,6 +33,10 @@ export const usersTable = pgTable("users", {
   planType: varchar("plan_type", { length: 20 }).$type<PlanType>().notNull().default("free"),
   subscriptionId: varchar("subscription_id"),
   subscriptionStatus: varchar("subscription_status", { length: 30 }),
+  // Stripe customer id (cus_...) — created on first checkout and reused for
+  // subsequent checkouts and cancellations. `subscription_id` above holds the
+  // active Stripe subscription id (sub_...).
+  stripeCustomerId: varchar("stripe_customer_id"),
   planStartDate: timestamp("plan_start_date", { withTimezone: true }),
   planEndDate: timestamp("plan_end_date", { withTimezone: true }),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),

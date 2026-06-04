@@ -15,13 +15,19 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
   const [attempts, setAttempts] = useState(0);
   const [pollKey, setPollKey] = useState(0);
 
-  const intentId = sessionStorage.getItem("eraseai_checkout_intent");
+  const [sessionId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return (
+      params.get("session_id") ||
+      sessionStorage.getItem("eraseai_checkout_intent")
+    );
+  });
 
   const checkPlan = useCallback(async () => {
     try {
-      if (intentId) {
+      if (sessionId) {
         const statusRes = await fetch(
-          `${import.meta.env.BASE_URL}api/billing/checkout-status?intent_id=${encodeURIComponent(intentId)}`,
+          `${import.meta.env.BASE_URL}api/billing/checkout-status?session_id=${encodeURIComponent(sessionId)}`,
           { credentials: "include" },
         );
         if (statusRes.ok) {
@@ -50,7 +56,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
     } catch {
       return false;
     }
-  }, [intentId]);
+  }, [sessionId]);
 
   useEffect(() => {
     let cancelled = false;

@@ -348,10 +348,7 @@
     "tierPersonalF3": "KI-gestützte Inhaltsumschreibung",
     "tierPersonalF4": "Risikotrend-Überwachung und Warnungen",
     "tierPersonalF5": "Vollständiger Scanverlauf und Analysen",
-    "tierEnterpriseF6": "Benutzerdefinierte Datenaufbewahrung",
-    "maintenanceTitle": "Zahlungen in Wartung",
-    "maintenanceBody": "Die Zahlungsintegration wird gerade gewartet. Entschuldigen Sie die Unannehmlichkeiten.",
-    "maintenanceOk": "OK"
+    "tierEnterpriseF6": "Benutzerdefinierte Datenaufbewahrung"
   },
   "dataset": {
     "title": "Datensatz-Bereiniger",

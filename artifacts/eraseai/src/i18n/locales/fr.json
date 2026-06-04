@@ -348,10 +348,7 @@
     "tierPersonalF3": "Réécriture de contenu par IA",
     "tierPersonalF4": "Surveillance des tendances et alertes",
     "tierPersonalF5": "Historique complet et analyses",
-    "tierEnterpriseF6": "Rétention de données personnalisée",
-    "maintenanceTitle": "Paiements en maintenance",
-    "maintenanceBody": "L'intégration des paiements est en cours de maintenance, désolé pour la gêne occasionnée.",
-    "maintenanceOk": "OK"
+    "tierEnterpriseF6": "Rétention de données personnalisée"
   },
   "dataset": {
     "title": "Nettoyeur de données",

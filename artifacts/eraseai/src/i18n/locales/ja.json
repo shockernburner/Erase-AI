@@ -348,10 +348,7 @@
     "tierPersonalF3": "AI搭載コンテンツ書き換え",
     "tierPersonalF4": "リスクトレンド監視＆アラート",
     "tierPersonalF5": "完全なスキャン履歴＆分析",
-    "tierEnterpriseF6": "カスタムデータ保持",
-    "maintenanceTitle": "決済メンテナンス中",
-    "maintenanceBody": "決済機能はメンテナンス中です。ご不便をおかけして申し訳ございません。",
-    "maintenanceOk": "OK"
+    "tierEnterpriseF6": "カスタムデータ保持"
   },
   "dataset": {
     "title": "データセットクリーナー",

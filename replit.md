@@ -36,7 +36,7 @@ The project is structured as a pnpm monorepo, separating deployable applications
 *   **Version-Controlled Datasets:** Implements robust versioning for immutable data transformations and historical tracking.
 *   **Rule-Based AI Logic:** Both Dataset Intelligence and ML Feedback engines use rule-based systems for auditable analysis and recommendations.
 *   **Secure Authentication:** Session-based authentication with httpOnly cookies, bcrypt hashing, and OAuth support.
-*   **Scalable Payments:** Airwallex integration for managing subscriptions.
+*   **Scalable Payments:** Stripe integration for managing subscriptions.
 
 **UI/UX Decisions (EraseAI Frontend):**
 *   **Design:** Dark-mode UI with a cyan accent.
@@ -51,7 +51,7 @@ The project is structured as a pnpm monorepo, separating deployable applications
 
 **Feature Specifications:**
 
-*   **EraseAI App:** Includes live demo, AI Dataset Unlearning Engine (upload, preview, delete/redact, version history, diffs, Forget Score, audit log), Dataset Intelligence Engine (PII, bias, toxic content detection with auto-fix, dataset profiling), ML Feedback Engine (rule-based recommendations with code snippets), Authentication (Email/Password, Google OAuth, Apple Sign-In), Payments & Access Control (four-tier pricing with monthly/annual billing toggle — Personal $5/mo or $54/yr, Pro $20/mo or $216/yr, Business $99/mo or $1069/yr, annual = round(monthly×12×0.9), Airwallex integration with `billing_period` metadata, feature gating), API Key System & Public API v1 (developer dashboard, plan-aware key limits), API Rate Limiting & Usage Tracking, Personal Mode (advisory text analysis, content rewrite assistant, continuous monitoring), Social Posts Page (marketing hub for Personal Mode), Developer Mode (AI Exposure Control for prompts and code with analyze/sanitize endpoints, history, rate limits).
+*   **EraseAI App:** Includes live demo, AI Dataset Unlearning Engine (upload, preview, delete/redact, version history, diffs, Forget Score, audit log), Dataset Intelligence Engine (PII, bias, toxic content detection with auto-fix, dataset profiling), ML Feedback Engine (rule-based recommendations with code snippets), Authentication (Email/Password, Google OAuth, Apple Sign-In), Payments & Access Control (four-tier pricing with monthly/annual billing toggle — Personal $5/mo or $54/yr, Pro $20/mo or $216/yr, Business $99/mo or $1069/yr, annual = round(monthly×12×0.9), Stripe integration with `billing_period` metadata, feature gating), API Key System & Public API v1 (developer dashboard, plan-aware key limits), API Rate Limiting & Usage Tracking, Personal Mode (advisory text analysis, content rewrite assistant, continuous monitoring), Social Posts Page (marketing hub for Personal Mode), Developer Mode (AI Exposure Control for prompts and code with analyze/sanitize endpoints, history, rate limits).
 *   **Webhook System:** Allows users to configure webhooks triggered by dataset events with exponential backoff and SSRF protection.
 *   **EraseAI Pitch Deck:** 9-slide investor pitch deck (`artifacts/pitch-deck`) covering: Title, Problem (data leaks + $6.5B market), Platform Overview (4 capabilities), AI Firewall (prompt protection), Content Intelligence (scanning/rewriting/trends/personal mode), Developer Tools (SDK/dataset sanitizer), Pricing (5 tiers), Trust & Tech Stack (SOC 2/ISO/GDPR), Closing. Aligned with 83-second explainer video narrative.
 *   **EraseAI "How It Works" Tier Demo Video:** A separate React-based animated video (`artifacts/eraseai-video`) demonstrating tier progression and Personal Mode features with distinct color themes.
@@ -66,7 +66,7 @@ The project is structured as a pnpm monorepo, separating deployable applications
 # External Dependencies
 
 *   **PostgreSQL:** Primary database.
-*   **Airwallex API:** For payment processing.
+*   **Stripe API:** For payment processing.
 *   **Google OAuth:** For social logins.
 *   **Apple Sign-In:** For social logins.
 *   **Orval:** For OpenAPI-based code generation.

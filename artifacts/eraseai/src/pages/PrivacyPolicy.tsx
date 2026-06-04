@@ -70,7 +70,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
               </div>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
                 <h3 className="text-sm font-bold text-primary mb-2">2.4 Billing Information</h3>
-                <p className="text-sm text-muted-foreground">Payment-related information processed through our third-party payment provider (Airwallex). We do not store full credit card numbers on our servers.</p>
+                <p className="text-sm text-muted-foreground">Payment-related information processed through our third-party payment provider (Stripe). We do not store full credit card numbers on our servers.</p>
               </div>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
                 <h3 className="text-sm font-bold text-primary mb-2">2.5 Technical Data</h3>
@@ -148,7 +148,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
               We may share your data with the following categories of third-party service providers, solely to the extent necessary for the operation of the Platform:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-              <li><strong className="text-foreground">Payment Processing:</strong> Airwallex for payment processing. Payment data is handled directly by the payment processor in compliance with PCI-DSS standards.</li>
+              <li><strong className="text-foreground">Payment Processing:</strong> Stripe for payment processing. Payment data is handled directly by the payment processor in compliance with PCI-DSS standards.</li>
               <li><strong className="text-foreground">Authentication Providers:</strong> Google and GitHub for OAuth-based login. We receive only the profile information you authorize.</li>
               <li><strong className="text-foreground">Cloud Infrastructure:</strong> Our hosting providers for server infrastructure and database hosting.</li>
             </ul>

@@ -69,6 +69,23 @@ async function ensureUsersSpendOverrideColumn() {
   }
 }
 
+async function ensureUsersStripeColumns() {
+  // Task #186 — Stripe migration. `stripe_customer_id` holds the cus_... id
+  // created on first checkout; the existing `subscription_id` column now stores
+  // the active Stripe subscription id (sub_...). Idempotent.
+  try {
+    await db.execute(
+      sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR`,
+    );
+    logger.info("Startup migration: users.stripe_customer_id column ensured");
+  } catch (err) {
+    logger.warn(
+      { err },
+      "Startup migration: users.stripe_customer_id column warning (non-fatal)",
+    );
+  }
+}
+
 async function ensureWebhooksTable() {
   try {
     await db.execute(sql`
@@ -253,6 +270,7 @@ export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
   await ensureUsersSpendOverrideColumn();
+  await ensureUsersStripeColumns();
   await ensureWebhooksTable();
   await ensureWebhookDeliveriesTable();
   await ensurePersonalScansTable();

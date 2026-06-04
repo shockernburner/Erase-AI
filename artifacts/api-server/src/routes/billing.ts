@@ -1,19 +1,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import crypto from "crypto";
+import { eq, sql } from "drizzle-orm";
 import {
   getSessionId,
   getSession,
   updateSession,
 } from "../lib/auth";
-import {
-  createCheckoutSession,
-  getPaymentIntent,
-  isConfigured,
-  getSdkEnv,
-} from "../lib/airwallex";
+import { getUncachableStripeClient } from "../lib/stripe";
 import { toPlanType } from "../middlewares/planMiddleware";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -37,14 +32,13 @@ const PLAN_PRICING: Record<string, PlanPricing> = {
   business: { monthly: 99, annual: annualPrice(99), currency: "USD" },
 };
 
+// Backend plan ids that map to a paid, self-serve Stripe checkout. `free`
+// needs no checkout and `enterprise` is sales-assisted (Book Demo), so neither
+// appears here.
+const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"] as const;
+
 function isValidBillingPeriod(value: unknown): value is BillingPeriod {
   return value === "monthly" || value === "annual";
-}
-
-function priceFor(plan: string, period: BillingPeriod): number | null {
-  const tier = PLAN_PRICING[plan];
-  if (!tier) return null;
-  return period === "annual" ? tier.annual : tier.monthly;
 }
 
 function extendEndDate(start: Date, period: BillingPeriod): Date {
@@ -68,14 +62,34 @@ function extendEndDate(start: Date, period: BillingPeriod): Date {
   return target;
 }
 
-const WEBHOOK_SECRET = process.env.AIRWALLEX_WEBHOOK_SECRET || "";
-
 function requireAuth(req: Request, res: Response): boolean {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Authentication required" });
     return false;
   }
   return true;
+}
+
+// Resolve the Stripe price id for a (plan, billing period) pair by querying the
+// synced `stripe.*` schema that stripe-replit-sync keeps up to date. Products
+// are tagged with metadata.plan (personal|pro|business) and each price with
+// metadata.billing_period (monthly|annual) by the seed-products script.
+async function findPriceId(
+  plan: string,
+  period: BillingPeriod,
+): Promise<string | null> {
+  const result = await db.execute(sql`
+    SELECT pr.id AS price_id
+    FROM stripe.prices pr
+    JOIN stripe.products p ON pr.product = p.id
+    WHERE p.active = true
+      AND pr.active = true
+      AND p.metadata->>'plan' = ${plan}
+      AND pr.metadata->>'billing_period' = ${period}
+    LIMIT 1
+  `);
+  const row = result.rows[0] as { price_id?: string } | undefined;
+  return row?.price_id ?? null;
 }
 
 router.get("/plan", async (req: Request, res: Response) => {
@@ -197,26 +211,94 @@ router.get("/pricing", (_req: Request, res: Response) => {
   });
 });
 
+// Create a Stripe Checkout Session (subscription mode) and return its hosted
+// URL. The frontend redirects the browser to it; Stripe sends the user back to
+// `returnUrl?checkout=success&session_id=...` where CheckoutSuccess polls
+// /checkout-status to activate the plan.
 router.post("/checkout", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
-  // Payments temporarily disabled — frontend shows a maintenance modal and
-  // never reaches Airwallex. Server short-circuits as defense-in-depth so
-  // direct API hits also return the same maintenance message.
-  // The full checkout implementation is preserved in git history and can be
-  // restored by reverting this change.
-  res.status(503).json({
-    error: "Payment integration is undergoing a maintenance, sorry for the inconvenience.",
-    code: "PAYMENTS_MAINTENANCE",
-  });
+  const { plan, billingPeriod, returnUrl } = req.body as {
+    plan?: unknown;
+    billingPeriod?: unknown;
+    returnUrl?: unknown;
+  };
+
+  if (typeof plan !== "string" || !(VALID_CHECKOUT_PLANS as readonly string[]).includes(plan)) {
+    res.status(400).json({ error: "Invalid or non-checkoutable plan" });
+    return;
+  }
+  const period: BillingPeriod = isValidBillingPeriod(billingPeriod) ? billingPeriod : "monthly";
+
+  if (typeof returnUrl !== "string" || !/^https?:\/\//.test(returnUrl)) {
+    res.status(400).json({ error: "Missing or invalid returnUrl" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  try {
+    const stripe = await getUncachableStripeClient();
+
+    const priceId = await findPriceId(plan, period);
+    if (!priceId) {
+      logger.error({ plan, period }, "No Stripe price found for plan/period");
+      res.status(503).json({
+        error: "This plan is not available for checkout right now.",
+        code: "PRICE_NOT_FOUND",
+      });
+      return;
+    }
+
+    let customerId = user.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { user_id: user.id },
+      });
+      customerId = customer.id;
+      await db.update(usersTable)
+        .set({ stripeCustomerId: customerId })
+        .where(eq(usersTable.id, user.id));
+    }
+
+    const sep = returnUrl.includes("?") ? "&" : "?";
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${returnUrl}${sep}checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${returnUrl}${sep}checkout=cancel`,
+      allow_promotion_codes: true,
+      metadata: { user_id: user.id, plan, billing_period: period },
+      subscription_data: {
+        metadata: { user_id: user.id, plan, billing_period: period },
+      },
+    });
+
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (err) {
+    logger.error({ err }, "Stripe checkout session creation failed");
+    res.status(503).json({
+      error: "Payment system is temporarily unavailable. Please try again.",
+      code: "STRIPE_UNAVAILABLE",
+    });
+  }
 });
 
+// Poll endpoint hit by CheckoutSuccess after the Stripe redirect. Retrieves the
+// Checkout Session, verifies it belongs to the caller, and on a completed/paid
+// session promotes the user to the purchased plan.
 router.get("/checkout-status", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
-  const intentId = req.query.intent_id as string | undefined;
-  if (!intentId) {
-    res.status(400).json({ error: "Missing intent_id parameter" });
+  const sessionId = req.query.session_id as string | undefined;
+  if (!sessionId) {
+    res.status(400).json({ error: "Missing session_id parameter" });
     return;
   }
 
@@ -227,37 +309,50 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       return;
     }
 
-    if ((user.planType === "personal" || user.planType === "pro" || user.planType === "business") && user.subscriptionStatus === "active" && user.subscriptionId === intentId) {
-      res.json({ status: "succeeded", planType: user.planType });
-      return;
-    }
+    const stripe = await getUncachableStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["subscription"],
+    });
 
-    if (user.subscriptionStatus !== "pending" || user.subscriptionId !== intentId) {
-      res.status(403).json({ error: "No matching pending checkout for this intent" });
-      return;
-    }
-
-    const intent = await getPaymentIntent(intentId);
-
-    const userId = intent.metadata?.user_id;
-    if (userId !== req.user!.id) {
+    if (session.metadata?.user_id !== req.user!.id) {
       res.status(403).json({ error: "Access denied" });
       return;
     }
 
-    const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
-    const rawPlan = intent.metadata?.plan || "pro";
-    const targetPlan = toPlanType(VALID_CHECKOUT_PLANS.includes(rawPlan) ? rawPlan : "pro");
-    const rawPeriod = intent.metadata?.billing_period;
+    const rawPlan = session.metadata?.plan || "pro";
+    const targetPlan = toPlanType(
+      (VALID_CHECKOUT_PLANS as readonly string[]).includes(rawPlan) ? rawPlan : "pro",
+    );
+    const rawPeriod = session.metadata?.billing_period;
     const targetPeriod: BillingPeriod = isValidBillingPeriod(rawPeriod) ? rawPeriod : "monthly";
 
-    if (intent.status === "SUCCEEDED") {
+    const paid =
+      session.status === "complete" &&
+      (session.payment_status === "paid" || session.payment_status === "no_payment_required");
+
+    if (paid) {
+      const sub = session.subscription;
+      let subscriptionId: string | null = null;
+      let periodEnd: Date | null = null;
+      if (typeof sub === "string") {
+        subscriptionId = sub;
+      } else if (sub) {
+        const subObj = sub as { id: string; current_period_end?: number };
+        subscriptionId = subObj.id;
+        if (typeof subObj.current_period_end === "number") {
+          periodEnd = new Date(subObj.current_period_end * 1000);
+        }
+      }
+
       const now = new Date();
-      const endDate = extendEndDate(now, targetPeriod);
+      const endDate = periodEnd ?? extendEndDate(now, targetPeriod);
+      const customerId =
+        typeof session.customer === "string" ? session.customer : user.stripeCustomerId;
 
       await db.update(usersTable).set({
         planType: targetPlan,
-        subscriptionId: intentId,
+        subscriptionId,
+        stripeCustomerId: customerId,
         subscriptionStatus: "active",
         planStartDate: now,
         planEndDate: endDate,
@@ -265,21 +360,25 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
 
       const sid = getSessionId(req);
       if (sid) {
-        const session = await getSession(sid);
-        if (session) {
-          (session.user as { planType: string }).planType = targetPlan;
-          await updateSession(sid, session);
+        const sessionRecord = await getSession(sid);
+        if (sessionRecord) {
+          (sessionRecord.user as { planType: string }).planType = targetPlan;
+          await updateSession(sid, sessionRecord);
         }
       }
 
       res.json({ status: "succeeded", planType: targetPlan, billingPeriod: targetPeriod });
-    } else if (intent.status === "REQUIRES_PAYMENT_METHOD" || intent.status === "REQUIRES_CUSTOMER_ACTION") {
-      res.json({ status: "pending" });
-    } else {
-      res.json({ status: intent.status.toLowerCase() });
+      return;
     }
+
+    if (session.status === "expired") {
+      res.json({ status: "expired" });
+      return;
+    }
+
+    res.json({ status: "pending" });
   } catch (err) {
-    console.error("Checkout status check error:", err);
+    logger.error({ err }, "Checkout status check failed");
     res.status(500).json({ error: "Failed to check payment status" });
   }
 });
@@ -296,6 +395,18 @@ router.post("/cancel", async (req: Request, res: Response) => {
   if (user.planType === "free") {
     res.status(400).json({ error: "You are already on the free plan" });
     return;
+  }
+
+  // Best-effort cancel in Stripe. We still downgrade locally even if the Stripe
+  // call fails (e.g. the subscription was already removed, or Stripe is down)
+  // so the user is never stuck paying with no way to cancel from our UI.
+  if (user.subscriptionId) {
+    try {
+      const stripe = await getUncachableStripeClient();
+      await stripe.subscriptions.cancel(user.subscriptionId);
+    } catch (err) {
+      logger.warn({ err, subscriptionId: user.subscriptionId }, "Stripe subscription cancel failed (non-fatal)");
+    }
   }
 
   await db.update(usersTable).set({
@@ -318,122 +429,6 @@ router.post("/cancel", async (req: Request, res: Response) => {
     plan: "free",
     subscriptionStatus: "cancelled",
   });
-});
-
-function verifyWebhookSignature(req: Request): boolean {
-  if (!WEBHOOK_SECRET) {
-    return false;
-  }
-
-  const signature = req.headers["x-signature"] as string | undefined;
-  const timestamp = req.headers["x-timestamp"] as string | undefined;
-
-  if (!signature || !timestamp) {
-    return false;
-  }
-
-  const age = Math.abs(Date.now() / 1000 - parseInt(timestamp, 10));
-  if (isNaN(age) || age > 300) {
-    return false;
-  }
-
-  const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
-  const bodyStr = rawBody ? rawBody.toString("utf-8") : JSON.stringify(req.body);
-  const expected = crypto
-    .createHmac("sha256", WEBHOOK_SECRET)
-    .update(`${timestamp}${bodyStr}`)
-    .digest("hex");
-
-  if (signature.length !== expected.length) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-}
-
-router.post("/webhook", async (req: Request, res: Response) => {
-  if (!verifyWebhookSignature(req)) {
-    res.status(401).json({ error: "Invalid webhook signature" });
-    return;
-  }
-
-  const event = req.body as {
-    name?: string;
-    data?: {
-      object?: {
-        id?: string;
-        status?: string;
-        metadata?: Record<string, string>;
-        merchant_order_id?: string;
-      };
-    };
-  };
-
-  if (!event.name || !event.data?.object) {
-    res.status(400).json({ error: "Invalid webhook payload" });
-    return;
-  }
-
-  const intentData = event.data.object;
-  const userId = intentData.metadata?.user_id;
-
-  if (!userId) {
-    res.status(200).json({ received: true, skipped: "no user_id in metadata" });
-    return;
-  }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user) {
-    res.status(200).json({ received: true, skipped: "user not found" });
-    return;
-  }
-
-  try {
-    switch (event.name) {
-      case "payment_intent.succeeded": {
-        const VALID_PLANS = ["personal", "pro", "business"];
-        const rawWebhookPlan = intentData.metadata?.plan || "pro";
-        const webhookPlan = toPlanType(VALID_PLANS.includes(rawWebhookPlan) ? rawWebhookPlan : "pro");
-        const rawWebhookPeriod = intentData.metadata?.billing_period;
-        const webhookPeriod: BillingPeriod = isValidBillingPeriod(rawWebhookPeriod) ? rawWebhookPeriod : "monthly";
-        if ((user.planType === webhookPlan) && user.subscriptionStatus === "active" && user.subscriptionId === intentData.id) {
-          break;
-        }
-
-        if (user.subscriptionId && user.subscriptionId !== intentData.id) {
-          break;
-        }
-
-        const now = new Date();
-        const endDate = extendEndDate(now, webhookPeriod);
-
-        await db.update(usersTable).set({
-          planType: webhookPlan,
-          subscriptionStatus: "active",
-          subscriptionId: intentData.id || null,
-          planStartDate: now,
-          planEndDate: endDate,
-        }).where(eq(usersTable.id, userId));
-        break;
-      }
-      case "payment_intent.cancelled": {
-        if (user.subscriptionStatus === "pending" && (!user.subscriptionId || user.subscriptionId === intentData.id)) {
-          await db.update(usersTable).set({
-            subscriptionStatus: "failed",
-          }).where(eq(usersTable.id, userId));
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  } catch (err) {
-    console.error("Webhook processing error:", err);
-    res.status(500).json({ error: "Webhook processing failed" });
-    return;
-  }
-
-  res.json({ received: true });
 });
 
 export default router;

@@ -16,7 +16,6 @@ import {
   Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
@@ -41,14 +40,12 @@ function tierIndex(id: TierId): number {
 }
 
 export default function PricingPage({ onBack }: PricingPageProps) {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const currentPlan = (user?.planType || "free") as TierId;
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showPaymentsMaintenance, setShowPaymentsMaintenance] = useState(false);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
 
   useEffect(() => {
@@ -81,11 +78,31 @@ export default function PricingPage({ onBack }: PricingPageProps) {
     }
   };
 
-  const handleCheckout = (_plan: string) => {
-    setShowPaymentsMaintenance(true);
+  const handleCheckout = async (plan: string) => {
+    setCheckoutLoading(plan);
+    try {
+      const returnUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
+      const response = await fetch(`${import.meta.env.BASE_URL}api/billing/checkout`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, billingPeriod: "monthly", returnUrl }),
+      });
+      const data = await response.json();
+      if (response.ok && data.url) {
+        if (data.sessionId) {
+          sessionStorage.setItem("eraseai_checkout_intent", data.sessionId);
+        }
+        window.location.href = data.url;
+        return;
+      }
+      alert(data.error || "Unable to start checkout. Please try again.");
+      setCheckoutLoading(null);
+    } catch {
+      alert("Something went wrong. Please try again.");
+      setCheckoutLoading(null);
+    }
   };
-  void checkoutLoading;
-  void setCheckoutLoading;
 
   // TODO: Rename backend plan ids `pro` -> `developer` and `business` -> `team`
   // across billing, analytics, and stored plan metadata once a migration is planned.
@@ -415,42 +432,6 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   )}
                 </Button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {showPaymentsMaintenance && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowPaymentsMaintenance(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              onClick={(e) => e.stopPropagation()}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="payments-maintenance-title"
-              className="bg-card border border-border rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <AlertTriangle className="w-6 h-6 text-yellow-500" />
-                <h3 id="payments-maintenance-title" className="text-xl font-bold text-foreground">
-                  {t("pricing.maintenanceTitle")}
-                </h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">
-                {t("pricing.maintenanceBody")}
-              </p>
-              <Button
-                onClick={() => setShowPaymentsMaintenance(false)}
-                className="w-full"
-                autoFocus
-              >
-                {t("pricing.maintenanceOk")}
-              </Button>
             </motion.div>
           </motion.div>
         )}
