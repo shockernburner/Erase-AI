@@ -1,0 +1,1 @@
+- [Git writes blocked in main agent](git-main-agent-guard.md) — sandbox forbids ALL destructive `.git` writes (merge, commit, even `rm .git/*.lock`) from main agent; route git ops to a background Project Task.
