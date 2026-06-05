@@ -54,22 +54,34 @@ async function initStripe(): Promise<void> {
 
     const stripeSync = await getStripeSync();
 
-    const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
-    if (domain) {
-      const webhookResult = await stripeSync.findOrCreateManagedWebhook(
-        `https://${domain}/api/stripe/webhook`,
-      );
-      logger.info(
-        { url: webhookResult?.url ?? "setup complete" },
-        "Stripe managed webhook configured",
-      );
-    } else {
-      logger.warn("REPLIT_DOMAINS not set — skipping managed webhook setup");
+    // Managed webhook setup is isolated in its own try/catch: a webhook failure
+    // must NOT prevent the catalog backfill below from running, otherwise a
+    // single bad boot leaves stripe.products/prices empty and checkout returns
+    // PRICE_NOT_FOUND until the next restart.
+    try {
+      const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+      if (domain) {
+        const webhookResult = await stripeSync.findOrCreateManagedWebhook(
+          `https://${domain}/api/stripe/webhook`,
+        );
+        logger.info(
+          { url: webhookResult?.url ?? "setup complete" },
+          "Stripe managed webhook configured",
+        );
+      } else {
+        logger.warn("REPLIT_DOMAINS not set — skipping managed webhook setup");
+      }
+    } catch (err) {
+      logger.error({ err }, "Stripe managed webhook setup failed (continuing to backfill)");
     }
 
     // Backfill runs in the background; failures here are logged, not fatal.
+    // NOTE: `object: "all"` is REQUIRED. Calling syncBackfill() with no args
+    // makes `object` default to a method reference, the internal switch falls
+    // through to its no-op default, and NOTHING is synced (products/prices
+    // never land in the stripe.* schema, so checkout can't resolve a price).
     stripeSync
-      .syncBackfill()
+      .syncBackfill({ object: "all" })
       .then(() => logger.info("Stripe data backfill complete"))
       .catch((err) => logger.error({ err }, "Stripe data backfill failed"));
   } catch (err) {
