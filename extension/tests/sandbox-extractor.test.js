@@ -11,6 +11,17 @@ const SANDBOX_EXTRACTOR_SRC = fs.readFileSync(
 );
 
 beforeAll(() => {
+  // Small archive guards so the zip-bomb tests stay cheap and deterministic.
+  // MAX_EXTRACTED_BYTES is kept at the production 200 KB so no existing test
+  // changes behavior. The module captures this once at eval time.
+  globalThis.EraseAILimits = Object.freeze({
+    MAX_EXTRACTED_BYTES: 200 * 1024,
+    OCR_REQUEST_TIMEOUT_MS: 30000,
+    ARCHIVE_MAX_ENTRIES: 5,
+    ARCHIVE_MAX_TOTAL_BYTES: 1024 * 1024,
+    ARCHIVE_MAX_ENTRY_BYTES: 512 * 1024,
+    ARCHIVE_MAX_DEPTH: 1,
+  });
   // eslint-disable-next-line no-eval
   (0, eval)(SANDBOX_EXTRACTOR_SRC);
 });
@@ -18,6 +29,7 @@ beforeAll(() => {
 beforeEach(() => {
   delete globalThis.pdfjsLib;
   delete globalThis.mammoth;
+  delete globalThis.Tesseract;
 });
 
 const PDF_HEADER = new TextEncoder().encode("%PDF-1.7\n");
@@ -754,3 +766,339 @@ function buildPdfBytes(contentStream, { compressed = false } = {}) {
     return buildWithStream(compressedBytes, compressedBytes.length, "/FlateDecode");
   })();
 }
+
+// ---------------------------------------------------------------------------
+// Tar / gzip fixture builders (the zip builders above are reused as-is).
+// ---------------------------------------------------------------------------
+
+function octalField(n, len) {
+  // POSIX numeric tar fields: octal digits, zero-padded, NUL-terminated.
+  const s = n.toString(8);
+  return s.padStart(len - 1, "0") + "\0";
+}
+
+function buildTar(files) {
+  const enc = new TextEncoder();
+  const blocks = [];
+  for (const f of files) {
+    const data = f.data instanceof Uint8Array ? f.data : enc.encode(f.data);
+    const header = new Uint8Array(512);
+    header.set(enc.encode(f.name).subarray(0, 100), 0);
+    header.set(enc.encode("0000644\0"), 100); // mode
+    header.set(enc.encode("0000000\0"), 108); // uid
+    header.set(enc.encode("0000000\0"), 116); // gid
+    header.set(enc.encode(octalField(data.length, 12)), 124); // size
+    header.set(enc.encode("00000000000\0"), 136); // mtime
+    header[156] = 0x30; // typeflag '0' (regular file)
+    header.set(enc.encode("ustar\0"), 257); // magic
+    header.set(enc.encode("00"), 263); // version
+    // checksum: spaces, then octal of the byte sum (parser ignores it, but
+    // keep it well-formed).
+    for (let i = 148; i < 156; i += 1) header[i] = 0x20;
+    let sum = 0;
+    for (let i = 0; i < 512; i += 1) sum += header[i];
+    header.set(enc.encode(sum.toString(8).padStart(6, "0") + "\0 "), 148);
+    blocks.push(header);
+    const padded = new Uint8Array(Math.ceil(data.length / 512) * 512);
+    padded.set(data, 0);
+    blocks.push(padded);
+  }
+  blocks.push(new Uint8Array(512));
+  blocks.push(new Uint8Array(512));
+  const total = blocks.reduce((a, b) => a + b.length, 0);
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const b of blocks) { out.set(b, p); p += b.length; }
+  return out;
+}
+
+async function gzip(bytes) {
+  const cs = new CompressionStream("gzip");
+  const writer = cs.writable.getWriter();
+  writer.write(bytes instanceof Uint8Array ? bytes : new TextEncoder().encode(bytes));
+  writer.close();
+  const buf = await new Response(cs.readable).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+// Builds a ZIP where each entry may carry adversarial overrides:
+//   compressed: DEFLATE the data (method 8)
+//   fakeUncompressedSize: value written to the local + central size fields,
+//     decoupled from the real data length, to simulate a lying directory
+//   gpFlag: general-purpose bit flag (bit 0 set => encrypted)
+async function buildAdversarialZip(files) {
+  const enc = new TextEncoder();
+  const localChunks = [];
+  const cdChunks = [];
+  let offset = 0;
+  let totalLocal = 0;
+  for (const file of files) {
+    const nameBytes = enc.encode(file.name);
+    const raw = file.data instanceof Uint8Array ? file.data : enc.encode(file.data);
+    const useDeflate = file.compressed && raw.length > 0;
+    const stored = useDeflate ? await deflateRaw(raw) : raw;
+    const method = useDeflate ? 8 : 0;
+    const crc = crc32(raw);
+    const gpFlag = file.gpFlag || 0;
+    const declared = typeof file.fakeUncompressedSize === "number"
+      ? file.fakeUncompressedSize
+      : raw.length;
+
+    const local = new Uint8Array(30 + nameBytes.length + stored.length);
+    const dvL = new DataView(local.buffer);
+    dvL.setUint32(0, 0x04034b50, true);
+    dvL.setUint16(4, 20, true);
+    dvL.setUint16(6, gpFlag, true);
+    dvL.setUint16(8, method, true);
+    dvL.setUint32(14, crc, true);
+    dvL.setUint32(18, stored.length, true);
+    dvL.setUint32(22, declared, true);
+    dvL.setUint16(26, nameBytes.length, true);
+    local.set(nameBytes, 30);
+    local.set(stored, 30 + nameBytes.length);
+    localChunks.push(local);
+
+    const central = new Uint8Array(46 + nameBytes.length);
+    const dvC = new DataView(central.buffer);
+    dvC.setUint32(0, 0x02014b50, true);
+    dvC.setUint16(4, 20, true);
+    dvC.setUint16(6, 20, true);
+    dvC.setUint16(8, gpFlag, true);
+    dvC.setUint16(10, method, true);
+    dvC.setUint32(16, crc, true);
+    dvC.setUint32(20, stored.length, true);
+    dvC.setUint32(24, declared, true);
+    dvC.setUint16(28, nameBytes.length, true);
+    dvC.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    cdChunks.push(central);
+
+    offset += local.length;
+    totalLocal += local.length;
+  }
+
+  const cdSize = cdChunks.reduce((a, c) => a + c.length, 0);
+  const eocd = new Uint8Array(22);
+  const dvE = new DataView(eocd.buffer);
+  dvE.setUint32(0, 0x06054b50, true);
+  dvE.setUint16(8, files.length, true);
+  dvE.setUint16(10, files.length, true);
+  dvE.setUint32(12, cdSize, true);
+  dvE.setUint32(16, totalLocal, true);
+
+  const total = totalLocal + cdSize + eocd.length;
+  const out = new Uint8Array(total);
+  let p = 0;
+  for (const c of localChunks) { out.set(c, p); p += c.length; }
+  for (const c of cdChunks) { out.set(c, p); p += c.length; }
+  out.set(eocd, p);
+  return out;
+}
+
+function byName(entries, name) {
+  return entries.find((e) => e.name === name);
+}
+
+describe("sandbox-extractor — extractImageText() OCR", () => {
+  it("rejects buffers that are too short to be an image", async () => {
+    await expect(
+      globalThis.__eraseAISandboxExtractor.extractImageText(new Uint8Array([1, 2, 3])),
+    ).rejects.toThrow(/image/);
+  });
+
+  it("rejects when Tesseract isn't loaded", async () => {
+    const bytes = new Uint8Array(16);
+    await expect(
+      globalThis.__eraseAISandboxExtractor.extractImageText(bytes),
+    ).rejects.toThrow(/Tesseract/);
+  });
+
+  it("passes the image to Tesseract.recognize and returns normalized text", async () => {
+    let recognizeCalled = false;
+    globalThis.Tesseract = {
+      recognize: async () => {
+        recognizeCalled = true;
+        return { data: { text: "  Customer  SSN\n123-45-6789  \n" } };
+      },
+    };
+    const bytes = new Uint8Array(32);
+    const text = await globalThis.__eraseAISandboxExtractor.extractImageText(bytes);
+    expect(recognizeCalled).toBe(true);
+    expect(text).toBe("Customer SSN 123-45-6789");
+  });
+});
+
+describe("sandbox-extractor — extractArchive() ZIP enumeration", () => {
+  it("returns one entry per inner file with extracted text", async () => {
+    const zip = await buildZip([
+      { name: "q2/payroll.csv", data: "name,ssn\nAlice,123-45-6789\n" },
+      { name: "readme.txt", data: "internal — do not share" },
+    ]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "bundle.zip");
+    expect(entries).toHaveLength(2);
+    const csv = byName(entries, "q2/payroll.csv");
+    expect(csv.text).toMatch(/123-45-6789/);
+    expect(csv.skipReason).toBeUndefined();
+    expect(byName(entries, "readme.txt").text).toMatch(/do not share/);
+  });
+
+  it("OCRs an image stored inside the archive", async () => {
+    globalThis.Tesseract = {
+      recognize: async () => ({ data: { text: "Screenshot SSN 555-12-3456" } }),
+    };
+    const png = new Uint8Array(32);
+    png.set([0x89, 0x50, 0x4e, 0x47], 0);
+    const zip = await buildZip([{ name: "screenshot.png", data: png }]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "shots.zip");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe("screenshot.png");
+    expect(entries[0].text).toMatch(/555-12-3456/);
+  });
+
+  it("skips junk entries (directories, __MACOSX, .DS_Store)", async () => {
+    const zip = await buildZip([
+      { name: "docs/", data: "" },
+      { name: "__MACOSX/x", data: "junk" },
+      { name: ".DS_Store", data: "junk" },
+      { name: "real.txt", data: "ssn 123-45-6789" },
+    ]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "msgs.zip");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe("real.txt");
+  });
+
+  it("marks unsupported inner file types with entryUnsupported", async () => {
+    const zip = await buildZip([{ name: "weird.xyz", data: "mystery bytes" }]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "x.zip");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].skipReason).toMatch(/not supported/);
+  });
+
+  it("reports entryNoText for an inner file with only whitespace", async () => {
+    const zip = await buildZip([{ name: "blank.txt", data: "   \n   " }]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "blank.zip");
+    expect(entries[0].skipReason).toMatch(/no readable text/);
+  });
+});
+
+describe("sandbox-extractor — extractArchive() TAR and GZIP", () => {
+  it("enumerates a tar's members by magic-byte detection", async () => {
+    const tar = buildTar([
+      { name: "a.csv", data: "ssn 123-45-6789" },
+      { name: "b.txt", data: "hello world" },
+    ]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(tar, "bundle.tar");
+    expect(entries).toHaveLength(2);
+    expect(byName(entries, "a.csv").text).toMatch(/123-45-6789/);
+    expect(byName(entries, "b.txt").text).toMatch(/hello world/);
+  });
+
+  it("decompresses a .tar.gz and enumerates its members", async () => {
+    const tar = buildTar([{ name: "secret.csv", data: "ssn 444-22-1111" }]);
+    const gz = await gzip(tar);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(gz, "bundle.tar.gz");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe("secret.csv");
+    expect(entries[0].text).toMatch(/444-22-1111/);
+  });
+
+  it("treats a single-file gzip as one member named after the archive", async () => {
+    const gz = await gzip("ssn 555-12-3456 in a plain gzip");
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(gz, "notes.txt.gz");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].name).toBe("notes.txt");
+    expect(entries[0].text).toMatch(/555-12-3456/);
+  });
+});
+
+describe("sandbox-extractor — extractArchive() zip-bomb guards", () => {
+  it("flags .7z/.rar/encrypted archives as unsupported", async () => {
+    const sevenZ = new Uint8Array([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c, 0, 0]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(sevenZ, "secret.7z");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].skipReason).toMatch(/not supported/);
+  });
+
+  it("stops after ARCHIVE_MAX_ENTRIES and appends a tooManyFiles row", async () => {
+    const files = [];
+    for (let i = 0; i < 6; i += 1) files.push({ name: `f${i}.txt`, data: `value ${i}` });
+    const zip = await buildZip(files);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "many.zip");
+    expect(entries.some((e) => e.skipReason && /too many files/.test(e.skipReason))).toBe(true);
+    expect(entries.filter((e) => !e.skipReason)).toHaveLength(5);
+  });
+
+  it("flags an inner file over ARCHIVE_MAX_ENTRY_BYTES as entryTooLarge", async () => {
+    const big = "a".repeat(600 * 1024); // > 512 KB
+    const zip = await buildZip([{ name: "huge.txt", data: big }]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "huge.zip");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].skipReason).toMatch(/too large/);
+  });
+
+  it("stops once the cumulative size exceeds ARCHIVE_MAX_TOTAL_BYTES", async () => {
+    const chunk = "a".repeat(400 * 1024); // 3 × 400 KB = 1.2 MB > 1 MB cap
+    const zip = await buildZip([
+      { name: "one.txt", data: chunk },
+      { name: "two.txt", data: chunk },
+      { name: "three.txt", data: chunk },
+    ]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "total.zip");
+    expect(entries.some((e) => e.skipReason && /scan size limit/.test(e.skipReason))).toBe(true);
+  });
+
+  it("flags nested archives deeper than ARCHIVE_MAX_DEPTH as tooDeep", async () => {
+    // depth cap is 1 in tests: outer → mid.zip (depth 1, ok) → deep.zip (depth 2, blocked).
+    const deep = await buildZip([{ name: "leaf.csv", data: "ssn 123-45-6789" }]);
+    const mid = await buildZip([{ name: "deep.zip", data: deep }]);
+    const outer = await buildZip([{ name: "mid.zip", data: mid }]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(outer, "outer.zip");
+    expect(entries.some((e) => e.skipReason && /too deep/.test(e.skipReason))).toBe(true);
+  });
+
+  it("expands a one-level nested archive and prefixes inner names", async () => {
+    const inner = await buildZip([{ name: "secret.csv", data: "ssn 444-22-1111" }]);
+    const outer = await buildZip([{ name: "inner.zip", data: inner }]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(outer, "outer.zip");
+    const leaf = entries.find((e) => /secret\.csv/.test(e.name));
+    expect(leaf).toBeTruthy();
+    expect(leaf.name).toBe("inner.zip → secret.csv");
+    expect(leaf.text).toMatch(/444-22-1111/);
+  });
+});
+
+describe("sandbox-extractor — adversarial decompression hardening", () => {
+  it("aborts a DEFLATE entry whose real inflate blows past the entry cap even when the central directory lies about its size", async () => {
+    // Declared size is a tiny 10 bytes, but the entry actually inflates to
+    // 600 KB (> the 512 KB entry cap). The guard must trust the actual stream,
+    // not the metadata, and stop the inflate.
+    const bomb = "a".repeat(600 * 1024);
+    const zip = await buildAdversarialZip([
+      { name: "lies.txt", data: bomb, compressed: true, fakeUncompressedSize: 10 },
+    ]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "lies.zip");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].skipReason).toMatch(/too large/);
+    expect(entries[0].text).toBeUndefined();
+  });
+
+  it("aborts a gzip bomb that would inflate past the total cap instead of materializing it", async () => {
+    // 2 MB of repetitive bytes compress to a tiny .gz but inflate past the
+    // 1 MB total cap; gunzip must abort mid-stream rather than allocate it all.
+    const bomb = await gzip("a".repeat(2 * 1024 * 1024));
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(bomb, "bomb.gz");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].skipReason).toBeTruthy();
+    expect(entries[0].text).toBeUndefined();
+  });
+
+  it("flags an encrypted ZIP entry as unsupported via the general-purpose bit flag", async () => {
+    const zip = await buildAdversarialZip([
+      { name: "secret.csv", data: "ssn 123-45-6789", gpFlag: 0x0001 },
+    ]);
+    const entries = await globalThis.__eraseAISandboxExtractor.extractArchive(zip, "enc.zip");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].skipReason).toMatch(/not supported/);
+    expect(entries[0].text).toBeUndefined();
+  });
+});

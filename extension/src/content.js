@@ -179,13 +179,25 @@
   //   * 15 MB combined ceiling — see #142 task plan; oversize files are
   //     still recorded so the panel can surface them with an explicit
   //     "review manually" warning, but their text is not extracted.
-  const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+  const LIMITS = (typeof globalThis !== "undefined" && globalThis.EraseAILimits) || {
+    MAX_TOTAL_ATTACHMENT_BYTES: 100 * 1024 * 1024,
+    MAX_ATTACHED_FILES: 32,
+    MAX_EXTRACTED_BYTES: 200 * 1024,
+  };
+  const MAX_TOTAL_ATTACHMENT_BYTES = LIMITS.MAX_TOTAL_ATTACHMENT_BYTES || 100 * 1024 * 1024;
+  const fmtBytes = (n) => {
+    const mb = n / (1024 * 1024);
+    if (mb >= 1) return (Number.isInteger(mb) ? mb : Math.round(mb)) + " MB";
+    return Math.round(n / 1024) + " KB";
+  };
+  const MAX_TOTAL_LABEL = fmtBytes(MAX_TOTAL_ATTACHMENT_BYTES);
+  const MAX_EXTRACTED_LABEL = fmtBytes(LIMITS.MAX_EXTRACTED_BYTES || 200 * 1024);
   // Hard ceilings on file fanout so a hostile/buggy page can't pin the tab
   // by attaching thousands of files. Anything beyond MAX_ATTACHED_FILES is
   // recorded as skipped without being read; FileReader concurrency is also
   // bounded so we never have more than EXTRACT_CONCURRENCY readers running
   // at once. Both numbers are deliberately generous for real users.
-  const MAX_ATTACHED_FILES = 16;
+  const MAX_ATTACHED_FILES = LIMITS.MAX_ATTACHED_FILES || 32;
   const EXTRACT_CONCURRENCY = 4;
   // Bounded fan-out for analyze ports. With attachments enabled, a single
   // send can decompose into many short pieces (one port per chunk). The
@@ -498,7 +510,7 @@
           const name = row.source.slice("file:".length);
           if (truncatedNames.has(name)) {
             row.partialNotice =
-              "only the first 50 KB was scanned — review the rest manually";
+              `only the first ${MAX_EXTRACTED_LABEL} was scanned — review the rest manually`;
           }
         }
       }
@@ -1280,7 +1292,7 @@
       for (const p of sorted) {
         if (running + p.sizeBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
           p.skipReason =
-            "skipped — combined attachment size exceeds 15 MB cap, review manually";
+            `skipped — combined attachment size exceeds ${MAX_TOTAL_LABEL} cap, review manually`;
         } else {
           running += p.sizeBytes;
         }
@@ -1329,7 +1341,9 @@
       const workers = [];
       for (let i = 0; i < workerCount; i += 1) workers.push(worker());
       await Promise.all(workers);
-      extractedFiles = results;
+      // extractText returns a single object for most files but an ARRAY for
+      // archives (one row per inner file). flat() normalizes both shapes.
+      extractedFiles = results.flat();
     }
 
     const pieces = buildPieces(promptText, extractedFiles);

@@ -5,12 +5,27 @@
     <title>EraseAI Firewall — attachment extractor (sandbox)</title>
   </head>
   <body>
+    <script src="limits-config.js"></script>
     <script src="../vendor/pdfjs/pdf.min.js"></script>
     <script src="../vendor/mammoth/mammoth.browser.min.js"></script>
+    <script src="../vendor/tesseract/tesseract.min.js"></script>
     <script>
       if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs/pdf.worker.min.js";
       }
+      // Where tesseract.js fetches its worker, wasm core, and language data.
+      // Paths are relative to this sandbox page's URL
+      // (chrome-extension://<id>/src/sandbox.html), so "../vendor/tesseract/"
+      // resolves to the vendored OCR assets. langPath points at the directory
+      // holding eng.traineddata.gz; `gzip: true` tells the worker the model is
+      // gzip-compressed. The vendored model is the LSTM "fast" English data.
+      window.EraseAITesseractConfig = {
+        workerPath: "../vendor/tesseract/worker.min.js",
+        corePath: "../vendor/tesseract/",
+        langPath: "../vendor/tesseract/",
+        lang: "eng",
+        gzip: true,
+      };
     </script>
     <script src="sandbox-extractor.js"></script>
     <script src="sandbox.js"></script>

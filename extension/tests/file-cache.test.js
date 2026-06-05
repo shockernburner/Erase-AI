@@ -343,7 +343,7 @@ describe("file-cache + multi-piece scan", () => {
   });
 
   it("renders the per-piece block (file name + truncation notice) even with a single file attachment", async () => {
-    const big = "name,note\n" + "Alice,abc\n".repeat(8000); // ~80 KB → triggers truncation
+    const big = "name,note\n" + "Alice,abc\n".repeat(30000); // ~290 KB → triggers truncation
     const chromeStub = makeChromeStub({
       reply: () => ({
         riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear",
@@ -365,12 +365,12 @@ describe("file-cache + multi-piece scan", () => {
     expect(panel.textContent).toMatch(/contacts\.csv/);
     // Truncation must be surfaced as a partial-scan notice and the
     // overall verdict bumped off "safe" so the user has to choose.
-    expect(panel.textContent).toMatch(/only the first 50 KB was scanned/);
+    expect(panel.textContent).toMatch(/only the first 200 KB was scanned/);
     expect(panel.querySelector("#eraseai-send-anyway")).toBeTruthy();
     expect(panel.querySelector("#eraseai-clear-send")).toBeNull();
   });
 
-  it("auto-skips attachments past the 16-file cap without reading them", async () => {
+  it("auto-skips attachments past the 32-file cap without reading them", async () => {
     const chromeStub = makeChromeStub({
       reply: () => ({
         riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear",
@@ -381,10 +381,10 @@ describe("file-cache + multi-piece scan", () => {
     const { textarea, fileInput } = setUpChatGPTComposer({ promptText: "review these" });
     await flushAsync();
 
-    // 20 small text files. The first 16 should be read and analyzed; the
-    // last 4 should be marked skipped with a "first 16 attachments" reason.
+    // 36 small text files. The first 32 should be read and analyzed; the
+    // last 4 should be marked skipped with a "first 32 attachments" reason.
     let lastChange;
-    for (let i = 0; i < 20; i += 1) {
+    for (let i = 0; i < 36; i += 1) {
       const file = makeFile(`note-${i}.txt`, `payload ${i}`, "text/plain");
       Object.defineProperty(fileInput, "files", { value: [file], configurable: true });
       lastChange = new window.Event("change", { bubbles: true });
@@ -397,11 +397,11 @@ describe("file-cache + multi-piece scan", () => {
     const panel = document.getElementById("eraseai-overlay-panel");
     expect(panel).toBeTruthy();
     // The cap message must appear — that's the contract: anything past the
-    // 16th attachment is surfaced as a skipped row, no read.
-    expect(panel.textContent).toMatch(/only the first 16 attachments are scanned/);
-    // At least one of the over-limit files (note-16..note-19) shows up by
+    // 32nd attachment is surfaced as a skipped row, no read.
+    expect(panel.textContent).toMatch(/only the first 32 attachments are scanned/);
+    // At least one of the over-limit files (note-32..note-35) shows up by
     // name in the skipped-row list.
-    expect(panel.textContent).toMatch(/note-1[6-9]\.txt/);
+    expect(panel.textContent).toMatch(/note-3[2-5]\.txt/);
     // And we did scan something (prompt at minimum).
     expect(chromeStub.__analyzeMessages.length).toBeGreaterThanOrEqual(1);
   });

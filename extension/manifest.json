@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "EraseAI Firewall",
-  "version": "1.3.8",
+  "version": "1.4.0",
   "description": "AI Firewall — Analyze prompts for privacy risks before sending to AI platforms",
   "author": "Vantward Solutions Pte. Ltd.",
   "homepage_url": "https://eraseai.ai/ai-firewall",
@@ -33,7 +33,7 @@
         "https://gemini.google.com/*",
         "https://replit.com/*"
       ],
-      "js": ["src/concurrency-config.js", "src/file-extractor.js", "src/content.js"],
+      "js": ["src/concurrency-config.js", "src/limits-config.js", "src/file-extractor.js", "src/content.js"],
       "css": ["src/overlay.css"],
       "run_at": "document_idle"
     }
@@ -51,7 +51,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/sandbox.html", "src/sandbox.js", "src/sandbox-extractor.js"],
+      "resources": [
+        "src/sandbox.html",
+        "src/sandbox.js",
+        "src/sandbox-extractor.js",
+        "vendor/tesseract/worker.min.js",
+        "vendor/tesseract/tesseract-core-simd-lstm.wasm.js",
+        "vendor/tesseract/tesseract-core-lstm.wasm.js",
+        "vendor/tesseract/eng.traineddata.gz"
+      ],
       "matches": [
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",

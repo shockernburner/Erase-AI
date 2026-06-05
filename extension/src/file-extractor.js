@@ -1,8 +1,23 @@
 (() => {
   if (globalThis.__eraseAIExtractor) return;
 
-  const MAX_EXTRACTED_BYTES = 50 * 1024;
-  const MAX_FILE_BYTES = 5 * 1024 * 1024;
+  // Caps come from the shared EraseAILimits global (src/limits-config.js,
+  // loaded before this script in manifest content_scripts). The tests eval
+  // this file in isolation without that global, so fall back to a local copy
+  // that MUST mirror src/limits-config.js.
+  const LIMITS = globalThis.EraseAILimits || {
+    MAX_FILE_BYTES: 25 * 1024 * 1024,
+    MAX_EXTRACTED_BYTES: 200 * 1024,
+    SANDBOX_REQUEST_TIMEOUT_MS: 15000,
+    OCR_REQUEST_TIMEOUT_MS: 30000,
+    ARCHIVE_REQUEST_TIMEOUT_MS: 60000,
+  };
+
+  const MAX_EXTRACTED_BYTES = LIMITS.MAX_EXTRACTED_BYTES || 200 * 1024;
+  const MAX_FILE_BYTES = LIMITS.MAX_FILE_BYTES || 25 * 1024 * 1024;
+  const SANDBOX_DEFAULT_TIMEOUT_MS = LIMITS.SANDBOX_REQUEST_TIMEOUT_MS || 15000;
+  const OCR_TIMEOUT_MS = LIMITS.OCR_REQUEST_TIMEOUT_MS || 30000;
+  const ARCHIVE_TIMEOUT_MS = LIMITS.ARCHIVE_REQUEST_TIMEOUT_MS || 60000;
 
   const PLAIN_TEXT_EXT = new Set([
     "txt", "md", "markdown", "csv", "tsv", "json", "log", "xml", "html",
@@ -29,15 +44,15 @@
     docxNotYetSupported: "couldn't read the Word document — review manually",
     xlsxNotYetSupported: "couldn't read the spreadsheet — review manually",
     pptxNotYetSupported: "couldn't read the slide deck — review manually",
-    image: "image — visual content not scanned, review manually",
-    archive: "archive — contents not scanned, review manually",
+    image: "couldn't read any text from the image — review manually",
+    archive: "couldn't open the archive — review manually",
+    archiveEmpty: "archive has no readable files — review manually",
     unsupported: "file type not supported, review manually",
     empty: "file is empty",
     readError: "couldn't read the file",
   };
 
   const SANDBOX_PATH = "src/sandbox.html";
-  const SANDBOX_REQUEST_TIMEOUT_MS = 15000;
   const SANDBOX_LOAD_TIMEOUT_MS = 5000;
 
   let sandboxBridge = null;
@@ -87,8 +102,14 @@
     return sandboxState;
   }
 
-  async function sandboxExtract(kind, arrayBuffer) {
-    if (sandboxBridge) return sandboxBridge(kind, arrayBuffer);
+  function timeoutForKind(kind) {
+    if (kind === "image") return OCR_TIMEOUT_MS;
+    if (kind === "archive") return ARCHIVE_TIMEOUT_MS;
+    return SANDBOX_DEFAULT_TIMEOUT_MS;
+  }
+
+  async function sandboxExtract(kind, arrayBuffer, name) {
+    if (sandboxBridge) return sandboxBridge(kind, arrayBuffer, name);
     const state = ensureSandbox();
     if (!state) return { ok: false, error: "sandbox unavailable" };
     try {
@@ -109,7 +130,7 @@
       };
       const timer = setTimeout(
         () => finish({ ok: false, error: "sandbox request timed out" }),
-        SANDBOX_REQUEST_TIMEOUT_MS,
+        timeoutForKind(kind),
       );
       channel.port1.onmessage = (event) => {
         const data = event.data;
@@ -118,7 +139,7 @@
       };
       try {
         state.iframe.contentWindow.postMessage(
-          { type: "ERASEAI_EXTRACT", id, kind, bytes: arrayBuffer },
+          { type: "ERASEAI_EXTRACT", id, kind, name, bytes: arrayBuffer },
           "*",
           [channel.port2, arrayBuffer],
         );
@@ -228,11 +249,10 @@
     }
 
     const kind = classify(file);
-    if (kind === "pdf" || kind === "docx" || kind === "xlsx" || kind === "pptx") {
+    if (kind === "pdf" || kind === "docx" || kind === "xlsx" || kind === "pptx" || kind === "image") {
       return extractViaSandbox(file, kind, sizeBytes);
     }
-    if (kind === "image") return makeSkipResult(file, SKIP_REASONS.image);
-    if (kind === "archive") return makeSkipResult(file, SKIP_REASONS.archive);
+    if (kind === "archive") return extractArchiveFile(file, sizeBytes);
     if (kind === "unknown") return makeSkipResult(file, SKIP_REASONS.unsupported);
 
     const read = await readAsText(file);
@@ -253,12 +273,13 @@
     if (kind === "pdf") fallbackReason = SKIP_REASONS.pdfNotYetSupported;
     else if (kind === "docx") fallbackReason = SKIP_REASONS.docxNotYetSupported;
     else if (kind === "xlsx") fallbackReason = SKIP_REASONS.xlsxNotYetSupported;
+    else if (kind === "image") fallbackReason = SKIP_REASONS.image;
     else fallbackReason = SKIP_REASONS.pptxNotYetSupported;
     const buf = await readAsArrayBuffer(file);
     if (!buf.ok || !buf.bytes) return makeSkipResult(file, SKIP_REASONS.readError);
     let result;
     try {
-      result = await sandboxExtract(kind, buf.bytes);
+      result = await sandboxExtract(kind, buf.bytes, file.name);
     } catch {
       return makeSkipResult(file, fallbackReason);
     }
@@ -275,6 +296,65 @@
       text,
       truncated,
     };
+  }
+
+  // Archives expand into one result row per contained file. Returns an ARRAY
+  // (one element per inner file) — extractText's other branches return a
+  // single object, and content.js flattens both shapes. The sandbox already
+  // applies the zip-bomb guards and the extracted-text cap; we re-apply the
+  // cap here too (idempotent) and prefix each inner name with the outer
+  // archive's filename so the panel shows "bundle.zip → q2/payroll.csv".
+  async function extractArchiveFile(file, sizeBytes) {
+    const buf = await readAsArrayBuffer(file);
+    if (!buf.ok || !buf.bytes) return makeSkipResult(file, SKIP_REASONS.readError);
+    let result;
+    try {
+      result = await sandboxExtract("archive", buf.bytes, file.name);
+    } catch {
+      return makeSkipResult(file, SKIP_REASONS.archive);
+    }
+    if (!result || !result.ok || !Array.isArray(result.entries)) {
+      return makeSkipResult(file, SKIP_REASONS.archive);
+    }
+    if (result.entries.length === 0) {
+      return makeSkipResult(file, SKIP_REASONS.archiveEmpty);
+    }
+    const rows = [];
+    for (const e of result.entries) {
+      const rawName = e && typeof e.name === "string" && e.name && e.name !== "(archive)"
+        ? e.name
+        : "";
+      const innerName = rawName ? file.name + " → " + rawName : file.name;
+      const innerSize = e && typeof e.size === "number" ? e.size : 0;
+      if (!e || e.skipReason) {
+        rows.push({
+          name: innerName,
+          mimeType: "",
+          sizeBytes: innerSize,
+          text: "",
+          truncated: false,
+          skipReason: (e && e.skipReason) || SKIP_REASONS.archive,
+        });
+        continue;
+      }
+      const stripped = typeof e.text === "string" ? e.text.replace(/\s+/g, " ").trim() : "";
+      if (!stripped) {
+        rows.push({
+          name: innerName, mimeType: "", sizeBytes: innerSize,
+          text: "", truncated: false, skipReason: SKIP_REASONS.archive,
+        });
+        continue;
+      }
+      const { text, truncated } = truncateUtf8(stripped, MAX_EXTRACTED_BYTES);
+      rows.push({
+        name: innerName,
+        mimeType: "",
+        sizeBytes: innerSize,
+        text,
+        truncated: truncated || !!e.truncated,
+      });
+    }
+    return rows;
   }
 
   globalThis.__eraseAIExtractor = {

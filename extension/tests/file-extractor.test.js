@@ -226,7 +226,7 @@ describe("file-extractor — extractText()", () => {
   });
 
   it("truncates sandbox-extracted PPTX text at the 50 KB cap", async () => {
-    const big = "a".repeat(60 * 1024);
+    const big = "a".repeat(210 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: big }));
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile(
@@ -237,7 +237,7 @@ describe("file-extractor — extractText()", () => {
     );
     expect(out.skipReason).toBeUndefined();
     expect(out.truncated).toBe(true);
-    expect(out.text.length).toBe(50 * 1024);
+    expect(out.text.length).toBe(200 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(null);
   });
 
@@ -261,7 +261,7 @@ describe("file-extractor — extractText()", () => {
   });
 
   it("truncates sandbox-extracted XLSX text at the 50 KB cap", async () => {
-    const big = "a".repeat(60 * 1024);
+    const big = "a".repeat(210 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: big }));
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile(
@@ -272,7 +272,7 @@ describe("file-extractor — extractText()", () => {
     );
     expect(out.skipReason).toBeUndefined();
     expect(out.truncated).toBe(true);
-    expect(out.text.length).toBe(50 * 1024);
+    expect(out.text.length).toBe(200 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(null);
   });
 
@@ -288,25 +288,108 @@ describe("file-extractor — extractText()", () => {
   });
 
   it("truncates sandbox-extracted text at the 50 KB cap (PDF path)", async () => {
-    const big = "a".repeat(60 * 1024);
+    const big = "a".repeat(210 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: big }));
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile("huge.pdf", "%PDF-1.7", "application/pdf"),
     );
     expect(out.skipReason).toBeUndefined();
     expect(out.truncated).toBe(true);
-    expect(out.text.length).toBe(50 * 1024);
+    expect(out.text.length).toBe(200 * 1024);
     globalThis.__eraseAIExtractor.setSandboxBridge(null);
   });
 
-  it("returns image skipReason for image attachments", async () => {
+  it("routes images to the sandbox as kind=image and returns OCR text", async () => {
+    let lastKind = null;
+    let lastBytes = null;
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind, bytes) => {
+      lastKind = kind;
+      lastBytes = bytes;
+      return { ok: true, text: "Screenshot text — SSN 123-45-6789" };
+    });
     const out = await globalThis.__eraseAIExtractor.extractText(
-      makeFile("screenshot.png", "x", "image/png"),
+      makeFile("screenshot.png", "\x89PNG\r\n\x1a\n", "image/png"),
+    );
+    expect(lastKind).toBe("image");
+    expect(lastBytes instanceof ArrayBuffer).toBe(true);
+    expect(out.skipReason).toBeUndefined();
+    expect(out.text).toContain("123-45-6789");
+    expect(out.name).toBe("screenshot.png");
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("falls back to the image skipReason when OCR finds no text", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, text: "   \n  " }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("blank.png", "\x89PNG", "image/png"),
+    );
+    expect(out.skipReason).toBe(globalThis.__eraseAIExtractor.SKIP_REASONS.image);
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("falls back to the image skipReason when the sandbox is unavailable", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("screenshot.png", "\x89PNG", "image/png"),
     );
     expect(out.skipReason).toBe(globalThis.__eraseAIExtractor.SKIP_REASONS.image);
   });
 
-  it("returns archive skipReason for ZIPs", async () => {
+  it("expands an archive into one prefixed row per inner file", async () => {
+    let lastKind = null;
+    let lastName = null;
+    globalThis.__eraseAIExtractor.setSandboxBridge(async (kind, bytes, name) => {
+      lastKind = kind;
+      lastName = name;
+      return {
+        ok: true,
+        entries: [
+          { name: "q2/payroll.csv", text: "SSN 123-45-6789", size: 20 },
+          { name: "logo.png", skipReason: "no readable text — review manually", size: 8 },
+        ],
+      };
+    });
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("bundle.zip", "PK\u0003\u0004", "application/zip"),
+    );
+    expect(lastKind).toBe("archive");
+    expect(lastName).toBe("bundle.zip");
+    expect(Array.isArray(out)).toBe(true);
+    expect(out).toHaveLength(2);
+    expect(out[0].name).toBe("bundle.zip → q2/payroll.csv");
+    expect(out[0].text).toContain("123-45-6789");
+    expect(out[0].skipReason).toBeUndefined();
+    expect(out[1].name).toBe("bundle.zip → logo.png");
+    expect(out[1].skipReason).toBeTruthy();
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("truncates an inner archive file at the extracted-text cap", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({
+      ok: true,
+      entries: [{ name: "huge.csv", text: "a".repeat(210 * 1024), size: 215040 }],
+    }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("bundle.zip", "PK\u0003\u0004", "application/zip"),
+    );
+    expect(Array.isArray(out)).toBe(true);
+    expect(out[0].truncated).toBe(true);
+    expect(out[0].text.length).toBe(200 * 1024);
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("returns an archiveEmpty skipReason for an archive with no usable entries", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(async () => ({ ok: true, entries: [] }));
+    const out = await globalThis.__eraseAIExtractor.extractText(
+      makeFile("empty.zip", "PK\u0003\u0004", "application/zip"),
+    );
+    expect(Array.isArray(out)).toBe(false);
+    expect(out.skipReason).toBe(globalThis.__eraseAIExtractor.SKIP_REASONS.archiveEmpty);
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
+  });
+
+  it("returns an archive skipReason when the sandbox is unavailable", async () => {
+    globalThis.__eraseAIExtractor.setSandboxBridge(null);
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile("bundle.zip", "PK\u0003\u0004", "application/zip"),
     );
@@ -327,21 +410,29 @@ describe("file-extractor — extractText()", () => {
     expect(out.skipReason).toBe(globalThis.__eraseAIExtractor.SKIP_REASONS.empty);
   });
 
-  it("truncates extracted text at the 50 KB cap", async () => {
-    const big = "a".repeat(60 * 1024);
+  it("truncates extracted text at the 200 KB cap", async () => {
+    const big = "a".repeat(210 * 1024);
     const out = await globalThis.__eraseAIExtractor.extractText(
       makeFile("huge.txt", big, "text/plain"),
     );
     expect(out.truncated).toBe(true);
-    expect(out.text.length).toBe(50 * 1024);
-    expect(out.sizeBytes).toBe(60 * 1024);
+    expect(out.text.length).toBe(200 * 1024);
+    expect(out.sizeBytes).toBe(210 * 1024);
   });
 
-  it("returns tooLarge skipReason for files above the 5 MB per-file cap", async () => {
-    // Construct a File that reports a >5MB size without actually
-    // allocating 5MB of test data.
+  it("allows files under the raised 25 MB per-file cap (was 5 MB)", async () => {
+    const file = makeFile("big.csv", "name,email\nAlice,a@b.com\n", "text/csv");
+    Object.defineProperty(file, "size", { value: 20 * 1024 * 1024 });
+    const out = await globalThis.__eraseAIExtractor.extractText(file);
+    expect(out.skipReason).toBeUndefined();
+    expect(out.text).toContain("a@b.com");
+  });
+
+  it("returns tooLarge skipReason for files above the 25 MB per-file cap", async () => {
+    // Construct a File that reports a >25MB size without actually
+    // allocating that much test data.
     const file = makeFile("huge.csv", "tiny", "text/csv");
-    Object.defineProperty(file, "size", { value: 6 * 1024 * 1024 });
+    Object.defineProperty(file, "size", { value: 26 * 1024 * 1024 });
     const out = await globalThis.__eraseAIExtractor.extractText(file);
     expect(out.skipReason).toBe(globalThis.__eraseAIExtractor.SKIP_REASONS.tooLarge);
   });

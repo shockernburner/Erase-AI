@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "1.4.0",
+      "date": "2026-06-05",
+      "changes": [
+        "Image attachments (PNG, JPG, GIF, WebP, BMP, TIFF) are now scanned with on-device OCR (tesseract.js, vendored under extension/vendor/tesseract/) — screenshots and photos of documents are read in the browser and any SSNs, emails, or other PII they contain trip the same per-piece verdicts as typed text. Nothing is uploaded; OCR runs entirely inside the sandbox iframe",
+        "Archive attachments (.zip, .tar, .gz/.tgz) are now expanded and each contained file is scanned individually — a bundle.zip shows one row per inner file (e.g. 'bundle.zip → q2/payroll.csv'). Nested documents, spreadsheets, slide decks, and images inside the archive are extracted and OCR'd too",
+        "Zip-bomb / fork-bomb protection: archive expansion is bounded by entry count, total uncompressed size, per-entry size, and nesting depth; anything past the limits is surfaced as a 'review manually' row instead of being processed",
+        "Encrypted or unsupported archive types (.7z, .rar, password-protected) fall back to 'review manually' rather than being silently passed through",
+        "Larger files are now scanned: per-file cap raised to 25 MB, combined attachment cap to 100 MB, up to 32 attachments per send, and up to 200 KB of extracted text per file"
+      ]
+    },
+    {
       "version": "1.3.8",
       "date": "2026-04-30",
       "changes": [
