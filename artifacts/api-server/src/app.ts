@@ -6,6 +6,7 @@ import { corsMiddleware } from "./middlewares/corsMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { getStripeSync } from "./lib/stripe";
+import { createStripeWebhookHandler } from "./lib/billing/webhook-source.mjs";
 
 const app: Express = express();
 
@@ -48,27 +49,7 @@ app.use(cookieParser());
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
-  async (req, res) => {
-    const signature = req.headers["stripe-signature"];
-    if (!signature) {
-      res.status(400).json({ error: "Missing stripe-signature" });
-      return;
-    }
-    if (!Buffer.isBuffer(req.body)) {
-      logger.error("Stripe webhook body is not a Buffer — express.json() ran first");
-      res.status(500).json({ error: "Webhook processing error" });
-      return;
-    }
-    try {
-      const sig = Array.isArray(signature) ? signature[0] : signature;
-      const sync = await getStripeSync();
-      await sync.processWebhook(req.body, sig);
-      res.status(200).json({ received: true });
-    } catch (err) {
-      logger.error({ err }, "Stripe webhook processing failed");
-      res.status(400).json({ error: "Webhook processing error" });
-    }
-  },
+  createStripeWebhookHandler({ getSync: getStripeSync, logger }),
 );
 
 app.use(express.json());

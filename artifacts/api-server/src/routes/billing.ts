@@ -7,60 +7,16 @@ import {
   updateSession,
 } from "../lib/auth";
 import { getUncachableStripeClient } from "../lib/stripe";
-import { toPlanType } from "../middlewares/planMiddleware";
 import { logger } from "../lib/logger";
+import {
+  ANNUAL_DISCOUNT,
+  PLAN_PRICING,
+  buildCheckoutSessionParams,
+  evaluateCheckoutStatus,
+  validateCheckoutRequest,
+} from "../lib/billing/billing-source.mjs";
 
 const router: IRouter = Router();
-
-type BillingPeriod = "monthly" | "annual";
-
-interface PlanPricing {
-  monthly: number;
-  annual: number;
-  currency: string;
-}
-
-const ANNUAL_DISCOUNT = 0.9;
-
-function annualPrice(monthly: number): number {
-  return Math.round(monthly * 12 * ANNUAL_DISCOUNT);
-}
-
-const PLAN_PRICING: Record<string, PlanPricing> = {
-  personal: { monthly: 5, annual: annualPrice(5), currency: "USD" },
-  pro: { monthly: 19, annual: annualPrice(19), currency: "USD" },
-  business: { monthly: 99, annual: annualPrice(99), currency: "USD" },
-};
-
-// Backend plan ids that map to a paid, self-serve Stripe checkout. `free`
-// needs no checkout and `enterprise` is sales-assisted (Book Demo), so neither
-// appears here.
-const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"] as const;
-
-function isValidBillingPeriod(value: unknown): value is BillingPeriod {
-  return value === "monthly" || value === "annual";
-}
-
-function extendEndDate(start: Date, period: BillingPeriod): Date {
-  const monthsToAdd = period === "annual" ? 12 : 1;
-  const originalDay = start.getDate();
-  const target = new Date(start);
-  target.setDate(1);
-  target.setMonth(target.getMonth() + monthsToAdd);
-  const lastDayOfTargetMonth = new Date(
-    target.getFullYear(),
-    target.getMonth() + 1,
-    0,
-  ).getDate();
-  target.setDate(Math.min(originalDay, lastDayOfTargetMonth));
-  target.setHours(
-    start.getHours(),
-    start.getMinutes(),
-    start.getSeconds(),
-    start.getMilliseconds(),
-  );
-  return target;
-}
 
 function requireAuth(req: Request, res: Response): boolean {
   if (!req.isAuthenticated()) {
@@ -218,22 +174,19 @@ router.get("/pricing", (_req: Request, res: Response) => {
 router.post("/checkout", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
-  const { plan, billingPeriod, returnUrl } = req.body as {
+  const { plan: rawPlan, billingPeriod, returnUrl } = req.body as {
     plan?: unknown;
     billingPeriod?: unknown;
     returnUrl?: unknown;
   };
 
-  if (typeof plan !== "string" || !(VALID_CHECKOUT_PLANS as readonly string[]).includes(plan)) {
-    res.status(400).json({ error: "Invalid or non-checkoutable plan" });
+  const validated = validateCheckoutRequest({ plan: rawPlan, billingPeriod, returnUrl });
+  if (!validated.ok) {
+    res.status(validated.status).json({ error: validated.error });
     return;
   }
-  const period: BillingPeriod = isValidBillingPeriod(billingPeriod) ? billingPeriod : "monthly";
-
-  if (typeof returnUrl !== "string" || !/^https?:\/\//.test(returnUrl)) {
-    res.status(400).json({ error: "Missing or invalid returnUrl" });
-    return;
-  }
+  const { plan, period } = validated;
+  const safeReturnUrl = returnUrl as string;
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
   if (!user) {
@@ -266,19 +219,16 @@ router.post("/checkout", async (req: Request, res: Response) => {
         .where(eq(usersTable.id, user.id));
     }
 
-    const sep = returnUrl.includes("?") ? "&" : "?";
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${returnUrl}${sep}checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${returnUrl}${sep}checkout=cancel`,
-      allow_promotion_codes: true,
-      metadata: { user_id: user.id, plan, billing_period: period },
-      subscription_data: {
-        metadata: { user_id: user.id, plan, billing_period: period },
-      },
-    });
+    const session = await stripe.checkout.sessions.create(
+      buildCheckoutSessionParams({
+        priceId,
+        customerId,
+        returnUrl: safeReturnUrl,
+        userId: user.id,
+        plan,
+        period,
+      }),
+    );
 
     res.json({ url: session.url, sessionId: session.id });
   } catch (err) {
@@ -314,64 +264,40 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       expand: ["subscription"],
     });
 
-    if (session.metadata?.user_id !== req.user!.id) {
+    const now = new Date();
+    const decision = evaluateCheckoutStatus(session, req.user!.id, now);
+
+    if (decision.kind === "denied") {
       res.status(403).json({ error: "Access denied" });
       return;
     }
 
-    const rawPlan = session.metadata?.plan || "pro";
-    const targetPlan = toPlanType(
-      (VALID_CHECKOUT_PLANS as readonly string[]).includes(rawPlan) ? rawPlan : "pro",
-    );
-    const rawPeriod = session.metadata?.billing_period;
-    const targetPeriod: BillingPeriod = isValidBillingPeriod(rawPeriod) ? rawPeriod : "monthly";
-
-    const paid =
-      session.status === "complete" &&
-      (session.payment_status === "paid" || session.payment_status === "no_payment_required");
-
-    if (paid) {
-      const sub = session.subscription;
-      let subscriptionId: string | null = null;
-      let periodEnd: Date | null = null;
-      if (typeof sub === "string") {
-        subscriptionId = sub;
-      } else if (sub) {
-        const subObj = sub as { id: string; current_period_end?: number };
-        subscriptionId = subObj.id;
-        if (typeof subObj.current_period_end === "number") {
-          periodEnd = new Date(subObj.current_period_end * 1000);
-        }
-      }
-
-      const now = new Date();
-      const endDate = periodEnd ?? extendEndDate(now, targetPeriod);
-      const customerId =
-        typeof session.customer === "string" ? session.customer : user.stripeCustomerId;
+    if (decision.kind === "succeeded") {
+      const customerId = decision.customerId ?? user.stripeCustomerId;
 
       await db.update(usersTable).set({
-        planType: targetPlan,
-        subscriptionId,
+        planType: decision.plan,
+        subscriptionId: decision.subscriptionId,
         stripeCustomerId: customerId,
         subscriptionStatus: "active",
         planStartDate: now,
-        planEndDate: endDate,
+        planEndDate: decision.endDate,
       }).where(eq(usersTable.id, req.user!.id));
 
       const sid = getSessionId(req);
       if (sid) {
         const sessionRecord = await getSession(sid);
         if (sessionRecord) {
-          (sessionRecord.user as { planType: string }).planType = targetPlan;
+          (sessionRecord.user as { planType: string }).planType = decision.plan;
           await updateSession(sid, sessionRecord);
         }
       }
 
-      res.json({ status: "succeeded", planType: targetPlan, billingPeriod: targetPeriod });
+      res.json({ status: "succeeded", planType: decision.plan, billingPeriod: decision.period });
       return;
     }
 
-    if (session.status === "expired") {
+    if (decision.kind === "expired") {
       res.json({ status: "expired" });
       return;
     }
