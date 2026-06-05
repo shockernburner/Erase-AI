@@ -30,3 +30,17 @@ field/header/env yields a 401 "connection not found". Match the blueprint snippe
 The blueprint hardcodes `apiVersion: "2025-08-27.basil"`, but `stripe@20.0.0`'s
 `LatestApiVersion` type is `"2025-11-17.clover"`, so the blueprint string is a TS error.
 Use whatever literal the installed stripe types expect (the newer one); never downgrade.
+
+# Go-live needs the connector's PRODUCTION connection, not deployment secrets
+
+The app reads keys from the Stripe **connector** via the credential proxy with
+`environment=development|production`. Live keys pasted into Publish → Deployment
+Secrets (even named `Publishable`/`Secret`) are NOT read — the deployed app logs
+"Stripe production connection not found" and disables payments. To set live keys,
+call `proposeIntegration("connection:conn_stripe_...")`; the user then enters
+`pk_live`/`sk_live` for the production environment. Verify with the connection API
+queried at `environment=production` (expect items=1, publishable starting `pk_live`).
+After that: seed live catalog with `REPLIT_DEPLOYMENT=1 ... seed-stripe`, then
+RE-PUBLISH so the deployment boots with live keys (configures live managed webhook
++ syncBackfill). Note: Replit secrets can't be deleted by tooling — `deleteEnvVars`
+only clears shared env vars; real secrets must be removed by the user in the Secrets tab.
