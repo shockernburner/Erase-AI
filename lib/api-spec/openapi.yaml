@@ -399,6 +399,10 @@ components:
           type: [string, 'null']
         planEndDate:
           type: [string, 'null']
+        termsAcceptedAt:
+          type: [string, 'null']
+        termsVersion:
+          type: [string, 'null']
     AuthUserEnvelope:
       type: object
       required: [user]

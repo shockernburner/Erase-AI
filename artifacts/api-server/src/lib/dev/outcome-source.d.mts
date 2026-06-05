@@ -6,11 +6,19 @@ export const MAX_CATEGORY_LENGTH: number;
 export function normaliseCategories(input: unknown): string[];
 export function normaliseRiskScore(input: unknown): number | null;
 
+export interface OutcomePieces {
+  promptPieces: number;
+  filePieces: number;
+  skippedFiles: number;
+  levels: Record<string, number>;
+}
+
 export interface OutcomePayload {
   level: string;
   action: string;
   riskScore: number | null;
   categories: string[];
+  pieces: OutcomePieces | null;
 }
 
 export type ValidateOutcomeResult =

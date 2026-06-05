@@ -481,7 +481,12 @@ router.patch("/admin/users/:id/spend-cap", async (req: Request, res: Response) =
   try {
     if (!requireAdmin(req, res)) return;
 
-    const { id } = req.params;
+    const idParam = req.params.id;
+    const id = Array.isArray(idParam) ? idParam[0] : idParam;
+    if (!id) {
+      res.status(400).json({ error: "Invalid user id" });
+      return;
+    }
     const body = req.body as { overrideMicros?: number | null };
     const overrideMicros = body?.overrideMicros;
 
