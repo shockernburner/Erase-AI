@@ -13,5 +13,6 @@ export interface StripeWebhookLogger {
 
 export function createStripeWebhookHandler(opts: {
   getSync: () => Promise<StripeWebhookSyncLike>;
+  reconcile?: () => Promise<void>;
   logger?: StripeWebhookLogger;
 }): (req: Request, res: Response) => Promise<void>;

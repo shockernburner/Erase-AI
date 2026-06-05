@@ -6,7 +6,7 @@
 // (signature verification needs the untouched raw Buffer). `getSync` is
 // injected so production passes the real StripeSync singleton and tests pass
 // a fake that verifies the signature against a known test secret.
-export function createStripeWebhookHandler({ getSync, logger = console } = {}) {
+export function createStripeWebhookHandler({ getSync, reconcile, logger = console } = {}) {
   if (typeof getSync !== "function") {
     throw new TypeError(
       "createStripeWebhookHandler requires getSync() -> Promise<StripeSync>",
@@ -28,6 +28,17 @@ export function createStripeWebhookHandler({ getSync, logger = console } = {}) {
       const sig = Array.isArray(signature) ? signature[0] : signature;
       const sync = await getSync();
       await sync.processWebhook(req.body, sig);
+      // The sync above only refreshes the `stripe.*` mirror tables. Map those
+      // subscription lifecycle changes back onto our users. A reconcile failure
+      // must not 400 the webhook (the sync already succeeded, and a 400 would
+      // make Stripe retry needlessly) — log it and let the next event catch up.
+      if (typeof reconcile === "function") {
+        try {
+          await reconcile();
+        } catch (err) {
+          logger.error({ err }, "Post-webhook subscription reconcile failed");
+        }
+      }
       res.status(200).json({ received: true });
     } catch (err) {
       logger.error({ err }, "Stripe webhook processing failed");

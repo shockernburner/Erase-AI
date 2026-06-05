@@ -7,6 +7,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { getStripeSync } from "./lib/stripe";
 import { createStripeWebhookHandler } from "./lib/billing/webhook-source.mjs";
+import { reconcileRecentSubscriptions } from "./lib/billing/reconcile";
 
 const app: Express = express();
 
@@ -49,7 +50,11 @@ app.use(cookieParser());
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
-  createStripeWebhookHandler({ getSync: getStripeSync, logger }),
+  createStripeWebhookHandler({
+    getSync: getStripeSync,
+    reconcile: reconcileRecentSubscriptions,
+    logger,
+  }),
 );
 
 app.use(express.json());

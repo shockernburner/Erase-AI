@@ -324,15 +324,29 @@ router.post("/cancel", async (req: Request, res: Response) => {
     return;
   }
 
-  // Best-effort cancel in Stripe. We still downgrade locally even if the Stripe
-  // call fails (e.g. the subscription was already removed, or Stripe is down)
-  // so the user is never stuck paying with no way to cancel from our UI.
+  // Cancel in Stripe FIRST and only downgrade locally once Stripe confirms it.
+  // Downgrading on a failed Stripe call would leave the user still billed in
+  // Stripe while the app shows them as cancelled — a billing-integrity gap. If
+  // the subscription is already gone in Stripe (`resource_missing`), that's the
+  // desired end state, so we treat it as success and proceed.
   if (user.subscriptionId) {
     try {
       const stripe = await getUncachableStripeClient();
       await stripe.subscriptions.cancel(user.subscriptionId);
     } catch (err) {
-      logger.warn({ err, subscriptionId: user.subscriptionId }, "Stripe subscription cancel failed (non-fatal)");
+      const code = (err as { code?: string })?.code;
+      if (code !== "resource_missing") {
+        logger.error({ err, subscriptionId: user.subscriptionId }, "Stripe subscription cancel failed");
+        res.status(502).json({
+          error: "We couldn't cancel your subscription with our payment provider. Please try again in a moment.",
+          code: "STRIPE_CANCEL_FAILED",
+        });
+        return;
+      }
+      logger.warn(
+        { subscriptionId: user.subscriptionId },
+        "Subscription already absent in Stripe; downgrading locally",
+      );
     }
   }
 

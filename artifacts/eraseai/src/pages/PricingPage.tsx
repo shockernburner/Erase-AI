@@ -39,9 +39,17 @@ function tierIndex(id: TierId): number {
   return TIER_ORDER.indexOf(id);
 }
 
+// Must match the backend's annual pricing (billing-source.mjs `annualPrice`):
+// 12 months at a 10% discount, rounded. The figure shown here is informational;
+// Checkout always charges the Stripe price resolved server-side.
+function annualPriceFor(monthly: number): number {
+  return Math.round(monthly * 12 * 0.9);
+}
+
 export default function PricingPage({ onBack }: PricingPageProps) {
   const { user } = useAuth();
   const currentPlan = (user?.planType || "free") as TierId;
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
@@ -86,7 +94,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, billingPeriod: "monthly", returnUrl }),
+        body: JSON.stringify({ plan, billingPeriod, returnUrl }),
       });
       const data = await response.json();
       if (response.ok && data.url) {
@@ -256,6 +264,28 @@ export default function PricingPage({ onBack }: PricingPageProps) {
           </div>
         </motion.div>
 
+        <div className="mb-10 flex justify-center">
+          <div className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/50 p-1 backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => setBillingPeriod("monthly")}
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${billingPeriod === "monthly" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingPeriod("annual")}
+              className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors ${billingPeriod === "annual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Annual
+              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${billingPeriod === "annual" ? "bg-black/20 text-primary-foreground" : "bg-primary/15 text-primary"}`}>
+                Save 10%
+              </span>
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5">
           {tiers.map((tier, index) => {
             const isCurrentPlan = currentPlan === tier.id;
@@ -292,10 +322,21 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                       <span className="text-sm text-muted-foreground">/month</span>
                     </div>
                   )}
-                  {tier.monthlyPrice > 0 && (
+                  {tier.monthlyPrice > 0 && billingPeriod === "monthly" && (
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-extrabold text-foreground">${tier.monthlyPrice}</span>
                       <span className="text-sm text-muted-foreground">/month</span>
+                    </div>
+                  )}
+                  {tier.monthlyPrice > 0 && billingPeriod === "annual" && (
+                    <div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-extrabold text-foreground">${annualPriceFor(tier.monthlyPrice)}</span>
+                        <span className="text-sm text-muted-foreground">/year</span>
+                      </div>
+                      <p className="mt-1 text-xs text-primary">
+                        ≈ ${Math.round(annualPriceFor(tier.monthlyPrice) / 12)}/mo · save 10%
+                      </p>
                     </div>
                   )}
                   {tier.monthlyPrice < 0 && (
