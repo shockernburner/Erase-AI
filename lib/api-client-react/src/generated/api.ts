@@ -26,6 +26,9 @@ import type {
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   LogoutSuccess,
+  MobileAuthSessionSuccess,
+  MobileEmailLoginRequest,
+  MobileEmailSignupRequest,
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   TrainRequest,
@@ -978,6 +981,178 @@ export const useExchangeMobileAuthorizationCode = <
   return useMutation(
     getExchangeMobileAuthorizationCodeMutationOptions(options),
   );
+};
+
+/**
+ * @summary Create a mobile session with email and password
+ */
+export const getSignupMobileUserUrl = () => {
+  return `/api/mobile-auth/signup`;
+};
+
+export const signupMobileUser = async (
+  mobileEmailSignupRequest: MobileEmailSignupRequest,
+  options?: RequestInit,
+): Promise<MobileAuthSessionSuccess> => {
+  return customFetch<MobileAuthSessionSuccess>(getSignupMobileUserUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mobileEmailSignupRequest),
+  });
+};
+
+export const getSignupMobileUserMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof signupMobileUser>>,
+    TError,
+    { data: BodyType<MobileEmailSignupRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof signupMobileUser>>,
+  TError,
+  { data: BodyType<MobileEmailSignupRequest> },
+  TContext
+> => {
+  const mutationKey = ["signupMobileUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof signupMobileUser>>,
+    { data: BodyType<MobileEmailSignupRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return signupMobileUser(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SignupMobileUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof signupMobileUser>>
+>;
+export type SignupMobileUserMutationBody = BodyType<MobileEmailSignupRequest>;
+export type SignupMobileUserMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Create a mobile session with email and password
+ */
+export const useSignupMobileUser = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof signupMobileUser>>,
+    TError,
+    { data: BodyType<MobileEmailSignupRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof signupMobileUser>>,
+  TError,
+  { data: BodyType<MobileEmailSignupRequest> },
+  TContext
+> => {
+  return useMutation(getSignupMobileUserMutationOptions(options));
+};
+
+/**
+ * @summary Create a mobile session for an existing user
+ */
+export const getLoginMobileUserUrl = () => {
+  return `/api/mobile-auth/login`;
+};
+
+export const loginMobileUser = async (
+  mobileEmailLoginRequest: MobileEmailLoginRequest,
+  options?: RequestInit,
+): Promise<MobileAuthSessionSuccess> => {
+  return customFetch<MobileAuthSessionSuccess>(getLoginMobileUserUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mobileEmailLoginRequest),
+  });
+};
+
+export const getLoginMobileUserMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof loginMobileUser>>,
+    TError,
+    { data: BodyType<MobileEmailLoginRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof loginMobileUser>>,
+  TError,
+  { data: BodyType<MobileEmailLoginRequest> },
+  TContext
+> => {
+  const mutationKey = ["loginMobileUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof loginMobileUser>>,
+    { data: BodyType<MobileEmailLoginRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return loginMobileUser(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type LoginMobileUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof loginMobileUser>>
+>;
+export type LoginMobileUserMutationBody = BodyType<MobileEmailLoginRequest>;
+export type LoginMobileUserMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Create a mobile session for an existing user
+ */
+export const useLoginMobileUser = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof loginMobileUser>>,
+    TError,
+    { data: BodyType<MobileEmailLoginRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof loginMobileUser>>,
+  TError,
+  { data: BodyType<MobileEmailLoginRequest> },
+  TContext
+> => {
+  return useMutation(getLoginMobileUserMutationOptions(options));
 };
 
 /**

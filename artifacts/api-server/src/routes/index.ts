@@ -13,6 +13,7 @@ import analyticsRouter from "./analytics";
 import personalRouter from "./personal";
 import devRouter from "./dev";
 import extensionRouter from "./extension";
+import mobileRouter from "./mobile";
 
 // Routes that must remain reachable even when the logged-in user has not yet
 // accepted the latest Terms of Service. /dev/ping is a public health probe
@@ -46,6 +47,7 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(contactRouter);
 router.use(extensionRouter);
+router.use("/mobile", mobileRouter);
 router.use(requireTermsAcceptance);
 router.use(eraseaiRouter);
 router.use("/datasets", datasetsRouter);

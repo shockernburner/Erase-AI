@@ -173,6 +173,22 @@ async function ensurePersonalAlertsTable() {
   }
 }
 
+async function ensureMobileProtectedAppsTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS mobile_protected_apps (
+        user_id TEXT PRIMARY KEY,
+        packages JSONB NOT NULL DEFAULT '[]'::jsonb,
+        firewall_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    logger.info("Startup migration: mobile_protected_apps table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: mobile_protected_apps table warning (non-fatal)");
+  }
+}
+
 async function ensureDevScansTable() {
   try {
     await db.execute(sql`
@@ -275,6 +291,7 @@ export async function runStartupMigrations() {
   await ensureWebhookDeliveriesTable();
   await ensurePersonalScansTable();
   await ensurePersonalAlertsTable();
+  await ensureMobileProtectedAppsTable();
   await ensureDevScansTable();
   await ensureFirewallOutcomesTable();
   await ensureBurstLimitHitsTable();

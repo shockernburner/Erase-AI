@@ -109,6 +109,22 @@ export interface AuthUserEnvelope {
   user: AuthUser | null;
 }
 
+export interface MobileEmailSignupRequest {
+  email: string;
+  /** @minLength 8 */
+  password: string;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+}
+
+export interface MobileEmailLoginRequest {
+  email: string;
+  /** @minLength 1 */
+  password: string;
+}
+
 export interface MobileTokenExchangeRequest {
   /** @minLength 1 */
   code: string;
@@ -124,6 +140,11 @@ export interface MobileTokenExchangeRequest {
 
 export interface MobileTokenExchangeSuccess {
   token: string;
+}
+
+export interface MobileAuthSessionSuccess {
+  token: string;
+  user: AuthUser;
 }
 
 export const LogoutSuccessValue = {

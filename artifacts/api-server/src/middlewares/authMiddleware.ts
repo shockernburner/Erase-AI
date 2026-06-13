@@ -5,6 +5,7 @@ import {
   getSessionId,
   getSession,
 } from "../lib/auth";
+import { isPublicRoute } from "../lib/publicRoutes";
 
 declare global {
   namespace Express {
@@ -25,12 +26,6 @@ declare global {
       user: User;
     }
   }
-}
-
-const PUBLIC_PREFIXES = ["/api/auth/", "/api/healthz", "/api/billing/webhook", "/api/v1/", "/api/public/", "/api/contact", "/api/extension/"];
-
-function isPublicRoute(path: string): boolean {
-  return PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
 export async function authMiddleware(

@@ -168,6 +168,46 @@ export const ExchangeMobileAuthorizationCodeResponse = zod.object({
 });
 
 /**
+ * @summary Create a mobile session with email and password
+ */
+export const signupMobileUserBodyPasswordMin = 8;
+
+export const SignupMobileUserBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string().min(signupMobileUserBodyPasswordMin),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+});
+
+/**
+ * @summary Create a mobile session for an existing user
+ */
+
+export const LoginMobileUserBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string().min(1),
+});
+
+export const loginMobileUserResponseUserPlanTypeDefault = `free`;
+
+export const LoginMobileUserResponse = zod.object({
+  token: zod.string(),
+  user: zod.object({
+    id: zod.string(),
+    email: zod.string().email().nullable(),
+    firstName: zod.string().nullable(),
+    lastName: zod.string().nullable(),
+    profileImageUrl: zod.string().nullable(),
+    planType: zod
+      .enum(["free", "personal", "pro", "business", "enterprise"])
+      .default(loginMobileUserResponseUserPlanTypeDefault),
+    role: zod.enum(["user", "admin"]).optional(),
+    planStartDate: zod.string().nullish(),
+    planEndDate: zod.string().nullish(),
+  }),
+});
+
+/**
  * @summary Delete a mobile session token
  */
 export const LogoutMobileSessionHeader = zod.object({

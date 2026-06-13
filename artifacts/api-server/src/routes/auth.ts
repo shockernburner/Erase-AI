@@ -49,6 +49,31 @@ function setSessionCookie(res: Response, sid: string) {
   });
 }
 
+async function createSessionTokenForUser(dbUser: {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  planType: string;
+  role: string;
+  planStartDate?: Date | null;
+  planEndDate?: Date | null;
+  termsAcceptedAt?: Date | null;
+  termsVersion?: string | null;
+}) {
+  const sessionData: SessionData = {
+    user: buildSessionUser(dbUser),
+  };
+
+  const sid = await createSession(sessionData);
+
+  return {
+    token: sid,
+    user: sessionData.user,
+  };
+}
+
 const CURRENT_TERMS_VERSION = "1.0";
 
 function buildSessionUser(dbUser: {
@@ -205,6 +230,69 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/mobile-auth/signup", async (req: Request, res: Response) => {
+  try {
+    const { email, password, firstName, lastName } = req.body as {
+      email?: string;
+      password?: string;
+      firstName?: string;
+      lastName?: string;
+    };
+
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLower)) {
+      res.status(400).json({ error: "Invalid email format" });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ error: "Password must be at least 8 characters" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const isAdmin = emailLower === ADMIN_EMAIL;
+
+    try {
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const [user] = await db
+        .insert(usersTable)
+        .values({
+          email: emailLower,
+          firstName: firstName?.trim() || null,
+          lastName: lastName?.trim() || null,
+          passwordHash,
+          authProvider: "email",
+          role: isAdmin ? "admin" : "user",
+          planType: isAdmin ? "enterprise" : "free",
+          subscriptionStatus: isAdmin ? "active" : null,
+          planStartDate: now,
+          planEndDate: isAdmin ? null : trialEnd,
+        })
+        .returning();
+
+      const session = await createSessionTokenForUser(user);
+      res.status(201).json(session);
+    } catch (insertErr) {
+      if (isUniqueConstraintError(insertErr)) {
+        res.status(409).json({ error: "An account with this email already exists" });
+        return;
+      }
+      throw insertErr;
+    }
+  } catch (err) {
+    console.error("Mobile signup error:", err);
+    res.status(500).json({ error: "An error occurred during signup" });
+  }
+});
+
 router.post("/auth/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body as {
@@ -256,6 +344,55 @@ router.post("/auth/login", async (req: Request, res: Response) => {
     res.json({ user: sessionData.user });
   } catch (err) {
     console.error("Login error:", err);
+    res.status(500).json({ error: "An error occurred during login" });
+  }
+});
+
+router.post("/mobile-auth/login", async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body as {
+      email?: string;
+      password?: string;
+    };
+
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower));
+
+    if (!user) {
+      console.log("Mobile login attempt failed: no user found for", emailLower);
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    if (!user.passwordHash) {
+      const provider = user.authProvider || "social";
+      console.log("Mobile login attempt failed: no password hash for", emailLower, "provider:", provider);
+      res.status(401).json({
+        error: `This account uses ${provider} sign-in. Please log in with ${provider}.`,
+      });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      console.log("Mobile login attempt failed: wrong password for", emailLower);
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    const session = await createSessionTokenForUser(user);
+    res.json(session);
+  } catch (err) {
+    console.error("Mobile login error:", err);
     res.status(500).json({ error: "An error occurred during login" });
   }
 });
@@ -621,6 +758,21 @@ router.post("/auth/logout", async (req: Request, res: Response) => {
     res.json({ success: true });
   } catch (err) {
     console.error("Logout error:", err);
+    res.json({ success: true });
+  }
+});
+
+router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
+  try {
+    const sid = getSessionId(req);
+    if (sid) {
+      await deleteSession(sid);
+    }
+
+    res.clearCookie(SESSION_COOKIE, { path: "/" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Mobile logout error:", err);
     res.json({ success: true });
   }
 });

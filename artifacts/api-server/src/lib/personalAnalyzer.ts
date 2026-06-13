@@ -39,6 +39,12 @@ const PII_PATTERNS: { pattern: RegExp; detail: string }[] = [
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, detail: "Credit card number detected" },
   { pattern: /\b\d{1,5}\s+\w+\s+(street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|way|court|ct)\b/gi, detail: "Street address detected" },
   { pattern: /\b(passport|license|dl)\s*#?\s*:?\s*[A-Z0-9]{6,12}\b/gi, detail: "ID document number detected" },
+  { pattern: /\b(?:sk|pk)_(?:live|test)_[A-Za-z0-9_-]{8,}\b/g, detail: "API key detected" },
+  { pattern: /\beak_[A-Za-z0-9_-]{8,}\b/g, detail: "API key detected" },
+  { pattern: /\bAKIA[0-9A-Z]{12,20}\b/g, detail: "API key detected" },
+  { pattern: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, detail: "Bearer token detected" },
+  { pattern: /\b(?:api[_-]?key|secret|token|bearer)\s*[:=]\s*[A-Za-z0-9_./+=-]{8,}\b/gi, detail: "API key detected" },
+  { pattern: /\b(?:client|customer|patient|employee|user|contact)(?:\s+name)?\s+(?:is\s+)?([A-Z][a-z]+\s+[A-Z][a-z]+)\b/g, detail: "Person name detected" },
 ];
 
 const BIAS_PATTERNS: { pattern: RegExp; severity: "low" | "medium" | "high"; detail: string; suggestion: string }[] = [
