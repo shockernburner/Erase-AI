@@ -1,0 +1,98 @@
+[
+  {
+    "id": "3c857d56-3e74-44fb-ac5c-96d3fb28f3dd",
+    "position": 1,
+    "filepath": "src/pages/slides/TitleSlide.tsx",
+    "title": "Title",
+    "description": "Cover — The AI Firewall for Enterprise Data, seed round.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "92660b22-c7af-44e8-8882-bcf620707d35",
+    "position": 2,
+    "filepath": "src/pages/slides/ProblemSlide.tsx",
+    "title": "Problem",
+    "description": "Sensitive data leaves the browser with every AI prompt.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "dfa60f07-1143-4824-a65c-05c34d87d168",
+    "position": 3,
+    "filepath": "src/pages/slides/WhyNowSlide.tsx",
+    "title": "Why Now",
+    "description": "Three forces converging in 2025–2026: GenAI, regulation, breach cost.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "e676b77f-2819-4710-8b4e-64fefeaa7770",
+    "position": 4,
+    "filepath": "src/pages/slides/SolutionSlide.tsx",
+    "title": "Solution",
+    "description": "EraseAI — a real-time firewall for AI prompts.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8662f37b-1682-42b5-875b-808be8aa5ad1",
+    "position": 5,
+    "filepath": "src/pages/slides/HowItWorksSlide.tsx",
+    "title": "How It Works",
+    "description": "From keystroke to safe send: intercept, inspect, verdict, act.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "81ed2229-bff5-46b7-8154-06c4c7a12506",
+    "position": 6,
+    "filepath": "src/pages/slides/DifferentiationSlide.tsx",
+    "title": "Differentiation",
+    "description": "Built for the prompt layer legacy DLP/CASB miss.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "ce0b80ee-3d4a-4174-8863-4f4899a19625",
+    "position": 7,
+    "filepath": "src/pages/slides/MarketSlide.tsx",
+    "title": "Market",
+    "description": "Large, fast-growing AI-cybersecurity and DLP market.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "8c9dbead-6c37-40af-8bb5-74624da76b75",
+    "position": 8,
+    "filepath": "src/pages/slides/BusinessModelSlide.tsx",
+    "title": "Business Model",
+    "description": "Land with individuals, expand to the enterprise.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d239596a-2b56-497f-9ac8-49b36979926a",
+    "position": 9,
+    "filepath": "src/pages/slides/ROISlide.tsx",
+    "title": "Unit Economics",
+    "description": "The economics of prevention (illustrative projection).",
+    "speakerNotes": ""
+  },
+  {
+    "id": "136e0f46-c2e4-433e-b1d1-badbb234a150",
+    "position": 10,
+    "filepath": "src/pages/slides/TractionSlide.tsx",
+    "title": "Traction",
+    "description": "Working product, active pilots, path to revenue.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "bf0adce9-cb17-49ff-9dff-e4f959c74b8c",
+    "position": 11,
+    "filepath": "src/pages/slides/AskSlide.tsx",
+    "title": "The Ask",
+    "description": "Raising $2.5M seed — use of funds and milestones.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "115404dd-5f39-4c8a-9d2c-6307175c98e5",
+    "position": 12,
+    "filepath": "src/pages/slides/ClosingSlide.tsx",
+    "title": "Closing",
+    "description": "Keep yourself protected from public AI LLMs.",
+    "speakerNotes": ""
+  }
+]

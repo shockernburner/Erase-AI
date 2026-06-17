@@ -108,6 +108,12 @@ uri = "file://attached_assets/medium-cover/hallway-missing-door-master-src.png"
 type = "image"
 title = "hallway missing door master"
 
+[[generated]]
+id = "h3leTotdpim-bFE2gBlCR"
+uri = "file://artifacts/investor-deck/public/hero-bg.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -299,3 +305,21 @@ id = "dgCEc5QjbxLCaoPTSeIK-"
 uri = "file://docs/handoff/AIRWALLEX_INTEGRATION.md"
 type = "text"
 title = "Airwallex Integration Guide (for the other Replit Agents)"
+
+[[outputs]]
+id = "_AZxTutoANdJhJkcUpBi8"
+uri = "file://deliverables/EraseAI_Investor_List.xlsx"
+type = "table"
+title = "EraseAI Investor List (Excel, 44 firms)"
+
+[[outputs]]
+id = "8_k0LQW0aSE4tLlabtIh4"
+uri = "file://deliverables/EraseAI_Investor_List.csv"
+type = "table"
+title = "EraseAI Investor List (CSV)"
+
+[[outputs]]
+id = "k8oyp9dBPLyq89veuWPKm"
+uri = "file://deliverables/EraseAI_Investor_Outreach_Emails.md"
+type = "text"
+title = "EraseAI Investor Outreach Emails"
