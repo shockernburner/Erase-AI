@@ -1,0 +1,31 @@
+kind = "video"
+previewPath = "/pitch-video-cn/"
+title = "EraseAI 投资路演视频 (中文)"
+version = "1.0.0"
+id = "artifacts/pitch-video-cn"
+router = "path"
+
+[[integratedSkills]]
+name = "video-js"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/pitch-video-cn/" ]
+localPort = 19200
+
+[services.development]
+run = "pnpm --filter @workspace/pitch-video-cn run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pitch-video-cn", "run", "build" ]
+publicDir = "artifacts/pitch-video-cn/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19200"
+BASE_PATH = "/pitch-video-cn/"

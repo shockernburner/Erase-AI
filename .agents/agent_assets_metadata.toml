@@ -114,6 +114,12 @@ uri = "file://artifacts/investor-deck/public/hero-bg.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "Cum_SV514Vv4MDb-wuiPk"
+uri = "file://artifacts/pitch-video-cn/public/images/bg-cyber.png"
+type = "image"
+title = "abstract cybersecurity data network"
+
 [[outputs]]
 id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
@@ -323,3 +329,15 @@ id = "k8oyp9dBPLyq89veuWPKm"
 uri = "file://deliverables/EraseAI_Investor_Outreach_Emails.md"
 type = "text"
 title = "EraseAI Investor Outreach Emails"
+
+[[outputs]]
+id = "kssE0_jiZdTLnPUrEO6i6"
+uri = "file://.local/outputs/EraseAI----------.pdf"
+type = "pdf"
+title = "EraseAI 投资路演 (中文) (PDF)"
+
+[[outputs]]
+id = "Xk8xDdof4juNtKiZPyNcC"
+uri = "file://artifacts/pitch-video-cn/public/audio/bg_music.mp3"
+type = "audio"
+title = "background music"
