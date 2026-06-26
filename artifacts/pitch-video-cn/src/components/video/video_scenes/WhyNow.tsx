@@ -16,7 +16,7 @@ export function WhyNow() {
 
   return (
     <motion.div className="absolute inset-0 flex items-center bg-black/60 px-24"
-      {...sceneTransitions.wipeRight}>
+      {...sceneTransitions.wipe}>
       
       <div className="w-1/2 relative z-10">
         <motion.h2 className="text-[4.5vw] font-bold text-white leading-tight mb-12"

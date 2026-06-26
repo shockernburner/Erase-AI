@@ -17,7 +17,7 @@ export function Problem() {
 
   return (
     <motion.div className="absolute inset-0 flex flex-col justify-center bg-black/50 px-24"
-      {...sceneTransitions.pushUp}>
+      {...sceneTransitions.slideUp}>
       
       <motion.div className="text-center w-full mb-16 relative z-10"
         initial={{ opacity: 0, y: 20 }}
