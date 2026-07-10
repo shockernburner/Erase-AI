@@ -208,6 +208,7 @@ function App() {
         <Route path="/" component={Letterhead} />
         <Route path="/clean" component={LetterheadClean} />
         <Route path="/pitch-akij" component={PitchAkij} />
+        <Route path="/kickoff-brief" component={KickoffBrief} />
         <Route>
           <div style={{ padding: 40, textAlign: "center" }}>Page not found</div>
         </Route>
@@ -473,6 +474,497 @@ function PitchAkij() {
             background: "linear-gradient(90deg, #28a868 0%, #28a868 40%, #162a47 40%, #162a47 100%)",
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+function KickoffBrief() {
+  const navy = "#162a47";
+  const green = "#28a868";
+
+  const SectionTitle = ({ n, children }: { n: string; children: React.ReactNode }) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 22,
+        marginBottom: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 4,
+          background: navy,
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'Inter', sans-serif",
+          flexShrink: 0,
+        }}
+      >
+        {n}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: navy,
+          letterSpacing: "0.3px",
+          fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+          textTransform: "uppercase",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+
+  const Header = () => (
+    <>
+      <div
+        style={{
+          height: 6,
+          background: `linear-gradient(90deg, ${navy} 0%, ${navy} 60%, ${green} 60%, ${green} 100%)`,
+        }}
+      />
+      <div
+        style={{
+          padding: "26px 48px 18px 48px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          borderBottom: "1.5px solid #e2e6ec",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <img
+            src={`${import.meta.env.BASE_URL}logo.jpg`}
+            alt="Vantward Solutions"
+            style={{ height: 56, width: "auto", objectFit: "contain" }}
+          />
+          <div>
+            <div
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: navy,
+                letterSpacing: "1.5px",
+                lineHeight: 1.15,
+                fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              }}
+            >
+              VANTWARD SOLUTIONS
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: green,
+                letterSpacing: "3px",
+                fontWeight: 500,
+                marginTop: 2,
+                fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              }}
+            >
+              PTE. LTD.
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            textAlign: "right",
+            fontSize: 10,
+            color: "#555",
+            lineHeight: 1.7,
+            fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+            paddingTop: 6,
+          }}
+        >
+          <div style={{ color: navy, fontWeight: 600, fontSize: 11 }}>
+            EraseAI — Outbound Pilot
+          </div>
+          <div>Kickoff Brief · Confidential</div>
+          <div style={{ marginTop: 4 }}>Prepared 10 July 2026</div>
+          <div>For kickoff call: 14 July 2026</div>
+        </div>
+      </div>
+    </>
+  );
+
+  const Footer = () => (
+    <>
+      <div
+        style={{
+          borderTop: "1px solid #e2e6ec",
+          padding: "12px 48px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 9,
+          color: "#999",
+          fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+        }}
+      >
+        <span>Vantward Solutions Pte. Ltd. | Reg. No. 202606980C</span>
+        <span>EraseAI Outbound Pilot — Kickoff Brief</span>
+        <span>director@vantward.com</span>
+      </div>
+      <div
+        style={{
+          height: 5,
+          background: `linear-gradient(90deg, ${green} 0%, ${green} 40%, ${navy} 40%, ${navy} 100%)`,
+        }}
+      />
+    </>
+  );
+
+  const bodyText: React.CSSProperties = {
+    fontSize: 11.5,
+    lineHeight: 1.6,
+    color: "#222",
+    fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+  };
+
+  const li: React.CSSProperties = { ...bodyText, marginBottom: 5 };
+
+  const pageStyle: React.CSSProperties = {
+    width: "210mm",
+    minHeight: "297mm",
+    background: "#fff",
+    boxShadow: "0 2px 16px rgba(0,0,0,0.13)",
+    position: "relative",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    marginBottom: 24,
+  };
+
+  const contentStyle: React.CSSProperties = {
+    flex: 1,
+    padding: "24px 48px 32px 48px",
+  };
+
+  const pill = (text: string, color: string) => (
+    <span
+      style={{
+        display: "inline-block",
+        background: color === navy ? "#eef1f6" : "#e9f6ef",
+        color: color,
+        fontSize: 9.5,
+        fontWeight: 600,
+        padding: "3px 9px",
+        borderRadius: 20,
+        marginRight: 6,
+        marginBottom: 6,
+        fontFamily: "'Inter', sans-serif",
+      }}
+    >
+      {text}
+    </span>
+  );
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#e8e8e8",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "24px 16px",
+        fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+      }}
+    >
+      <button
+        className="no-print"
+        onClick={() => window.print()}
+        style={{
+          marginBottom: 16,
+          padding: "10px 28px",
+          background: navy,
+          color: "#fff",
+          border: "none",
+          borderRadius: 6,
+          fontSize: 14,
+          fontFamily: "'Inter', sans-serif",
+          cursor: "pointer",
+          letterSpacing: "0.5px",
+        }}
+      >
+        Print / Save as PDF
+      </button>
+
+      {/* PAGE 1 */}
+      <div className="letterhead-page" style={pageStyle}>
+        <Header />
+        <div style={contentStyle}>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: navy,
+              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              lineHeight: 1.2,
+            }}
+          >
+            Outbound Pilot — Kickoff Brief
+          </div>
+          <div style={{ ...bodyText, color: "#666", marginTop: 4, fontSize: 12 }}>
+            Positioning, ICP, messaging, and success criteria for the EraseAI cold-outbound pilot with Aprile Dañez.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              padding: "12px 16px",
+              background: "#f6f8fb",
+              borderLeft: `3px solid ${navy}`,
+              borderRadius: 4,
+            }}
+          >
+            <div style={{ ...bodyText, fontWeight: 700, color: navy, marginBottom: 4 }}>
+              Purpose of this pilot
+            </div>
+            <div style={bodyText}>
+              Validate the ICP, messaging, and deliverability for EraseAI in a single US-first
+              segment — and generate qualified sales conversations. This is a learning engagement:
+              success is a validated, repeatable outbound system plus early qualified meetings, not
+              revenue in six weeks. The narrative is owned by EraseAI; execution is owned by Aprile.
+            </div>
+          </div>
+
+          <SectionTitle n="1">Target ICP — First Segment</SectionTitle>
+          <div style={{ ...bodyText, marginBottom: 8 }}>
+            We deliberately start narrow. One segment lets us read signal fast before expanding to
+            legal, financial, and healthcare later.
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ ...bodyText, fontWeight: 700, color: navy }}>Industry: </span>
+            {pill("AI / ML SaaS", green)}
+            {pill("Cybersecurity", green)}
+            {pill("Data Infrastructure Platforms", green)}
+          </div>
+          <div style={{ marginBottom: 6 }}>
+            <span style={{ ...bodyText, fontWeight: 700, color: navy }}>Company size: </span>
+            {pill("20–250 employees", navy)}
+            <span style={{ ...bodyText, fontWeight: 700, color: navy, marginLeft: 8 }}>
+              Region:{" "}
+            </span>
+            {pill("United States only", navy)}
+          </div>
+          <div style={{ marginBottom: 4 }}>
+            <span style={{ ...bodyText, fontWeight: 700, color: navy }}>Decision-makers: </span>
+            {pill("CISO", green)}
+            {pill("CTO", green)}
+            {pill("Head of AI / ML", green)}
+            {pill("VP Engineering", green)}
+            {pill("Founder", green)}
+            {pill("DPO / Security Lead", green)}
+          </div>
+          <div style={{ ...bodyText, color: "#666", fontStyle: "italic", marginTop: 6 }}>
+            Why this segment first: they build with AI daily, feel the "shadow AI" pain acutely, and
+            have budget owners who already think in terms of data risk — the shortest path to a
+            resonant message.
+          </div>
+
+          <SectionTitle n="2">Core Positioning</SectionTitle>
+          <div
+            style={{
+              padding: "12px 16px",
+              background: navy,
+              borderRadius: 6,
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13.5,
+                fontWeight: 700,
+                color: "#fff",
+                fontFamily: "'Inter', sans-serif",
+                lineHeight: 1.45,
+              }}
+            >
+              EraseAI is the AI Firewall — it stops sensitive data from leaving your organisation
+              through AI tools, before it happens, not after.
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: green,
+                marginTop: 6,
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 600,
+              }}
+            >
+              Prevention, not forensics. Control at the prompt, not a report next week.
+            </div>
+          </div>
+          <div style={{ ...bodyText }}>
+            Three ideas the message must carry to technical buyers:
+          </div>
+          <ul style={{ paddingLeft: 20, marginTop: 6 }}>
+            <li style={li}>
+              <strong>Govern the interaction, not the model.</strong> The risk is the moment an
+              employee pastes source code, PII, or financial data into a prompt.
+            </li>
+            <li style={li}>
+              <strong>Visibility ≠ control.</strong> A dashboard of last week's leaks is forensics;
+              enterprises want the incident to be structurally impossible.
+            </li>
+            <li style={li}>
+              <strong>Trust is defensibility.</strong> Buyers purchase what they can prove to a
+              regulator, board, or customer — not benchmark scores.
+            </li>
+          </ul>
+        </div>
+        <Footer />
+      </div>
+
+      {/* PAGE 2 */}
+      <div className="letterhead-page" style={pageStyle}>
+        <Header />
+        <div style={contentStyle}>
+          <SectionTitle n="3">Messaging Angles to Test</SectionTitle>
+          <div style={{ ...bodyText, marginBottom: 10 }}>
+            Run 3–4 angles across the sequence so we learn which pain converts. Each gets its own
+            subject-line family and follow-up logic.
+          </div>
+
+          {[
+            {
+              tag: "A · Shadow AI",
+              title: "\u201CYour team is already pasting company data into ChatGPT.\u201D",
+              body:
+                "Lead with the uncomfortable truth. Employees use public AI tools daily; source code, customer PII, and secrets leave the building unlogged. EraseAI catches and blocks it at the prompt.",
+            },
+            {
+              tag: "B · Compliance Defensibility",
+              title: "\u201CProve to your auditor what data never left.\u201D",
+              body:
+                "For CISOs / DPOs facing SOC 2, ISO 27001, or customer security reviews. Position EraseAI as audit-ready evidence that AI usage is controlled and logged.",
+            },
+            {
+              tag: "C · Prevention vs. Forensics",
+              title: "\u201CDLP tells you what leaked. We stop it before it does.\u201D",
+              body:
+                "For teams that already have monitoring but no real-time control over the AI layer. Frame the gap between detection and prevention.",
+            },
+            {
+              tag: "D · Dataset Governance / Unlearning",
+              title: "\u201CProvably remove data from your trained models.\u201D",
+              body:
+                "For teams training proprietary models — dataset sanitisation and verified machine unlearning. Narrower, but high-intent when it lands.",
+            },
+          ].map((a) => (
+            <div
+              key={a.tag}
+              style={{
+                border: "1px solid #e2e6ec",
+                borderRadius: 6,
+                padding: "10px 14px",
+                marginBottom: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: green,
+                  letterSpacing: "0.5px",
+                  fontFamily: "'Inter', sans-serif",
+                  marginBottom: 3,
+                }}
+              >
+                {a.tag}
+              </div>
+              <div style={{ ...bodyText, fontWeight: 700, color: navy, marginBottom: 3 }}>
+                {a.title}
+              </div>
+              <div style={{ ...bodyText, fontSize: 11 }}>{a.body}</div>
+            </div>
+          ))}
+
+          <SectionTitle n="4">Draft Success Criteria</SectionTitle>
+          <div style={{ ...bodyText, marginBottom: 8 }}>
+            To finalise together at kickoff. Proposed targets for a 6-week, US-first pilot of
+            ~500–900 verified prospects (email + LinkedIn, 3–5 touches):
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+            {[
+              { k: "Inbox deliverability", v: "> 98%", s: "bounce < 2%" },
+              { k: "Reply rate", v: "4–8%", s: "of contacted" },
+              { k: "Positive replies", v: "1–2%", s: "of contacted" },
+              { k: "Qualified meetings", v: "3–6", s: "booked, over the pilot" },
+            ].map((m) => (
+              <div
+                key={m.k}
+                style={{
+                  flex: "1 1 40%",
+                  minWidth: 180,
+                  border: "1px solid #e2e6ec",
+                  borderRadius: 6,
+                  padding: "10px 14px",
+                }}
+              >
+                <div style={{ fontSize: 10.5, color: "#666", fontFamily: "'Inter', sans-serif" }}>
+                  {m.k}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: navy, fontFamily: "'Inter', sans-serif" }}>
+                  {m.v}
+                </div>
+                <div style={{ fontSize: 9.5, color: "#999", fontFamily: "'Inter', sans-serif" }}>
+                  {m.s}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              padding: "10px 14px",
+              background: "#f6f8fb",
+              borderLeft: `3px solid ${green}`,
+              borderRadius: 4,
+            }}
+          >
+            <div style={{ ...bodyText, fontWeight: 700, color: navy, marginBottom: 3 }}>
+              A "qualified meeting" =
+            </div>
+            <div style={{ ...bodyText, fontSize: 11 }}>
+              (1) fits the ICP above, (2) attendee is a decision-maker or direct influencer,
+              (3) has acknowledged a relevant pain or interest, and (4) attends the scheduled call.
+              Lists or replies alone do not count.
+            </div>
+          </div>
+
+          <SectionTitle n="5">Non-Negotiables</SectionTitle>
+          <ul style={{ paddingLeft: 20, marginTop: 2 }}>
+            <li style={li}>
+              <strong>US-only</strong> for the pilot. No UK/CA/AU until consent rules (esp. CASL) are
+              cleared — the brand cost of getting this wrong is too high.
+            </li>
+            <li style={li}>
+              <strong>Impeccable sending hygiene:</strong> clean SPF / DKIM / DMARC, clearly
+              EraseAI-affiliated domains (not throwaways), instant opt-out. Our outreach must
+              demonstrate the standard we sell.
+            </li>
+            <li style={li}>
+              <strong>EraseAI owns the narrative;</strong> Aprile owns list-building, deliverability,
+              sequencing, and optimisation.
+            </li>
+            <li style={li}>
+              <strong>Hot replies escalate immediately.</strong> Any high-intent response from a
+              CISO / CTO / DPO comes straight to Firdous for a personal, technical reply.
+            </li>
+          </ul>
+        </div>
+        <Footer />
       </div>
     </div>
   );
