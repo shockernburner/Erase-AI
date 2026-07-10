@@ -341,3 +341,9 @@ id = "Xk8xDdof4juNtKiZPyNcC"
 uri = "file://artifacts/pitch-video-cn/public/audio/bg_music.mp3"
 type = "audio"
 title = "background music"
+
+[[outputs]]
+id = "pR6QgD673WzKVeq--nJZ6"
+uri = "file://exports/EraseAI_Outbound_Pilot_Kickoff_Brief.pdf"
+type = "pdf"
+title = "EraseAI Outbound Pilot — Kickoff Brief (PDF)"

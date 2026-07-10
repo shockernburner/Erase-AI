@@ -27,6 +27,23 @@
   .letterhead-page {
     box-shadow: none !important;
     margin: 0 !important;
+  }
+
+  .letterhead-page:not(:last-child) {
     page-break-after: always;
+  }
+
+  .brief-root {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .brief-page {
+    height: 296mm !important;
+    min-height: auto !important;
+    overflow: hidden !important;
   }
 }

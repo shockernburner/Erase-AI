@@ -671,6 +671,7 @@ function KickoffBrief() {
 
   return (
     <div
+      className="brief-root"
       style={{
         minHeight: "100vh",
         background: "#e8e8e8",
@@ -701,7 +702,7 @@ function KickoffBrief() {
       </button>
 
       {/* PAGE 1 */}
-      <div className="letterhead-page" style={pageStyle}>
+      <div className="letterhead-page brief-page" style={pageStyle}>
         <Header />
         <div style={contentStyle}>
           <div
@@ -828,7 +829,7 @@ function KickoffBrief() {
       </div>
 
       {/* PAGE 2 */}
-      <div className="letterhead-page" style={pageStyle}>
+      <div className="letterhead-page brief-page" style={pageStyle}>
         <Header />
         <div style={contentStyle}>
           <SectionTitle n="3">Messaging Angles to Test</SectionTitle>
@@ -942,7 +943,14 @@ function KickoffBrief() {
               Lists or replies alone do not count.
             </div>
           </div>
+        </div>
+        <Footer />
+      </div>
 
+      {/* PAGE 3 */}
+      <div className="letterhead-page brief-page" style={pageStyle}>
+        <Header />
+        <div style={contentStyle}>
           <SectionTitle n="5">Non-Negotiables</SectionTitle>
           <ul style={{ paddingLeft: 20, marginTop: 2 }}>
             <li style={li}>

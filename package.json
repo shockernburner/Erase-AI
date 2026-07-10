@@ -15,6 +15,7 @@
     ]
   },
   "devDependencies": {
+    "playwright-core": "^1.61.1",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },
