@@ -1580,5 +1580,20 @@
     "noFlags": "No issues detected in this section.",
     "rewriteSection": "Rewrite this section",
     "truncatedNote": "File was very large; only the first 200,000 characters were scanned."
+  },
+  "changePassword": {
+    "menuItem": "Change password",
+    "title": "Change Password",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Confirm new password",
+    "submit": "Update password",
+    "updating": "Updating...",
+    "success": "Your password has been updated.",
+    "done": "Done",
+    "close": "Close",
+    "mismatch": "New passwords don't match.",
+    "tooShort": "New password must be at least 8 characters.",
+    "genericError": "Something went wrong. Please try again."
   }
 }

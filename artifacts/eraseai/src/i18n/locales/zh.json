@@ -1580,5 +1580,20 @@
     "noFlags": "此章节未检测到问题。",
     "rewriteSection": "重写此章节",
     "truncatedNote": "文件非常大；仅扫描了前 200,000 个字符。"
+  },
+  "changePassword": {
+    "menuItem": "修改密码",
+    "title": "修改密码",
+    "current": "当前密码",
+    "new": "新密码",
+    "confirm": "确认新密码",
+    "submit": "更新密码",
+    "updating": "更新中...",
+    "success": "您的密码已更新。",
+    "done": "完成",
+    "close": "关闭",
+    "mismatch": "两次输入的新密码不一致。",
+    "tooShort": "新密码长度至少为 8 个字符。",
+    "genericError": "出现错误，请重试。"
   }
 }

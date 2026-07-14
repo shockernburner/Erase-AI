@@ -15,6 +15,10 @@ interface AuthState {
     lastName?: string;
   }) => Promise<{ error?: string }>;
   logout: () => void;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<{ error?: string }>;
 }
 
 export function useAuth(): AuthState {
@@ -99,6 +103,30 @@ export function useAuth(): AuthState {
     [],
   );
 
+  const changePassword = useCallback(
+    async (
+      currentPassword: string,
+      newPassword: string,
+    ): Promise<{ error?: string }> => {
+      try {
+        const res = await fetch("/api/auth/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          return { error: data.error || "Failed to change password" };
+        }
+        return {};
+      } catch {
+        return { error: "Something went wrong. Please try again." };
+      }
+    },
+    [],
+  );
+
   const logout = useCallback(async () => {
     try {
       await fetch("/api/auth/logout", {
@@ -117,5 +145,6 @@ export function useAuth(): AuthState {
     login,
     signup,
     logout,
+    changePassword,
   };
 }

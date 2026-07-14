@@ -777,6 +777,72 @@ router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
   }
 });
 
+async function handleChangePassword(req: Request, res: Response) {
+  try {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword?: string;
+      newPassword?: string;
+    };
+
+    if (!currentPassword || !newPassword) {
+      res
+        .status(400)
+        .json({ error: "Current password and new password are required" });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      res
+        .status(400)
+        .json({ error: "New password must be at least 8 characters" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user!.id));
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    if (!user.passwordHash) {
+      const provider = user.authProvider || "social";
+      res.status(400).json({
+        error: `This account uses ${provider} sign-in and has no password to change.`,
+      });
+      return;
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await db
+      .update(usersTable)
+      .set({ passwordHash })
+      .where(eq(usersTable.id, user.id));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+}
+
+router.post("/auth/change-password", handleChangePassword);
+router.post("/mobile-auth/change-password", handleChangePassword);
+
 router.post("/auth/accept-terms", async (req: Request, res: Response) => {
   try {
     if (!req.isAuthenticated()) {

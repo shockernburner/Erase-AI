@@ -1580,5 +1580,20 @@
     "noFlags": "No se detectaron problemas en esta sección.",
     "rewriteSection": "Reescribir esta sección",
     "truncatedNote": "El archivo era muy grande; solo se escanearon los primeros 200.000 caracteres."
+  },
+  "changePassword": {
+    "menuItem": "Cambiar contraseña",
+    "title": "Cambiar contraseña",
+    "current": "Contraseña actual",
+    "new": "Nueva contraseña",
+    "confirm": "Confirmar nueva contraseña",
+    "submit": "Actualizar contraseña",
+    "updating": "Actualizando...",
+    "success": "Tu contraseña ha sido actualizada.",
+    "done": "Listo",
+    "close": "Cerrar",
+    "mismatch": "Las nuevas contraseñas no coinciden.",
+    "tooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "genericError": "Algo salió mal. Inténtalo de nuevo."
   }
 }

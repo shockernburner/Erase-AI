@@ -10,6 +10,7 @@ import {
   LogOut,
   Crown,
   Clock,
+  KeyRound,
   User,
   Shield,
   Database,
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
+import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 
 export type AppView =
   | "home"
@@ -106,6 +108,7 @@ function UserPill({ onNavigate }: { onNavigate: (v: AppView) => void }) {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
 
   if (!user) return null;
 
@@ -161,6 +164,14 @@ function UserPill({ onNavigate }: { onNavigate: (v: AppView) => void }) {
               {plan === "free" ? t("nav.upgradePlan") : t("nav.managePlan")}
             </button>
 
+            <button
+              onClick={() => { setOpen(false); setChangePwOpen(true); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
+            >
+              <KeyRound className="w-4 h-4" />
+              {t("changePassword.menuItem")}
+            </button>
+
             <div className="border-t border-border/30 mt-1 pt-1">
               <button
                 onClick={() => { setOpen(false); logout(); }}
@@ -173,6 +184,8 @@ function UserPill({ onNavigate }: { onNavigate: (v: AppView) => void }) {
           </div>
         </>
       )}
+
+      <ChangePasswordModal open={changePwOpen} onClose={() => setChangePwOpen(false)} />
     </div>
   );
 }
