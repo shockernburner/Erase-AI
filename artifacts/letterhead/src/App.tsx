@@ -209,6 +209,7 @@ function App() {
         <Route path="/clean" component={LetterheadClean} />
         <Route path="/pitch-akij" component={PitchAkij} />
         <Route path="/kickoff-brief" component={KickoffBrief} />
+        <Route path="/enterprise-architecture" component={EnterpriseArchitecture} />
         <Route>
           <div style={{ padding: 40, textAlign: "center" }}>Page not found</div>
         </Route>
@@ -971,6 +972,464 @@ function KickoffBrief() {
               CISO / CTO / DPO comes straight to Firdous for a personal, technical reply.
             </li>
           </ul>
+        </div>
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+function EnterpriseArchitecture() {
+  const navy = "#162a47";
+  const green = "#28a868";
+
+  const SectionTitle = ({ n, children }: { n: string; children: React.ReactNode }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 20, marginBottom: 9 }}>
+      <div
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 4,
+          background: navy,
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'Inter', sans-serif",
+          flexShrink: 0,
+        }}
+      >
+        {n}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: navy,
+          letterSpacing: "0.3px",
+          fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+          textTransform: "uppercase",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+
+  const Header = () => (
+    <>
+      <div
+        style={{
+          height: 6,
+          background: `linear-gradient(90deg, ${navy} 0%, ${navy} 60%, ${green} 60%, ${green} 100%)`,
+        }}
+      />
+      <div
+        style={{
+          padding: "26px 48px 18px 48px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          borderBottom: "1.5px solid #e2e6ec",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <img
+            src={`${import.meta.env.BASE_URL}logo.jpg`}
+            alt="Vantward Solutions"
+            style={{ height: 56, width: "auto", objectFit: "contain" }}
+          />
+          <div>
+            <div
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: navy,
+                letterSpacing: "1.5px",
+                lineHeight: 1.15,
+                fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              }}
+            >
+              VANTWARD SOLUTIONS
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: green,
+                letterSpacing: "3px",
+                fontWeight: 500,
+                marginTop: 2,
+                fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              }}
+            >
+              PTE. LTD.
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            textAlign: "right",
+            fontSize: 10,
+            color: "#555",
+            lineHeight: 1.7,
+            fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+            paddingTop: 6,
+          }}
+        >
+          <div style={{ color: navy, fontWeight: 600, fontSize: 11 }}>
+            EraseAI — Enterprise Deployment
+          </div>
+          <div>Architecture Brief</div>
+          <div style={{ marginTop: 4 }}>Prepared 14 July 2026</div>
+        </div>
+      </div>
+    </>
+  );
+
+  const Footer = () => (
+    <>
+      <div
+        style={{
+          borderTop: "1px solid #e2e6ec",
+          padding: "12px 48px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 9,
+          color: "#999",
+          fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+        }}
+      >
+        <span>Vantward Solutions Pte. Ltd. | Reg. No. 202606980C</span>
+        <span>EraseAI — Enterprise Deployment Architecture</span>
+        <span>director@vantward.com</span>
+      </div>
+      <div
+        style={{
+          height: 5,
+          background: `linear-gradient(90deg, ${green} 0%, ${green} 40%, ${navy} 40%, ${navy} 100%)`,
+        }}
+      />
+    </>
+  );
+
+  const bodyText: React.CSSProperties = {
+    fontSize: 11.5,
+    lineHeight: 1.6,
+    color: "#222",
+    fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+  };
+
+  const li: React.CSSProperties = { ...bodyText, marginBottom: 5 };
+
+  const pageStyle: React.CSSProperties = {
+    width: "210mm",
+    minHeight: "297mm",
+    background: "#fff",
+    boxShadow: "0 2px 16px rgba(0,0,0,0.13)",
+    position: "relative",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    marginBottom: 24,
+  };
+
+  const contentStyle: React.CSSProperties = {
+    flex: 1,
+    padding: "22px 48px 28px 48px",
+  };
+
+  const diagBox = (title: string, sub: string, bg: string, color: string, border: string): React.ReactNode => (
+    <div
+      style={{
+        flex: 1,
+        background: bg,
+        border: `1.5px solid ${border}`,
+        borderRadius: 8,
+        padding: "12px 14px",
+        textAlign: "center",
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "'Inter', sans-serif" }}>{title}</div>
+      <div style={{ fontSize: 9.5, color: "#555", marginTop: 4, lineHeight: 1.5, fontFamily: "'Inter', sans-serif" }}>
+        {sub}
+      </div>
+    </div>
+  );
+
+  const arrow = (
+    <div style={{ display: "flex", alignItems: "center", color: navy, fontSize: 18, fontWeight: 700, padding: "0 6px" }}>
+      →
+    </div>
+  );
+
+  const th: React.CSSProperties = {
+    background: navy,
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "7px 10px",
+    textAlign: "left",
+    fontFamily: "'Inter', sans-serif",
+    letterSpacing: "0.3px",
+  };
+
+  const td: React.CSSProperties = {
+    fontSize: 10.5,
+    lineHeight: 1.55,
+    color: "#222",
+    padding: "8px 10px",
+    borderBottom: "1px solid #e2e6ec",
+    verticalAlign: "top",
+    fontFamily: "'Inter', sans-serif",
+  };
+
+  const tdState: React.CSSProperties = { ...td, fontWeight: 700, color: navy, whiteSpace: "nowrap" };
+
+  return (
+    <div
+      className="brief-root"
+      style={{
+        minHeight: "100vh",
+        background: "#e8e8e8",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "24px 16px",
+        fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+      }}
+    >
+      <button
+        className="no-print"
+        onClick={() => window.print()}
+        style={{
+          marginBottom: 16,
+          padding: "10px 28px",
+          background: navy,
+          color: "#fff",
+          border: "none",
+          borderRadius: 6,
+          fontSize: 14,
+          fontFamily: "'Inter', sans-serif",
+          cursor: "pointer",
+          letterSpacing: "0.5px",
+        }}
+      >
+        Print / Save as PDF
+      </button>
+
+      {/* PAGE 1 */}
+      <div className="letterhead-page brief-page" style={pageStyle}>
+        <Header />
+        <div style={contentStyle}>
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: navy,
+              marginTop: 8,
+              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+            }}
+          >
+            Enterprise Deployment — Architecture Brief
+          </div>
+          <div style={{ ...bodyText, color: "#555", marginTop: 4, marginBottom: 14 }}>
+            How EraseAI enforces AI data governance across corporate LAN, WiFi/WAN, remote, and
+            offline use — on the customer's own infrastructure.
+          </div>
+
+          <div
+            style={{
+              background: "#f4f6fa",
+              borderLeft: `4px solid ${green}`,
+              padding: "12px 16px",
+              marginBottom: 6,
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, color: navy, marginBottom: 4 }}>
+              Design principle
+            </div>
+            <div style={{ ...bodyText, fontSize: 11 }}>
+              Enforcement travels with the device; the network is the backstop; the policy brain
+              lives on the customer's own servers. EraseAI does not depend on the network to
+              enforce — the corporate network simply guarantees that the only road to AI tools runs
+              through EraseAI.
+            </div>
+          </div>
+
+          <SectionTitle n="1">Two Enforcement Layers</SectionTitle>
+          <ul style={{ paddingLeft: 20, marginTop: 2 }}>
+            <li style={li}>
+              <strong>Layer 1 — Endpoint (primary control).</strong> The EraseAI browser extension /
+              lightweight agent inspects at the prompt — the only point where sensitive data can be
+              caught <em>before</em> it leaves. Force-installed via the tools IT already runs
+              (Group Policy, Intune, Chrome Enterprise, MDM); identity via corporate SSO, so every
+              event is tied to a user.
+            </li>
+            <li style={li}>
+              <strong>Layer 2 — Network (backstop).</strong> The existing switches and egress
+              firewall enforce one rule: direct traffic to AI endpoints is blocked unless it comes
+              from a device running the EraseAI agent or is routed through the EraseAI gateway.
+              Catches unmanaged devices, scripts, and personal laptops on corporate WiFi. DNS
+              filtering or an egress proxy rule — no re-cabling.
+            </li>
+            <li style={li}>
+              <strong>Policy server on customer infrastructure.</strong> Rules, audit logs, and the
+              admin dashboard run on the customer's own servers (on-prem or private cloud). Prompt
+              content never leaves their environment for inspection.
+            </li>
+          </ul>
+
+          <SectionTitle n="2">Reference Architecture</SectionTitle>
+          <div style={{ display: "flex", alignItems: "stretch", marginTop: 4 }}>
+            {diagBox(
+              "EMPLOYEE DEVICE",
+              "EraseAI agent / extension — inspects at the prompt, enforced via MDM + SSO",
+              "#eef1f6",
+              navy,
+              "#c7d0dd"
+            )}
+            {arrow}
+            {diagBox(
+              "SWITCHES / EGRESS FIREWALL",
+              "LAN + WiFi/WAN — blocks any path to AI tools that bypasses EraseAI",
+              "#fff",
+              navy,
+              "#c7d0dd"
+            )}
+            {arrow}
+            {diagBox(
+              "AI TOOLS",
+              "ChatGPT, Claude, Copilot, Gemini — reached only through the governed path",
+              "#e9f6ef",
+              green,
+              "#bfe3d0"
+            )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
+            <div
+              style={{
+                width: "60%",
+                background: navy,
+                borderRadius: 8,
+                padding: "10px 14px",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", fontFamily: "'Inter', sans-serif" }}>
+                ERASEAI POLICY SERVER — ON CUSTOMER SERVERS
+              </div>
+              <div style={{ fontSize: 9.5, color: "#c9d4e4", marginTop: 3, fontFamily: "'Inter', sans-serif" }}>
+                Policy rules · audit log store · admin dashboard · SSO integration
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+
+      {/* PAGE 2 */}
+      <div className="letterhead-page brief-page" style={pageStyle}>
+        <Header />
+        <div style={contentStyle}>
+          <SectionTitle n="3">Coverage Across Connectivity States</SectionTitle>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 4 }}>
+            <thead>
+              <tr>
+                <th style={th}>Employee state</th>
+                <th style={th}>What happens</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={tdState}>On LAN, online</td>
+                <td style={td}>
+                  Endpoint agent inspects at the prompt; the network blocks anything that bypasses
+                  it. Full real-time logging.
+                </td>
+              </tr>
+              <tr>
+                <td style={tdState}>On WiFi / WAN, online</td>
+                <td style={td}>
+                  Identical — WiFi is another path through the same switches and egress point, so
+                  both layers apply unchanged.
+                </td>
+              </tr>
+              <tr>
+                <td style={tdState}>Remote, online</td>
+                <td style={td}>
+                  The endpoint agent enforces on its own, independent of network. Policies and
+                  audit logs sync with the policy server over the internet or corporate VPN.
+                </td>
+              </tr>
+              <tr>
+                <td style={tdState}>Offline</td>
+                <td style={td}>
+                  Cloud AI tools are unreachable, closing the live leak path. The agent keeps
+                  enforcing against local AI models using its cached policy; logs queue and sync on
+                  reconnect.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <SectionTitle n="4">Offline Design</SectionTitle>
+          <ul style={{ paddingLeft: 20, marginTop: 2 }}>
+            <li style={li}>
+              <strong>Local policy cache.</strong> The agent evaluates prompts on-device against
+              the latest cached policy — no server round-trip for a block/allow decision, and zero
+              added latency online.
+            </li>
+            <li style={li}>
+              <strong>Queued audit trail.</strong> Events are stored locally and synced when
+              connectivity returns; nothing is lost from the log trail.
+            </li>
+            <li style={li}>
+              <strong>Fail-closed by default.</strong> If the agent cannot reach the policy server
+              beyond a configured window, AI tool access is blocked until re-sync. Admins may
+              choose fail-open for low-sensitivity groups.
+            </li>
+          </ul>
+
+          <SectionTitle n="5">Deployment Path</SectionTitle>
+          <ul style={{ paddingLeft: 20, marginTop: 2 }}>
+            <li style={li}>
+              <strong>1. Install the policy server</strong> on customer infrastructure (on-prem or
+              private cloud) and connect corporate SSO.
+            </li>
+            <li style={li}>
+              <strong>2. Push the endpoint agent</strong> to managed devices via Group Policy /
+              Intune / Chrome Enterprise / MDM.
+            </li>
+            <li style={li}>
+              <strong>3. Add egress rules</strong> at the existing firewall: AI endpoints reachable
+              only via EraseAI-governed paths.
+            </li>
+            <li style={li}>
+              <strong>4. Pilot with one department,</strong> tune policies, then roll out
+              organisation-wide.
+            </li>
+          </ul>
+
+          <div
+            style={{
+              background: navy,
+              borderRadius: 8,
+              padding: "14px 18px",
+              marginTop: 16,
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", lineHeight: 1.6 }}>
+              "We don't depend on your network to enforce — the control travels with the device.
+              Your switches just make sure the only road to AI tools runs through us, and the
+              policy brain lives on your own servers."
+            </div>
+            <div style={{ fontSize: 10, color: green, fontWeight: 600, marginTop: 5 }}>
+              EraseAI — prevention at the prompt, on your infrastructure.
+            </div>
+          </div>
         </div>
         <Footer />
       </div>
