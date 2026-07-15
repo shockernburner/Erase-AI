@@ -23,6 +23,9 @@ import FirewallDocs from "@/pages/FirewallDocs";
 import FirewallHub from "@/pages/FirewallHub";
 import DocumentationsHub from "@/pages/DocumentationsHub";
 import BlogsHub from "@/pages/BlogsHub";
+import GetStarted from "@/pages/GetStarted";
+import FirewallSetup from "@/pages/FirewallSetup";
+import ApiSetup from "@/pages/ApiSetup";
 import { AppShell, type AppView as ShellView } from "@/components/AppShell";
 import PublishingChecklist from "@/pages/PublishingChecklist";
 import TermsOfService from "@/pages/TermsOfService";
@@ -241,19 +244,10 @@ function PreviewRoute({ mode }: { mode: NonNullable<PreviewMode> }) {
   return <PreviewPage mode={mode} onBack={goHome} />;
 }
 
-function getDefaultViewForPlan(planType: string | undefined): AppView {
-  const plan = planType || "free";
-  switch (plan) {
-    case "personal":
-      return "personal";
-    case "pro":
-      return "developer";
-    case "business":
-    case "enterprise":
-      return "analytics";
-    default:
-      return "datasetSanitizer";
-  }
+// Every signed-in user lands on the simple 3-choice "Get started" picker.
+// Plan-specific dashboards remain reachable via the sidebar and shortcuts.
+function getDefaultViewForPlan(_planType: string | undefined): AppView {
+  return "getStarted";
 }
 
 function AuthGate() {
@@ -269,7 +263,7 @@ function AuthGate() {
       return "checkout-success";
     }
     const viewParam = params.get("view");
-    const allowedDeepLinks: AppView[] = ["developer", "datasetSanitizer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub"];
+    const allowedDeepLinks: AppView[] = ["developer", "datasetSanitizer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub", "getStarted", "firewallSetup", "apiSetup"];
     if (viewParam && (allowedDeepLinks as string[]).includes(viewParam)) {
       return viewParam as AppView;
     }
@@ -377,6 +371,15 @@ function AuthGate() {
   // Pages rendered inside the AppShell.
   let inner: ReactElement;
   switch (effectiveView) {
+    case "getStarted":
+      inner = <GetStarted onNavigate={setView} />;
+      break;
+    case "firewallSetup":
+      inner = <FirewallSetup onNavigate={setView} />;
+      break;
+    case "apiSetup":
+      inner = <ApiSetup onNavigate={setView} />;
+      break;
     case "admin":
       inner = <AdminDashboard onBack={() => setView("home")} />;
       break;

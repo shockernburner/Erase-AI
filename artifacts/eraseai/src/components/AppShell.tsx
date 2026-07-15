@@ -24,6 +24,7 @@ import {
   Megaphone,
   TrendingUp,
   Globe,
+  Rocket,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -31,6 +32,9 @@ import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 
 export type AppView =
   | "home"
+  | "getStarted"
+  | "firewallSetup"
+  | "apiSetup"
   | "pricing"
   | "checkout-success"
   | "admin"
@@ -219,6 +223,12 @@ export function AppShell({
   }, [view]);
 
   const groups = useMemo<{ label: string; items: NavItem[] }[]>(() => [
+    {
+      label: t("appShell.groupStart", { defaultValue: "Start" }),
+      items: [
+        { id: "getStarted", labelKey: "appShell.getStarted", icon: <Rocket className="w-4 h-4" />, match: ["getStarted", "firewallSetup", "apiSetup"] },
+      ],
+    },
     {
       label: t("appShell.groupPersonal", { defaultValue: "Personal" }),
       items: [

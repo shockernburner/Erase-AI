@@ -1517,7 +1517,9 @@
     "groupSanitizers": "Dataset Sanitizers",
     "groupDocs": "Documentation",
     "groupBlogs": "Blogs",
-    "groupLegal": "Legal"
+    "groupLegal": "Legal",
+    "groupStart": "Start",
+    "getStarted": "Get started"
   },
   "firewallHub": {
     "title": "Firewall",
@@ -1595,5 +1597,142 @@
     "mismatch": "New passwords don't match.",
     "tooShort": "New password must be at least 8 characters.",
     "genericError": "Something went wrong. Please try again."
+  },
+  "getStarted": {
+    "welcome": "You're in",
+    "welcomeName": "Welcome back, {{name}}",
+    "title": "What would you like to set up?",
+    "subtitle": "Pick one to start — we'll guide you through every step. You can always come back for the others.",
+    "firewall": {
+      "title": "AI Firewall for your browser",
+      "desc": "Stops passwords, customer data and secrets before they reach ChatGPT, Claude or Gemini.",
+      "time": "About 3 minutes",
+      "cta": "Install the extension"
+    },
+    "sanitizer": {
+      "title": "Dataset Sanitizer",
+      "desc": "Upload a file and we'll find and remove personal data before you share it or train AI on it.",
+      "time": "No install — runs here",
+      "cta": "Clean a dataset"
+    },
+    "api": {
+      "title": "Use it in your own apps",
+      "desc": "Add the same protection to your product, scripts or pipeline with a simple API.",
+      "time": "About 5 minutes",
+      "cta": "Get your API key",
+      "upgradeCta": "See plans",
+      "lockedNote": "Pro and up"
+    },
+    "shortcuts": "Your other tools",
+    "shortcutPersonal": "Personal Mode",
+    "shortcutDeveloper": "Developer dashboard",
+    "shortcutAnalytics": "Analytics"
+  },
+  "firewallSetup": {
+    "title": "Install the AI Firewall",
+    "subtitle": "A guided setup — tell us when each step is done.",
+    "backToStart": "Back to Get started",
+    "changeBrowser": "Choose a different browser",
+    "back": "Back",
+    "doneNext": "I've done this",
+    "finish": "Finish setup",
+    "stepCounter": "Step {{current}} of {{total}}",
+    "picker": {
+      "title": "Which browser do you want to protect?",
+      "subtitle": "Pick the browser you use for AI tools like ChatGPT, Claude or Gemini.",
+      "firefoxNote": "Temporary install",
+      "safariNote": "Not supported yet"
+    },
+    "safari": {
+      "title": "Safari isn't supported yet",
+      "desc": "Apple requires browser extensions to go through the Mac App Store, so we can't offer a direct install for Safari today. We're working on it.",
+      "note": "Your account works in any browser — installing in Chrome or Edge takes about 3 minutes.",
+      "useChrome": "Set up in Chrome instead",
+      "useEdge": "Set up in Edge instead"
+    },
+    "steps": {
+      "downloadCta": "Download extension (.zip)",
+      "unzipHint": "Tip: double-click the .zip and remember where the unzipped folder is — you'll pick it in step 4.",
+      "openChatgpt": "Open ChatGPT to test",
+      "download": {
+        "title": "Download the extension",
+        "desc": "Click the button below to download the EraseAI Firewall as a .zip file. It usually lands in your Downloads folder."
+      },
+      "unzip": {
+        "title": "Unzip the file",
+        "desc": "Find the downloaded file and unzip it. On most computers you just double-click it. You'll get a folder — keep it somewhere you'll remember."
+      },
+      "openChrome": {
+        "title": "Open Chrome's extensions page",
+        "desc": "Copy the address below, paste it into Chrome's address bar and press Enter. Then switch on 'Developer mode' in the top-right corner — just like in the picture."
+      },
+      "openEdge": {
+        "title": "Open Edge's extensions page",
+        "desc": "Copy the address below, paste it into Edge's address bar and press Enter. Then switch on 'Developer mode' — just like in the picture."
+      },
+      "loadUnpacked": {
+        "title": "Load the extension",
+        "desc": "Click 'Load unpacked' and select the folder you unzipped in step 2. The EraseAI Firewall card will appear in the list."
+      },
+      "pinTest": {
+        "title": "Pin it and try it out",
+        "desc": "Click the puzzle icon next to the address bar and pin EraseAI Firewall. Then open ChatGPT, Claude or Gemini — the shield now checks everything before it leaves your browser."
+      }
+    },
+    "firefox": {
+      "temporaryNote": "Heads up: Firefox removes temporary add-ons when you close the browser. For always-on protection we recommend Chrome or Edge until our Firefox store listing is live.",
+      "download": {
+        "title": "Download the extension",
+        "desc": "Click the button below to download the EraseAI Firewall as a .zip file."
+      },
+      "openFirefox": {
+        "title": "Open Firefox's debugging page",
+        "desc": "Copy the address below, paste it into Firefox's address bar and press Enter."
+      },
+      "loadTemporary": {
+        "title": "Load the extension",
+        "desc": "Click 'Load Temporary Add-on…' and select the .zip file you downloaded (no need to unzip)."
+      },
+      "pinTest": {
+        "title": "Try it out",
+        "desc": "Open ChatGPT, Claude or Gemini — the firewall is now active in this Firefox session."
+      }
+    },
+    "done": {
+      "title": "You're protected!",
+      "desc": "The AI Firewall now checks prompts and attachments before they leave your browser. You can manage keys and advanced options anytime.",
+      "backHome": "Back to Get started",
+      "openHub": "Open Firewall hub"
+    }
+  },
+  "apiSetup": {
+    "title": "Use EraseAI in your own apps",
+    "subtitle": "Three steps: get a key, make a call, build.",
+    "backToStart": "Back to Get started",
+    "back": "Back",
+    "doneNext": "I've done this",
+    "haveKey": "I already have a key",
+    "stepCounter": "Step {{current}} of {{total}}",
+    "keyError": "Could not create a key. Your plan may not include API access.",
+    "step1": {
+      "title": "Create your API key",
+      "desc": "This key identifies your app to EraseAI. Create one now — we'll show it once, so copy it somewhere safe.",
+      "createCta": "Create my API key",
+      "creating": "Creating…",
+      "saveNote": "Copy this key now — for your security we won't show it again.",
+      "upgradeCta": "See plans with API access"
+    },
+    "step2": {
+      "title": "Make your first call",
+      "desc": "Paste this into your terminal. It sends a sample text to EraseAI and returns the personal data we found.",
+      "expected": "You should get back a JSON response listing the detected email and SSN — that's the firewall working."
+    },
+    "done": {
+      "title": "You're ready to build!",
+      "desc": "Use the same key for scanning, sanitizing and CLI use in your pipeline. Explore the playground or the full reference next.",
+      "playground": "Open the playground",
+      "docs": "Full API reference",
+      "backHome": "Back to Get started"
+    }
   }
 }

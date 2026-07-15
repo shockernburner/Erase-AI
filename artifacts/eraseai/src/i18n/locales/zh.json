@@ -1517,7 +1517,9 @@
     "groupSanitizers": "数据集清洗器",
     "groupDocs": "文档",
     "groupBlogs": "博客",
-    "groupLegal": "法律"
+    "groupLegal": "法律",
+    "groupStart": "开始",
+    "getStarted": "快速上手"
   },
   "firewallHub": {
     "title": "防火墙",
@@ -1595,5 +1597,142 @@
     "mismatch": "两次输入的新密码不一致。",
     "tooShort": "新密码长度至少为 8 个字符。",
     "genericError": "出现错误，请重试。"
+  },
+  "getStarted": {
+    "welcome": "已登录",
+    "welcomeName": "欢迎回来，{{name}}",
+    "title": "您想设置什么？",
+    "subtitle": "选择一项开始 — 我们会全程引导您。其他功能随时可以回来设置。",
+    "firewall": {
+      "title": "浏览器 AI 防火墙",
+      "desc": "在密码、客户数据和机密信息到达 ChatGPT、Claude 或 Gemini 之前将其拦截。",
+      "time": "约 3 分钟",
+      "cta": "安装扩展程序"
+    },
+    "sanitizer": {
+      "title": "数据集清洗器",
+      "desc": "上传文件，我们会在您分享或用于 AI 训练之前找出并删除个人数据。",
+      "time": "无需安装 — 在此运行",
+      "cta": "清洗数据集"
+    },
+    "api": {
+      "title": "在您自己的应用中使用",
+      "desc": "通过简单的 API，将同样的保护添加到您的产品、脚本或流水线中。",
+      "time": "约 5 分钟",
+      "cta": "获取 API 密钥",
+      "upgradeCta": "查看套餐",
+      "lockedNote": "Pro 及以上"
+    },
+    "shortcuts": "您的其他工具",
+    "shortcutPersonal": "个人模式",
+    "shortcutDeveloper": "开发者仪表盘",
+    "shortcutAnalytics": "分析"
+  },
+  "firewallSetup": {
+    "title": "安装 AI 防火墙",
+    "subtitle": "引导式设置 — 每完成一步请告诉我们。",
+    "backToStart": "返回快速上手",
+    "changeBrowser": "选择其他浏览器",
+    "back": "返回",
+    "doneNext": "我已完成",
+    "finish": "完成设置",
+    "stepCounter": "第 {{current}} 步，共 {{total}} 步",
+    "picker": {
+      "title": "您想保护哪个浏览器？",
+      "subtitle": "选择您用于 ChatGPT、Claude 或 Gemini 等 AI 工具的浏览器。",
+      "firefoxNote": "临时安装",
+      "safariNote": "暂不支持"
+    },
+    "safari": {
+      "title": "Safari 暂不支持",
+      "desc": "Apple 要求浏览器扩展必须通过 Mac App Store 分发，因此目前无法在 Safari 上直接安装。我们正在努力解决。",
+      "note": "您的账户可在任何浏览器中使用 — 在 Chrome 或 Edge 中安装约需 3 分钟。",
+      "useChrome": "改用 Chrome 设置",
+      "useEdge": "改用 Edge 设置"
+    },
+    "steps": {
+      "downloadCta": "下载扩展程序 (.zip)",
+      "unzipHint": "提示：双击 .zip 文件并记住解压后文件夹的位置 — 第 4 步会用到。",
+      "openChatgpt": "打开 ChatGPT 测试",
+      "download": {
+        "title": "下载扩展程序",
+        "desc": "点击下方按钮，将 EraseAI 防火墙下载为 .zip 文件。通常会保存在您的“下载”文件夹中。"
+      },
+      "unzip": {
+        "title": "解压文件",
+        "desc": "找到下载的文件并解压。在大多数电脑上双击即可。您会得到一个文件夹 — 请放在容易记住的位置。"
+      },
+      "openChrome": {
+        "title": "打开 Chrome 扩展程序页面",
+        "desc": "复制下方地址，粘贴到 Chrome 地址栏并按回车。然后打开右上角的“开发者模式”开关 — 如图所示。"
+      },
+      "openEdge": {
+        "title": "打开 Edge 扩展页面",
+        "desc": "复制下方地址，粘贴到 Edge 地址栏并按回车。然后打开“开发人员模式”开关 — 如图所示。"
+      },
+      "loadUnpacked": {
+        "title": "加载扩展程序",
+        "desc": "点击“加载已解压的扩展程序”，选择第 2 步解压的文件夹。EraseAI 防火墙卡片将出现在列表中。"
+      },
+      "pinTest": {
+        "title": "固定并试用",
+        "desc": "点击地址栏旁的拼图图标，固定 EraseAI 防火墙。然后打开 ChatGPT、Claude 或 Gemini — 防护盾现在会在内容离开浏览器前检查一切。"
+      }
+    },
+    "firefox": {
+      "temporaryNote": "请注意：关闭浏览器后 Firefox 会移除临时附加组件。在我们的 Firefox 商店版本上线之前，如需持续保护，建议使用 Chrome 或 Edge。",
+      "download": {
+        "title": "下载扩展程序",
+        "desc": "点击下方按钮，将 EraseAI 防火墙下载为 .zip 文件。"
+      },
+      "openFirefox": {
+        "title": "打开 Firefox 调试页面",
+        "desc": "复制下方地址，粘贴到 Firefox 地址栏并按回车。"
+      },
+      "loadTemporary": {
+        "title": "加载扩展程序",
+        "desc": "点击“加载临时附加组件…”，选择您下载的 .zip 文件（无需解压）。"
+      },
+      "pinTest": {
+        "title": "试用一下",
+        "desc": "打开 ChatGPT、Claude 或 Gemini — 防火墙已在本次 Firefox 会话中生效。"
+      }
+    },
+    "done": {
+      "title": "您已受到保护！",
+      "desc": "AI 防火墙现在会在提示词和附件离开浏览器之前进行检查。您可以随时管理密钥和高级选项。",
+      "backHome": "返回快速上手",
+      "openHub": "打开防火墙中心"
+    }
+  },
+  "apiSetup": {
+    "title": "在您自己的应用中使用 EraseAI",
+    "subtitle": "三步走：获取密钥、发起调用、开始构建。",
+    "backToStart": "返回快速上手",
+    "back": "返回",
+    "doneNext": "我已完成",
+    "haveKey": "我已有密钥",
+    "stepCounter": "第 {{current}} 步，共 {{total}} 步",
+    "keyError": "无法创建密钥。您的套餐可能不包含 API 访问权限。",
+    "step1": {
+      "title": "创建您的 API 密钥",
+      "desc": "此密钥用于向 EraseAI 标识您的应用。现在就创建一个 — 密钥只显示一次，请复制到安全的地方。",
+      "createCta": "创建我的 API 密钥",
+      "creating": "创建中…",
+      "saveNote": "请立即复制此密钥 — 出于安全考虑，我们不会再次显示。",
+      "upgradeCta": "查看包含 API 访问的套餐"
+    },
+    "step2": {
+      "title": "发起第一次调用",
+      "desc": "将以下内容粘贴到终端中。它会向 EraseAI 发送一段示例文本，并返回检测到的个人数据。",
+      "expected": "您应该会收到一个 JSON 响应，列出检测到的邮箱和 SSN — 这就是防火墙在工作。"
+    },
+    "done": {
+      "title": "可以开始构建了！",
+      "desc": "同一个密钥可用于扫描、清洗以及在流水线中使用 CLI。接下来可以探索演练场或完整参考文档。",
+      "playground": "打开演练场",
+      "docs": "完整 API 参考",
+      "backHome": "返回快速上手"
+    }
   }
 }

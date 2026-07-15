@@ -1517,7 +1517,9 @@
     "groupSanitizers": "Saneadores de datasets",
     "groupDocs": "Documentación",
     "groupBlogs": "Blog",
-    "groupLegal": "Legal"
+    "groupLegal": "Legal",
+    "groupStart": "Inicio",
+    "getStarted": "Primeros pasos"
   },
   "firewallHub": {
     "title": "Firewall",
@@ -1595,5 +1597,142 @@
     "mismatch": "Las nuevas contraseñas no coinciden.",
     "tooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
     "genericError": "Algo salió mal. Inténtalo de nuevo."
+  },
+  "getStarted": {
+    "welcome": "Ya estás dentro",
+    "welcomeName": "Bienvenido de nuevo, {{name}}",
+    "title": "¿Qué te gustaría configurar?",
+    "subtitle": "Elige una opción para empezar — te guiaremos en cada paso. Siempre puedes volver por las demás.",
+    "firewall": {
+      "title": "Firewall de IA para tu navegador",
+      "desc": "Detiene contraseñas, datos de clientes y secretos antes de que lleguen a ChatGPT, Claude o Gemini.",
+      "time": "Unos 3 minutos",
+      "cta": "Instalar la extensión"
+    },
+    "sanitizer": {
+      "title": "Dataset Sanitizer",
+      "desc": "Sube un archivo y encontraremos y eliminaremos los datos personales antes de compartirlo o entrenar IA con él.",
+      "time": "Sin instalación — funciona aquí",
+      "cta": "Limpiar un dataset"
+    },
+    "api": {
+      "title": "Úsalo en tus propias apps",
+      "desc": "Añade la misma protección a tu producto, scripts o pipeline con una API sencilla.",
+      "time": "Unos 5 minutos",
+      "cta": "Obtener tu clave API",
+      "upgradeCta": "Ver planes",
+      "lockedNote": "Pro o superior"
+    },
+    "shortcuts": "Tus otras herramientas",
+    "shortcutPersonal": "Modo personal",
+    "shortcutDeveloper": "Panel de desarrollador",
+    "shortcutAnalytics": "Analíticas"
+  },
+  "firewallSetup": {
+    "title": "Instalar el Firewall de IA",
+    "subtitle": "Una configuración guiada — dinos cuando termines cada paso.",
+    "backToStart": "Volver a Primeros pasos",
+    "changeBrowser": "Elegir otro navegador",
+    "back": "Atrás",
+    "doneNext": "Ya lo hice",
+    "finish": "Finalizar configuración",
+    "stepCounter": "Paso {{current}} de {{total}}",
+    "picker": {
+      "title": "¿Qué navegador quieres proteger?",
+      "subtitle": "Elige el navegador que usas para herramientas de IA como ChatGPT, Claude o Gemini.",
+      "firefoxNote": "Instalación temporal",
+      "safariNote": "Aún no compatible"
+    },
+    "safari": {
+      "title": "Safari aún no es compatible",
+      "desc": "Apple exige que las extensiones pasen por la Mac App Store, así que hoy no podemos ofrecer una instalación directa en Safari. Estamos trabajando en ello.",
+      "note": "Tu cuenta funciona en cualquier navegador — instalar en Chrome o Edge lleva unos 3 minutos.",
+      "useChrome": "Configurar en Chrome",
+      "useEdge": "Configurar en Edge"
+    },
+    "steps": {
+      "downloadCta": "Descargar extensión (.zip)",
+      "unzipHint": "Consejo: haz doble clic en el .zip y recuerda dónde queda la carpeta descomprimida — la elegirás en el paso 4.",
+      "openChatgpt": "Abrir ChatGPT para probar",
+      "download": {
+        "title": "Descarga la extensión",
+        "desc": "Haz clic en el botón de abajo para descargar EraseAI Firewall como archivo .zip. Suele quedar en tu carpeta de Descargas."
+      },
+      "unzip": {
+        "title": "Descomprime el archivo",
+        "desc": "Encuentra el archivo descargado y descomprímelo. En la mayoría de los equipos basta con hacer doble clic. Obtendrás una carpeta — guárdala donde la recuerdes."
+      },
+      "openChrome": {
+        "title": "Abre la página de extensiones de Chrome",
+        "desc": "Copia la dirección de abajo, pégala en la barra de direcciones de Chrome y pulsa Enter. Luego activa el 'Modo de desarrollador' arriba a la derecha — como en la imagen."
+      },
+      "openEdge": {
+        "title": "Abre la página de extensiones de Edge",
+        "desc": "Copia la dirección de abajo, pégala en la barra de direcciones de Edge y pulsa Enter. Luego activa el 'Modo de desarrollador' — como en la imagen."
+      },
+      "loadUnpacked": {
+        "title": "Carga la extensión",
+        "desc": "Haz clic en 'Cargar descomprimida' y selecciona la carpeta que descomprimiste en el paso 2. La tarjeta de EraseAI Firewall aparecerá en la lista."
+      },
+      "pinTest": {
+        "title": "Fíjala y pruébala",
+        "desc": "Haz clic en el icono de puzle junto a la barra de direcciones y fija EraseAI Firewall. Luego abre ChatGPT, Claude o Gemini — el escudo ahora revisa todo antes de que salga de tu navegador."
+      }
+    },
+    "firefox": {
+      "temporaryNote": "Atención: Firefox elimina los complementos temporales al cerrar el navegador. Para protección permanente recomendamos Chrome o Edge hasta que nuestra publicación en la tienda de Firefox esté disponible.",
+      "download": {
+        "title": "Descarga la extensión",
+        "desc": "Haz clic en el botón de abajo para descargar EraseAI Firewall como archivo .zip."
+      },
+      "openFirefox": {
+        "title": "Abre la página de depuración de Firefox",
+        "desc": "Copia la dirección de abajo, pégala en la barra de direcciones de Firefox y pulsa Enter."
+      },
+      "loadTemporary": {
+        "title": "Carga la extensión",
+        "desc": "Haz clic en 'Cargar complemento temporal…' y selecciona el archivo .zip que descargaste (no hace falta descomprimir)."
+      },
+      "pinTest": {
+        "title": "Pruébala",
+        "desc": "Abre ChatGPT, Claude o Gemini — el firewall ya está activo en esta sesión de Firefox."
+      }
+    },
+    "done": {
+      "title": "¡Estás protegido!",
+      "desc": "El Firewall de IA ahora revisa los prompts y archivos adjuntos antes de que salgan de tu navegador. Puedes gestionar claves y opciones avanzadas cuando quieras.",
+      "backHome": "Volver a Primeros pasos",
+      "openHub": "Abrir el hub del Firewall"
+    }
+  },
+  "apiSetup": {
+    "title": "Usa EraseAI en tus propias apps",
+    "subtitle": "Tres pasos: obtén una clave, haz una llamada, construye.",
+    "backToStart": "Volver a Primeros pasos",
+    "back": "Atrás",
+    "doneNext": "Ya lo hice",
+    "haveKey": "Ya tengo una clave",
+    "stepCounter": "Paso {{current}} de {{total}}",
+    "keyError": "No se pudo crear la clave. Puede que tu plan no incluya acceso a la API.",
+    "step1": {
+      "title": "Crea tu clave API",
+      "desc": "Esta clave identifica tu app ante EraseAI. Créala ahora — la mostraremos una sola vez, así que cópiala en un lugar seguro.",
+      "createCta": "Crear mi clave API",
+      "creating": "Creando…",
+      "saveNote": "Copia esta clave ahora — por tu seguridad no la volveremos a mostrar.",
+      "upgradeCta": "Ver planes con acceso a la API"
+    },
+    "step2": {
+      "title": "Haz tu primera llamada",
+      "desc": "Pega esto en tu terminal. Envía un texto de ejemplo a EraseAI y devuelve los datos personales encontrados.",
+      "expected": "Deberías recibir una respuesta JSON con el correo y el SSN detectados — eso es el firewall funcionando."
+    },
+    "done": {
+      "title": "¡Listo para construir!",
+      "desc": "Usa la misma clave para escanear, sanear y usar la CLI en tu pipeline. Explora el playground o la referencia completa.",
+      "playground": "Abrir el playground",
+      "docs": "Referencia completa de la API",
+      "backHome": "Volver a Primeros pasos"
+    }
   }
 }
