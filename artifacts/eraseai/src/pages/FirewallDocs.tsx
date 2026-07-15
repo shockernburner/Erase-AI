@@ -954,7 +954,7 @@ function EndpointsSection() {
   ],
   "total": 42,
   "todayUsed": 3,
-  "dailyLimit": 10,
+  "dailyLimit": 25,
   "meta": { "version": "1.0", "timestamp": "...", "requestId": "..." }
 }`} lang="json" />
       </div>
@@ -1101,12 +1101,12 @@ function RateLimitsSection() {
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-foreground">{t("firewallDocs.rateLimitResponseTitle")}</h3>
         <CodeBlock code={`{
-  "error": "Free plan allows 10 scans per day. Upgrade for unlimited scans.",
+  "error": "Your free trial includes 25 scans. Upgrade for unlimited scans.",
   "code": "RATE_LIMIT_EXCEEDED",
   "upgrade": true,
-  "limit": 10,
-  "used": 10,
-  "details": { "upgrade": true, "limit": 10, "used": 10 },
+  "limit": 25,
+  "used": 25,
+  "details": { "upgrade": true, "limit": 25, "used": 25 },
   "meta": { "version": "1.0", "timestamp": "...", "requestId": "..." }
 }`} lang="json" />
       </div>

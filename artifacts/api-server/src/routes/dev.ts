@@ -4,7 +4,7 @@ import { sql, eq } from "drizzle-orm";
 import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
-import { refreshPlanFromDB } from "../middlewares/planMiddleware";
+import { refreshPlanFromDB, requireActivePlan } from "../middlewares/planMiddleware";
 import { redactInputForStorage } from "../lib/dev/store-redact";
 import { hashApiKey, enforceApiKeyTtlAndQuota } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
@@ -191,12 +191,12 @@ async function buildAuthedPingPayload(
   let dailyRemaining: number | null = null;
   if (planType === "free") {
     try {
-      dailyUsed = await getDailyUsageCount(user.id);
+      dailyUsed = await getTrialUsageCount(user.id);
     } catch {
       dailyUsed = 0;
     }
-    dailyLimit = FREE_DAILY_LIMIT;
-    dailyRemaining = Math.max(0, FREE_DAILY_LIMIT - dailyUsed);
+    dailyLimit = FREE_TRIAL_SCAN_LIMIT;
+    dailyRemaining = Math.max(0, FREE_TRIAL_SCAN_LIMIT - dailyUsed);
   }
   return {
     ok: true,
@@ -234,28 +234,25 @@ const burstChain = [apiKeyBurstLimit()];
 // no-ops when there's no req.apiKeyId (i.e. session-based dashboard calls).
 const quotaChain = [trackApiUsage(), apiRateLimit()];
 
-const FREE_DAILY_LIMIT = 10;
+// Free = 7-day trial with a total budget of 25 scans (not a daily reset).
+const FREE_TRIAL_SCAN_LIMIT = 25;
 
-async function getDailyUsageCount(userId: string): Promise<number> {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
+async function getTrialUsageCount(userId: string): Promise<number> {
   const result = await db.execute(sql`
     SELECT count(*)::int as count FROM dev_scans
     WHERE user_id = ${userId}
-    AND created_at >= ${todayStart.toISOString()}
   `);
 
   return (result.rows[0] as Record<string, unknown>)?.count as number || 0;
 }
 
-async function checkDailyLimit(userId: string, plan: string): Promise<{ allowed: boolean; used: number }> {
+async function checkTrialLimit(userId: string, plan: string): Promise<{ allowed: boolean; used: number }> {
   if (plan !== "free") return { allowed: true, used: 0 };
-  const used = await getDailyUsageCount(userId);
-  return { allowed: used < FREE_DAILY_LIMIT, used };
+  const used = await getTrialUsageCount(userId);
+  return { allowed: used < FREE_TRIAL_SCAN_LIMIT, used };
 }
 
-router.post("/analyze", ...burstChain, ...quotaChain, refreshPlanFromDB, async (req, res) => {
+router.post("/analyze", ...burstChain, ...quotaChain, refreshPlanFromDB, requireActivePlan(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
@@ -274,15 +271,15 @@ router.post("/analyze", ...burstChain, ...quotaChain, refreshPlanFromDB, async (
     }
 
     const plan = req.user.planType || "free";
-    const { allowed, used } = await checkDailyLimit(req.user.id, plan);
+    const { allowed, used } = await checkTrialLimit(req.user.id, plan);
     if (!allowed) {
       res.status(429).json({
-        error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
+        error: `Your free trial includes ${FREE_TRIAL_SCAN_LIMIT} scans. Upgrade for unlimited scans.`,
         code: "RATE_LIMIT_EXCEEDED",
         upgrade: true,
-        limit: FREE_DAILY_LIMIT,
+        limit: FREE_TRIAL_SCAN_LIMIT,
         used,
-        details: { upgrade: true, limit: FREE_DAILY_LIMIT, used },
+        details: { upgrade: true, limit: FREE_TRIAL_SCAN_LIMIT, used },
         meta: buildMeta(),
       });
       return;
@@ -315,7 +312,7 @@ router.post("/analyze", ...burstChain, ...quotaChain, refreshPlanFromDB, async (
   }
 });
 
-router.post("/sanitize", ...burstChain, ...quotaChain, refreshPlanFromDB, async (req, res) => {
+router.post("/sanitize", ...burstChain, ...quotaChain, refreshPlanFromDB, requireActivePlan(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED", meta: buildMeta() });
@@ -334,15 +331,15 @@ router.post("/sanitize", ...burstChain, ...quotaChain, refreshPlanFromDB, async 
     }
 
     const plan = req.user.planType || "free";
-    const { allowed, used } = await checkDailyLimit(req.user.id, plan);
+    const { allowed, used } = await checkTrialLimit(req.user.id, plan);
     if (!allowed) {
       res.status(429).json({
-        error: `Free plan allows ${FREE_DAILY_LIMIT} scans per day. Upgrade for unlimited scans.`,
+        error: `Your free trial includes ${FREE_TRIAL_SCAN_LIMIT} scans. Upgrade for unlimited scans.`,
         code: "RATE_LIMIT_EXCEEDED",
         upgrade: true,
-        limit: FREE_DAILY_LIMIT,
+        limit: FREE_TRIAL_SCAN_LIMIT,
         used,
-        details: { upgrade: true, limit: FREE_DAILY_LIMIT, used },
+        details: { upgrade: true, limit: FREE_TRIAL_SCAN_LIMIT, used },
         meta: buildMeta(),
       });
       return;
@@ -428,7 +425,7 @@ router.get("/history", refreshPlanFromDB, async (req, res) => {
       WHERE user_id = ${req.user.id}
     `);
 
-    const todayUsed = await getDailyUsageCount(req.user.id);
+    const todayUsed = await getTrialUsageCount(req.user.id);
     const plan = req.user.planType || "free";
 
     res.json({
@@ -443,7 +440,7 @@ router.get("/history", refreshPlanFromDB, async (req, res) => {
       })),
       total: (countResult.rows[0] as Record<string, unknown>)?.count ?? 0,
       todayUsed,
-      dailyLimit: plan === "free" ? FREE_DAILY_LIMIT : null,
+      dailyLimit: plan === "free" ? FREE_TRIAL_SCAN_LIMIT : null,
       meta: buildMeta(),
     });
   } catch (err) {

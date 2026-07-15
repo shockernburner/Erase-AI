@@ -117,20 +117,20 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const tiers = [
     {
       id: "free" as TierId,
-      name: "Free",
+      name: "Free Trial",
       monthlyPrice: 0,
       icon: <Zap className="w-6 h-6" />,
-      description: "Testing EraseAI",
-      segment: "Best for evaluating the browser firewall before rollout.",
+      description: "Try EraseAI for 7 days",
+      segment: "Experience the browser firewall catching real leaks before you commit.",
       features: [
-        "25 scans/month",
+        "7 days full access",
+        "25 free scans",
         "Browser firewall",
         "Basic PII detection",
         "Manual redaction",
-        "No team features",
-        "No API access",
+        "No credit card required",
       ],
-      cta: "Start Free",
+      cta: "Start Free Trial",
       highlight: false,
     },
     {

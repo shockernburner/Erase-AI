@@ -390,7 +390,7 @@ export default function DevMode({
             <span className="text-sm text-muted-foreground">
               {t("devMode.usageCounter", { used: todayUsed, limit: dailyLimit })}
             </span>
-            {todayUsed >= (dailyLimit || 10) && (
+            {todayUsed >= (dailyLimit || 25) && (
               <button
                 onClick={onUpgrade}
                 className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/30 transition-colors"

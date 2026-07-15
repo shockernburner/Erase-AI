@@ -125,18 +125,18 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
 
   const pricingPlans = [
     {
-      name: "Free",
-      price: "$0/month",
-      audience: "Best for: Testing EraseAI",
+      name: "Free Trial",
+      price: "$0",
+      audience: "Best for: Trying EraseAI for 7 days",
       features: [
-        "25 scans/month",
+        "7 days full access",
+        "25 free scans",
         "Browser firewall",
         "Basic PII detection",
         "Manual redaction",
-        "No team features",
-        "No API access",
+        "No credit card required",
       ],
-      cta: "Start Free",
+      cta: "Start Free Trial",
       action: () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" }),
     },
     {
@@ -645,7 +645,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               </div>
               <div className="mb-5 flex items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
                 <LogIn className="w-3.5 h-3.5" />
-                Start Free
+                Start free trial — 7 days, no credit card
               </div>
               <AuthForm />
               <p className="mt-5 text-center text-xs text-muted-foreground/60">© 2026 EraseAI — AI firewall and AI data leak prevention for teams using modern LLM tools.</p>

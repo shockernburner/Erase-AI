@@ -73,18 +73,19 @@ router.get("/pricing", (_req: Request, res: Response) => {
     tiers: [
       {
         id: "free",
-        name: "Free",
+        name: "Free Trial",
         price: 0,
         monthlyPrice: 0,
         annualPrice: 0,
         currency: "USD",
         interval: "month",
         features: [
-          "25 scans/month",
+          "7 days full access",
+          "25 free scans",
           "Browser firewall",
           "Basic PII detection",
           "Manual redaction",
-          "No API access",
+          "No credit card required",
         ],
         limits: { maxRows: 100, mlFeedback: false, fullAnalysis: false, apiAccess: false, customRules: false },
       },

@@ -40,8 +40,8 @@ describe("mobile entitlement helpers", () => {
     assert.equal(mobileFeaturesForPlan("personal").redaction, true);
   });
 
-  test("reports the real enforced free lifetime scan limit", () => {
-    assert.equal(scanLimitForPlan("free"), 10);
+  test("reports the real enforced free trial scan limit", () => {
+    assert.equal(scanLimitForPlan("free"), 25);
     assert.equal(scanLimitForPlan("personal"), null);
   });
 

@@ -5,18 +5,19 @@ import { analyzeText } from "../lib/personalAnalyzer";
 import { calculateRiskScore } from "../lib/riskScorer";
 import { rewriteContent } from "../lib/contentRewriter";
 import { generateAlerts } from "../lib/alertEngine";
-import { refreshPlanFromDB, requirePersonalOrHigher } from "../middlewares/planMiddleware";
+import { refreshPlanFromDB, requireActivePlan, requirePersonalOrHigher } from "../middlewares/planMiddleware";
 
 const router = Router();
 
-const FREE_LIFETIME_LIMIT = 10;
+// Free = 7-day trial with a total budget of 25 scans.
+const FREE_TRIAL_SCAN_LIMIT = 25;
 const MAX_STORED_CONTENT_LENGTH = 200;
 
 function redactMatchedText(text: string): string {
   return text.length > 20 ? text.substring(0, 8) + "***" + text.substring(text.length - 4) : "***";
 }
 
-router.post("/personal/analyze", refreshPlanFromDB, async (req, res) => {
+router.post("/personal/analyze", refreshPlanFromDB, requireActivePlan(), async (req, res) => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ error: "Authentication required" });
@@ -41,11 +42,11 @@ router.post("/personal/analyze", refreshPlanFromDB, async (req, res) => {
         .from(personalScansTable)
         .where(eq(personalScansTable.userId, req.user.id));
 
-      if (countResult && countResult.count >= FREE_LIFETIME_LIMIT) {
+      if (countResult && countResult.count >= FREE_TRIAL_SCAN_LIMIT) {
         res.status(429).json({
-          error: `Free plan allows ${FREE_LIFETIME_LIMIT} lifetime analyses. Subscribe to Personal Mode ($10/month) for unlimited scans.`,
+          error: `Your free trial includes ${FREE_TRIAL_SCAN_LIMIT} scans. Subscribe to Personal ($5/month) for unlimited scans.`,
           upgrade: true,
-          limit: FREE_LIFETIME_LIMIT,
+          limit: FREE_TRIAL_SCAN_LIMIT,
           used: countResult.count,
         });
         return;
@@ -178,7 +179,7 @@ router.get("/personal/history", refreshPlanFromDB, async (req, res) => {
       })),
       total: countResult?.count ?? 0,
       totalUsed: totalUsedResult?.count ?? 0,
-      lifetimeLimit: plan === "free" ? FREE_LIFETIME_LIMIT : null,
+      lifetimeLimit: plan === "free" ? FREE_TRIAL_SCAN_LIMIT : null,
       trend: trendScans,
     });
   } catch (err) {

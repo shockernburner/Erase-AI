@@ -22,7 +22,8 @@ export interface MobileHealthPayload {
   };
 }
 
-export const FREE_LIFETIME_SCAN_LIMIT = 10;
+// Free = 7-day trial with a total budget of 25 scans.
+export const FREE_TRIAL_SCAN_LIMIT = 25;
 export const MOBILE_SERVICE_VERSION = "1.0.0";
 
 export function buildMobileHealthPayload(): MobileHealthPayload {
@@ -67,7 +68,7 @@ export function mobileFeaturesForPlan(plan: string | null | undefined): MobileFe
 }
 
 export function scanLimitForPlan(plan: string | null | undefined): number | null {
-  return plan === "free" || !plan ? FREE_LIFETIME_SCAN_LIMIT : null;
+  return plan === "free" || !plan ? FREE_TRIAL_SCAN_LIMIT : null;
 }
 
 export function mobileStatusForPlan(plan: string | null | undefined, subscriptionStatus: string | null | undefined, planEndDate: Date | string | null | undefined): string {
