@@ -1,0 +1,25 @@
+/* EraseAI brand tokens — matches artifacts/eraseai/src/index.css */
+:root {
+  /* Core palette */
+  --eai-primary: #0DCCF2;          /* hsl(190 90% 50%)  oklch(76% 0.14 213) */
+  --eai-primary-bright: #3DE0FF;   /* gradient top stop */
+  --eai-background: #070A13;       /* hsl(222 47% 5%)   oklch(13% 0.02 265) */
+  --eai-card: #0B111E;             /* hsl(222 47% 8%) */
+  --eai-secondary: #18212F;        /* hsl(217 32% 14%) */
+  --eai-muted: #151C28;            /* hsl(217 32% 12%) */
+  --eai-border: #192433;           /* hsl(216 34% 15%) */
+  --eai-foreground: #F8FAFC;       /* hsl(210 40% 98%) */
+  --eai-muted-foreground: #94A3B8; /* hsl(215 20% 65%) */
+  --eai-success: #24C278;          /* hsl(152 69% 45%) */
+  --eai-destructive: #EF4343;      /* hsl(0 84% 60%) */
+
+  /* Typography */
+  --eai-font-display: 'Outfit', sans-serif;
+  --eai-font-body: 'DM Sans', sans-serif;
+  --eai-font-mono: 'JetBrains Mono', monospace;
+
+  /* Radii */
+  --eai-radius: 0.75rem;
+  --eai-radius-xl: 1rem;
+  --eai-radius-2xl: 1.5rem;
+}

@@ -359,3 +359,15 @@ id = "RUbgTYlWVuajTo6Vt-Z1u"
 uri = "file://exports/EraseAI_enterprise_prospect_targets.csv"
 type = "table"
 title = "EraseAI B2B Prospect Target List (CSV)"
+
+[[outputs]]
+id = "ChpEmiN75C7D_Vy6Rgn1O"
+uri = "file://branding/eraseai-brand-kit.zip"
+type = "unspecified"
+title = "EraseAI Brand Kit (full package)"
+
+[[outputs]]
+id = "au5cBhsewMiktnCmYsUQ4"
+uri = "file://branding/brand-guidelines.pdf"
+type = "pdf"
+title = "EraseAI Brand Guidelines (PDF)"

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>EraseAI Brand Guidelines</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@page { size: A4; margin: 0; }
+body { font-family: 'DM Sans', sans-serif; color: #F8FAFC; }
+.page { width: 210mm; height: 296mm; background: #070A13; padding: 18mm 16mm; position: relative; overflow: hidden; page-break-after: always; }
+.page:last-child { page-break-after: auto; }
+h1, h2, h3 { font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; }
+h1 { font-size: 42px; font-weight: 800; }
+h2 { font-size: 24px; font-weight: 700; margin-bottom: 14px; color: #0DCCF2; }
+h3 { font-size: 15px; font-weight: 600; margin: 14px 0 6px; }
+p, li { font-size: 12.5px; line-height: 1.65; color: #94A3B8; }
+li { margin-left: 18px; margin-bottom: 4px; }
+.accent { color: #0DCCF2; }
+.kicker { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: #0DCCF2; font-weight: 600; margin-bottom: 10px; }
+.footer { position: absolute; bottom: 10mm; left: 16mm; right: 16mm; display: flex; justify-content: space-between; font-size: 9.5px; color: #475569; border-top: 1px solid #192433; padding-top: 8px; }
+.section { margin-bottom: 22px; }
+.swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.swatch { border: 1px solid #192433; border-radius: 10px; overflow: hidden; }
+.swatch .chip { height: 52px; }
+.swatch .meta { padding: 8px 10px; background: #0B111E; }
+.swatch .name { font-size: 11.5px; font-weight: 700; color: #F8FAFC; }
+.swatch .vals { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #94A3B8; margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #192433; color: #94A3B8; }
+th { color: #F8FAFC; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+td.mono { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+.pass { color: #24C278; font-weight: 600; }
+.logo-cell { border: 1px solid #192433; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.logo-cell.light { background: #F8FAFC; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.voice-card { border: 1px solid #192433; border-radius: 10px; padding: 12px 14px; background: #0B111E; margin-bottom: 10px; }
+.voice-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #0DCCF2; font-weight: 700; margin-bottom: 4px; }
+.voice-card .copy { font-size: 13px; color: #F8FAFC; }
+.type-specimen { border: 1px solid #192433; border-radius: 10px; padding: 16px; background: #0B111E; margin-bottom: 10px; }
+code { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0DCCF2; }
+</style></head>
+<body>
+
+<!-- PAGE 1 — COVER -->
+<div class="page" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
+  <img src="logos/eraseai-icon.svg" style="width:150px;height:150px;margin-bottom:32px;">
+  <h1 style="font-size:64px;">Erase<span class="accent">AI</span></h1>
+  <p style="font-size:17px;margin-top:12px;color:#94A3B8;">Brand Guidelines · v1.0 · July 2026</p>
+  <p style="font-size:13px;margin-top:6px;color:#475569;">Vantward Solutions</p>
+  <div class="footer"><span>EraseAI Brand Guidelines</span><span>01</span></div>
+</div>
+
+<!-- PAGE 2 — LOGO -->
+<div class="page">
+  <div class="kicker">01 · Logo</div>
+  <h2>Logo system</h2>
+  <div class="section two-col">
+    <div>
+      <h3>Primary lockup</h3>
+      <div class="logo-cell"><img src="logos/eraseai-lockup-horizontal.svg" style="width:100%;max-width:300px;"></div>
+      <h3>Icon</h3>
+      <div class="two-col">
+        <div class="logo-cell"><img src="logos/eraseai-icon.svg" style="width:72px;"></div>
+        <div class="logo-cell light"><img src="logos/eraseai-icon-mono-navy.svg" style="width:72px;"></div>
+      </div>
+    </div>
+    <div>
+      <h3>App icon &amp; monogram</h3>
+      <div class="two-col">
+        <div class="logo-cell"><img src="logos/eraseai-appicon.svg" style="width:88px;border-radius:20px;"></div>
+        <div class="logo-cell"><img src="logos/eraseai-monogram.svg" style="width:88px;"></div>
+      </div>
+      <h3>Small-size test</h3>
+      <div class="logo-cell" style="gap:18px;">
+        <img src="logos/eraseai-icon.svg" style="width:64px;">
+        <img src="logos/eraseai-icon.svg" style="width:32px;">
+        <img src="logos/eraseai-icon.svg" style="width:16px;">
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>The mark</h3>
+    <p>A shield holding three redaction bars — the top line is dissolving into pixels as sensitive data is erased before it reaches the model. It stays legible at 16&nbsp;px.</p>
+    <h3>Usage rules</h3>
+    <li>Clear space around the logo: at least the height of one redaction bar on every side.</li>
+    <li>Use the cyan-on-dark version by default; the navy mono version on light backgrounds; the white mono version for single-color contexts (print, embossing, watermarks).</li>
+    <li>Never recolor, rotate, stretch, add effects, or place the cyan mark on mid-tone backgrounds.</li>
+    <li>Minimum sizes: icon 16&nbsp;px, horizontal lockup 120&nbsp;px wide.</li>
+  </div>
+  <div class="footer"><span>EraseAI Brand Guidelines</span><span>02</span></div>
+</div>
+
+<!-- PAGE 3 — COLOR -->
+<div class="page">
+  <div class="kicker">02 · Color</div>
+  <h2>Palette</h2>
+  <div class="section swatches">
+    <div class="swatch"><div class="chip" style="background:#0DCCF2;"></div><div class="meta"><div class="name">Primary · Cyan</div><div class="vals">#0DCCF2 · hsl(190 90% 50%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:linear-gradient(135deg,#3DE0FF,#0DCCF2);"></div><div class="meta"><div class="name">Cyan Gradient</div><div class="vals">#3DE0FF → #0DCCF2</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#070A13;"></div><div class="meta"><div class="name">Background · Navy</div><div class="vals">#070A13 · hsl(222 47% 5%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#0B111E;"></div><div class="meta"><div class="name">Card</div><div class="vals">#0B111E · hsl(222 47% 8%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#192433;"></div><div class="meta"><div class="name">Border</div><div class="vals">#192433 · hsl(216 34% 15%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#F8FAFC;"></div><div class="meta"><div class="name">Foreground</div><div class="vals">#F8FAFC · hsl(210 40% 98%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#94A3B8;"></div><div class="meta"><div class="name">Muted text</div><div class="vals">#94A3B8 · hsl(215 20% 65%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#24C278;"></div><div class="meta"><div class="name">Success</div><div class="vals">#24C278 · hsl(152 69% 45%)</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#EF4343;"></div><div class="meta"><div class="name">Destructive</div><div class="vals">#EF4343 · hsl(0 84% 60%)</div></div></div>
+  </div>
+  <div class="section">
+    <h3>Contrast audit (WCAG 2.2)</h3>
+    <table>
+      <tr><th>Pair</th><th>Ratio</th><th>Result</th></tr>
+      <tr><td>Foreground #F8FAFC on Background #070A13</td><td class="mono">18.9 : 1</td><td class="pass">AAA</td></tr>
+      <tr><td>Muted #94A3B8 on Background #070A13</td><td class="mono">7.7 : 1</td><td class="pass">AAA</td></tr>
+      <tr><td>Primary #0DCCF2 on Background #070A13</td><td class="mono">10.3 : 1</td><td class="pass">AAA</td></tr>
+      <tr><td>Navy #070A13 on Primary #0DCCF2 (buttons)</td><td class="mono">10.3 : 1</td><td class="pass">AAA</td></tr>
+    </table>
+    <h3>Rules</h3>
+    <li>Cyan is an accent — reserve it for CTAs, links, highlights, and the AI in the wordmark. Never use it for body text blocks or large fills.</li>
+    <li>Text on cyan buttons is always navy #070A13, never white.</li>
+    <li>Backgrounds stay in the navy family; never pure black (#000).</li>
+  </div>
+  <div class="footer"><span>EraseAI Brand Guidelines</span><span>03</span></div>
+</div>
+
+<!-- PAGE 4 — TYPOGRAPHY -->
+<div class="page">
+  <div class="kicker">03 · Typography</div>
+  <h2>Type system</h2>
+  <div class="type-specimen">
+    <p style="font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:#0DCCF2;font-weight:700;">Display — Outfit (700/800)</p>
+    <p style="font-family:'Outfit';font-weight:800;font-size:34px;color:#F8FAFC;letter-spacing:-0.02em;margin-top:6px;">Stop leaks before they reach the model.</p>
+  </div>
+  <div class="type-specimen">
+    <p style="font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:#0DCCF2;font-weight:700;">Body — DM Sans (400/500/700)</p>
+    <p style="font-size:14px;color:#F8FAFC;margin-top:6px;">EraseAI scans prompts, files, and API traffic for PII, credentials, and secrets — then redacts them before they ever leave your browser or backend.</p>
+  </div>
+  <div class="type-specimen">
+    <p style="font-size:10px;text-transform:uppercase;letter-spacing:0.15em;color:#0DCCF2;font-weight:700;">Code — JetBrains Mono (400/500)</p>
+    <p style="font-family:'JetBrains Mono';font-size:12px;color:#F8FAFC;margin-top:6px;">POST /api/dev/analyze · "riskScore": 87 · [REDACTED]</p>
+  </div>
+  <div class="section">
+    <h3>Hierarchy</h3>
+    <table>
+      <tr><th>Role</th><th>Font</th><th>Size / Weight</th></tr>
+      <tr><td>H1 hero</td><td>Outfit</td><td class="mono">48–72px · 800 · -2% tracking</td></tr>
+      <tr><td>H2 section</td><td>Outfit</td><td class="mono">28–36px · 700</td></tr>
+      <tr><td>Body</td><td>DM Sans</td><td class="mono">16px · 400 · 1.6 line-height</td></tr>
+      <tr><td>Caption / label</td><td>DM Sans</td><td class="mono">12–13px · 500–600</td></tr>
+      <tr><td>Code / data</td><td>JetBrains Mono</td><td class="mono">13–14px · 400</td></tr>
+    </table>
+    <h3>Rules</h3>
+    <li>Outfit is for headlines and the wordmark only — never body copy.</li>
+    <li>Body text never below 16&nbsp;px on web, 14&nbsp;px on mobile; captions never below 12&nbsp;px.</li>
+    <li>All fonts are Google Fonts — free for commercial use.</li>
+  </div>
+  <div class="footer"><span>EraseAI Brand Guidelines</span><span>04</span></div>
+</div>
+
+<!-- PAGE 5 — VOICE -->
+<div class="page">
+  <div class="kicker">04 · Voice &amp; Tone</div>
+  <h2>How EraseAI speaks</h2>
+  <p style="margin-bottom:14px;">Confident, precise, protective, plain-spoken. A security engineer who explains clearly — never alarmist, never cute about risk.</p>
+  <div class="voice-card"><div class="label">Hero headline</div><div class="copy">Your prompts are leaking secrets. We catch them first.</div></div>
+  <div class="voice-card"><div class="label">Onboarding welcome</div><div class="copy">Welcome to EraseAI. Your 7-day free trial starts now — 25 free scans, no credit card. Let's catch your first leak.</div></div>
+  <div class="voice-card"><div class="label">Error message</div><div class="copy">Scan failed — the file couldn't be read. Your data never left the browser. Try re-uploading or use a different format.</div></div>
+  <div class="voice-card"><div class="label">Empty state</div><div class="copy">No scans yet. Paste a prompt or upload a file — we'll flag anything sensitive before it goes anywhere.</div></div>
+  <div class="voice-card"><div class="label">Call to action</div><div class="copy">Start free trial — 7 days, no credit card</div></div>
+  <div class="section">
+    <h3>Do / Don't</h3>
+    <li><b style="color:#F8FAFC;">Do</b> lead with the risk caught and the protection given: "3 leaks blocked."</li>
+    <li><b style="color:#F8FAFC;">Do</b> use concrete numbers: "25 free scans", not "generous free tier".</li>
+    <li><b style="color:#F8FAFC;">Don't</b> use fear-mongering ("hackers are watching!") or jargon walls (DLP, CASB) in user-facing copy.</li>
+    <li><b style="color:#F8FAFC;">Don't</b> blame the user — the tool absorbs the failure ("we couldn't read that file").</li>
+  </div>
+  <div class="footer"><span>EraseAI Brand Guidelines</span><span>05</span></div>
+</div>
+
+<!-- PAGE 6 — APPLICATIONS & ACCESSIBILITY -->
+<div class="page">
+  <div class="kicker">05 · Applications &amp; Accessibility</div>
+  <h2>Social &amp; export specs</h2>
+  <table>
+    <tr><th>Asset</th><th>Size</th><th>Notes</th></tr>
+    <tr><td>X / Twitter header</td><td class="mono">1500 × 500</td><td>Keep key content 60px from edges</td></tr>
+    <tr><td>LinkedIn banner</td><td class="mono">1584 × 396</td><td>Left ~400px hidden behind profile photo</td></tr>
+    <tr><td>Instagram post</td><td class="mono">1080 × 1080</td><td>Centered composition</td></tr>
+    <tr><td>Instagram story</td><td class="mono">1080 × 1920</td><td>250px top/bottom safe zones</td></tr>
+    <tr><td>Open Graph image</td><td class="mono">1200 × 630</td><td>Used for link previews</td></tr>
+    <tr><td>App icon</td><td class="mono">512 / 1024</td><td>Rounded-square container included</td></tr>
+    <tr><td>Favicon</td><td class="mono">32 / 16</td><td>Icon-only version</td></tr>
+  </table>
+  <div class="section" style="margin-top:20px;">
+    <h3>Accessibility standards</h3>
+    <li>All brand text/background pairs meet WCAG 2.2 AA (most meet AAA — see page 3).</li>
+    <li>Body text ≥ 16px web / 14px mobile; captions ≥ 12px.</li>
+    <li>Interactive elements ≥ 44×44px (iOS) / 48×48dp (Android) — never shrink branded buttons below this.</li>
+    <li>Respect <code>prefers-reduced-motion</code>: glow and scan-line animations are decorative and must be removable.</li>
+    <li>Never rely on cyan alone to convey state — pair with icons or text (e.g. risk levels use color + label).</li>
+  </div>
+  <div class="section">
+    <h3>Design tokens</h3>
+    <p>Ship-ready CSS custom properties are included in <code>tokens/tokens.css</code> and already match the product's <code>index.css</code>.</p>
+  </div>
+  <div class="footer"><span>EraseAI Brand Guidelines · Vantward Solutions · July 2026</span><span>06</span></div>
+</div>
+
+</body></html>
