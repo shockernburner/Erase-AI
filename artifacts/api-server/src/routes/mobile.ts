@@ -26,12 +26,13 @@ router.get("/health", (_req: Request, res: Response) => {
   res.json(buildMobileHealthPayload());
 });
 
-function requireMobileAuth(req: Request, res: Response): boolean {
-  if (!req.user?.id) {
+function requireMobileAuth(req: Request, res: Response): string | null {
+  const userId = req.user?.id;
+  if (!userId) {
     res.status(401).json({ error: "Authentication required" });
-    return false;
+    return null;
   }
-  return true;
+  return userId;
 }
 
 function normalizeProtectedPackages(value: unknown): string[] | null {
@@ -56,10 +57,11 @@ async function getFreshUser(userId: string) {
 }
 
 router.get("/entitlement", async (req: Request, res: Response) => {
-  if (!requireMobileAuth(req, res)) return;
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
 
   try {
-    const user = await getFreshUser(req.user.id);
+    const user = await getFreshUser(userId);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -94,13 +96,14 @@ router.get("/billing-url", (req: Request, res: Response) => {
 });
 
 router.get("/protected-apps", async (req: Request, res: Response) => {
-  if (!requireMobileAuth(req, res)) return;
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
 
   try {
     const result = await db.execute(sql`
       SELECT packages, firewall_enabled, updated_at
       FROM mobile_protected_apps
-      WHERE user_id = ${req.user.id}
+      WHERE user_id = ${userId}
       LIMIT 1
     `);
     const row = result.rows[0] as { packages?: unknown; firewall_enabled?: boolean; updated_at?: Date } | undefined;
@@ -117,7 +120,8 @@ router.get("/protected-apps", async (req: Request, res: Response) => {
 });
 
 router.post("/protected-apps", async (req: Request, res: Response) => {
-  if (!requireMobileAuth(req, res)) return;
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
 
   const packages = normalizeProtectedPackages(req.body?.packages);
   if (!packages) {
@@ -130,7 +134,7 @@ router.post("/protected-apps", async (req: Request, res: Response) => {
   try {
     const result = await db.execute(sql`
       INSERT INTO mobile_protected_apps (user_id, packages, firewall_enabled, updated_at)
-      VALUES (${req.user.id}, ${JSON.stringify(packages)}::jsonb, ${firewallEnabled}, NOW())
+      VALUES (${userId}, ${JSON.stringify(packages)}::jsonb, ${firewallEnabled}, NOW())
       ON CONFLICT (user_id)
       DO UPDATE SET packages = EXCLUDED.packages, firewall_enabled = EXCLUDED.firewall_enabled, updated_at = NOW()
       RETURNING packages, firewall_enabled, updated_at
