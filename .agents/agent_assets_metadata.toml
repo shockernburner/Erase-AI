@@ -371,3 +371,9 @@ id = "au5cBhsewMiktnCmYsUQ4"
 uri = "file://branding/brand-guidelines.pdf"
 type = "pdf"
 title = "EraseAI Brand Guidelines (PDF)"
+
+[[outputs]]
+id = "uZ29yXdRb83u1Y-ikygnD"
+uri = "file://attached_assets/Campaign_Script_x_EraseAI_REVIEWED.docx"
+type = "word_document"
+title = "Campaign Script — Reviewed (red markup)"
