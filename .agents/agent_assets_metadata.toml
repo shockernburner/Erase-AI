@@ -377,3 +377,17 @@ id = "uZ29yXdRb83u1Y-ikygnD"
 uri = "file://attached_assets/Campaign_Script_x_EraseAI_REVIEWED.docx"
 type = "word_document"
 title = "Campaign Script — Reviewed (red markup)"
+
+[[outputs]]
+id = "A_Sle5iU6L6UgEwYVBqvs"
+uri = "file://marketing-assets/EraseAI_Shadow_AI_Visibility_Checklist.pdf"
+type = "pdf"
+title = "Shadow AI Visibility Checklist (Campaign 1 CTA asset)"
+description = "One-page 15-point checklist for engineering leaders — the asset offered in Campaign 1's Email 2."
+
+[[outputs]]
+id = "CtHZ7TeMg5tj9JQGKfDOb"
+uri = "file://marketing-assets/EraseAI_Prevention_vs_Detection_SideBySide.pdf"
+type = "pdf"
+title = "Prevention-first vs. Alert-first Side-by-Side (Campaign 2 CTA asset)"
+description = "One-page comparison of prevention-first vs. alert-first AI security — the asset offered in Campaign 2's Email 2."

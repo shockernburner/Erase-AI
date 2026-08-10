@@ -12,4 +12,5 @@
 - [syncBackfill() silent no-op](stripe-syncbackfill-noop.md) — stripe-replit-sync syncBackfill() with no args syncs NOTHING (object defaults to a method ref → switch default); MUST pass `{ object: "all" }` or prod products/prices stay empty → checkout PRICE_NOT_FOUND.
 - [Slide thumbnail autoregen](slide-thumbnail-autoregen.md) — running slides dev servers re-encode tracked `.slide-thumbnails/*.jpg`, contaminating git diff & failing "don't touch deck X" reviews; revert with read-only `git show HEAD:path > path`.
 - [Headless brand-asset rendering](headless-asset-rendering.md) — chromium blanks tiny screenshots (render big, magick downscale); SVG logos need outlined text via opentype.js, not <text>+font @import.
+- [Workflow port cleanup](workflow-port-cleanup.md) — fuser/lsof aren't on workflow PATH; free busy ports via the Node /proc-scanning script, not shell kill-by-port.
 - [Slides artifact wouter catalog](slides-artifact-wouter-catalog.md) — new slides scaffold pins `wouter: catalog:`; if the workspace catalog lacks wouter, pnpm install aborts → add `wouter: ^x` to pnpm-workspace.yaml catalog (version usually already in lockfile).
