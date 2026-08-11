@@ -391,3 +391,10 @@ uri = "file://marketing-assets/EraseAI_Prevention_vs_Detection_SideBySide.pdf"
 type = "pdf"
 title = "Prevention-first vs. Alert-first Side-by-Side (Campaign 2 CTA asset)"
 description = "One-page comparison of prevention-first vs. alert-first AI security — the asset offered in Campaign 2's Email 2."
+
+[[outputs]]
+id = "U0razJSUuPrbgLx9YZEHL"
+uri = "file://attached_assets/V.3_QA_REALIGNED.csv"
+type = "table"
+title = "Campaign 3 lead list — QA verdicts re-aligned"
+description = "Corrected version of the C3 CSV: each lead's true QA status/reason restored after the column misalignment, with a match-confidence flag. 3 rows need manual verification."
