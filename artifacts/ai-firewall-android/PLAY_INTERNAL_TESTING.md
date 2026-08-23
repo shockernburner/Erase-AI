@@ -28,7 +28,7 @@ EraseAI Firewall helps internal testers check sensitive prompts before sending t
 2. Create or select an internal tester list.
 3. Create a new release.
 4. Upload the signed AAB.
-5. Add release notes for `0.1.0-internal`.
+5. Add release notes for `0.1.1-internal`.
 6. Review warnings and complete declarations.
 7. Roll out to internal testing only.
 
@@ -59,12 +59,12 @@ Do not upload `app-release-unsigned.apk` or an unsigned AAB.
 
 ## 8. Data Safety Form Guidance
 
-The app sends selected text to the EraseAI backend for scanning only when protection is active or when the user manually scans or shares text. Account/auth data is used for sign-in and entitlement. Billing is handled through eraseai.ai web billing. Do not claim local-only processing. Do not claim VPN or traffic decryption.
+The app sends selected text to the EraseAI backend for scanning only when protection is active or when the user manually scans or shares text/uploads. Account/auth data is used for sign-in and entitlement. **Android subscriptions use Google Play Billing.** The eraseai.ai website uses Stripe separately. Do not claim local-only processing. Do not claim VPN or traffic decryption.
 
 Confirm the form reflects:
 
 - Account identifiers for sign-in and entitlement.
-- User-provided text for safety scanning.
+- User-provided text for safety scanning (composer text, shared prompts, shared text/JSON uploads).
 - Diagnostics that exclude raw prompt text, tokens, API keys, phone numbers, emails, and billing/customer IDs.
 - No sale of user data.
 
@@ -84,11 +84,18 @@ Make clear that:
 - The app is not a VPN.
 - The app can be disabled anytime.
 - The app sends selected text to EraseAI backend for scanning only when protection is active or user manually scans/shares text.
-- Billing is handled through eraseai.ai web billing.
+- Android subscriptions are purchased and managed through Google Play Billing.
+- Web billing at eraseai.ai uses Stripe and is separate from the Android app.
 
 ## 10. Sensitive Permissions Explanation
 
-Current app permissions are limited to Internet plus the Accessibility Service binding declared on the service. The app does not request VPN, foreground service, overlay permission, contacts, SMS, microphone, camera, location, or storage permissions.
+Current app permissions:
+
+- `INTERNET` / `ACCESS_NETWORK_STATE` for API calls to eraseai.ai.
+- Accessibility Service binding (`BIND_ACCESSIBILITY_SERVICE`) on the guard service only.
+- Manifest `PACKAGE_ADDED` receiver (exported) to detect newly installed known LLM packages and offer protection — not `QUERY_ALL_PACKAGES`.
+
+The app does not request VPN, foreground service, overlay permission (uses Accessibility overlay type), contacts, SMS, microphone, camera, location, or broad storage permissions. Share-sheet text/JSON is read only when the user explicitly shares into EraseAI.
 
 ## 11. Privacy Policy Checklist
 
@@ -103,15 +110,12 @@ Current app permissions are limited to Internet plus the Accessibility Service b
 
 ## 12. Release Notes Draft
 
-Initial internal testing build of EraseAI AI Firewall for Android. Includes sign-in, entitlement sync, manual scan, share-sheet scan, selected-app Accessibility protection, warning overlay, redaction/copy-safe-text flow, billing handoff, protected app sync, and sanitized diagnostics.
+Internal testing build `0.1.1-internal` of EraseAI AI Firewall for Android. Dual-rail billing: Google Play subscriptions on Android, Stripe on eraseai.ai web. Includes sign-in/signup, 7-day trial entitlement, manual + share-sheet scan/sanitize, Accessibility protection, protected LLM app sync, and sanitized diagnostics.
 
 ## 13. Known Limitations to Disclose Internally
 
-- Deep-link return from web billing is not implemented yet; entitlement refreshes when the app resumes.
-- Accessibility composer detection can vary by target app version and device vendor.
-- Redaction may fall back to copying safe text when direct field replacement is unavailable.
-- Upload signing must be configured locally before Play Console upload.
-- Production readiness requires real-device QA on Samsung and Pixel/clean Android devices.
+- Google Play subscription product IDs must be created in Play Console before checkout works.
+- Backend Play verification requires `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` on eraseai.ai.
 
 ## 14. Tester Feedback Template
 

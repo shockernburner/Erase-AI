@@ -2,7 +2,11 @@
 
 This guide prepares the Android AI Firewall for Play Store Internal Testing and real-device QA.
 
-Scope guardrails: do not add a VPN firewall, machine unlearning, dataset governance, Google Play Billing, or duplicate Stripe flows. Mobile billing remains a Custom Tab handoff to eraseai.ai.
+Scope guardrails:
+
+- Web billing on eraseai.ai remains **Stripe**.
+- Android uses **Google Play Billing** only (no Stripe checkout in the app).
+- Do not add VPN firewall, machine unlearning, or dataset governance to this app.
 
 ## Build Environment
 
@@ -130,18 +134,16 @@ app/build/outputs/bundle/release/app-release.aab
 3. Confirm scan and rewrite behavior match Manual Scanner Test.
 4. Confirm no raw shared text appears in diagnostics or bug reports.
 
-## Billing Handoff QA
+## Billing Handoff QA (Google Play)
 
-Flow to verify:
+1. Free/trial user opens **Trial & Subscription**.
+2. Chooses monthly or annual Google Play product.
+3. Completes purchase in the Google Play sheet.
+4. App verifies via `POST /api/mobile/play/verify`.
+5. Entitlement refreshes with paid features.
+6. User manages/cancels via **Manage in Google Play** (not Stripe).
 
-1. Free user taps Upgrade / Manage Billing.
-2. App opens a Custom Tab to the backend billing URL on eraseai.ai.
-3. User completes or manages Stripe web billing on eraseai.ai.
-4. User returns to Android app.
-5. App refreshes `/api/mobile/entitlement` on resume.
-6. UI reflects updated entitlement.
-
-Deep-link return is not implemented yet. TODO: add an app-link return path after the web billing flow is stable in production. Do not add a duplicate mobile Stripe checkout flow.
+Web users continue to subscribe at eraseai.ai with Stripe — do not open web checkout from Android.
 
 ## Diagnostics QA
 

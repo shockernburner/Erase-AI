@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name">EraseAI Firewall</string>
-  <string name="accessibility_service_description">EraseAI Firewall uses Android Accessibility permission only to inspect text you are actively entering in selected AI apps, so it can warn or redact sensitive data before it is sent.</string>
+  <string name="accessibility_service_description">EraseAI Firewall uses Android Accessibility permission only to inspect text you are actively entering in selected AI apps, so it can warn or redact sensitive data before it is sent. Password fields are skipped. The service does not decrypt network traffic and is not a VPN.</string>
+  <string name="privacy_policy_url">https://eraseai.ai/privacy</string>
 </resources>

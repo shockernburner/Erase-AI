@@ -2,28 +2,7 @@ package com.eraseai.firewall.data
 
 class EntitlementRepository(private val apiClient: ApiClient) {
   suspend fun load(): Result<EntitlementState> = runCatching {
-    try {
-      return@runCatching parseMobileEntitlement(apiClient.get("/mobile/entitlement"))
-    } catch (err: ApiError.NotFound) {
-    }
-
-    val plan = apiClient.get("/billing/plan")
-    val history = runCatching { apiClient.get("/personal/history?limit=1") }.getOrNull()
-    val planType = plan.optString("planType", "free")
-    val status = plan.optString("subscriptionStatus", if (planType == "free") "none" else "active")
-    val paid = planType in setOf("personal", "pro", "business", "enterprise") && status != "expired"
-    EntitlementState(
-      authenticated = true,
-      plan = planType,
-      status = status,
-      scansUsed = history?.optInt("totalUsed", 0) ?: 0,
-      scanLimit = if (planType == "free") history?.optInt("lifetimeLimit", 10) else null,
-      androidFirewall = paid,
-      manualScan = true,
-      accessibilityFirewall = paid,
-      history = paid,
-      redaction = paid,
-    )
+    parseMobileEntitlement(apiClient.get("/mobile/entitlement"))
   }
 
   private fun parseMobileEntitlement(response: org.json.JSONObject): EntitlementState {
@@ -35,13 +14,17 @@ class EntitlementRepository(private val apiClient: ApiClient) {
       status = response.optString("status", "none"),
       scansUsed = response.optInt("monthly_scans_used", 0),
       scanLimit = if (response.isNull("monthly_scan_limit")) null else response.optInt("monthly_scan_limit"),
-      androidFirewall = features?.optBoolean("android_firewall", false) ?: false,
+      androidFirewall = features?.optBoolean("android_firewall", true) ?: true,
       manualScan = features?.optBoolean("manual_scan", true) ?: true,
-      accessibilityFirewall = features?.optBoolean("accessibility_firewall", false) ?: false,
-      history = features?.optBoolean("history", false) ?: false,
+      accessibilityFirewall = features?.optBoolean("accessibility_firewall", true) ?: true,
+      history = features?.optBoolean("history", true) ?: true,
       redaction = features?.optBoolean("redaction", false) ?: false,
-      checkoutUrl = billing?.optString("checkout_url")?.takeIf { it.isNotBlank() },
-      manageUrl = billing?.optString("manage_url")?.takeIf { it.isNotBlank() },
+      billingRail = billing?.optString("rail", "google_play") ?: "google_play",
+      playManageUrl = billing?.optString("manage_url")?.takeIf { it.isNotBlank() },
+      billingSource = response.optString("billing_source", "none"),
+      planEndDate = response.optString("plan_end_date").takeIf { it.isNotBlank() },
+      trialDaysRemaining = if (response.isNull("trial_days_remaining")) null else response.optInt("trial_days_remaining"),
+      canManageInPlay = response.optBoolean("can_manage_in_play", false),
     )
   }
 }

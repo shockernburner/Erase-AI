@@ -2,13 +2,18 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, personalScansTable, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import {
-  buildMobileBillingUrls,
+  billingSourceForUser,
+  buildMobilePlayBilling,
   buildMobileHealthPayload,
+  buildWebStripeBillingUrls,
+  isGooglePlaySubscription,
   mapPlanForMobile,
   mobileFeaturesForPlan,
   mobileStatusForPlan,
   scanLimitForPlan,
+  trialDaysRemaining,
 } from "../lib/mobileEntitlement";
+import { validatePlayVerifyInput, verifyGooglePlayPurchase } from "../lib/googlePlayBilling";
 
 const router: IRouter = Router();
 
@@ -68,8 +73,11 @@ router.get("/entitlement", async (req: Request, res: Response) => {
     }
 
     const plan = user.planType || "free";
-    const billing = buildMobileBillingUrls(getWebBaseUrl());
+    const billingSource = billingSourceForUser(user.subscriptionId);
+    const playBilling = buildMobilePlayBilling();
     const scansUsed = await countPersonalScans(user.id);
+    const status = mobileStatusForPlan(plan, user.subscriptionStatus, user.planEndDate);
+    const planEndDate = user.planEndDate ? new Date(user.planEndDate).toISOString() : null;
 
     res.json({
       authenticated: true,
@@ -78,11 +86,23 @@ router.get("/entitlement", async (req: Request, res: Response) => {
         email: user.email,
       },
       plan: mapPlanForMobile(plan),
-      status: mobileStatusForPlan(plan, user.subscriptionStatus, user.planEndDate),
+      status,
+      plan_end_date: planEndDate,
+      trial_days_remaining: status === "trialing" || status === "expired"
+        ? trialDaysRemaining(user.planEndDate)
+        : null,
       monthly_scan_limit: scanLimitForPlan(plan),
       monthly_scans_used: scansUsed,
       features: mobileFeaturesForPlan(plan),
-      billing,
+      billing: {
+        rail: "google_play",
+        ...playBilling,
+        web_stripe_urls: buildWebStripeBillingUrls(getWebBaseUrl()),
+      },
+      billing_source: billingSource,
+      can_cancel: billingSource === "google_play" && plan !== "free",
+      can_manage_in_play: billingSource === "google_play" && plan !== "free",
+      can_manage_on_web: billingSource === "stripe" && plan !== "free",
     });
   } catch (err) {
     console.error("Mobile entitlement error:", err);
@@ -90,9 +110,56 @@ router.get("/entitlement", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/play/products", (_req: Request, res: Response) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(buildMobilePlayBilling());
+});
+
+router.post("/play/verify", async (req: Request, res: Response) => {
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
+
+  const validated = validatePlayVerifyInput(req.body);
+  if ("ok" in validated) {
+    const failure = validated as { ok: false; status: number; error: string; code?: string };
+    res.status(failure.status).json({ error: failure.error, code: failure.code });
+    return;
+  }
+
+  try {
+    const decision = await verifyGooglePlayPurchase(validated);
+    if (!decision.ok) {
+      res.status(decision.status).json({ error: decision.error, code: decision.code });
+      return;
+    }
+
+    const now = new Date();
+    await db.update(usersTable).set({
+      planType: decision.plan,
+      subscriptionId: decision.subscriptionId,
+      subscriptionStatus: decision.subscriptionStatus,
+      planStartDate: now,
+      planEndDate: decision.expiryTime,
+    }).where(eq(usersTable.id, userId));
+
+    res.json({
+      status: "verified",
+      planType: decision.plan,
+      subscriptionStatus: decision.subscriptionStatus,
+      billing_source: "google_play",
+    });
+  } catch (err) {
+    console.error("Google Play verify error:", err);
+    res.status(500).json({ error: "Failed to verify Google Play purchase" });
+  }
+});
+
 router.get("/billing-url", (req: Request, res: Response) => {
   if (!requireMobileAuth(req, res)) return;
-  res.json(buildMobileBillingUrls(getWebBaseUrl()));
+  res.json({
+    rail: "google_play",
+    ...buildMobilePlayBilling(),
+  });
 });
 
 router.get("/protected-apps", async (req: Request, res: Response) => {
@@ -152,4 +219,5 @@ router.post("/protected-apps", async (req: Request, res: Response) => {
   }
 });
 
+export { isGooglePlaySubscription };
 export default router;

@@ -66,13 +66,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.eraseai.firewall.billing.PlayBillingManager
 import com.eraseai.firewall.data.ApiClient
 import com.eraseai.firewall.data.ApiError
 import com.eraseai.firewall.data.AuthApi
+import com.eraseai.firewall.data.BillingApi
 import com.eraseai.firewall.data.EntitlementRepository
 import com.eraseai.firewall.data.EntitlementState
 import com.eraseai.firewall.data.HistoryRepository
 import com.eraseai.firewall.data.MobileSessionStore
+import com.eraseai.firewall.data.PlayProduct
 import com.eraseai.firewall.data.ProtectedApp
 import com.eraseai.firewall.data.ProtectedAppsStore
 import com.eraseai.firewall.data.ScanApi
@@ -81,29 +84,70 @@ import com.eraseai.firewall.data.ScanResult
 import com.eraseai.firewall.data.loadInstalledApps
 import com.eraseai.firewall.ui.theme.EraseAIFirewallTheme
 import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 private const val MAX_SCAN_TEXT_LENGTH = 5000
-private const val INTERNAL_RELEASE_NOTES = "Initial internal testing build of EraseAI AI Firewall for Android. Includes sign-in, entitlement sync, manual scan, share-sheet scan, selected-app Accessibility protection, warning overlay, redaction/copy-safe-text flow, billing handoff, protected app sync, and sanitized diagnostics."
+private const val INTERNAL_RELEASE_NOTES = "Play internal build: dual-rail billing (Google Play on Android, Stripe on web), 7-day trial, Accessibility AI firewall, share-sheet scan/sanitize, protected LLM app sync."
 
 private enum class Screen { Splash, Login, Dashboard, Subscription, AccessibilityGuide, ProtectedApps, ManualScan, History, Settings, Diagnostics, Privacy }
 
 class MainActivity : ComponentActivity() {
+  private var pendingSharedText by mutableStateOf<String?>(null)
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    val sharedText = if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") intent.getStringExtra(Intent.EXTRA_TEXT)?.take(MAX_SCAN_TEXT_LENGTH) else null
-    setContent { EraseAIFirewallTheme { EraseAIFirewallApp(sharedText) } }
+    if (intent.action == Intent.ACTION_SEND) {
+      pendingSharedText = extractSharedText(intent)
+    }
+    setContent {
+      EraseAIFirewallTheme {
+        EraseAIFirewallApp(
+          initialSharedText = pendingSharedText,
+          onSharedTextConsumed = { pendingSharedText = null },
+        )
+      }
+    }
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    if (intent.action == Intent.ACTION_SEND) {
+      pendingSharedText = extractSharedText(intent)
+    }
+  }
+
+  private fun extractSharedText(intent: Intent): String? {
+    intent.getStringExtra(Intent.EXTRA_TEXT)?.take(MAX_SCAN_TEXT_LENGTH)?.let { return it }
+    val uri = if (android.os.Build.VERSION.SDK_INT >= 33) {
+      intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+    } else {
+      @Suppress("DEPRECATION")
+      intent.getParcelableExtra(Intent.EXTRA_STREAM)
+    } ?: return null
+    return runCatching {
+      contentResolver.openInputStream(uri)?.use { stream ->
+        BufferedReader(InputStreamReader(stream)).readText().take(MAX_SCAN_TEXT_LENGTH)
+      }
+    }.getOrNull()
   }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EraseAIFirewallApp(initialSharedText: String?) {
+private fun EraseAIFirewallApp(
+  initialSharedText: String?,
+  onSharedTextConsumed: () -> Unit,
+) {
   val context = LocalContext.current
+  val activity = context as ComponentActivity
   val scope = rememberCoroutineScope()
   val sessionStore = remember { MobileSessionStore(context) }
   val apiClient = remember { ApiClient(sessionStore) }
   val authApi = remember { AuthApi(apiClient, sessionStore) }
   val scanApi = remember { ScanApi(apiClient) }
+  val billingApi = remember { BillingApi(apiClient) }
   val entitlementRepo = remember { EntitlementRepository(apiClient) }
   val historyRepo = remember { HistoryRepository(apiClient) }
   val protectedStore = remember { ProtectedAppsStore(context) }
@@ -120,6 +164,9 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
   var scanResult by remember { mutableStateOf<ScanResult?>(null) }
   var redactedText by remember { mutableStateOf<String?>(null) }
   var backendStatus by remember { mutableStateOf("Not checked") }
+  var playProducts by remember { mutableStateOf<List<PlayProduct>>(emptyList()) }
+  var billingPeriod by remember { mutableStateOf("monthly") }
+  var billingMessage by remember { mutableStateOf<String?>(null) }
 
   fun refreshEntitlement() {
     scope.launch {
@@ -138,6 +185,22 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
     }
   }
 
+  val playBilling = remember(activity, billingApi, scope) {
+    PlayBillingManager(
+      activity = activity,
+      billingApi = billingApi,
+      scope = scope,
+      onStatus = { billingMessage = it },
+      onError = { error = it },
+      onEntitlementRefresh = { refreshEntitlement() },
+    )
+  }
+
+  DisposableEffect(playBilling) {
+    playBilling.connect()
+    onDispose { playBilling.destroy() }
+  }
+
   fun refreshBackendStatus() {
     scope.launch {
       runCatching { apiClient.mobileHealth() }
@@ -147,6 +210,22 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
           protectedStore.saveLastErrorCategory(it.errorCategory())
         }
     }
+  }
+
+  fun loadPlayProducts() {
+    scope.launch {
+      billingApi.playProducts().onSuccess { playProducts = it }
+    }
+  }
+
+  fun purchaseProduct(productId: String) {
+    error = null
+    billingMessage = null
+    playBilling.purchase(productId)
+  }
+
+  fun openPlaySubscriptions() {
+    openUrl(context, entitlement?.playManageUrl ?: BuildConfig.PLAY_MANAGE_URL)
   }
 
   DisposableEffect(Unit) {
@@ -159,6 +238,7 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
   }
 
   LaunchedEffect(Unit) {
+    loadPlayProducts()
     if (sessionStore.getToken().isNullOrBlank()) screen = Screen.Login else {
       refreshEntitlement()
       refreshBackendStatus()
@@ -169,6 +249,14 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
         protectedStore.pushToBackend(apiClient)
       }
       screen = if (initialSharedText.isNullOrBlank()) Screen.Dashboard else Screen.ManualScan
+    }
+  }
+
+  LaunchedEffect(initialSharedText) {
+    if (!initialSharedText.isNullOrBlank()) {
+      manualText = initialSharedText.take(MAX_SCAN_TEXT_LENGTH)
+      if (!sessionStore.getToken().isNullOrBlank()) screen = Screen.ManualScan
+      onSharedTextConsumed()
     }
   }
 
@@ -191,14 +279,24 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
           scope.launch {
             loading = true
             error = null
-            authApi.login(email, password).onSuccess { refreshEntitlement(); refreshBackendStatus(); screen = Screen.Dashboard }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
+            authApi.login(email, password).onSuccess {
+              refreshEntitlement()
+              refreshBackendStatus()
+              loadPlayProducts()
+              screen = Screen.Dashboard
+            }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
             loading = false
           }
         }, onSignup = { email, password ->
           scope.launch {
             loading = true
             error = null
-            authApi.signup(email, password, null, null).onSuccess { refreshEntitlement(); refreshBackendStatus(); screen = Screen.Privacy }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
+            authApi.signup(email, password, null, null).onSuccess {
+              refreshEntitlement()
+              refreshBackendStatus()
+              loadPlayProducts()
+              screen = Screen.Privacy
+            }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
             loading = false
           }
         })
@@ -234,7 +332,19 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
           onSettings = { screen = Screen.Settings },
           onPrivacy = { screen = Screen.Privacy },
         )
-        Screen.Subscription -> SubscriptionScreen(entitlement, onManageBilling = { openBilling(context, entitlement?.manageUrl ?: entitlement?.checkoutUrl) }, onRefresh = { refreshEntitlement() })
+        Screen.Subscription -> SubscriptionScreen(
+          entitlement = entitlement,
+          products = playProducts.filter { it.billingPeriod == billingPeriod },
+          billingPeriod = billingPeriod,
+          loading = loading,
+          error = error,
+          message = billingMessage,
+          onPeriodChange = { billingPeriod = it },
+          onPurchase = { productId -> purchaseProduct(productId) },
+          onRestore = { playBilling.restorePurchases() },
+          onManageInPlay = { openPlaySubscriptions() },
+          onRefresh = { refreshEntitlement(); loadPlayProducts() },
+        )
         Screen.AccessibilityGuide -> AccessibilityGuideScreen(isAccessibilityEnabled(context), { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, { screen = Screen.ProtectedApps })
         Screen.ProtectedApps -> ProtectedAppsScreen(apps, selectedPackages) { packageName ->
           selectedPackages = if (selectedPackages.contains(packageName)) selectedPackages - packageName else selectedPackages + packageName
@@ -252,7 +362,7 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
             redactedText = null
             val scanText = manualText.take(MAX_SCAN_TEXT_LENGTH)
             manualText = scanText
-            scanApi.scan(scanText).onSuccess { result ->
+            scanApi.scan(scanText, source = "android_share_or_manual").onSuccess { result ->
               scanResult = result
               protectedStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
               if (result.findings.isNotEmpty() && entitlement?.redaction == true) {
@@ -267,9 +377,9 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
           scanResult = null
           redactedText = null
           error = null
-        }, onManageBilling = { openBilling(context, entitlement?.manageUrl ?: entitlement?.checkoutUrl) })
+        }, onManageBilling = { screen = Screen.Subscription })
         Screen.History -> HistoryScreen(history)
-        Screen.Settings -> SettingsScreen(BuildConfig.API_BASE_URL, BuildConfig.WEB_BASE_URL, onBilling = { openBilling(context, entitlement?.manageUrl ?: entitlement?.checkoutUrl) }, onDiagnostics = { refreshBackendStatus(); screen = Screen.Diagnostics }, onPrivacy = { screen = Screen.Privacy }, onLogout = {
+        Screen.Settings -> SettingsScreen(BuildConfig.API_BASE_URL, BuildConfig.WEB_BASE_URL, onBilling = { screen = Screen.Subscription }, onDiagnostics = { refreshBackendStatus(); screen = Screen.Diagnostics }, onPrivacy = { screen = Screen.Privacy }, onOpenPrivacyPolicy = { openUrl(context, BuildConfig.PRIVACY_URL) }, onLogout = {
           scope.launch {
             authApi.logout()
             entitlement = null
@@ -290,7 +400,10 @@ private fun EraseAIFirewallApp(initialSharedText: String?) {
           ),
           onRefresh = { refreshBackendStatus(); refreshEntitlement() },
         )
-        Screen.Privacy -> PrivacyScreen { screen = Screen.Dashboard }
+        Screen.Privacy -> PrivacyScreen(
+          onContinue = { screen = Screen.Subscription },
+          onOpenPolicy = { openUrl(context, BuildConfig.PRIVACY_URL) },
+        )
       }
     }
   }
@@ -312,7 +425,7 @@ private fun LoginScreen(loading: Boolean, error: String?, onLogin: (String, Stri
   LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
     item {
       Text("AI Firewall for your phone", style = MaterialTheme.typography.headlineMedium)
-      Text("EraseAI checks sensitive data before you send it to ChatGPT, Gemini, Claude, DeepSeek, Replit, or other AI apps.")
+      Text("EraseAI checks prompts and shared uploads before they reach ChatGPT, Gemini, Claude, Copilot, Perplexity, and other AI apps. Sign up for a 7-day trial, then subscribe monthly or annually through Google Play.")
     }
     item { OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email") }, singleLine = true) }
     item { OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Password") }, singleLine = true, visualTransformation = PasswordVisualTransformation()) }
@@ -369,21 +482,68 @@ private fun DashboardScreen(
     }
     item { Button(enabled = entitlement?.accessibilityFirewall != false, onClick = onEnable, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Shield, null); Spacer(Modifier.width(8.dp)); Text("Enable AI Firewall") } }
     item { OutlinedButton(onClick = onApps, modifier = Modifier.fillMaxWidth()) { Text("Choose Protected Apps") } }
-    item { OutlinedButton(enabled = entitlement?.manualScan != false, onClick = onManual, modifier = Modifier.fillMaxWidth()) { Text("Manual Scan") } }
+    item { OutlinedButton(enabled = entitlement?.manualScan != false, onClick = onManual, modifier = Modifier.fillMaxWidth()) { Text("Manual / Share Scan") } }
     item { OutlinedButton(enabled = entitlement?.history != false, onClick = onHistory, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.History, null); Spacer(Modifier.width(8.dp)); Text("Scanner History") } }
-    item { OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.OpenInBrowser, null); Spacer(Modifier.width(8.dp)); Text("Upgrade / Manage Billing") } }
+    item { OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.OpenInBrowser, null); Spacer(Modifier.width(8.dp)); Text("Trial & Subscription") } }
     item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { TextButton(onRefresh) { Text("Refresh") }; TextButton(onPrivacy) { Text("Privacy") } } }
   }
 }
 
 @Composable
-private fun SubscriptionScreen(entitlement: EntitlementState?, onManageBilling: () -> Unit, onRefresh: () -> Unit) {
-  Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    Text("Current plan", style = MaterialTheme.typography.headlineSmall)
-    Text(entitlement?.subscriptionLabel ?: "Unknown")
-    Text("Android firewall access follows your existing EraseAI account plan and backend entitlement state.")
-    Button(onClick = onManageBilling, modifier = Modifier.fillMaxWidth()) { Text("Manage Billing") }
-    OutlinedButton(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) { Text("Refresh Subscription") }
+private fun SubscriptionScreen(
+  entitlement: EntitlementState?,
+  products: List<PlayProduct>,
+  billingPeriod: String,
+  loading: Boolean,
+  error: String?,
+  message: String?,
+  onPeriodChange: (String) -> Unit,
+  onPurchase: (String) -> Unit,
+  onRestore: () -> Unit,
+  onManageInPlay: () -> Unit,
+  onRefresh: () -> Unit,
+) {
+  LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    item { Text("Subscription", style = MaterialTheme.typography.headlineSmall) }
+    item { Text(entitlement?.subscriptionLabel ?: "Unknown") }
+    item {
+      Text(
+        "New accounts start a 7-day trial (25 scans). Subscribe through Google Play (monthly or annual). Manage or cancel anytime in Google Play subscriptions. eraseai.ai web billing stays on Stripe and is separate from this Android app.",
+      )
+    }
+    if (error != null) item { ErrorCard(error) }
+    if (message != null) item { StatusCard("Billing", message) }
+    item {
+      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (billingPeriod == "monthly") {
+          Button(onClick = { onPeriodChange("monthly") }) { Text("Monthly") }
+          OutlinedButton(onClick = { onPeriodChange("annual") }) { Text("Annual") }
+        } else {
+          OutlinedButton(onClick = { onPeriodChange("monthly") }) { Text("Monthly") }
+          Button(onClick = { onPeriodChange("annual") }) { Text("Annual") }
+        }
+      }
+    }
+    if (products.isEmpty()) {
+      item { Text("Google Play subscription products are not available yet. Create matching subscription IDs in Play Console before internal testing checkout.") }
+    } else {
+      items(products) { product ->
+        Card(Modifier.fillMaxWidth()) {
+          Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(product.name, style = MaterialTheme.typography.titleMedium)
+            Text("${product.plan.replaceFirstChar { it.uppercase() }} · ${product.billingPeriod}")
+            Button(enabled = !loading, onClick = { onPurchase(product.productId) }, modifier = Modifier.fillMaxWidth()) {
+              Text(if (loading) "Opening Google Play…" else "Subscribe with Google Play")
+            }
+          }
+        }
+      }
+    }
+    if (entitlement?.canManageInPlay == true) {
+      item { OutlinedButton(onClick = onManageInPlay, modifier = Modifier.fillMaxWidth()) { Text("Manage in Google Play") } }
+    }
+    item { OutlinedButton(onClick = onRestore, modifier = Modifier.fillMaxWidth()) { Text("Restore Google Play purchases") } }
+    item { TextButton(onClick = onRefresh) { Text("Refresh subscription") } }
   }
 }
 
@@ -401,7 +561,7 @@ private fun AccessibilityGuideScreen(enabled: Boolean, onOpenSettings: () -> Uni
 @Composable
 private fun ProtectedAppsScreen(apps: List<ProtectedApp>, selected: Set<String>, onToggle: (String) -> Unit) {
   LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    item { Text("Select only the AI or coding apps you want EraseAI to inspect.") }
+    item { Text("Select AI or coding apps to protect. Suggested LLM apps are listed first. Newly installed known AI apps are offered automatically.") }
     items(apps) { app ->
       Card(border = if (app.suggested) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null) {
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -432,20 +592,21 @@ private fun ManualScanScreen(
 ) {
   val clipboard = LocalClipboardManager.current
   LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    item { OutlinedTextField(text, onTextChange, Modifier.fillMaxWidth().height(180.dp), label = { Text("Prompt or pasted text") }, minLines = 6) }
+    item { Text("Paste a prompt or share text/JSON uploads into EraseAI to sanitize before sending to a public LLM.") }
+    item { OutlinedTextField(text, onTextChange, Modifier.fillMaxWidth().height(180.dp), label = { Text("Prompt or uploaded text") }, minLines = 6) }
     if (error != null) item { ErrorCard(error) }
-    item { Button(enabled = !loading && text.length >= 3 && entitlement?.manualScan != false, onClick = onScan, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text(if (loading) "Scanning" else "Scan") } }
+    item { Button(enabled = !loading && text.length >= 3 && entitlement?.manualScan != false, onClick = onScan, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text(if (loading) "Scanning" else "Scan & sanitize check") } }
     if (BuildConfig.DEBUG) item { TextButton(onClick = onLoadSample, enabled = !loading) { Text("Load QA sample") } }
     if (scanResult != null) {
       item { StatusCard("Risk", "${scanResult.riskScore}/100 (${scanResult.action})") }
       items(scanResult.findings) { finding -> StatusCard(finding.label, "${finding.type} / ${finding.severity}") }
       if (scanResult.findings.isNotEmpty() && redactedText == null && entitlement?.redaction != true) {
-        item { ErrorCard("Redaction requires an active EraseAI plan.") }
-        item { OutlinedButton(onClick = onManageBilling, modifier = Modifier.fillMaxWidth()) { Text("Upgrade / Manage Billing") } }
+        item { ErrorCard("Redaction / sanitize copy requires an active paid EraseAI plan.") }
+        item { OutlinedButton(onClick = onManageBilling, modifier = Modifier.fillMaxWidth()) { Text("Upgrade in Google Play") } }
       }
       if (redactedText != null) item {
         Card { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-          Text("Redacted output", style = MaterialTheme.typography.titleMedium)
+          Text("Sanitized output", style = MaterialTheme.typography.titleMedium)
           Text(redactedText)
           OutlinedButton(onClick = { clipboard.setText(AnnotatedString(redactedText)) }) { Icon(Icons.Default.ContentCopy, null); Spacer(Modifier.width(8.dp)); Text("Copy Safe Text") }
         } }
@@ -462,14 +623,23 @@ private fun HistoryScreen(items: List<ScanHistoryItem>) {
 }
 
 @Composable
-private fun SettingsScreen(apiBase: String, webBase: String, onBilling: () -> Unit, onDiagnostics: () -> Unit, onPrivacy: () -> Unit, onLogout: () -> Unit) {
+private fun SettingsScreen(
+  apiBase: String,
+  webBase: String,
+  onBilling: () -> Unit,
+  onDiagnostics: () -> Unit,
+  onPrivacy: () -> Unit,
+  onOpenPrivacyPolicy: () -> Unit,
+  onLogout: () -> Unit,
+) {
   LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
     item { StatusCard("API", apiBase) }
     item { StatusCard("Web", webBase) }
     item { StatusCard("Internal Release Notes", INTERNAL_RELEASE_NOTES) }
-    item { OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) { Text("Manage Billing") } }
+    item { OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) { Text("Trial & Subscription") } }
     item { OutlinedButton(onClick = onDiagnostics, modifier = Modifier.fillMaxWidth()) { Text("Diagnostics") } }
     item { OutlinedButton(onClick = onPrivacy, modifier = Modifier.fillMaxWidth()) { Text("Privacy Explanation") } }
+    item { OutlinedButton(onClick = onOpenPrivacyPolicy, modifier = Modifier.fillMaxWidth()) { Text("Open Privacy Policy") } }
     item { Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) { Text("Sign Out") } }
   }
 }
@@ -492,16 +662,18 @@ private fun DiagnosticsScreen(report: String, onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun PrivacyScreen(onContinue: () -> Unit) {
+private fun PrivacyScreen(onContinue: () -> Unit, onOpenPolicy: () -> Unit) {
   LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
     item { Text("Privacy", style = MaterialTheme.typography.headlineSmall) }
-    item { Text("EraseAI Firewall scans only text you actively enter in apps you select. It skips password fields and does not inspect banking apps, settings, or unrelated apps by default.") }
-    item { Text("Raw prompts are not stored locally. Local history uses backend-provided previews and metadata only.") }
+    item { Text("EraseAI Firewall scans only text you actively enter in apps you select, plus prompts/uploads you share into the app. It skips password fields and does not inspect banking apps, settings, or unrelated apps by default.") }
+    item { Text("Selected text is sent to eraseai.ai for breach/PII scanning. Android subscriptions use Google Play Billing; eraseai.ai web billing uses Stripe separately.") }
     item { Text("1. Sign in with your EraseAI account.") }
-    item { Text("2. Enable Accessibility permission.") }
-    item { Text("3. Choose which AI apps to protect.") }
-    item { Text("4. Use AI apps normally; EraseAI warns or redacts risky prompts.") }
-    item { Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text("Continue") } }
+    item { Text("2. Review trial / subscribe through Google Play.") }
+    item { Text("3. Enable Accessibility permission.") }
+    item { Text("4. Choose which AI apps to protect.") }
+    item { Text("5. Use AI apps normally; EraseAI warns or sanitizes risky prompts.") }
+    item { OutlinedButton(onClick = onOpenPolicy, modifier = Modifier.fillMaxWidth()) { Text("Open Privacy Policy") } }
+    item { Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text("Continue to Subscription") } }
   }
 }
 
@@ -597,6 +769,6 @@ private fun isAccessibilityEnabled(context: Context): Boolean {
   return enabled.split(':').any { ComponentName.unflattenFromString(it) == expected }
 }
 
-private fun openBilling(context: Context, url: String? = null) {
-  CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url ?: "${BuildConfig.WEB_BASE_URL}/billing"))
+private fun openUrl(context: Context, url: String) {
+  CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(url))
 }

@@ -1,5 +1,6 @@
 export type InternalPlan = "free" | "personal" | "pro" | "business" | "enterprise";
 export type MobilePlan = "free" | "personal" | "developer" | "team" | "enterprise";
+export type MobileBillingRail = "google_play" | "stripe";
 
 export interface MobileFeatureFlags {
   android_firewall: boolean;
@@ -22,9 +23,24 @@ export interface MobileHealthPayload {
   };
 }
 
-// Free = 7-day trial with a total budget of 25 scans.
+export interface MobilePlayProduct {
+  product_id: string;
+  plan: InternalPlan;
+  billing_period: "monthly" | "annual";
+  name: string;
+}
+
+// Free = 7-day trial with a total budget of 25 scans (matches personal analyzer).
 export const FREE_TRIAL_SCAN_LIMIT = 25;
 export const MOBILE_SERVICE_VERSION = "1.0.0";
+export const ANDROID_PACKAGE_NAME = "com.eraseai.firewall";
+
+export const MOBILE_PLAY_PRODUCTS: MobilePlayProduct[] = [
+  { product_id: "eraseai_personal_monthly", plan: "personal", billing_period: "monthly", name: "Personal Monthly" },
+  { product_id: "eraseai_personal_annual", plan: "personal", billing_period: "annual", name: "Personal Annual" },
+  { product_id: "eraseai_pro_monthly", plan: "pro", billing_period: "monthly", name: "Developer Monthly" },
+  { product_id: "eraseai_pro_annual", plan: "pro", billing_period: "annual", name: "Developer Annual" },
+];
 
 export function buildMobileHealthPayload(): MobileHealthPayload {
   return {
@@ -76,16 +92,56 @@ export function mobileStatusForPlan(plan: string | null | undefined, subscriptio
   if ((plan === "free" || !plan) && endDate && endDate < new Date()) {
     return "expired";
   }
+  if (subscriptionStatus === "trialing") {
+    return "trialing";
+  }
+  if ((plan === "free" || !plan) && endDate && endDate >= new Date()) {
+    return "trialing";
+  }
   if (subscriptionStatus) {
     return subscriptionStatus;
   }
   return plan && plan !== "free" ? "active" : "free";
 }
 
-export function buildMobileBillingUrls(webBaseUrl: string) {
+export function trialDaysRemaining(planEndDate: Date | string | null | undefined, now = new Date()): number | null {
+  if (!planEndDate) return null;
+  const endDate = typeof planEndDate === "string" ? new Date(planEndDate) : planEndDate;
+  if (Number.isNaN(endDate.getTime())) return null;
+  const ms = endDate.getTime() - now.getTime();
+  if (ms <= 0) return 0;
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+}
+
+export function isGooglePlaySubscription(subscriptionId: string | null | undefined): boolean {
+  return typeof subscriptionId === "string" && subscriptionId.startsWith("gplay:");
+}
+
+export function resolvePlayProduct(productId: string): MobilePlayProduct | null {
+  return MOBILE_PLAY_PRODUCTS.find((product) => product.product_id === productId) ?? null;
+}
+
+/** Web app billing (Stripe). Android Play builds must not use these checkout URLs. */
+export function buildWebStripeBillingUrls(webBaseUrl: string) {
   const base = webBaseUrl.replace(/\/+$/, "");
   return {
     checkout_url: `${base}/billing`,
     manage_url: `${base}/billing`,
   };
+}
+
+/** Android Play Store billing rail (Google Play Billing + Play subscription management). */
+export function buildMobilePlayBilling() {
+  return {
+    rail: "google_play" as const,
+    package_name: ANDROID_PACKAGE_NAME,
+    products: MOBILE_PLAY_PRODUCTS,
+    manage_url: `https://play.google.com/store/account/subscriptions?package=${ANDROID_PACKAGE_NAME}`,
+  };
+}
+
+export function billingSourceForUser(subscriptionId: string | null | undefined): MobileBillingRail | "none" {
+  if (isGooglePlaySubscription(subscriptionId)) return "google_play";
+  if (subscriptionId?.startsWith("sub_")) return "stripe";
+  return "none";
 }

@@ -8,6 +8,7 @@ import {
 } from "../lib/auth";
 import { getUncachableStripeClient } from "../lib/stripe";
 import { logger } from "../lib/logger";
+import { isGooglePlaySubscription } from "../lib/mobileEntitlement";
 import {
   ANNUAL_DISCOUNT,
   PLAN_PRICING,
@@ -322,6 +323,14 @@ router.post("/cancel", async (req: Request, res: Response) => {
 
   if (user.planType === "free") {
     res.status(400).json({ error: "You are already on the free plan" });
+    return;
+  }
+
+  if (isGooglePlaySubscription(user.subscriptionId)) {
+    res.status(400).json({
+      error: "This subscription was purchased through Google Play. Manage or cancel it in Google Play subscriptions.",
+      code: "GOOGLE_PLAY_MANAGED",
+    });
     return;
   }
 

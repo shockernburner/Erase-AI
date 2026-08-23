@@ -28,12 +28,14 @@ android {
     applicationId = "com.eraseai.firewall"
     minSdk = 28
     targetSdk = 35
-    versionCode = 1
-    versionName = "0.1.0-internal"
+    versionCode = 2
+    versionName = "0.1.1-internal"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "API_BASE_URL", "\"https://eraseai.ai/api\"")
     buildConfigField("String", "WEB_BASE_URL", "\"https://eraseai.ai\"")
+    buildConfigField("String", "PRIVACY_URL", "\"https://eraseai.ai/privacy\"")
+    buildConfigField("String", "PLAY_MANAGE_URL", "\"https://play.google.com/store/account/subscriptions?package=com.eraseai.firewall\"")
   }
 
   signingConfigs {
@@ -53,7 +55,8 @@ android {
     }
 
     release {
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       buildConfigField("String", "QA_SAMPLE_TEXT", "\"\"")
       if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
       proguardFiles(
@@ -99,6 +102,7 @@ dependencies {
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("com.android.billingclient:billing-ktx:7.1.1")
 
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")

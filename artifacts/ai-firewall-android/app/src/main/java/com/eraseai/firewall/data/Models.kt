@@ -11,11 +11,22 @@ data class EntitlementState(
   val accessibilityFirewall: Boolean = false,
   val history: Boolean = false,
   val redaction: Boolean = false,
-  val checkoutUrl: String? = null,
-  val manageUrl: String? = null,
+  val billingRail: String = "google_play",
+  val playManageUrl: String? = null,
+  val billingSource: String = "none",
+  val planEndDate: String? = null,
+  val trialDaysRemaining: Int? = null,
+  val canManageInPlay: Boolean = false,
 ) {
   val subscriptionLabel: String
-    get() = if (status == "active" || plan != "free") "${plan.replaceFirstChar { it.uppercase() }} / ${status.ifBlank { "active" }}" else "Free"
+    get() = when {
+      status == "trialing" && trialDaysRemaining != null ->
+        "Trial · ${trialDaysRemaining} day${if (trialDaysRemaining == 1) "" else "s"} left"
+      status == "trialing" -> "Free trial active"
+      status == "expired" -> "Trial expired"
+      plan != "free" -> "${plan.replaceFirstChar { it.uppercase() }} / ${status.ifBlank { "active" }}"
+      else -> "Free"
+    }
 }
 
 data class ScanFinding(

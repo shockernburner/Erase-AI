@@ -82,6 +82,11 @@ class ProtectedAppsStore(context: Context) {
       "com.anthropic.claude",
       "ai.deepseek",
       "com.replit.app",
+      "com.microsoft.copilot",
+      "com.perplexity.app",
+      "com.quora.poe",
+      "ai.x.grok",
+      "com.xai.grok",
     )
   }
 }

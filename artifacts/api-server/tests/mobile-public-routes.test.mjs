@@ -27,6 +27,10 @@ describe("mobile public route contract", () => {
     assert.equal(isPublicRoute("/api/mobile/entitlement"), false);
   });
 
+  test("billing pricing is public for Android plan cards", () => {
+    assert.equal(isPublicRoute("/api/billing/pricing"), true);
+  });
+
   test("personal routes require auth", () => {
     assert.equal(isPublicRoute("/api/personal/analyze"), false);
     assert.equal(isPublicRoute("/api/personal/rewrite"), false);
