@@ -22,6 +22,46 @@ class ScanApi(private val apiClient: ApiClient) {
     response.toScanResult(text)
   }
 
+  suspend fun scanPieces(
+    pieces: List<ScanPiece>,
+    source: String = "android_accessibility_send",
+    targetPackage: String? = null,
+    targetName: String? = null,
+  ): Result<MultiScanResult> = runCatching {
+    val payload = JSONArray()
+    pieces.forEach { piece ->
+      payload.put(
+        JSONObject()
+          .put("source", piece.source)
+          .put("label", piece.label)
+          .put("text", piece.text)
+          .put("skip_reason", piece.skipReason),
+      )
+    }
+    val response = apiClient.post(
+      "/mobile/analyze-pieces",
+      JSONObject()
+        .put("pieces", payload)
+        .put("source", source)
+        .put("target_app_package", targetPackage)
+        .put("target_app_name", targetName),
+    )
+    response.toMultiScanResult()
+  }
+
+  suspend fun scanAttachments(
+    promptText: String,
+    attachments: List<ScanPiece>,
+    source: String = "android_manual",
+  ): Result<MultiScanResult> = runCatching {
+    val pieces = mutableListOf<ScanPiece>()
+    if (promptText.isNotBlank()) {
+      pieces.add(ScanPiece(source = "prompt", label = "Prompt text", text = promptText))
+    }
+    pieces.addAll(attachments)
+    scanPieces(pieces, source = source).getOrThrow()
+  }
+
   suspend fun rewrite(text: String, findings: List<ScanFinding>): Result<String> = runCatching {
     val flags = JSONArray()
     findings.forEach { finding ->
@@ -35,6 +75,24 @@ class ScanApi(private val apiClient: ApiClient) {
       )
     }
     apiClient.post("/personal/rewrite", JSONObject().put("text", text).put("flags", flags)).getString("rewritten")
+  }
+
+  suspend fun recordOutcome(
+    action: String,
+    level: String,
+    riskScore: Int,
+    findingCount: Int,
+    source: String,
+  ): Result<Unit> = runCatching {
+    apiClient.post(
+      "/mobile/outcome",
+      JSONObject()
+        .put("action", action)
+        .put("level", level)
+        .put("risk_score", riskScore)
+        .put("finding_count", findingCount)
+        .put("source", source),
+    )
   }
 }
 
@@ -73,6 +131,63 @@ fun JSONObject.toScanResult(originalText: String): ScanResult {
     findings = findings,
     redactedText = null,
     message = if (findings.isEmpty()) "No sensitive data detected." else "Sensitive data detected before sending to AI.",
+  )
+}
+
+fun JSONObject.toMultiScanResult(): MultiScanResult {
+  val level = optString("level", "low")
+  val riskScore = optInt("riskScore", 100)
+  val findings = mutableListOf<ScanFinding>()
+  val flags = optJSONArray("flags") ?: JSONArray()
+  for (index in 0 until flags.length()) {
+    val flag = flags.getJSONObject(index)
+    val position = flag.optJSONObject("position") ?: JSONObject()
+    findings.add(
+      ScanFinding(
+        type = flag.optString("type", "pii").uppercase(),
+        label = flag.optString("detail", "Sensitive data detected"),
+        start = position.optInt("start", 0),
+        end = position.optInt("end", 0),
+        severity = flag.optString("severity", "medium"),
+      ),
+    )
+  }
+
+  val action = when {
+    findings.isEmpty() && !optBoolean("has_attachment_blocker", false) -> "allow"
+    level == "high" -> "block"
+    level == "medium" -> "redact"
+    optBoolean("has_attachment_blocker", false) -> "warn"
+    else -> "warn"
+  }
+
+  val pieces = mutableListOf<PieceScanSummary>()
+  val pieceArray = optJSONArray("pieces") ?: JSONArray()
+  for (index in 0 until pieceArray.length()) {
+    val piece = pieceArray.getJSONObject(index)
+    pieces.add(
+      PieceScanSummary(
+        source = piece.optString("source", "prompt"),
+        label = piece.optString("label", "Piece"),
+        level = piece.optString("level", "low"),
+        issueCount = piece.optInt("issue_count", 0),
+        skipReason = piece.optString("skip_reason", null),
+      ),
+    )
+  }
+
+  return MultiScanResult(
+    result = ScanResult(
+      id = optString("id", null),
+      safetyScore = riskScore,
+      riskScore = (100 - riskScore).coerceIn(0, 100),
+      level = level,
+      action = action,
+      findings = findings,
+      redactedText = null,
+      message = if (findings.isEmpty()) "No sensitive data detected." else "Sensitive data detected before sending to AI.",
+    ),
+    pieces = pieces,
   )
 }
 

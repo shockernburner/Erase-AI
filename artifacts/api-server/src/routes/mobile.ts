@@ -1,6 +1,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, personalScansTable, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { analyzeText } from "../lib/personalAnalyzer";
+import { calculateRiskScore } from "../lib/riskScorer";
+import { refreshPlanFromDB, requireActivePlan } from "../middlewares/planMiddleware";
 import {
   billingSourceForUser,
   buildMobilePlayBilling,
@@ -16,9 +19,22 @@ import {
 import { validatePlayVerifyInput, verifyGooglePlayPurchase } from "../lib/googlePlayBilling";
 
 const router: IRouter = Router();
+router.use(refreshPlanFromDB);
 
 const MAX_PROTECTED_APPS = 100;
 const PACKAGE_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+$/;
+const FREE_TRIAL_SCAN_LIMIT = 25;
+const MAX_PIECE_TEXT_LENGTH = 5000;
+const MAX_PIECES = 12;
+
+type MobilePieceInput = {
+  source?: string;
+  label?: string;
+  text?: string;
+  skip_reason?: string | null;
+};
+
+const LEVEL_RANK: Record<string, number> = { low: 0, medium: 1, high: 2 };
 
 function getWebBaseUrl(): string {
   const configured = process.env.WEB_BASE_URL || process.env.PUBLIC_WEB_BASE_URL;
@@ -217,6 +233,128 @@ router.post("/protected-apps", async (req: Request, res: Response) => {
     console.error("Mobile protected-apps save error:", err);
     res.status(500).json({ error: "Failed to save protected apps" });
   }
+});
+
+router.post("/analyze-pieces", requireActivePlan(), async (req: Request, res: Response) => {
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
+
+  const rawPieces = req.body?.pieces;
+  if (!Array.isArray(rawPieces) || rawPieces.length === 0) {
+    res.status(400).json({ error: "pieces must be a non-empty array" });
+    return;
+  }
+  if (rawPieces.length > MAX_PIECES) {
+    res.status(400).json({ error: `At most ${MAX_PIECES} pieces are allowed per scan` });
+    return;
+  }
+
+  const user = await getFreshUser(userId);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const plan = user.planType || "free";
+  if (plan === "free") {
+    const scansUsed = await countPersonalScans(userId);
+    if (scansUsed >= FREE_TRIAL_SCAN_LIMIT) {
+      res.status(429).json({
+        error: `Your free trial includes ${FREE_TRIAL_SCAN_LIMIT} scans. Subscribe to Personal for unlimited scans.`,
+        upgrade: true,
+        limit: FREE_TRIAL_SCAN_LIMIT,
+        used: scansUsed,
+      });
+      return;
+    }
+  }
+
+  let worstLevel = "low";
+  let worstScore = 100;
+  const allFlags: Array<Record<string, unknown>> = [];
+  const pieceSummaries: Array<Record<string, unknown>> = [];
+  let hasAttachmentBlocker = false;
+  let primaryText = "";
+
+  for (const raw of rawPieces as MobilePieceInput[]) {
+    const source = typeof raw.source === "string" ? raw.source : "prompt";
+    const label = typeof raw.label === "string" ? raw.label : source;
+    const skipReason = typeof raw.skip_reason === "string" ? raw.skip_reason : null;
+    const text = typeof raw.text === "string" ? raw.text : "";
+
+    if (skipReason) {
+      hasAttachmentBlocker = true;
+      pieceSummaries.push({
+        source,
+        label,
+        level: "skipped",
+        issue_count: 0,
+        skip_reason: skipReason,
+      });
+      if (LEVEL_RANK[worstLevel] < LEVEL_RANK.medium) worstLevel = "medium";
+      continue;
+    }
+
+    if (!text.trim()) continue;
+    if (text.length > MAX_PIECE_TEXT_LENGTH) {
+      res.status(400).json({ error: `Each piece must be ${MAX_PIECE_TEXT_LENGTH} characters or fewer` });
+      return;
+    }
+    if (source === "prompt" && !primaryText) primaryText = text;
+
+    const analysis = analyzeText(text);
+    const risk = calculateRiskScore(analysis.flags);
+    if ((LEVEL_RANK[risk.level] ?? 0) > (LEVEL_RANK[worstLevel] ?? 0)) {
+      worstLevel = risk.level;
+      worstScore = risk.score;
+    } else if (risk.level === worstLevel && risk.score < worstScore) {
+      worstScore = risk.score;
+    }
+
+    for (const flag of analysis.flags) {
+      allFlags.push({
+        ...flag,
+        detail: `[${label}] ${flag.detail || flag.type}`,
+      });
+    }
+
+    pieceSummaries.push({
+      source,
+      label,
+      level: risk.level,
+      issue_count: analysis.flags.length,
+    });
+  }
+
+  const storedContent = (primaryText || "multi-piece scan").substring(0, 200);
+  const [scan] = await db
+    .insert(personalScansTable)
+    .values({
+      userId,
+      content: storedContent,
+      riskScore: worstScore,
+      flags: JSON.stringify(allFlags.slice(0, 50)),
+      suggestions: JSON.stringify([]),
+      level: worstLevel,
+    })
+    .returning();
+
+  res.json({
+    id: scan.id,
+    riskScore: worstScore,
+    level: worstLevel,
+    flags: allFlags,
+    pieces: pieceSummaries,
+    has_attachment_blocker: hasAttachmentBlocker,
+  });
+});
+
+router.post("/outcome", async (req: Request, res: Response) => {
+  if (!requireMobileAuth(req, res)) return;
+  const action = typeof req.body?.action === "string" ? req.body.action : "unknown";
+  const level = typeof req.body?.level === "string" ? req.body.level : "low";
+  const source = typeof req.body?.source === "string" ? req.body.source : "android";
+  res.json({ recorded: true, action, level, source });
 });
 
 export { isGooglePlaySubscription };

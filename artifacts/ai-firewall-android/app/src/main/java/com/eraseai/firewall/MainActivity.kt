@@ -7,7 +7,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -78,11 +80,18 @@ import com.eraseai.firewall.data.MobileSessionStore
 import com.eraseai.firewall.data.PlayProduct
 import com.eraseai.firewall.data.ProtectedApp
 import com.eraseai.firewall.data.ProtectedAppsStore
+import com.eraseai.firewall.data.DatasetAnalysisResult
+import com.eraseai.firewall.data.DatasetApi
+import com.eraseai.firewall.data.DatasetUploadResult
+import com.eraseai.firewall.data.ScanPiece
 import com.eraseai.firewall.data.ScanApi
 import com.eraseai.firewall.data.ScanHistoryItem
 import com.eraseai.firewall.data.ScanResult
 import com.eraseai.firewall.data.loadInstalledApps
+import com.eraseai.firewall.ui.BrandedSplashScreen
+import com.eraseai.firewall.ui.DatasetSanitizerScreen
 import com.eraseai.firewall.ui.theme.EraseAIFirewallTheme
+import java.io.File
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -90,7 +99,7 @@ import java.io.InputStreamReader
 private const val MAX_SCAN_TEXT_LENGTH = 5000
 private const val INTERNAL_RELEASE_NOTES = "Play internal build: dual-rail billing (Google Play on Android, Stripe on web), 7-day trial, Accessibility AI firewall, share-sheet scan/sanitize, protected LLM app sync."
 
-private enum class Screen { Splash, Login, Dashboard, Subscription, AccessibilityGuide, ProtectedApps, ManualScan, History, Settings, Diagnostics, Privacy }
+private enum class Screen { Splash, Login, Dashboard, Subscription, AccessibilityGuide, ProtectedApps, ManualScan, History, Settings, Diagnostics, Privacy, DatasetSanitizer }
 
 class MainActivity : ComponentActivity() {
   private var pendingSharedText by mutableStateOf<String?>(null)
@@ -147,6 +156,7 @@ private fun EraseAIFirewallApp(
   val apiClient = remember { ApiClient(sessionStore) }
   val authApi = remember { AuthApi(apiClient, sessionStore) }
   val scanApi = remember { ScanApi(apiClient) }
+  val datasetApi = remember { DatasetApi(apiClient) }
   val billingApi = remember { BillingApi(apiClient) }
   val entitlementRepo = remember { EntitlementRepository(apiClient) }
   val historyRepo = remember { HistoryRepository(apiClient) }
@@ -167,6 +177,58 @@ private fun EraseAIFirewallApp(
   var playProducts by remember { mutableStateOf<List<PlayProduct>>(emptyList()) }
   var billingPeriod by remember { mutableStateOf("monthly") }
   var billingMessage by remember { mutableStateOf<String?>(null) }
+  var attachmentPieces by remember { mutableStateOf<List<ScanPiece>>(emptyList()) }
+  var multiScanResult by remember { mutableStateOf<ScanResult?>(null) }
+  var datasetUpload by remember { mutableStateOf<DatasetUploadResult?>(null) }
+  var datasetAnalysis by remember { mutableStateOf<DatasetAnalysisResult?>(null) }
+  var datasetStatus by remember { mutableStateOf<String?>(null) }
+  var datasetDownload by remember { mutableStateOf<File?>(null) }
+
+  val datasetPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    if (uri == null) return@rememberLauncherForActivityResult
+    scope.launch {
+      loading = true
+      error = null
+      datasetStatus = null
+      datasetAnalysis = null
+      datasetDownload = null
+      runCatching {
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: "dataset.txt"
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+          ?: throw IllegalStateException("Could not read file")
+        datasetApi.upload(name, bytes).getOrThrow()
+      }.onSuccess {
+        datasetUpload = it
+        datasetStatus = "Uploaded ${it.rowCount} rows"
+      }.onFailure {
+        error = it.safeMessage()
+        protectedStore.saveLastErrorCategory(it.errorCategory())
+      }
+      loading = false
+    }
+  }
+
+  val attachmentPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    if (uri == null) return@rememberLauncherForActivityResult
+    scope.launch {
+      runCatching {
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: "attachment.txt"
+        val text = context.contentResolver.openInputStream(uri)?.use { stream ->
+          BufferedReader(InputStreamReader(stream)).readText().take(MAX_SCAN_TEXT_LENGTH)
+        }.orEmpty()
+        if (text.isBlank()) {
+          attachmentPieces = attachmentPieces + ScanPiece(
+            source = "file:$name",
+            label = name,
+            text = "",
+            skipReason = "File content not readable as text ($name). Review before sending.",
+          )
+        } else {
+          attachmentPieces = attachmentPieces + ScanPiece(source = "file:$name", label = name, text = text)
+        }
+      }.onFailure { error = it.safeMessage() }
+    }
+  }
 
   fun refreshEntitlement() {
     scope.launch {
@@ -274,7 +336,7 @@ private fun EraseAIFirewallApp(
   ) { padding ->
     Surface(Modifier.fillMaxSize().padding(padding), color = MaterialTheme.colorScheme.background) {
       when (screen) {
-        Screen.Splash -> LoadingScreen()
+        Screen.Splash -> BrandedSplashScreen()
         Screen.Login -> LoginScreen(loading, error, onLogin = { email, password ->
           scope.launch {
             loading = true
@@ -317,6 +379,7 @@ private fun EraseAIFirewallApp(
           onEnable = { screen = Screen.AccessibilityGuide },
           onApps = { apps = loadInstalledApps(context); screen = Screen.ProtectedApps },
           onManual = { screen = Screen.ManualScan },
+          onDatasetSanitizer = { screen = Screen.DatasetSanitizer },
           onBilling = { screen = Screen.Subscription },
           onHistory = {
             scope.launch {
@@ -351,28 +414,55 @@ private fun EraseAIFirewallApp(
           protectedStore.setSelectedPackages(selectedPackages)
           scope.launch { protectedStore.pushToBackend(apiClient) }
         }
-        Screen.ManualScan -> ManualScanScreen(manualText, scanResult, redactedText, loading, error, entitlement, onTextChange = {
-          manualText = it.take(MAX_SCAN_TEXT_LENGTH)
-          scanResult = null
-          redactedText = null
-        }, onScan = {
-          scope.launch {
-            loading = true
-            error = null
+        Screen.ManualScan -> ManualScanScreen(
+          manualText,
+          scanResult ?: multiScanResult,
+          redactedText,
+          loading,
+          error,
+          entitlement,
+          attachmentPieces,
+          onTextChange = {
+            manualText = it.take(MAX_SCAN_TEXT_LENGTH)
+            scanResult = null
+            multiScanResult = null
             redactedText = null
-            val scanText = manualText.take(MAX_SCAN_TEXT_LENGTH)
-            manualText = scanText
-            scanApi.scan(scanText, source = "android_share_or_manual").onSuccess { result ->
-              scanResult = result
-              protectedStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
-              if (result.findings.isNotEmpty() && entitlement?.redaction == true) {
-                scanApi.rewrite(scanText, result.findings).onSuccess { redactedText = it }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
+          },
+          onAddAttachment = { attachmentPicker.launch("*/*") },
+          onClearAttachments = { attachmentPieces = emptyList() },
+          onScan = {
+            scope.launch {
+              loading = true
+              error = null
+              redactedText = null
+              val scanText = manualText.take(MAX_SCAN_TEXT_LENGTH)
+              manualText = scanText
+              if (attachmentPieces.isEmpty()) {
+                scanApi.scan(scanText, source = "android_share_or_manual").onSuccess { result ->
+                  scanResult = result
+                  multiScanResult = null
+                  protectedStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
+                  if (result.findings.isNotEmpty() && entitlement?.redaction == true) {
+                    scanApi.rewrite(scanText, result.findings).onSuccess { redactedText = it }
+                      .onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
+                  }
+                  refreshEntitlement()
+                }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
+              } else {
+                scanApi.scanAttachments(scanText, attachmentPieces, source = "android_share_or_manual").onSuccess { multi ->
+                  multiScanResult = multi.result
+                  scanResult = null
+                  protectedStore.saveLastScanSummary(multi.result.summary(), multi.result.diagnosticsType())
+                  if (multi.result.findings.isNotEmpty() && entitlement?.redaction == true) {
+                    scanApi.rewrite(scanText, multi.result.findings).onSuccess { redactedText = it }
+                      .onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
+                  }
+                  refreshEntitlement()
+                }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
               }
-              refreshEntitlement()
-            }.onFailure { error = it.safeMessage(); protectedStore.saveLastErrorCategory(it.errorCategory()) }
-            loading = false
-          }
-        }, onLoadSample = {
+              loading = false
+            }
+          }, onLoadSample = {
           manualText = BuildConfig.QA_SAMPLE_TEXT
           scanResult = null
           redactedText = null
@@ -404,6 +494,64 @@ private fun EraseAIFirewallApp(
           onContinue = { screen = Screen.Subscription },
           onOpenPolicy = { openUrl(context, BuildConfig.PRIVACY_URL) },
         )
+        Screen.DatasetSanitizer -> DatasetSanitizerScreen(
+          loading = loading,
+          error = error,
+          upload = datasetUpload,
+          analysis = datasetAnalysis,
+          status = datasetStatus,
+          downloadedFile = datasetDownload,
+          onPickFile = { datasetPicker.launch("*/*") },
+          onAnalyze = {
+            val upload = datasetUpload ?: return@DatasetSanitizerScreen
+            scope.launch {
+              loading = true
+              error = null
+              datasetApi.analyze(upload.datasetId).onSuccess {
+                datasetAnalysis = it
+                datasetStatus = "Found ${it.totalIssues} issues"
+              }.onFailure {
+                error = it.safeMessage()
+                protectedStore.saveLastErrorCategory(it.errorCategory())
+              }
+              loading = false
+            }
+          },
+          onApplyFixes = {
+            val upload = datasetUpload ?: return@DatasetSanitizerScreen
+            val analysis = datasetAnalysis ?: return@DatasetSanitizerScreen
+            scope.launch {
+              loading = true
+              error = null
+              val issueTypes = analysis.summary.map { it.type }
+              datasetApi.applyAllSuggestions(upload.datasetId, issueTypes).onSuccess {
+                datasetStatus = "Applied fixes to ${it.affectedCount} rows (v${it.versionNumber})"
+              }.onFailure {
+                error = it.safeMessage()
+                protectedStore.saveLastErrorCategory(it.errorCategory())
+              }
+              loading = false
+            }
+          },
+          onDownload = {
+            val upload = datasetUpload ?: return@DatasetSanitizerScreen
+            scope.launch {
+              loading = true
+              error = null
+              val dir = File(context.cacheDir, "datasets").apply { mkdirs() }
+              val destination = File(dir, "${upload.datasetId}_clean.${upload.format}")
+              datasetApi.downloadClean(upload.datasetId, destination).onSuccess {
+                datasetDownload = destination
+                datasetStatus = "Downloaded cleaned file"
+              }.onFailure {
+                error = it.safeMessage()
+                protectedStore.saveLastErrorCategory(it.errorCategory())
+              }
+              loading = false
+            }
+          },
+          onShareDownload = {},
+        )
       }
     }
   }
@@ -411,11 +559,7 @@ private fun EraseAIFirewallApp(
 
 @Composable
 private fun LoadingScreen() {
-  Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-    CircularProgressIndicator()
-    Spacer(Modifier.height(16.dp))
-    Text("Loading EraseAI Firewall")
-  }
+  BrandedSplashScreen()
 }
 
 @Composable
@@ -455,6 +599,7 @@ private fun DashboardScreen(
   onEnable: () -> Unit,
   onApps: () -> Unit,
   onManual: () -> Unit,
+  onDatasetSanitizer: () -> Unit,
   onBilling: () -> Unit,
   onHistory: () -> Unit,
   onSettings: () -> Unit,
@@ -483,6 +628,7 @@ private fun DashboardScreen(
     item { Button(enabled = entitlement?.accessibilityFirewall != false, onClick = onEnable, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Shield, null); Spacer(Modifier.width(8.dp)); Text("Enable AI Firewall") } }
     item { OutlinedButton(onClick = onApps, modifier = Modifier.fillMaxWidth()) { Text("Choose Protected Apps") } }
     item { OutlinedButton(enabled = entitlement?.manualScan != false, onClick = onManual, modifier = Modifier.fillMaxWidth()) { Text("Manual / Share Scan") } }
+    item { OutlinedButton(onClick = onDatasetSanitizer, modifier = Modifier.fillMaxWidth()) { Text("Dataset Sanitizer") } }
     item { OutlinedButton(enabled = entitlement?.history != false, onClick = onHistory, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.History, null); Spacer(Modifier.width(8.dp)); Text("Scanner History") } }
     item { OutlinedButton(onClick = onBilling, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.OpenInBrowser, null); Spacer(Modifier.width(8.dp)); Text("Trial & Subscription") } }
     item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { TextButton(onRefresh) { Text("Refresh") }; TextButton(onPrivacy) { Text("Privacy") } } }
@@ -551,7 +697,12 @@ private fun SubscriptionScreen(
 private fun AccessibilityGuideScreen(enabled: Boolean, onOpenSettings: () -> Unit, onChooseApps: () -> Unit) {
   LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
     item { Text("Enable Accessibility", style = MaterialTheme.typography.headlineSmall) }
-    item { Text("EraseAI Firewall uses Android Accessibility permission only to inspect text you are actively entering in selected AI apps, so it can warn or redact sensitive data before it is sent.") }
+    item { Text("EraseAI intercepts Send in ChatGPT, Claude, Gemini, and other selected AI apps. You'll see Cancel, Sanitize, or Send Anyway before risky prompts leave your phone.") }
+    item { Text("Setup checklist:") }
+    item { Text("1. Open Accessibility settings and enable EraseAI Firewall.") }
+    item { Text("2. Choose protected AI apps (ChatGPT, Claude, Gemini recommended first).") }
+    item { Text("3. Turn on firewall scanning from the home screen.") }
+    item { Text("4. Type a prompt and tap Send — EraseAI scans before it goes out.") }
     item { Text("Status: ${if (enabled) "Enabled" else "Not enabled"}") }
     item { Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text("Open Accessibility Settings") } }
     item { OutlinedButton(onClick = onChooseApps, modifier = Modifier.fillMaxWidth()) { Text("Choose Apps") } }
@@ -585,15 +736,31 @@ private fun ManualScanScreen(
   loading: Boolean,
   error: String?,
   entitlement: EntitlementState?,
+  attachments: List<ScanPiece>,
   onTextChange: (String) -> Unit,
+  onAddAttachment: () -> Unit,
+  onClearAttachments: () -> Unit,
   onScan: () -> Unit,
   onLoadSample: () -> Unit,
   onManageBilling: () -> Unit,
 ) {
   val clipboard = LocalClipboardManager.current
   LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    item { Text("Paste a prompt or share text/JSON uploads into EraseAI to sanitize before sending to a public LLM.") }
+    item { Text("Paste a prompt or share text/JSON/CSV uploads into EraseAI. Add attachment files for multi-piece scanning before sending to a public LLM.") }
     item { OutlinedTextField(text, onTextChange, Modifier.fillMaxWidth().height(180.dp), label = { Text("Prompt or uploaded text") }, minLines = 6) }
+    item {
+      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = onAddAttachment, enabled = !loading) { Text("Add attachment") }
+        if (attachments.isNotEmpty()) {
+          TextButton(onClick = onClearAttachments) { Text("Clear ${attachments.size} attachment(s)") }
+        }
+      }
+    }
+    if (attachments.isNotEmpty()) {
+      items(attachments) { piece ->
+        StatusCard(piece.label, piece.skipReason ?: "${piece.text.length} chars scanned")
+      }
+    }
     if (error != null) item { ErrorCard(error) }
     item { Button(enabled = !loading && text.length >= 3 && entitlement?.manualScan != false, onClick = onScan, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Security, null); Spacer(Modifier.width(8.dp)); Text(if (loading) "Scanning" else "Scan & sanitize check") } }
     if (BuildConfig.DEBUG) item { TextButton(onClick = onLoadSample, enabled = !loading) { Text("Load QA sample") } }
@@ -705,6 +872,7 @@ private fun Screen.title(): String = when (this) {
   Screen.AccessibilityGuide -> "Enable Accessibility"
   Screen.ProtectedApps -> "Protected Apps"
   Screen.ManualScan -> "Manual Scan"
+  Screen.DatasetSanitizer -> "Dataset Sanitizer"
   Screen.History -> "Scanner History"
   Screen.Settings -> "Settings"
   Screen.Diagnostics -> "Diagnostics"
@@ -727,20 +895,6 @@ private fun Throwable.errorCategory(): String = when (this) {
   is ApiError.Network -> "network"
   is ApiError.Server -> "server"
   else -> "unknown"
-}
-
-private fun ScanResult.summary(): String = when {
-  findings.isEmpty() -> "Allowed"
-  action == "block" -> "Blocked sensitive prompt"
-  action == "redact" -> "Redaction recommended"
-  else -> "Warning shown"
-}
-
-private fun ScanResult.diagnosticsType(): String = when {
-  findings.isEmpty() -> "allow"
-  action == "block" -> "block"
-  action == "redact" -> "redact"
-  else -> "warn"
 }
 
 private fun buildDiagnosticsReport(

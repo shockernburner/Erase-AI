@@ -4,6 +4,7 @@ import com.eraseai.firewall.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -33,6 +34,60 @@ class ApiClient(private val sessionStore: MobileSessionStore) {
 
   suspend fun post(path: String, body: JSONObject, includeAuth: Boolean = true): JSONObject =
     request("POST", path, body, includeAuth)
+
+  suspend fun uploadMultipart(path: String, fileName: String, bytes: ByteArray, mimeType: String = "application/octet-stream"): JSONObject =
+    withContext(Dispatchers.IO) {
+      val requestBuilder = Request.Builder()
+        .url("${BuildConfig.API_BASE_URL}$path")
+        .header("Accept", "application/json")
+
+      sessionStore.getToken()?.let { requestBuilder.header("Authorization", "Bearer $it") }
+
+      val body = MultipartBody.Builder()
+        .setType(MultipartBody.FORM)
+        .addFormDataPart(
+          "file",
+          fileName,
+          bytes.toRequestBody(mimeType.toMediaType()),
+        )
+        .build()
+
+      val response = try {
+        client.newCall(requestBuilder.post(body).build()).execute()
+      } catch (err: IOException) {
+        throw ApiError.Network("Network unavailable. Check your connection and try again.")
+      }
+
+      response.use {
+        val responseText = it.body?.string().orEmpty()
+        val responseJson = responseText.takeIf { text -> text.isNotBlank() }?.let(::JSONObject) ?: JSONObject()
+        if (it.isSuccessful) return@withContext responseJson
+
+        val message = responseJson.optString("message", responseJson.optString("error", "Request failed"))
+        throw when (it.code) {
+          401 -> ApiError.Unauthorized()
+          403, 429 -> ApiError.UpgradeRequired(message)
+          404 -> ApiError.NotFound(message)
+          in 500..599 -> ApiError.Server("EraseAI is temporarily unavailable. Please try again.")
+          else -> ApiError.Server(message)
+        }
+      }
+    }
+
+  suspend fun downloadToFile(path: String, destination: java.io.File): Result<Unit> = runCatching {
+    withContext(Dispatchers.IO) {
+      val requestBuilder = Request.Builder()
+        .url("${BuildConfig.API_BASE_URL}$path")
+        .header("Accept", "*/*")
+      sessionStore.getToken()?.let { requestBuilder.header("Authorization", "Bearer $it") }
+      val response = client.newCall(requestBuilder.get().build()).execute()
+      response.use {
+        if (!it.isSuccessful) throw ApiError.Server("Download failed")
+        val body = it.body ?: throw ApiError.Server("Download failed")
+        destination.outputStream().use { out -> body.byteStream().copyTo(out) }
+      }
+    }
+  }
 
   private suspend fun request(
     method: String,

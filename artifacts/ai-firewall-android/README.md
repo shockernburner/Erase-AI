@@ -7,10 +7,15 @@ Dual-rail billing:
 
 ## Scope
 
-- Backend scanning for prompts and shared text/JSON uploads.
+- Backend scanning for prompts and shared text/JSON/CSV uploads.
+- **Send gate (Accessibility):** intercepts Send / Enter in protected AI apps with Cancel · Sanitize · Send Anyway · safe auto-send; high-risk prompts are blocked from Send Anyway.
+- **Multi-piece scans:** prompt + attachment files via `/api/mobile/analyze-pieces`.
+- **Dataset sanitizer:** upload CSV/JSON/TXT → analyze → apply fixes → download cleaned file (`/api/datasets/*`).
 - Mobile bearer session tokens from `/api/mobile-auth/*`.
-- Play-safe Accessibility guard for user-selected AI apps.
+- Play-safe Accessibility guard for user-selected AI apps (ChatGPT, Claude, Gemini adapters first).
 - Google Play purchase verification via `POST /api/mobile/play/verify`.
+
+Real-device QA checklist: [REAL_DEVICE_QA_MATRIX.md](./REAL_DEVICE_QA_MATRIX.md)
 
 ## Play Console subscription IDs
 

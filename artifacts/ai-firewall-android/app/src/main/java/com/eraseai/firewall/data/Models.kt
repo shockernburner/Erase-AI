@@ -46,6 +46,40 @@ data class ScanResult(
   val findings: List<ScanFinding>,
   val redactedText: String?,
   val message: String,
+) {
+  fun summary(): String = when {
+    findings.isEmpty() -> "Allowed"
+    action == "block" -> "Blocked sensitive prompt"
+    action == "redact" -> "Redaction recommended"
+    else -> "Warning shown"
+  }
+
+  fun diagnosticsType(): String = when {
+    findings.isEmpty() -> "allow"
+    action == "block" -> "block"
+    action == "redact" -> "redact"
+    else -> "warn"
+  }
+}
+
+data class ScanPiece(
+  val source: String,
+  val label: String,
+  val text: String,
+  val skipReason: String? = null,
+)
+
+data class PieceScanSummary(
+  val source: String,
+  val label: String,
+  val level: String,
+  val issueCount: Int,
+  val skipReason: String? = null,
+)
+
+data class MultiScanResult(
+  val result: ScanResult,
+  val pieces: List<PieceScanSummary>,
 )
 
 data class ScanHistoryItem(
