@@ -14,3 +14,4 @@
 - [Headless brand-asset rendering](headless-asset-rendering.md) — chromium blanks tiny screenshots (render big, magick downscale); SVG logos need outlined text via opentype.js, not <text>+font @import.
 - [Workflow port cleanup](workflow-port-cleanup.md) — fuser/lsof aren't on workflow PATH; free busy ports via the Node /proc-scanning script, not shell kill-by-port.
 - [Slides artifact wouter catalog](slides-artifact-wouter-catalog.md) — new slides scaffold pins `wouter: catalog:`; if the workspace catalog lacks wouter, pnpm install aborts → add `wouter: ^x` to pnpm-workspace.yaml catalog (version usually already in lockfile).
+- [Post-pull build verification](post-pull-build-verification.md) — after remote syncs, reconcile the lockfile and run the real bundle build; tests/type-check alone can miss runtime export failures.

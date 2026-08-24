@@ -110,4 +110,5 @@ export async function verifyGooglePlayPurchase(input: PlayVerifyInput): Promise<
   return decision;
 }
 
+export { validatePlayVerifyInput } from "./googlePlayBilling-source.mjs";
 export type { PlayVerifyDecision, PlayVerifyFailure, PlayVerifyInput, PlayVerifyResult };

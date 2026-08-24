@@ -111,7 +111,6 @@ router.get("/entitlement", async (req: Request, res: Response) => {
       monthly_scans_used: scansUsed,
       features: mobileFeaturesForPlan(plan),
       billing: {
-        rail: "google_play",
         ...playBilling,
         web_stripe_urls: buildWebStripeBillingUrls(getWebBaseUrl()),
       },
@@ -172,10 +171,7 @@ router.post("/play/verify", async (req: Request, res: Response) => {
 
 router.get("/billing-url", (req: Request, res: Response) => {
   if (!requireMobileAuth(req, res)) return;
-  res.json({
-    rail: "google_play",
-    ...buildMobilePlayBilling(),
-  });
+  res.json(buildMobilePlayBilling());
 });
 
 router.get("/protected-apps", async (req: Request, res: Response) => {
