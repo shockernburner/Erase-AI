@@ -9,12 +9,17 @@ data class AttachmentHint(
 )
 
 /**
- * Best-effort attachment detection from the accessibility tree. Native apps rarely
- * expose file bytes; we surface chip/file names so multi-piece scans can flag them.
+ * Best-effort attachment detection from the accessibility tree.
+ *
+ * Native LLM apps do not expose file bytes to Accessibility. Any detected
+ * attachment is treated as unscanned so the send gate requires Cancel or an
+ * explicit Send Anyway — never safe auto-send or "Sanitize & Send".
  */
 object AttachmentHints {
-  private val fileSuffixes = listOf(".pdf", ".csv", ".json", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".md")
-  private val unsupportedSuffixes = setOf(".pdf", ".doc", ".docx", ".xls", ".xlsx")
+  private val fileSuffixes = listOf(
+    ".pdf", ".csv", ".json", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".md",
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".zip",
+  )
 
   fun extract(root: AccessibilityNodeInfo?): List<AttachmentHint> {
     if (root == null) return emptyList()
@@ -30,15 +35,12 @@ object AttachmentHints {
       if (candidate.isBlank()) return@forEach
       val label = normalizeLabel(candidate) ?: return@forEach
       if (found.containsKey(label)) return@forEach
-      val suffix = fileSuffixes.firstOrNull { label.endsWith(it, ignoreCase = true) }
-      val skipReason = when {
-        suffix != null && unsupportedSuffixes.any { label.endsWith(it, ignoreCase = true) } ->
-          "Attachment type not scannable on device ($label). Review before sending."
-        candidate.contains("attachment", ignoreCase = true) && suffix == null ->
-          "Attachment detected ($label). Content not readable — review before sending."
-        else -> null
-      }
-      found[label] = AttachmentHint(label = label, source = "file:$label", skipReason = skipReason)
+      found[label] = AttachmentHint(
+        label = label,
+        source = "file:$label",
+        skipReason = "Attachment \"$label\" cannot be scanned inside the AI app. " +
+          "Remove it, or Cancel / Send Anyway after reviewing the risk yourself.",
+      )
     }
 
     for (index in 0 until node.childCount) {

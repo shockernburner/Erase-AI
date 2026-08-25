@@ -270,6 +270,7 @@ router.post("/analyze-pieces", requireActivePlan(), async (req: Request, res: Re
   const allFlags: Array<Record<string, unknown>> = [];
   const pieceSummaries: Array<Record<string, unknown>> = [];
   let hasAttachmentBlocker = false;
+  let blockSend = false;
   let primaryText = "";
 
   for (const raw of rawPieces as MobilePieceInput[]) {
@@ -300,6 +301,7 @@ router.post("/analyze-pieces", requireActivePlan(), async (req: Request, res: Re
 
     const analysis = analyzeText(text);
     const risk = calculateRiskScore(analysis.flags);
+    if (risk.blockSend) blockSend = true;
     if ((LEVEL_RANK[risk.level] ?? 0) > (LEVEL_RANK[worstLevel] ?? 0)) {
       worstLevel = risk.level;
       worstScore = risk.score;
@@ -319,7 +321,13 @@ router.post("/analyze-pieces", requireActivePlan(), async (req: Request, res: Re
       label,
       level: risk.level,
       issue_count: analysis.flags.length,
+      block_send: risk.blockSend,
     });
+  }
+
+  if (blockSend) {
+    worstLevel = "high";
+    worstScore = Math.min(worstScore, 30);
   }
 
   const storedContent = (primaryText || "multi-piece scan").substring(0, 200);
@@ -339,6 +347,7 @@ router.post("/analyze-pieces", requireActivePlan(), async (req: Request, res: Re
     id: scan.id,
     riskScore: worstScore,
     level: worstLevel,
+    block_send: blockSend,
     flags: allFlags,
     pieces: pieceSummaries,
     has_attachment_blocker: hasAttachmentBlocker,

@@ -1,8 +1,10 @@
 package com.eraseai.firewall.ui
 
 import android.content.Intent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Upload
@@ -24,35 +28,73 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.eraseai.firewall.R
 import com.eraseai.firewall.data.DatasetAnalysisResult
 import com.eraseai.firewall.data.DatasetUploadResult
 import java.io.File
 
+private val SplashTop = Color(0xFF0B111E)
+private val SplashMid = Color(0xFF0F172A)
+private val SplashBottom = Color(0xFF070A13)
+private val SplashAccent = Color(0xFF0DCCF2)
+private val SplashMuted = Color(0xFF94A3B8)
+private val SplashTitle = Color(0xFFF8FAFC)
+
 @Composable
 fun BrandedSplashScreen() {
-  Column(
+  Box(
     modifier = Modifier
       .fillMaxSize()
       .background(
-        Brush.verticalGradient(
-          listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF312E81)),
-        ),
-      )
-      .padding(24.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center,
+        Brush.verticalGradient(listOf(SplashTop, SplashMid, SplashBottom)),
+      ),
   ) {
-    Text("EraseAI", style = MaterialTheme.typography.headlineLarge, color = Color.White)
-    Text("AI Firewall", style = MaterialTheme.typography.titleLarge, color = Color(0xFFCBD5E1))
-    Spacer(Modifier.height(24.dp))
-    CircularProgressIndicator(color = Color(0xFF93C5FD))
-    Spacer(Modifier.height(16.dp))
-    Text("Protecting prompts before they reach AI apps", color = Color(0xFF94A3B8))
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(horizontal = 28.dp, vertical = 40.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center,
+    ) {
+      Image(
+        painter = painterResource(id = R.drawable.eraseai_shield),
+        contentDescription = "EraseAI shield",
+        modifier = Modifier
+          .size(120.dp)
+          .clip(RoundedCornerShape(28.dp)),
+        contentScale = ContentScale.Fit,
+      )
+      Spacer(Modifier.height(28.dp))
+      Text(
+        text = "EraseAI",
+        style = MaterialTheme.typography.headlineLarge,
+        color = SplashTitle,
+        textAlign = TextAlign.Center,
+      )
+      Spacer(Modifier.height(12.dp))
+      Text(
+        text = "EraseAI — the firewall that stops unwanted data from reaching public AI apps",
+        style = MaterialTheme.typography.bodyLarge,
+        color = SplashMuted,
+        textAlign = TextAlign.Center,
+      )
+      Spacer(Modifier.height(32.dp))
+      CircularProgressIndicator(
+        color = SplashAccent,
+        trackColor = Color(0xFF1E293B),
+        strokeWidth = 3.dp,
+        modifier = Modifier.size(36.dp),
+      )
+    }
   }
 }
 
@@ -88,7 +130,6 @@ fun DatasetSanitizerScreen(
     item {
       OutlinedButton(onClick = onPickFile, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
         androidx.compose.material3.Icon(Icons.Default.Upload, null)
-        Spacer(Modifier.height(0.dp))
         Text("  Choose file")
       }
     }

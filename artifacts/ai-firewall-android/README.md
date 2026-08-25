@@ -15,7 +15,20 @@ Dual-rail billing:
 - Play-safe Accessibility guard for user-selected AI apps (ChatGPT, Claude, Gemini adapters first).
 - Google Play purchase verification via `POST /api/mobile/play/verify`.
 
-Real-device QA checklist: [REAL_DEVICE_QA_MATRIX.md](./REAL_DEVICE_QA_MATRIX.md)
+## Safety policy (text path)
+
+Send-gate uses `/api/personal/analyze` and `/api/mobile/analyze-pieces` with:
+
+| Category | Behavior |
+|---|---|
+| PII / secrets | Warn / redact |
+| Child sexual exploitation | **Block** — Cancel only (no Send Anyway, no Sanitize & Send) |
+| Mass-harm / attack planning | **Block** |
+| Firearm + school/crowd timing combo | **Block** (violence_intent) |
+| Firearm alone | Warn — Send Anyway allowed |
+| In-composer attachments | Always **unscanned** — Cancel or Send Anyway; never safe auto-send |
+
+Native apps do not expose attachment bytes to Accessibility, so EraseAI cannot fully block ChatGPT/Gemini file pickers — it gates **Send** after a chip is detected.
 
 ## Play Console subscription IDs
 

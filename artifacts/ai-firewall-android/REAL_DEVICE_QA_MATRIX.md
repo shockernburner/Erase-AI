@@ -19,6 +19,9 @@ Run this checklist on a physical Android device before promoting an internal tes
 | A4 | Tap Sanitize & Send | Prompt rewritten, send proceeds |
 | A5 | Tap Send Anyway (medium risk) | Message sends after confirmation |
 | A6 | Press Enter in composer (Gemini) | Same gate as send button |
+| A7 | Firearm + "when are most students at school" | **Blocked** — Cancel only (no Send Anyway / Sanitize & Send) |
+| A8 | Child-exploitation wording | **Blocked** — Cancel only |
+| A9 | Hunting rifle / novel research alone | Warn — Send Anyway allowed |
 
 ## Phase B — Attachments
 

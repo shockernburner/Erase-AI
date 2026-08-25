@@ -46,20 +46,34 @@ data class ScanResult(
   val findings: List<ScanFinding>,
   val redactedText: String?,
   val message: String,
+  /** Child safety / attack planning — hide Send Anyway and Sanitize & Send. */
+  val blockSend: Boolean = false,
+  val hasAttachmentBlocker: Boolean = false,
 ) {
   fun summary(): String = when {
-    findings.isEmpty() -> "Allowed"
-    action == "block" -> "Blocked sensitive prompt"
+    findings.isEmpty() && !hasAttachmentBlocker -> "Allowed"
+    blockSend || action == "block" -> "Blocked high-risk prompt"
+    hasAttachmentBlocker -> "Unscanned attachment — review required"
     action == "redact" -> "Redaction recommended"
     else -> "Warning shown"
   }
 
   fun diagnosticsType(): String = when {
-    findings.isEmpty() -> "allow"
-    action == "block" -> "block"
+    findings.isEmpty() && !hasAttachmentBlocker -> "allow"
+    blockSend || action == "block" -> "block"
+    hasAttachmentBlocker -> "attachment_review"
     action == "redact" -> "redact"
     else -> "warn"
   }
+
+  fun isHarmBlock(): Boolean =
+    blockSend || findings.any {
+      it.type.equals("CHILD_SAFETY", true) ||
+        it.type.equals("VIOLENCE_INTENT", true) ||
+        it.label.contains("mass-harm", true) ||
+        it.label.contains("Child-safety", true) ||
+        it.label.contains("Child sexual", true)
+    }
 }
 
 data class ScanPiece(

@@ -161,7 +161,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
         protectedAppsStore.saveLastScanSummary(multi.result.summary(), multi.result.diagnosticsType())
         overlayResult = multi.result
         overlayPieces = multi.pieces
-        if (multi.result.findings.isEmpty() && attachments.none { it.skipReason != null }) {
+        if (multi.result.findings.isEmpty() &&
+          !multi.result.hasAttachmentBlocker &&
+          attachments.none { it.skipReason != null }
+        ) {
           showSafeAutoSendOverlay(text, packageName, multi.result)
         } else {
           showGateOverlay(text, packageName, multi.result, multi.pieces, attachments)
@@ -192,25 +195,17 @@ class AiGuardAccessibilityService : AccessibilityService() {
         ),
       )
     }
+    // In-composer attachments are never readable via Accessibility — always skip.
     attachments.forEach { attachment ->
-      if (attachment.skipReason != null) {
-        pieces.add(
-          ScanPiece(
-            source = attachment.source,
-            label = attachment.label,
-            text = "",
-            skipReason = attachment.skipReason,
-          ),
-        )
-      } else {
-        pieces.add(
-          ScanPiece(
-            source = attachment.source,
-            label = attachment.label,
-            text = "Attachment: ${attachment.label}",
-          ),
-        )
-      }
+      pieces.add(
+        ScanPiece(
+          source = attachment.source,
+          label = attachment.label,
+          text = "",
+          skipReason = attachment.skipReason
+            ?: "Attachment \"${attachment.label}\" cannot be scanned inside the AI app.",
+        ),
+      )
     }
     return pieces
   }
@@ -291,22 +286,35 @@ class AiGuardAccessibilityService : AccessibilityService() {
       .joinToString { "${it.label} (${it.type})" }
       .ifBlank { "sensitive data" }
 
-    val hasFileBlocker = attachments.any { it.skipReason != null } ||
-      pieces.any { it.source.startsWith("file:") && it.level in setOf("medium", "high") }
+    val hasFileBlocker = result.hasAttachmentBlocker ||
+      attachments.any { it.skipReason != null } ||
+      pieces.any { it.skipReason != null }
 
-    val promptIsProblem = pieces.any { it.source == "prompt" && it.level in setOf("medium", "high") } ||
-      (result.findings.isNotEmpty() && pieces.none { it.source.startsWith("file:") })
+    val harmBlock = result.isHarmBlock() || result.blockSend
+    val blockSendAnyway = harmBlock || result.action == "block"
 
-    val blockSendAnyway = result.action == "block"
+    val promptIsProblem = !harmBlock && (
+      pieces.any { it.source == "prompt" && it.level in setOf("medium", "high") } ||
+        (result.findings.isNotEmpty() && pieces.none { it.source.startsWith("file:") })
+      )
+
     val title = when {
-      blockSendAnyway -> "High-risk data blocked"
-      result.findings.isEmpty() && attachments.any { it.skipReason != null } -> "Review attachments"
+      harmBlock -> "Send blocked — safety risk"
+      blockSendAnyway -> "High-risk content blocked"
+      hasFileBlocker && result.findings.isEmpty() -> "Unscanned attachment"
       else -> "Sensitive data detected"
     }
     val body = when {
-      blockSendAnyway -> "EraseAI blocked this send due to high-risk content: $summary. Sanitize or cancel."
-      result.findings.isEmpty() && attachments.any { it.skipReason != null } ->
-        "One or more attachments could not be scanned on-device. Review before sending."
+      harmBlock ->
+        "EraseAI blocked this send. Justification: $summary. " +
+          "Child-safety and attack-planning prompts cannot be sanitized and sent. Tap Cancel."
+      blockSendAnyway ->
+        "EraseAI blocked this send due to high-risk content: $summary. Cancel to stay safe."
+      hasFileBlocker && result.findings.isEmpty() ->
+        "An attachment was detected but cannot be scanned inside this AI app. " +
+          "Remove the file, Cancel, or explicitly Send Anyway after you review the risk."
+      hasFileBlocker ->
+        "EraseAI found $summary. Attachments are unscanned — Sanitize only rewrites the prompt text."
       else -> "EraseAI found $summary before sending to AI."
     }
 
@@ -318,7 +326,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
       result = result,
       pieces = pieces,
       showCancel = true,
-      showSanitize = promptIsProblem && result.findings.isNotEmpty(),
+      // Never offer Sanitize & Send for harm-intent blocks — rewriting does not make them safe.
+      showSanitize = promptIsProblem && result.findings.isNotEmpty() && !harmBlock,
       sanitizePromptOnly = hasFileBlocker,
       showSendAnyway = !blockSendAnyway,
       blockSendAnyway = blockSendAnyway,

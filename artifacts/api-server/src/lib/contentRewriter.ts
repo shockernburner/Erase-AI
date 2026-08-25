@@ -95,6 +95,14 @@ export function rewriteContent(text: string, flags: AnalysisFlag[]): string {
       }
       continue;
     }
+
+    // Harm-intent categories are not "fixed" by rewrite — strip matched span so
+    // leftover text cannot be auto-sent as if cleared. Callers should hide
+    // Sanitize & Send when block_send is true.
+    if (flag.type === "child_safety" || flag.type === "violence_intent" || flag.type === "weapons_harm") {
+      const re = new RegExp(escapeRegex(matched), "gi");
+      rewritten = rewritten.replace(re, "[removed]");
+    }
   }
 
   rewritten = rewritten

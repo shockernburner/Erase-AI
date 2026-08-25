@@ -1,5 +1,14 @@
+export type AnalysisFlagType =
+  | "toxicity"
+  | "hate_speech"
+  | "pii"
+  | "bias"
+  | "child_safety"
+  | "violence_intent"
+  | "weapons_harm";
+
 export interface AnalysisFlag {
-  type: "toxicity" | "hate_speech" | "pii" | "bias";
+  type: AnalysisFlagType;
   severity: "low" | "medium" | "high";
   detail: string;
   matchedText: string;
@@ -21,7 +30,8 @@ export interface AnalysisResult {
 const TOXIC_PATTERNS: { pattern: RegExp; severity: "low" | "medium" | "high"; detail: string }[] = [
   { pattern: /\b(stupid|idiot|moron|dumb|loser|pathetic|worthless)\b/gi, severity: "medium", detail: "Insulting or demeaning language" },
   { pattern: /\b(shut\s+up|go\s+away|nobody\s+cares|you\s+suck)\b/gi, severity: "medium", detail: "Dismissive or hostile language" },
-  { pattern: /\b(kill\s+yourself|die|threat(en)?|destroy\s+you)\b/gi, severity: "high", detail: "Threatening or violent language" },
+  { pattern: /\b(kill\s+yourself|kys)\b/gi, severity: "high", detail: "Self-harm encouragement" },
+  { pattern: /\b(destroy\s+you|i\s+will\s+kill\s+you)\b/gi, severity: "high", detail: "Direct personal threat" },
   { pattern: /\b(trash|garbage|disgusting|gross|hideous)\b/gi, severity: "low", detail: "Mildly toxic language" },
   { pattern: /\b(scam(mer)?|fraud|fake|liar|cheat(er)?)\b/gi, severity: "medium", detail: "Accusatory language" },
 ];
@@ -55,14 +65,130 @@ const BIAS_PATTERNS: { pattern: RegExp; severity: "low" | "medium" | "high"; det
   { pattern: /\b(third[\s-]world|undeveloped|primitive)\b/gi, severity: "medium", detail: "Culturally biased terminology", suggestion: "Use 'developing nations' or 'low-income countries'" },
 ];
 
+/** Explicit child-sexual / exploitation language — block by default. */
+const CHILD_SAFETY_PATTERNS: { pattern: RegExp; severity: "high"; detail: string }[] = [
+  { pattern: /\b(child\s*porn|csam|cp\s+pics?|underage\s+(sex|nude|porn)|pedo(phile)?|lolita)\b/gi, severity: "high", detail: "Child sexual exploitation language" },
+  { pattern: /\b(sexual(?:ly)?\s+(?:attracted\s+to|interested\s+in)\s+(?:a\s+)?(?:child|kid|minor|teen(?:ager)?s?|girl|boy)\b)/gi, severity: "high", detail: "Sexual interest in a minor" },
+  { pattern: /\b((?:nude|naked|sexual)\s+(?:photos?|pics?|videos?|images?)\s+of\s+(?:a\s+)?(?:child|kid|minor|underage))\b/gi, severity: "high", detail: "Request for sexual images of a minor" },
+  { pattern: /\b(how\s+to\s+(?:groom|lure|seduce)\s+(?:a\s+)?(?:child|kid|minor|teen))\b/gi, severity: "high", detail: "Child grooming / exploitation guidance" },
+];
+
+/** Direct mass-harm / attack planning — block by default. */
+const VIOLENCE_INTENT_PATTERNS: { pattern: RegExp; severity: "high"; detail: string }[] = [
+  { pattern: /\b(mass\s+shooting|school\s+shooting|shoot\s+up\s+(?:a\s+)?(?:school|campus|mall|church))\b/gi, severity: "high", detail: "Mass shooting / attack planning language" },
+  { pattern: /\b(how\s+to\s+(?:build|make|assemble)\s+(?:a\s+)?(?:bomb|explosive|pipe\s+bomb|ied))\b/gi, severity: "high", detail: "Explosive device construction guidance" },
+  { pattern: /\b(kill\s+(?:as\s+many|everyone|students?|children|kids)\b)/gi, severity: "high", detail: "Mass-casualty harm language" },
+  { pattern: /\b(plan(?:ning)?\s+(?:an?\s+)?(?:attack|massacre|rampage))\b/gi, severity: "high", detail: "Attack planning language" },
+];
+
+/** Weapons mentions — medium alone; escalated when combined with soft targets. */
+const WEAPONS_PATTERNS: { pattern: RegExp; detail: string }[] = [
+  { pattern: /\b(firearm|handgun|shotgun|rifle|assault\s+rifle|ar-?15|glock|ammo|ammunition|silencer|suppressor)\b/gi, detail: "Firearm / ammunition reference" },
+  { pattern: /\b(buy\s+(?:a\s+)?gun|get\s+(?:a\s+)?gun|illegal\s+(?:gun|firearm)|ghost\s+gun)\b/gi, detail: "Firearm acquisition language" },
+];
+
+const SOFT_TARGET_PATTERNS: RegExp[] = [
+  /\b(school|campus|classroom|students?|kindergarten|elementary|high\s+school|university|college)\b/gi,
+  /\b(when\s+(?:are|is)\s+(?:the\s+)?(?:most|many|lots?\s+of)\s+(?:students?|kids|children)\b)/gi,
+  /\b((?:busiest|crowded|peak)\s+(?:time|hour|period).{0,40}(?:school|campus|students?|kids))\b/gi,
+  /\b(how\s+many\s+(?:students?|kids|children).{0,40}(?:school|campus|present|there))\b/gi,
+];
+
 function findMatches(text: string, pattern: RegExp): { match: string; start: number; end: number }[] {
   const results: { match: string; start: number; end: number }[] = [];
   const re = new RegExp(pattern.source, pattern.flags);
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     results.push({ match: m[0], start: m.index, end: m.index + m[0].length });
+    if (m.index === re.lastIndex) re.lastIndex++;
   }
   return results;
+}
+
+function pushFlags(
+  text: string,
+  patterns: { pattern: RegExp; severity: "low" | "medium" | "high"; detail: string }[],
+  type: AnalysisFlagType,
+  flags: AnalysisFlag[],
+  suggestions: AnalysisSuggestion[],
+  suggestionMessage: (match: string, detail: string) => string,
+) {
+  for (const { pattern, severity, detail } of patterns) {
+    for (const { match, start, end } of findMatches(text, pattern)) {
+      flags.push({ type, severity, detail, matchedText: match, position: { start, end } });
+      suggestions.push({
+        type,
+        message: suggestionMessage(match, detail),
+        original: match,
+        suggested: "[removed]",
+      });
+    }
+  }
+}
+
+function hasSoftTargetContext(text: string): { hit: boolean; match: string; start: number; end: number } {
+  for (const pattern of SOFT_TARGET_PATTERNS) {
+    const matches = findMatches(text, pattern);
+    if (matches.length > 0) {
+      return { hit: true, match: matches[0].match, start: matches[0].start, end: matches[0].end };
+    }
+  }
+  return { hit: false, match: "", start: 0, end: 0 };
+}
+
+/**
+ * Combo rule: firearm language + school/crowd-timing context → high-risk
+ * weapons_harm / violence_intent (block by default via riskScorer).
+ */
+function applyWeaponsSoftTargetCombo(
+  text: string,
+  flags: AnalysisFlag[],
+  suggestions: AnalysisSuggestion[],
+) {
+  const weaponHits: { match: string; start: number; end: number; detail: string }[] = [];
+  for (const { pattern, detail } of WEAPONS_PATTERNS) {
+    for (const hit of findMatches(text, pattern)) {
+      weaponHits.push({ ...hit, detail });
+    }
+  }
+  if (weaponHits.length === 0) return;
+
+  const soft = hasSoftTargetContext(text);
+  if (soft.hit) {
+    const spanStart = Math.min(weaponHits[0].start, soft.start);
+    const spanEnd = Math.max(weaponHits[0].end, soft.end);
+    const matchedText = text.slice(spanStart, spanEnd).slice(0, 120);
+    flags.push({
+      type: "violence_intent",
+      severity: "high",
+      detail: "Firearm language combined with school/crowd timing — possible mass-harm planning",
+      matchedText,
+      position: { start: spanStart, end: spanEnd },
+    });
+    suggestions.push({
+      type: "violence_intent",
+      message: "This prompt mixes weapons with school or crowd timing. Do not send. Seek help if you or someone else is in crisis.",
+      original: matchedText,
+      suggested: "[removed]",
+    });
+    return;
+  }
+
+  for (const hit of weaponHits) {
+    flags.push({
+      type: "weapons_harm",
+      severity: "medium",
+      detail: hit.detail,
+      matchedText: hit.match,
+      position: { start: hit.start, end: hit.end },
+    });
+    suggestions.push({
+      type: "weapons_harm",
+      message: `Review firearm-related content before sending to a public AI: "${hit.match}"`,
+      original: hit.match,
+      suggested: "[removed]",
+    });
+  }
 }
 
 export function analyzeText(text: string): AnalysisResult {
@@ -97,5 +223,40 @@ export function analyzeText(text: string): AnalysisResult {
     }
   }
 
+  pushFlags(
+    text,
+    CHILD_SAFETY_PATTERNS,
+    "child_safety",
+    flags,
+    suggestions,
+    (match) => `Child-safety risk — do not send: "${match}"`,
+  );
+
+  pushFlags(
+    text,
+    VIOLENCE_INTENT_PATTERNS,
+    "violence_intent",
+    flags,
+    suggestions,
+    (match) => `Violence / attack-planning risk — do not send: "${match}"`,
+  );
+
+  applyWeaponsSoftTargetCombo(text, flags, suggestions);
+
   return { flags, suggestions };
+}
+
+/** Categories that must never be "sanitized and sent" — Cancel only (or policy block). */
+export const BLOCK_BY_DEFAULT_TYPES: ReadonlySet<AnalysisFlagType> = new Set([
+  "child_safety",
+  "violence_intent",
+]);
+
+export function hasBlockByDefaultFlags(flags: AnalysisFlag[]): boolean {
+  return flags.some(
+    (f) =>
+      BLOCK_BY_DEFAULT_TYPES.has(f.type) ||
+      (f.type === "weapons_harm" && f.severity === "high") ||
+      (f.severity === "high" && (f.type === "hate_speech" || f.type === "child_safety" || f.type === "violence_intent")),
+  );
 }

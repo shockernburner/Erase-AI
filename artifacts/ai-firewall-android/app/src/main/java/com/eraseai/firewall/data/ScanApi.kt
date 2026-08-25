@@ -99,6 +99,7 @@ class ScanApi(private val apiClient: ApiClient) {
 fun JSONObject.toScanResult(originalText: String): ScanResult {
   val safetyScore = optInt("riskScore", 100)
   val level = optString("level", "low")
+  val blockSend = optBoolean("block_send", false)
   val findings = mutableListOf<ScanFinding>()
   val flags = optJSONArray("flags") ?: JSONArray()
   for (index in 0 until flags.length()) {
@@ -115,9 +116,13 @@ fun JSONObject.toScanResult(originalText: String): ScanResult {
     )
   }
 
+  val harmBlock = blockSend || findings.any {
+    it.type == "CHILD_SAFETY" || it.type == "VIOLENCE_INTENT"
+  }
+
   val action = when {
     findings.isEmpty() -> "allow"
-    level == "high" -> "block"
+    harmBlock || level == "high" -> "block"
     level == "medium" -> "redact"
     else -> "warn"
   }
@@ -126,17 +131,24 @@ fun JSONObject.toScanResult(originalText: String): ScanResult {
     id = optString("id", null),
     safetyScore = safetyScore,
     riskScore = (100 - safetyScore).coerceIn(0, 100),
-    level = level,
+    level = if (harmBlock) "high" else level,
     action = action,
     findings = findings,
     redactedText = null,
-    message = if (findings.isEmpty()) "No sensitive data detected." else "Sensitive data detected before sending to AI.",
+    message = when {
+      findings.isEmpty() -> "No sensitive data detected."
+      harmBlock -> "High-risk content blocked. Do not send this prompt to a public AI."
+      else -> "Sensitive data detected before sending to AI."
+    },
+    blockSend = harmBlock,
   )
 }
 
 fun JSONObject.toMultiScanResult(): MultiScanResult {
   val level = optString("level", "low")
   val riskScore = optInt("riskScore", 100)
+  val blockSend = optBoolean("block_send", false)
+  val hasAttachmentBlocker = optBoolean("has_attachment_blocker", false)
   val findings = mutableListOf<ScanFinding>()
   val flags = optJSONArray("flags") ?: JSONArray()
   for (index in 0 until flags.length()) {
@@ -153,11 +165,15 @@ fun JSONObject.toMultiScanResult(): MultiScanResult {
     )
   }
 
+  val harmBlock = blockSend || findings.any {
+    it.type == "CHILD_SAFETY" || it.type == "VIOLENCE_INTENT"
+  }
+
   val action = when {
-    findings.isEmpty() && !optBoolean("has_attachment_blocker", false) -> "allow"
-    level == "high" -> "block"
+    findings.isEmpty() && !hasAttachmentBlocker -> "allow"
+    harmBlock || level == "high" -> "block"
     level == "medium" -> "redact"
-    optBoolean("has_attachment_blocker", false) -> "warn"
+    hasAttachmentBlocker -> "warn"
     else -> "warn"
   }
 
@@ -171,7 +187,7 @@ fun JSONObject.toMultiScanResult(): MultiScanResult {
         label = piece.optString("label", "Piece"),
         level = piece.optString("level", "low"),
         issueCount = piece.optInt("issue_count", 0),
-        skipReason = piece.optString("skip_reason", null),
+        skipReason = piece.optString("skip_reason", null).takeIf { !it.isNullOrBlank() },
       ),
     )
   }
@@ -181,11 +197,18 @@ fun JSONObject.toMultiScanResult(): MultiScanResult {
       id = optString("id", null),
       safetyScore = riskScore,
       riskScore = (100 - riskScore).coerceIn(0, 100),
-      level = level,
+      level = if (harmBlock) "high" else level,
       action = action,
       findings = findings,
       redactedText = null,
-      message = if (findings.isEmpty()) "No sensitive data detected." else "Sensitive data detected before sending to AI.",
+      message = when {
+        findings.isEmpty() && !hasAttachmentBlocker -> "No sensitive data detected."
+        harmBlock -> "High-risk content blocked. Do not send this prompt to a public AI."
+        hasAttachmentBlocker -> "One or more attachments could not be scanned. Cancel or Send Anyway."
+        else -> "Sensitive data detected before sending to AI."
+      },
+      blockSend = harmBlock,
+      hasAttachmentBlocker = hasAttachmentBlocker,
     ),
     pieces = pieces,
   )

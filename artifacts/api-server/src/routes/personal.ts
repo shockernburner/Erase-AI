@@ -95,6 +95,7 @@ router.post("/personal/analyze", refreshPlanFromDB, requireActivePlan(), async (
       id: scan.id,
       riskScore: risk.score,
       level: risk.level,
+      block_send: risk.blockSend,
       breakdown: risk.breakdown,
       flags: analysis.flags,
       suggestions: analysis.suggestions,
