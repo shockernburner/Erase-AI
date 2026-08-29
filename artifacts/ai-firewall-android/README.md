@@ -61,6 +61,8 @@ cd artifacts/ai-firewall-android
 
 ## Internal testing checklist
 
+Full end-to-end Play publish steps (Internal → Production): see **[PLAY_STORE_PUBLISH_CHECKLIST.md](./PLAY_STORE_PUBLISH_CHECKLIST.md)**.
+
 1. Create Play Console subscriptions with the IDs above.
 2. Sign up / sign in and confirm 7-day trial entitlement.
 3. Subscribe via Google Play from **Trial & Subscription**.
