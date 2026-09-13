@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>05 Manual Scan</title>
+  <link rel="stylesheet" href="_shared.css" />
+</head>
+<body>
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="status-icons">●●● Wi‑Fi 100%</span>
+    </div>
+    <div class="top-bar">
+      <div class="back">←</div>
+      <h1>Manual Scan</h1>
+    </div>
+    <div class="content" style="gap: 20px;">
+      <p class="body body-on">
+        Paste a prompt or share text/JSON/CSV uploads into EraseAI. Add attachment files for multi-piece scanning before sending to a public LLM.
+      </p>
+
+      <div class="field" style="min-height: 200px;">
+        <div class="flabel">Prompt or uploaded text</div>
+        <div class="ftext">Draft a support reply for customer Jordan Lee (jordan.lee@example.com). Their account token is tok_demo_not_real_12345 and card ends in 4242.</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" style="width:auto;padding:0 28px;">Add attachment</button>
+      </div>
+
+      <button class="btn btn-primary">Scan &amp; sanitize check</button>
+
+      <div class="card status-card">
+        <div class="title">Risk</div>
+        <div class="body-text">78/100 (redact)</div>
+      </div>
+      <div class="card status-card">
+        <div class="title">Email address</div>
+        <div class="body-text">pii / medium</div>
+      </div>
+      <div class="card status-card">
+        <div class="title">Secret / token pattern</div>
+        <div class="body-text">credential / high</div>
+      </div>
+
+      <div class="card">
+        <div class="status-card">
+          <div class="title">Sanitized output</div>
+          <div class="body-text" style="color:var(--on-surface);margin-top:12px;">
+            Draft a support reply for customer [REDACTED_NAME] ([REDACTED_EMAIL]). Their account token is [REDACTED_SECRET] and card ends in [REDACTED_CARD].
+          </div>
+          <button class="btn btn-outline" style="margin-top:20px;height:72px;">Copy Safe Text</button>
+        </div>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+</body>
+</html>

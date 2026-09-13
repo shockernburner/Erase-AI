@@ -32,6 +32,7 @@ import TermsOfService from "@/pages/TermsOfService";
 import LicenseAgreement from "@/pages/LicenseAgreement";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ContactPage from "@/pages/ContactPage";
+import DeleteProfilePage from "@/pages/DeleteProfilePage";
 import StatusPage from "@/pages/StatusPage";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
@@ -493,6 +494,9 @@ function App() {
               </Route>
               <Route path="/contact">
                 <ContactPage onBack={() => window.history.back()} />
+              </Route>
+              <Route path="/deleteprofile">
+                <DeleteProfilePage onBack={() => window.history.back()} />
               </Route>
               <Route path="/status" component={StatusPage} />
               {/* Task #158 — explicit deep-link routes for the public-visitor
