@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>04 Send Gate</title>
+  <link rel="stylesheet" href="_shared.css" />
+</head>
+<body>
+  <div class="phone chat-bg">
+    <div class="status-bar dark" style="color:#F8FAFC;">
+      <span>9:41</span>
+      <span class="status-icons">●●● Wi‑Fi 100%</span>
+    </div>
+    <div class="chat-header">
+      <span style="opacity:0.7">←</span>
+      <span>ChatGPT</span>
+    </div>
+    <div class="chat-bubble">
+      Summarize this customer list and draft an email:<br /><br />
+      Name: Jordan Lee<br />
+      Email: jordan.lee@example.com<br />
+      SSN: 123-45-6789<br />
+      API key: sk-demo-XXXX-NOT-REAL
+    </div>
+    <div style="position:absolute;bottom:120px;left:40px;right:40px;height:96px;border-radius:48px;border:2px solid #334155;display:flex;align-items:center;padding:0 32px;color:#94A3B8;font-size:26px;justify-content:space-between;">
+      <span>Message</span>
+      <span style="color:#0DCCF2;font-weight:600;">Send</span>
+    </div>
+
+    <div class="overlay-scrim">
+      <div class="gate">
+        <h2>Sensitive data detected</h2>
+        <p>EraseAI found PII and a possible API key before this prompt left ChatGPT. Review the risk, then Cancel, Sanitize &amp; Send, or Send Anyway.</p>
+        <div class="pieces">
+          • Prompt: high — SSN pattern<br />
+          • Prompt: medium — email address<br />
+          • Prompt: high — API key pattern
+        </div>
+        <div class="actions">
+          <button class="btn btn-outline">Cancel</button>
+          <button class="btn btn-primary">Sanitize &amp; Send</button>
+          <button class="btn btn-outline">Send Anyway</button>
+        </div>
+        <div class="open-link">Open EraseAI</div>
+      </div>
+    </div>
+    <div class="home-indicator light"></div>
+  </div>
+</body>
+</html>

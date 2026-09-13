@@ -11,6 +11,7 @@ export const PUBLIC_PREFIXES = [
   "/api/v1/",
   "/api/public/",
   "/api/contact",
+  "/api/account/deletion-request",
   "/api/extension/",
 ];
 

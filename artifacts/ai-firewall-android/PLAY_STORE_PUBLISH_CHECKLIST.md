@@ -21,6 +21,7 @@ Mark each box when done. Do not skip Internal → Closed/Open → Production pro
 - [ ] App display name finalized: **EraseAI Firewall**
 - [ ] Package / applicationId confirmed: **`com.eraseai.firewall`** (cannot change after first upload)
 - [ ] Privacy policy live at **https://eraseai.ai/privacy** (or your final URL; must match Play listing)
+- [ ] Account deletion URL live at **https://eraseai.ai/deleteprofile** (Play Console → App content → Account deletion)
 - [ ] Support email / contact URL ready for Play listing and privacy requests
 - [ ] Confirm you will **not** put Stripe checkout inside the Android app
 

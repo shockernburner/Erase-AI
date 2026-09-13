@@ -186,7 +186,11 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
               </div>
             </div>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              To exercise any of these rights, please contact us at director@vantward.com. We will respond to your request within 30 days.
+              To exercise any of these rights, including account and data deletion, use{" "}
+              <a href="/deleteprofile" className="text-primary hover:text-primary/80 font-medium">
+                eraseai.ai/deleteprofile
+              </a>{" "}
+              or contact us at director@vantward.com. We will respond to your request within 30 days.
             </p>
           </section>
 
