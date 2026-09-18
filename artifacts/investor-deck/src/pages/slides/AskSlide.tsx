@@ -10,26 +10,26 @@ export default function AskSlide() {
           </div>
           <span className="font-mono text-[1vw] text-muted">11 / 12</span>
         </div>
-        <div className="mt-[6vh]">
+        <div className="mt-[5.5vh]">
           <span className="font-mono text-[1.2vw] uppercase tracking-[0.3em] text-muted">Raising</span>
           <h2 className="mt-[2vh] font-display text-[8.5vw] leading-none font-bold tracking-tighter text-primary">$2.5M</h2>
-          <p className="mt-[2vh] font-display text-[3vw] font-semibold text-text">Seed round</p>
+          <p className="mt-[2vh] font-display text-[3vw] font-semibold text-text">Seed · prompt-layer AI firewall</p>
         </div>
-        <div className="mt-[7vh] grid grid-cols-3 gap-[3vw] max-w-[82vw]">
+        <div className="mt-[6vh] grid grid-cols-3 gap-[3vw] max-w-[84vw]">
           <div className="border-t border-white/10 pt-[2.5vh]">
             <p className="font-mono text-[1.1vw] uppercase tracking-[0.2em] text-primary">Use of Funds</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">Engineering (enterprise console + detection), security research, and go-to-market.</p>
+            <p className="mt-[1.5vh] font-body text-[1.45vw] leading-snug text-text/90">Team/Enterprise console, detection hardening, GTM to convert pilots into paid seats.</p>
           </div>
           <div className="border-t border-white/10 pt-[2.5vh]">
             <p className="font-mono text-[1.1vw] uppercase tracking-[0.2em] text-primary">Milestones</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">Convert pilots into paying enterprise logos and reach early ARR within the runway.</p>
+            <p className="mt-[1.5vh] font-body text-[1.45vw] leading-snug text-text/90">Paying Team logos, early ARR, Enterprise design partners with SSO / audit requirements.</p>
           </div>
           <div className="border-t border-white/10 pt-[2.5vh]">
-            <p className="font-mono text-[1.1vw] uppercase tracking-[0.2em] text-primary">Illustrative Return</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">A seed entry into a category compounding ~24% CAGR toward a $90B+ market.</p>
+            <p className="font-mono text-[1.1vw] uppercase tracking-[0.2em] text-primary">Category</p>
+            <p className="mt-[1.5vh] font-body text-[1.45vw] leading-snug text-text/90">AI DLP at the interaction layer inside a ~24% CAGR AI-cybersecurity market.</p>
           </div>
         </div>
-        <p className="mt-auto font-mono text-[1.05vw] text-muted">Return scenarios are illustrative, not guaranteed.</p>
+        <p className="mt-auto font-mono text-[1.05vw] text-muted">Market figures are third-party research; return scenarios are illustrative, not guaranteed.</p>
       </div>
     </div>
   );

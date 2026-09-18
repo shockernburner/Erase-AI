@@ -4,8 +4,8 @@
     "position": 1,
     "filepath": "src/pages/slides/TitleSlide.tsx",
     "title": "Title",
-    "description": "Cover — The AI Firewall for Enterprise Data, seed round.",
-    "speakerNotes": ""
+    "description": "Cover — AI firewall for the prompt layer, seed round.",
+    "speakerNotes": "Open with: we sit before Send on public LLMs. Browser + Android. Monetize Team then Enterprise."
   },
   {
     "id": "92660b22-c7af-44e8-8882-bcf620707d35",
@@ -28,8 +28,8 @@
     "position": 4,
     "filepath": "src/pages/slides/SolutionSlide.tsx",
     "title": "Solution",
-    "description": "EraseAI — a real-time firewall for AI prompts.",
-    "speakerNotes": ""
+    "description": "Prompt-layer firewall — browser + Android — path to Team/Enterprise.",
+    "speakerNotes": "Wedge is the firewall. Dataset sanitizer / personal rewrite are flanks, not the seed thesis."
   },
   {
     "id": "8662f37b-1682-42b5-875b-808be8aa5ad1",
@@ -44,7 +44,7 @@
     "position": 6,
     "filepath": "src/pages/slides/DifferentiationSlide.tsx",
     "title": "Differentiation",
-    "description": "Built for the prompt layer legacy DLP/CASB miss.",
+    "description": "Prompt-native vs network DLP/CASB; govern use, don't only block ChatGPT.",
     "speakerNotes": ""
   },
   {
@@ -52,23 +52,23 @@
     "position": 7,
     "filepath": "src/pages/slides/MarketSlide.tsx",
     "title": "Market",
-    "description": "Large, fast-growing AI-cybersecurity and DLP market.",
-    "speakerNotes": ""
+    "description": "Large AI-cyber market with SaaS/agency beachhead.",
+    "speakerNotes": "Don't say every company. Beachhead first, then regulated verticals."
   },
   {
     "id": "8c9dbead-6c37-40af-8bb5-74624da76b75",
     "position": 8,
     "filepath": "src/pages/slides/BusinessModelSlide.tsx",
     "title": "Business Model",
-    "description": "Land with individuals, expand to the enterprise.",
-    "speakerNotes": ""
+    "description": "Live pricing: $5 / $19 API / $99 Team / Enterprise custom.",
+    "speakerNotes": "Highlight Team as primary revenue. Personal is acquisition."
   },
   {
     "id": "d239596a-2b56-497f-9ac8-49b36979926a",
     "position": 9,
     "filepath": "src/pages/slides/ROISlide.tsx",
     "title": "Unit Economics",
-    "description": "The economics of prevention (illustrative projection).",
+    "description": "Breach cost vs Team seat economics (illustrative).",
     "speakerNotes": ""
   },
   {
@@ -76,15 +76,15 @@
     "position": 10,
     "filepath": "src/pages/slides/TractionSlide.tsx",
     "title": "Traction",
-    "description": "Working product, active pilots, path to revenue.",
-    "speakerNotes": ""
+    "description": "Shipping wedge; convert pilots to Team seats and early ARR.",
+    "speakerNotes": "Be honest: pre-revenue. Sell the path and product readiness."
   },
   {
     "id": "bf0adce9-cb17-49ff-9dff-e4f959c74b8c",
     "position": 11,
     "filepath": "src/pages/slides/AskSlide.tsx",
     "title": "The Ask",
-    "description": "Raising $2.5M seed — use of funds and milestones.",
+    "description": "$2.5M seed — console, detection, GTM for Team ARR.",
     "speakerNotes": ""
   },
   {
@@ -92,7 +92,7 @@
     "position": 12,
     "filepath": "src/pages/slides/ClosingSlide.tsx",
     "title": "Closing",
-    "description": "Keep yourself protected from public AI LLMs.",
+    "description": "Stop the leak before Send. Sell the control plane after.",
     "speakerNotes": ""
   }
 ]

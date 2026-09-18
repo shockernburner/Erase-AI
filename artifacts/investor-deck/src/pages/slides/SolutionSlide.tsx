@@ -10,25 +10,25 @@ export default function SolutionSlide() {
           </div>
           <span className="font-mono text-[1vw] text-muted">04 / 12</span>
         </div>
-        <h2 className="mt-[5vh] max-w-[64vw] font-display text-[4.6vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
-          A real-time firewall for AI prompts
+        <h2 className="mt-[5vh] max-w-[68vw] font-display text-[4.4vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
+          A prompt-layer firewall for public AI
         </h2>
-        <div className="mt-[7vh] grid grid-cols-2 gap-[3vw] max-w-[80vw]">
-          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.5vw]">
-            <p className="font-display text-[2vw] font-semibold text-primary">Browser-native</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">Intercepts prompts and attachments in real time on ChatGPT, Claude, Gemini and Replit.</p>
+        <div className="mt-[6vh] grid grid-cols-2 gap-[2.5vw] max-w-[82vw]">
+          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.2vw]">
+            <p className="font-display text-[1.9vw] font-semibold text-primary">Browser extension</p>
+            <p className="mt-[1.4vh] font-body text-[1.45vw] leading-snug text-text/90">Intercepts prompts and attachments in ChatGPT, Claude, Gemini before Send.</p>
           </div>
-          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.5vw]">
-            <p className="font-display text-[2vw] font-semibold text-primary">On-device detection</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">Finds PII, secrets and sensitive content before data ever leaves the browser.</p>
+          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.2vw]">
+            <p className="font-display text-[1.9vw] font-semibold text-primary">Android firewall</p>
+            <p className="mt-[1.4vh] font-body text-[1.45vw] leading-snug text-text/90">Same send-gate on phone AI apps — Cancel, Sanitize, or Send Anyway.</p>
           </div>
-          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.5vw]">
-            <p className="font-display text-[2vw] font-semibold text-primary">Per-item verdict</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">Every piece of content is rated Safe, Caution or Danger.</p>
+          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.2vw]">
+            <p className="font-display text-[1.9vw] font-semibold text-primary">Risk before disclosure</p>
+            <p className="mt-[1.4vh] font-body text-[1.45vw] leading-snug text-text/90">Flags PII, secrets, credentials, and high-risk content at the moment of send.</p>
           </div>
-          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.5vw]">
-            <p className="font-display text-[2vw] font-semibold text-primary">One-click control</p>
-            <p className="mt-[1.5vh] font-body text-[1.5vw] leading-snug text-text/90">Sanitize, Cancel, or Send Anyway — the user stays in control.</p>
+          <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[2.2vw]">
+            <p className="font-display text-[1.9vw] font-semibold text-primary">Path to Team / Enterprise</p>
+            <p className="mt-[1.4vh] font-body text-[1.45vw] leading-snug text-text/90">Individual install → shared policies, admin, audit — then SSO and SIEM.</p>
           </div>
         </div>
       </div>

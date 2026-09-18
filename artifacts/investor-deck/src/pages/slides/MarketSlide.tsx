@@ -9,12 +9,12 @@ export default function MarketSlide() {
           </div>
           <span className="font-mono text-[1vw] text-muted">07 / 12</span>
         </div>
-        <h2 className="mt-[5vh] max-w-[60vw] font-display text-[4.6vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
-          A large, fast-growing security market
+        <h2 className="mt-[5vh] max-w-[64vw] font-display text-[4.4vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
+          Large market. Sharp beachhead.
         </h2>
-        <div className="mt-[6vh] grid grid-cols-[1.1fr_0.9fr] gap-[5vw] items-end">
+        <div className="mt-[5.5vh] grid grid-cols-[1.1fr_0.9fr] gap-[5vw] items-end">
           <div>
-            <div className="flex items-end gap-[3vw] h-[34vh]">
+            <div className="flex items-end gap-[3vw] h-[32vh]">
               <div className="flex flex-col items-center justify-end h-full">
                 <span className="font-mono text-[1.3vw] text-muted mb-[1vh]">$25.35B</span>
                 <div className="w-[7vw] rounded-t-[0.4vw] bg-primary/40" style={{ height: "27%" }} />
@@ -29,21 +29,21 @@ export default function MarketSlide() {
                 <span className="font-mono text-[1.05vw] text-muted mt-[1.2vh]">2030</span>
               </div>
             </div>
-            <p className="mt-[3vh] font-mono text-[1.05vw] text-muted">AI in cybersecurity · 24.4% CAGR · Grand View Research</p>
+            <p className="mt-[2.5vh] font-mono text-[1.05vw] text-muted">AI in cybersecurity · 24.4% CAGR · Grand View Research</p>
           </div>
-          <div className="flex flex-col gap-[4vh]">
+          <div className="flex flex-col gap-[3.5vh]">
             <div className="border-l-2 border-primary/50 pl-[1.5vw]">
-              <p className="font-display text-[3vw] font-bold text-text leading-none">24.4%</p>
-              <p className="mt-[1vh] font-body text-[1.4vw] text-muted">CAGR for AI in cybersecurity through 2030.</p>
+              <p className="font-display text-[2.6vw] font-bold text-text leading-none">Beachhead</p>
+              <p className="mt-[1vh] font-body text-[1.35vw] text-muted">Mid-size SaaS, agencies, and tech teams where ChatGPT use is rampant and security is waking up.</p>
             </div>
             <div className="border-l-2 border-primary/50 pl-[1.5vw]">
-              <p className="font-display text-[3vw] font-bold text-text leading-none">$9.33B</p>
-              <p className="mt-[1vh] font-body text-[1.4vw] text-muted">Data loss prevention market by 2030 (Grand View Research).</p>
+              <p className="font-display text-[2.6vw] font-bold text-text leading-none">$9.33B</p>
+              <p className="mt-[1vh] font-body text-[1.35vw] text-muted">DLP market by 2030 — EraseAI sells the AI-prompt slice of it.</p>
             </div>
           </div>
         </div>
-        <p className="mt-[5vh] max-w-[66vw] font-body text-[1.55vw] leading-snug text-text/90">
-          Every company adopting AI becomes a buyer of AI-data governance.
+        <p className="mt-[4.5vh] max-w-[70vw] font-body text-[1.5vw] leading-snug text-text/90">
+          Category: AI data-loss prevention at the interaction layer. Expand later into finance, legal, and healthcare.
         </p>
       </div>
     </div>

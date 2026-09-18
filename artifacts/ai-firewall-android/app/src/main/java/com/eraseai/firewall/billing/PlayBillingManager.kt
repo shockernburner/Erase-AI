@@ -179,9 +179,9 @@ class PlayBillingManager(
           },
         )
         .build()
-      billingClient.queryProductDetailsAsync(params) { result, productDetailsList ->
+      billingClient.queryProductDetailsAsync(params) { result, queryProductDetailsResult ->
         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-          continuation.resume(productDetailsList)
+          continuation.resume(queryProductDetailsResult.productDetailsList)
         } else {
           continuation.resume(emptyList())
         }
