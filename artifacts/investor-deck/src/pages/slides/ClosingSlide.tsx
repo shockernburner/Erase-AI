@@ -20,15 +20,15 @@ export default function ClosingSlide() {
           </div>
           <span className="font-display text-[1.8vw] font-bold tracking-tight text-text">EraseAI</span>
         </div>
-        <div className="max-w-[72vw]">
-          <h1 className="font-display text-[5.8vw] leading-[0.98] font-bold tracking-tighter text-text" style={{ textWrap: "balance" }}>
-            Keep yourself protected from
+        <div className="max-w-[76vw]">
+          <h1 className="font-display text-[5.2vw] leading-[0.98] font-bold tracking-tighter text-text" style={{ textWrap: "balance" }}>
+            Stop the leak before Send.
           </h1>
-          <h1 className="font-display text-[5.8vw] leading-[0.98] font-bold tracking-tighter text-primary" style={{ textWrap: "balance" }}>
-            Public AI LLMs
+          <h1 className="font-display text-[5.2vw] leading-[0.98] font-bold tracking-tighter text-primary" style={{ textWrap: "balance" }}>
+            Sell the control plane after.
           </h1>
-          <p className="mt-[4vh] font-body text-[1.7vw] leading-snug text-muted">
-            Keep enterprise data out of public models.
+          <p className="mt-[3.5vh] font-body text-[1.6vw] leading-snug text-muted max-w-[58vw]">
+            Prompt-layer AI firewall → Team policy → Enterprise audit.
           </p>
         </div>
         <div className="flex items-center gap-[2vw]">

@@ -22,14 +22,14 @@ val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKe
 
 android {
   namespace = "com.eraseai.firewall"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.eraseai.firewall"
     minSdk = 28
-    targetSdk = 35
-    versionCode = 2
-    versionName = "0.1.1-internal"
+    targetSdk = 36
+    versionCode = 3
+    versionName = "0.1.2-internal"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "API_BASE_URL", "\"https://eraseai.ai/api\"")
@@ -102,7 +102,7 @@ dependencies {
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
-  implementation("com.android.billingclient:billing-ktx:7.1.1")
+  implementation("com.android.billingclient:billing-ktx:8.0.0")
 
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")

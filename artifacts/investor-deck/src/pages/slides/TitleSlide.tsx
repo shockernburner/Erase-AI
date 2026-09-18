@@ -21,19 +21,19 @@ export default function TitleSlide() {
           </div>
           <span className="font-display text-[1.8vw] font-bold tracking-tight text-text">EraseAI</span>
         </div>
-        <div className="max-w-[70vw]">
+        <div className="max-w-[74vw]">
           <div className="flex items-center gap-[0.8vw] mb-[2.5vh]">
             <span className="w-[0.5vw] h-[0.5vw] rounded-full bg-primary" />
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.35em] text-primary">Seed Round · 2026</span>
           </div>
-          <h1 className="font-display text-[6.8vw] leading-[0.92] font-bold tracking-tighter text-text">
-            The AI Firewall
+          <h1 className="font-display text-[6.4vw] leading-[0.92] font-bold tracking-tighter text-text">
+            The AI firewall
           </h1>
-          <h1 className="font-display text-[6.8vw] leading-[0.92] font-bold tracking-tighter text-primary">
-            for Enterprise Data
+          <h1 className="font-display text-[6.4vw] leading-[0.92] font-bold tracking-tighter text-primary">
+            for the prompt layer
           </h1>
-          <p className="mt-[3.5vh] max-w-[52vw] text-[1.75vw] leading-snug text-muted font-body" style={{ textWrap: "balance" }}>
-            Stop confidential data from leaving the browser before it ever reaches ChatGPT, Claude, Gemini or Replit.
+          <p className="mt-[3.5vh] max-w-[56vw] text-[1.7vw] leading-snug text-muted font-body" style={{ textWrap: "balance" }}>
+            Stop secrets from reaching ChatGPT, Claude, and Gemini — then sell team policy and enterprise audit on top.
           </p>
         </div>
         <div className="flex items-center gap-[2vw]">

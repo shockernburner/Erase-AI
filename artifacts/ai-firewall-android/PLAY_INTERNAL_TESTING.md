@@ -110,7 +110,7 @@ The app does not request VPN, foreground service, overlay permission (uses Acces
 
 ## 12. Release Notes Draft
 
-Internal testing build `0.1.1-internal` of EraseAI AI Firewall for Android. Dual-rail billing: Google Play subscriptions on Android, Stripe on eraseai.ai web. Includes sign-in/signup, 7-day trial entitlement, manual + share-sheet scan/sanitize, Accessibility protection, protected LLM app sync, and sanitized diagnostics.
+Internal testing build `0.1.2-internal` of EraseAI AI Firewall for Android. Dual-rail billing: Google Play subscriptions on Android, Stripe on eraseai.ai web. Includes sign-in/signup, 7-day trial entitlement, manual + share-sheet scan/sanitize, Accessibility protection, protected LLM app sync, and sanitized diagnostics.
 
 ## 13. Known Limitations to Disclose Internally
 
