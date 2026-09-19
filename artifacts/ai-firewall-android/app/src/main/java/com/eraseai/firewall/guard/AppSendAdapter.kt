@@ -115,10 +115,13 @@ object AppSendAdapter {
   }
 
   private fun isExcludedComposerChrome(haystack: String): Boolean {
+    // Do not treat unlabeled Gemini send (often blank / "Send") as chrome.
+    if (haystack.isBlank() || haystack == "send" || haystack.contains("submit")) return false
     val excluded = listOf(
-      "microphone", "mic", "voice", "speak", "camera", "photo", "image",
+      "microphone", "mic", "speak", "camera", "photo", "image",
       "attach", "attachment", "gallery", "plus", "add", "new chat",
       "keyboard", "tools", "menu", "more", "share", "listen",
+      "voice input", "voice mode",
     )
     return excluded.any { haystack.contains(it) }
   }

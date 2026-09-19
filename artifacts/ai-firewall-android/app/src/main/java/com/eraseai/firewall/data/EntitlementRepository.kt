@@ -36,11 +36,14 @@ class HistoryRepository(private val apiClient: ApiClient) {
     buildList {
       for (index in 0 until scans.length()) {
         val scan = scans.getJSONObject(index)
+        // API stores safety score (100 = clean). UI shows risk points (0 = clean).
+        val safetyScore = scan.optInt("riskScore", 100)
+        val riskPoints = (100 - safetyScore).coerceIn(0, 100)
         add(
           ScanHistoryItem(
             id = scan.optString("id"),
             content = scan.optString("content"),
-            riskScore = 100 - scan.optInt("riskScore", 100),
+            riskScore = riskPoints,
             level = scan.optString("level", "low"),
             createdAt = scan.optString("createdAt"),
           ),

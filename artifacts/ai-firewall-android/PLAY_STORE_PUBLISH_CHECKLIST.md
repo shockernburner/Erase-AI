@@ -232,6 +232,8 @@ In Play Console → Monetize → Products → Subscriptions:
 ### 4.4 Service account for server verification
 
 - [ ] Google Cloud project with **Google Play Android Developer API** enabled
+  - `https://console.developers.google.com/apis/api/androidpublisher.googleapis.com/overview?project=YOUR_PROJECT_ID`
+  - If Subscribe fails with “API has not been used… or it is disabled”, enable it on the **same** Cloud project as the Play service account (error includes the project number, e.g. `919131003927`), wait 5–10 minutes, retry
 - [ ] Service account created; JSON key downloaded
 - [ ] In Play Console → Users and permissions: invite the service account with access to view financial data / manage orders (as required for subscriptionsv2)
 - [ ] Paste JSON into production env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`

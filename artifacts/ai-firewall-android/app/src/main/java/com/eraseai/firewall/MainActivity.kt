@@ -1217,7 +1217,10 @@ private fun HistoryScreen(items: List<ScanHistoryItem>) {
     } else {
       items(items) { item ->
         BrandCard {
-          Text("Risk ${item.riskScore}/100", style = MaterialTheme.typography.titleMedium)
+          Text(
+            "Risk ${item.riskScore}/100 · ${item.level.ifBlank { "low" }}",
+            style = MaterialTheme.typography.titleMedium,
+          )
           Text(item.content)
           Text(item.createdAt, style = MaterialTheme.typography.bodySmall, color = BrandMutedForeground)
         }

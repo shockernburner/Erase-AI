@@ -52,8 +52,11 @@ const PII_PATTERNS: { pattern: RegExp; detail: string }[] = [
   { pattern: /\b(?:sk|pk)_(?:live|test)_[A-Za-z0-9_-]{8,}\b/g, detail: "API key detected" },
   { pattern: /\beak_[A-Za-z0-9_-]{8,}\b/g, detail: "API key detected" },
   { pattern: /\bAKIA[0-9A-Z]{12,20}\b/g, detail: "API key detected" },
+  { pattern: /\bAIza[0-9A-Za-z_-]{20,}\b/g, detail: "Google API key detected" },
   { pattern: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, detail: "Bearer token detected" },
   { pattern: /\b(?:api[_-]?key|secret|token|bearer)\s*[:=]\s*[A-Za-z0-9_./+=-]{8,}\b/gi, detail: "API key detected" },
+  { pattern: /\b(?:my\s+)?(?:google\s+|openai\s+|aws\s+|azure\s+)?(?:api(?:\s+key)?|client\s+secret|access\s+token)\s+(?:is|are|=|:)\s*[A-Za-z0-9_./+=-]{6,}\b/gi, detail: "Shared API credential phrasing" },
+  { pattern: /\b(?:api|key|token|secret)\s+(?:for|to)\s+\w[\w\s]{0,40}\s+is\s+[A-Za-z0-9_./+=-]{6,}\b/gi, detail: "Shared API credential phrasing" },
   { pattern: /\b(?:client|customer|patient|employee|user|contact)(?:\s+name)?\s+(?:is\s+)?([A-Z][a-z]+\s+[A-Z][a-z]+)\b/g, detail: "Person name detected" },
 ];
 

@@ -47,6 +47,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private var previewRunnable: Runnable? = null
   private val lastTextHashByPackage = mutableMapOf<String, String>()
   private val lastScanAtByPackage = mutableMapOf<String, Long>()
+  /** Gemini often clears the composer before our click handler runs — keep last typed draft. */
+  private val lastDraftByPackage = mutableMapOf<String, String>()
   private var activeNode: AccessibilityNodeInfo? = null
   private var pendingSendNode: AccessibilityNodeInfo? = null
   private var overlayView: View? = null
@@ -93,7 +95,11 @@ class AiGuardAccessibilityService : AccessibilityService() {
       AccessibilityEvent.TYPE_VIEW_CLICKED -> {
         val source = event.source ?: return
         val root = rootInActiveWindow
-        val draft = AppSendAdapter.composerText(root)
+        val liveDraft = AppSendAdapter.composerText(root)
+        if (liveDraft.length >= MIN_SCAN_LENGTH) {
+          lastDraftByPackage[packageName] = liveDraft.take(MAX_SCAN_TEXT_LENGTH)
+        }
+        val draft = resolveDraftText(packageName, liveDraft)
         val hasAttachments = AttachmentHints.extract(root).isNotEmpty()
         val hasSendable = draft.length >= MIN_SCAN_LENGTH || hasAttachments
         if (AppSendAdapter.isSendClick(source, packageName, composerHasSendableText = hasSendable)) {
@@ -103,7 +109,13 @@ class AiGuardAccessibilityService : AccessibilityService() {
       AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
       AccessibilityEvent.TYPE_VIEW_FOCUSED,
       AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
-      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> schedulePreviewScan(packageName)
+      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
+        val liveDraft = AppSendAdapter.composerText(rootInActiveWindow)
+        if (liveDraft.length >= MIN_SCAN_LENGTH) {
+          lastDraftByPackage[packageName] = liveDraft.take(MAX_SCAN_TEXT_LENGTH)
+        }
+        schedulePreviewScan(packageName)
+      }
     }
   }
 
@@ -116,7 +128,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (shouldSkipSystemSurface(packageName)) return false
     if (!protectedAppsStore.isProtected(packageName) || !protectedAppsStore.isFirewallEnabled()) return false
 
-    val draft = AppSendAdapter.composerText(root)
+    val draft = resolveDraftText(packageName, AppSendAdapter.composerText(root))
     val hasAttachments = AttachmentHints.extract(root).isNotEmpty()
     if (draft.length < MIN_SCAN_LENGTH && !hasAttachments) return false
     val sendNode = AppSendAdapter.findSendButton(root, packageName)
@@ -146,7 +158,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     val root = rootInActiveWindow ?: return
     val editable = AppSendAdapter.findComposerEditable(root)
-    val text = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
+    val liveText = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
+    val text = resolveDraftText(packageName, liveText).take(MAX_SCAN_TEXT_LENGTH)
     val attachments = AttachmentHints.extract(root)
     if (text.length < MIN_SCAN_LENGTH && attachments.isEmpty()) return
 
@@ -156,6 +169,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
       ?: sendNode
     gateInProgress = true
     removeOverlay()
+    lastDraftByPackage.remove(packageName)
 
     // Race the host app: clear composer so the original tap cannot deliver the prompt.
     editable?.performAction(
@@ -281,6 +295,14 @@ class AiGuardAccessibilityService : AccessibilityService() {
           targetName = packageName,
         ).onSuccess { result ->
           protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
+          if (result.findings.isNotEmpty() || result.level == "medium" || result.level == "high") {
+            val tip = result.findings.firstOrNull()?.label ?: "Sensitive content"
+            Toast.makeText(
+              this@AiGuardAccessibilityService,
+              "EraseAI: $tip — review before Send",
+              Toast.LENGTH_LONG,
+            ).show()
+          }
         }.onFailure { err ->
           protectedAppsStore.saveLastErrorCategory(err.errorCategory())
         }
@@ -590,6 +612,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   private fun shouldSkipSystemSurface(packageName: String): Boolean {
     return packageName == "com.android.systemui" || packageName == applicationContext.packageName
+  }
+
+  private fun resolveDraftText(packageName: String, liveText: String): String {
+    val cached = lastDraftByPackage[packageName].orEmpty()
+    return when {
+      liveText.length >= MIN_SCAN_LENGTH -> liveText
+      cached.length >= MIN_SCAN_LENGTH -> cached
+      liveText.isNotBlank() -> liveText
+      else -> cached
+    }
   }
 
   private fun chunkText(text: String, chunkSize: Int): List<String> {

@@ -59,7 +59,14 @@ async function fetchSubscriptionV2(
     const message = typeof data.error === "object" && data.error && typeof (data.error as { message?: string }).message === "string"
       ? (data.error as { message: string }).message
       : `Google Play verification failed (${response.status})`;
-    return { ok: false, status: response.status === 404 ? 404 : 502, error: message };
+    const apiDisabled = /has not been used|is disabled|androidpublisher\.googleapis\.com/i.test(message);
+    return {
+      ok: false,
+      status: response.status === 404 ? 404 : 502,
+      error: apiDisabled
+        ? "Google Play Android Developer API is disabled on the Cloud project used by EraseAI. Enable androidpublisher.googleapis.com for that project, wait a few minutes, then retry Subscribe."
+        : message,
+    };
   }
   return { ok: true, data };
 }
