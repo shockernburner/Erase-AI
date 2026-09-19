@@ -1,42 +1,95 @@
 package com.eraseai.firewall.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+private val Display = FontFamily.SansSerif
+private val Body = FontFamily.SansSerif
+
 val Typography = Typography(
-  headlineLarge = Typography().headlineLarge.copy(
+  displayLarge = TextStyle(
+    fontFamily = Display,
+    fontWeight = FontWeight.Bold,
+    fontSize = 36.sp,
+    lineHeight = 42.sp,
+    letterSpacing = (-0.5).sp,
+  ),
+  headlineLarge = TextStyle(
+    fontFamily = Display,
+    fontWeight = FontWeight.Bold,
     fontSize = 30.sp,
     lineHeight = 36.sp,
-    fontWeight = FontWeight.Bold,
+    letterSpacing = (-0.4).sp,
   ),
-  headlineMedium = Typography().headlineMedium.copy(
-    fontSize = 25.sp,
-    lineHeight = 31.sp,
-    fontWeight = FontWeight.Bold,
+  headlineMedium = TextStyle(
+    fontFamily = Display,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 24.sp,
+    lineHeight = 30.sp,
+    letterSpacing = (-0.3).sp,
   ),
-  headlineSmall = Typography().headlineSmall.copy(
-    fontSize = 21.sp,
-    lineHeight = 27.sp,
-    fontWeight = FontWeight.Bold,
+  headlineSmall = TextStyle(
+    fontFamily = Display,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 20.sp,
+    lineHeight = 26.sp,
+    letterSpacing = (-0.2).sp,
   ),
-  titleLarge = Typography().titleLarge.copy(
+  titleLarge = TextStyle(
+    fontFamily = Display,
+    fontWeight = FontWeight.SemiBold,
     fontSize = 18.sp,
     lineHeight = 24.sp,
-    fontWeight = FontWeight.Bold,
   ),
-  titleMedium = Typography().titleMedium.copy(
+  titleMedium = TextStyle(
+    fontFamily = Body,
     fontWeight = FontWeight.SemiBold,
+    fontSize = 16.sp,
+    lineHeight = 22.sp,
   ),
-  bodyLarge = Typography().bodyLarge.copy(
+  titleSmall = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.Medium,
+    fontSize = 14.sp,
+    lineHeight = 20.sp,
+  ),
+  bodyLarge = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.Normal,
     fontSize = 16.sp,
     lineHeight = 24.sp,
   ),
-  bodyMedium = Typography().bodyMedium.copy(
+  bodyMedium = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.Normal,
     fontSize = 14.sp,
-    lineHeight = 21.sp,
+    lineHeight = 20.sp,
   ),
-  labelLarge = Typography().labelLarge.copy(
-    fontWeight = FontWeight.Bold,
+  bodySmall = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.Normal,
+    fontSize = 12.sp,
+    lineHeight = 16.sp,
+  ),
+  labelLarge = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 14.sp,
+    lineHeight = 20.sp,
+  ),
+  labelMedium = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.Medium,
+    fontSize = 12.sp,
+    lineHeight = 16.sp,
+  ),
+  labelSmall = TextStyle(
+    fontFamily = Body,
+    fontWeight = FontWeight.Medium,
+    fontSize = 11.sp,
+    lineHeight = 14.sp,
   ),
 )

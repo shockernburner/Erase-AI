@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, personalScansTable, usersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { analyzeText } from "../lib/personalAnalyzer";
 import { calculateRiskScore } from "../lib/riskScorer";
 import { refreshPlanFromDB, requireActivePlan } from "../middlewares/planMiddleware";
@@ -128,6 +128,104 @@ router.get("/entitlement", async (req: Request, res: Response) => {
 router.get("/play/products", (_req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-store");
   res.json(buildMobilePlayBilling());
+});
+
+router.get("/history", async (req: Request, res: Response) => {
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
+
+  try {
+    const limit = Math.max(1, Math.min(parseInt(String(req.query.limit || "50"), 10) || 50, 100));
+    const scans = await db
+      .select()
+      .from(personalScansTable)
+      .where(eq(personalScansTable.userId, userId))
+      .orderBy(desc(personalScansTable.createdAt))
+      .limit(limit);
+
+    res.json({
+      scans: scans.map((s) => ({
+        id: s.id,
+        content: s.content.substring(0, 200) + (s.content.length > 200 ? "..." : ""),
+        riskScore: s.riskScore,
+        level: s.level,
+        createdAt: s.createdAt,
+      })),
+    });
+  } catch (err) {
+    console.error("Mobile history error:", err);
+    res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+router.post("/analyze", requireActivePlan(), async (req: Request, res: Response) => {
+  const userId = requireMobileAuth(req, res);
+  if (!userId) return;
+
+  const text = typeof req.body?.text === "string"
+    ? req.body.text
+    : typeof req.body?.content === "string"
+      ? req.body.content
+      : "";
+  if (!text.trim()) {
+    res.status(400).json({ error: "text is required" });
+    return;
+  }
+  if (text.length > MAX_PIECE_TEXT_LENGTH) {
+    res.status(400).json({ error: `Text must be ${MAX_PIECE_TEXT_LENGTH} characters or fewer` });
+    return;
+  }
+
+  const user = await getFreshUser(userId);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const plan = user.planType || "free";
+  if (plan === "free") {
+    const scansUsed = await countPersonalScans(userId);
+    if (scansUsed >= FREE_TRIAL_SCAN_LIMIT) {
+      res.status(429).json({
+        error: `Your free trial includes ${FREE_TRIAL_SCAN_LIMIT} scans. Subscribe to Personal for unlimited scans.`,
+        upgrade: true,
+        limit: FREE_TRIAL_SCAN_LIMIT,
+        used: scansUsed,
+      });
+      return;
+    }
+  }
+
+  try {
+    const analysis = analyzeText(text);
+    const risk = calculateRiskScore(analysis.flags);
+    const storedContent = text.length > 500 ? `${text.substring(0, 500)}...` : text;
+
+    const [scan] = await db
+      .insert(personalScansTable)
+      .values({
+        userId,
+        content: storedContent,
+        riskScore: risk.score,
+        level: risk.level,
+        flags: JSON.stringify(analysis.flags ?? []),
+        suggestions: JSON.stringify(analysis.suggestions ?? []),
+      })
+      .returning();
+
+    res.json({
+      id: scan?.id,
+      riskScore: risk.score,
+      level: risk.level,
+      block_send: risk.blockSend,
+      flags: analysis.flags,
+      suggestions: analysis.suggestions,
+      createdAt: scan?.createdAt,
+    });
+  } catch (err) {
+    console.error("Mobile analyze error:", err);
+    res.status(500).json({ error: "Analysis failed" });
+  }
 });
 
 router.post("/play/verify", async (req: Request, res: Response) => {

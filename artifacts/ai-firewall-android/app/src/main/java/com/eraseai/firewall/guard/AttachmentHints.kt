@@ -18,7 +18,12 @@ data class AttachmentHint(
 object AttachmentHints {
   private val fileSuffixes = listOf(
     ".pdf", ".csv", ".json", ".txt", ".doc", ".docx", ".xls", ".xlsx", ".md",
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".zip",
+    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".zip",
+  )
+
+  private val mediaKeywords = listOf(
+    "attachment", "attached", "photo", "image", "picture", "screenshot",
+    "uploaded", "gallery", "file added", "1 image", "2 images", "media",
   )
 
   fun extract(root: AccessibilityNodeInfo?): List<AttachmentHint> {
@@ -52,8 +57,11 @@ object AttachmentHints {
   private fun normalizeLabel(raw: String): String? {
     val trimmed = raw.trim()
     if (trimmed.length < 3 || trimmed.length > 120) return null
+    if (trimmed.equals("Ask Gemini", ignoreCase = true) || trimmed.startsWith("Ask Gem", ignoreCase = true)) {
+      return null
+    }
     if (fileSuffixes.any { trimmed.endsWith(it, ignoreCase = true) }) return trimmed
-    if (trimmed.contains("attachment", ignoreCase = true)) return trimmed
+    if (mediaKeywords.any { trimmed.contains(it, ignoreCase = true) }) return trimmed
     return null
   }
 }

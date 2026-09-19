@@ -31,7 +31,7 @@ class EntitlementRepository(private val apiClient: ApiClient) {
 
 class HistoryRepository(private val apiClient: ApiClient) {
   suspend fun load(): Result<List<ScanHistoryItem>> = runCatching {
-    val response = apiClient.get("/personal/history?limit=50")
+    val response = apiClient.get("/mobile/history?limit=50")
     val scans = response.optJSONArray("scans") ?: return@runCatching emptyList()
     buildList {
       for (index in 0 until scans.length()) {

@@ -68,7 +68,11 @@ class ApiClient(private val sessionStore: MobileSessionStore) {
           401 -> ApiError.Unauthorized()
           403, 429 -> ApiError.UpgradeRequired(message)
           404 -> ApiError.NotFound(message)
-          in 500..599 -> ApiError.Server("EraseAI is temporarily unavailable. Please try again.")
+          409 -> ApiError.Server(message.ifBlank { "An account with this email already exists. Sign in instead." })
+          in 500..599 -> ApiError.Server(
+            message.takeIf { msg -> msg.isNotBlank() && !msg.contains("An error occurred", ignoreCase = true) }
+              ?: "EraseAI is temporarily unavailable. Please try again.",
+          )
           else -> ApiError.Server(message)
         }
       }
@@ -124,7 +128,11 @@ class ApiClient(private val sessionStore: MobileSessionStore) {
         401 -> ApiError.Unauthorized()
         403, 429 -> ApiError.UpgradeRequired(message)
         404 -> ApiError.NotFound(message)
-        in 500..599 -> ApiError.Server("EraseAI is temporarily unavailable. Please try again.")
+        409 -> ApiError.Server(message.ifBlank { "An account with this email already exists. Sign in instead." })
+        in 500..599 -> ApiError.Server(
+          message.takeIf { msg -> msg.isNotBlank() && !msg.contains("An error occurred", ignoreCase = true) }
+            ?: "EraseAI is temporarily unavailable. Please try again.",
+        )
         else -> ApiError.Server(message)
       }
     }

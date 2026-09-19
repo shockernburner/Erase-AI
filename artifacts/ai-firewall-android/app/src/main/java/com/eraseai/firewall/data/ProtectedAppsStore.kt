@@ -18,7 +18,15 @@ class ProtectedAppsStore(context: Context) {
     prefs.getStringSet(PROTECTED_APPS_KEY, DEFAULT_PROTECTED_PACKAGES) ?: DEFAULT_PROTECTED_PACKAGES
 
   fun setSelectedPackages(packages: Set<String>) {
-    prefs.edit().putStringSet(PROTECTED_APPS_KEY, packages).apply()
+    // Gemini ships as either the Gemini app or inside Google Search — keep both in sync.
+    val normalized = packages.toMutableSet()
+    if ("com.google.android.apps.bard" in normalized) {
+      normalized += "com.google.android.googlequicksearchbox"
+    }
+    if ("com.google.android.googlequicksearchbox" in normalized) {
+      normalized += "com.google.android.apps.bard"
+    }
+    prefs.edit().putStringSet(PROTECTED_APPS_KEY, normalized).apply()
   }
 
   suspend fun mergeFromBackend(apiClient: ApiClient): Result<Set<String>> = runCatching {

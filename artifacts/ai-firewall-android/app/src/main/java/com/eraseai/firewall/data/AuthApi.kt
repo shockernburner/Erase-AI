@@ -28,13 +28,19 @@ class AuthApi(
     val payload = JSONObject()
       .put("email", email)
       .put("password", password)
-      .put("firstName", firstName)
-      .put("lastName", lastName)
+    if (!firstName.isNullOrBlank()) payload.put("firstName", firstName)
+    if (!lastName.isNullOrBlank()) payload.put("lastName", lastName)
     return postForSession("/mobile-auth/signup", payload)
   }
 
+  /** Ensures terms are accepted for existing accounts created before mobile auto-accept. */
+  suspend fun acceptTerms(): Result<Unit> = runCatching {
+    apiClient.post("/auth/accept-terms", JSONObject())
+    Unit
+  }
+
   suspend fun logout(): Result<Unit> = runCatching {
-    apiClient.post("/mobile-auth/logout", JSONObject())
+    runCatching { apiClient.post("/mobile-auth/logout", JSONObject()) }
     sessionStore.clear()
   }
 
@@ -47,6 +53,8 @@ class AuthApi(
       planType = user.optString("planType", "free"),
     )
     sessionStore.saveSession(result.token, result.userId, result.planType)
+    // Best-effort for older accounts; signup/login already stamp terms on the server.
+    runCatching { acceptTerms() }
     result
   }
 }

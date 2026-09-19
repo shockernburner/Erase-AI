@@ -70,7 +70,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
       feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
       flags = flags or
         AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS or
-        AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+        AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+        AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
       notificationTimeout = 250
     }
   }
@@ -91,7 +92,11 @@ class AiGuardAccessibilityService : AccessibilityService() {
     when (event.eventType) {
       AccessibilityEvent.TYPE_VIEW_CLICKED -> {
         val source = event.source ?: return
-        if (AppSendAdapter.isSendButton(source, packageName)) {
+        val root = rootInActiveWindow
+        val draft = AppSendAdapter.composerText(root)
+        val hasAttachments = AttachmentHints.extract(root).isNotEmpty()
+        val hasSendable = draft.length >= MIN_SCAN_LENGTH || hasAttachments
+        if (AppSendAdapter.isSendClick(source, packageName, composerHasSendableText = hasSendable)) {
           handleSendGate(packageName, source)
         }
       }
@@ -111,8 +116,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (shouldSkipSystemSurface(packageName)) return false
     if (!protectedAppsStore.isProtected(packageName) || !protectedAppsStore.isFirewallEnabled()) return false
 
-    val editable = AppSendAdapter.findComposerEditable(root) ?: return false
-    if (editable.text.isNullOrBlank()) return false
+    val draft = AppSendAdapter.composerText(root)
+    val hasAttachments = AttachmentHints.extract(root).isNotEmpty()
+    if (draft.length < MIN_SCAN_LENGTH && !hasAttachments) return false
     val sendNode = AppSendAdapter.findSendButton(root, packageName)
     handleSendGate(packageName, sendNode)
     return gateInProgress
@@ -139,16 +145,27 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (gateInProgress) return
 
     val root = rootInActiveWindow ?: return
-    val editable = AppSendAdapter.findComposerEditable(root) ?: return
-    val text = editable.text?.toString()?.trim()?.take(MAX_SCAN_TEXT_LENGTH).orEmpty()
-    if (text.length < MIN_SCAN_LENGTH) return
+    val editable = AppSendAdapter.findComposerEditable(root)
+    val text = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
+    val attachments = AttachmentHints.extract(root)
+    if (text.length < MIN_SCAN_LENGTH && attachments.isEmpty()) return
 
     activeNode = editable
-    pendingSendNode = sendNode ?: AppSendAdapter.findSendButton(root, packageName)
+    pendingSendNode = sendNode?.takeIf { it.isClickable }
+      ?: AppSendAdapter.findSendButton(root, packageName)
+      ?: sendNode
     gateInProgress = true
     removeOverlay()
 
-    val attachments = AttachmentHints.extract(root)
+    // Race the host app: clear composer so the original tap cannot deliver the prompt.
+    editable?.performAction(
+      AccessibilityNodeInfo.ACTION_SET_TEXT,
+      Bundle().apply {
+        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
+      },
+    )
+    overlayText = text.ifBlank { attachments.joinToString { it.label }.ifBlank { "[media]" } }
+
     val pieces = buildPieces(text, attachments)
 
     serviceScope.launch {
@@ -161,15 +178,23 @@ class AiGuardAccessibilityService : AccessibilityService() {
         protectedAppsStore.saveLastScanSummary(multi.result.summary(), multi.result.diagnosticsType())
         overlayResult = multi.result
         overlayPieces = multi.pieces
-        if (multi.result.findings.isEmpty() &&
+        val safeToAutoSend = multi.result.findings.isEmpty() &&
           !multi.result.hasAttachmentBlocker &&
-          attachments.none { it.skipReason != null }
-        ) {
+          attachments.isEmpty() &&
+          text.isNotBlank()
+        if (safeToAutoSend) {
           showSafeAutoSendOverlay(text, packageName, multi.result)
         } else {
-          showGateOverlay(text, packageName, multi.result, multi.pieces, attachments)
+          showGateOverlay(
+            text.ifBlank { "[attachment / media]" },
+            packageName,
+            multi.result,
+            multi.pieces,
+            attachments,
+          )
         }
       }.onFailure { err ->
+        restoreComposerText(text)
         gateInProgress = false
         protectedAppsStore.saveLastErrorCategory(err.errorCategory())
         if (err is ApiError.Unauthorized) {
@@ -178,22 +203,34 @@ class AiGuardAccessibilityService : AccessibilityService() {
             Toast.makeText(this@AiGuardAccessibilityService, "Sign in to EraseAI to keep firewall scanning active", Toast.LENGTH_LONG).show()
           }
         } else {
-          Toast.makeText(this@AiGuardAccessibilityService, "EraseAI scan unavailable — send blocked", Toast.LENGTH_SHORT).show()
+          Toast.makeText(this@AiGuardAccessibilityService, "EraseAI scan unavailable — message held. Try again.", Toast.LENGTH_SHORT).show()
         }
       }
     }
   }
 
+  private fun restoreComposerText(text: String) {
+    val node = activeNode ?: return
+    node.performAction(
+      AccessibilityNodeInfo.ACTION_SET_TEXT,
+      Bundle().apply {
+        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+      },
+    )
+  }
+
   private fun buildPieces(promptText: String, attachments: List<AttachmentHint>): List<ScanPiece> {
     val pieces = mutableListOf<ScanPiece>()
-    chunkText(promptText, PIECE_CHUNK_SIZE).forEachIndexed { index, chunk ->
-      pieces.add(
-        ScanPiece(
-          source = "prompt",
-          label = if (index == 0) "Prompt text" else "Prompt text (part ${index + 1})",
-          text = chunk,
-        ),
-      )
+    if (promptText.isNotBlank()) {
+      chunkText(promptText, PIECE_CHUNK_SIZE).forEachIndexed { index, chunk ->
+        pieces.add(
+          ScanPiece(
+            source = "prompt",
+            label = if (index == 0) "Prompt text" else "Prompt text (part ${index + 1})",
+            text = chunk,
+          ),
+        )
+      }
     }
     // In-composer attachments are never readable via Accessibility — always skip.
     attachments.forEach { attachment ->
@@ -207,6 +244,15 @@ class AiGuardAccessibilityService : AccessibilityService() {
         ),
       )
     }
+    if (pieces.isEmpty()) {
+      pieces.add(
+        ScanPiece(
+          source = "prompt",
+          label = "Prompt text",
+          text = promptText.ifBlank { " " },
+        ),
+      )
+    }
     return pieces
   }
 
@@ -214,8 +260,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (gateInProgress) return
     val root = rootInActiveWindow ?: return
     val node = AppSendAdapter.findComposerEditable(root) ?: return
-    if (node.isPassword || node.text.isNullOrBlank()) return
-    val text = node.text.toString().trim().take(MAX_SCAN_TEXT_LENGTH)
+    if (node.isPassword) return
+    val text = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
     if (text.length < MIN_SCAN_LENGTH) return
 
     activeNode = node
@@ -234,9 +280,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
           targetPackage = packageName,
           targetName = packageName,
         ).onSuccess { result ->
-          if (result.findings.isNotEmpty() && result.action != "allow") {
-            protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
-          }
+          protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
+        }.onFailure { err ->
+          protectedAppsStore.saveLastErrorCategory(err.errorCategory())
         }
       }
     }
@@ -264,6 +310,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     mountOverlay(container, modal = true)
     safeAutoSendRunnable = Runnable {
       reportOutcome("auto-send")
+      restoreComposerText(originalText)
       performApprovedSend()
     }
     handler.postDelayed(safeAutoSendRunnable!!, SAFE_AUTO_SEND_MS)
@@ -389,6 +436,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (showCancel) {
       actions.addView(outlinedButton("Cancel") {
         reportOutcome("cancel")
+        // Keep the draft in the composer so the user can edit instead of losing it.
+        restoreComposerText(originalText)
         finishGate()
       })
     }
@@ -402,6 +451,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
       val label = if (result.action == "block") "Send Anyway (Risky)" else "Send Anyway"
       actions.addView(outlinedButton(label) {
         reportOutcome("send-anyway")
+        restoreComposerText(originalText)
         performApprovedSend()
       })
     }
@@ -570,7 +620,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
   companion object {
     private const val PREVIEW_DEBOUNCE_MS = 1200L
     private const val MIN_PREVIEW_INTERVAL_MS = 4000L
-    private const val MIN_SCAN_LENGTH = 8
+    private const val MIN_SCAN_LENGTH = 3
     private const val MAX_SCAN_TEXT_LENGTH = 5000
     private const val PIECE_CHUNK_SIZE = 4000
     private const val SAFE_AUTO_SEND_MS = 450L
