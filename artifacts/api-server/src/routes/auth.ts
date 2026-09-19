@@ -154,11 +154,19 @@ async function seedAdminUser() {
 seedAdminUser();
 
 function isUniqueConstraintError(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    "code" in err &&
-    (err as { code: string }).code === "23505"
-  );
+  let current: unknown = err;
+  for (let depth = 0; depth < 6 && current; depth++) {
+    if (typeof current === "object" && current !== null) {
+      const code = (current as { code?: unknown }).code;
+      if (code === "23505" || code === "SQLITE_CONSTRAINT_UNIQUE") return true;
+      const message = (current as { message?: unknown }).message;
+      if (typeof message === "string" && /unique|duplicate key/i.test(message)) return true;
+      current = (current as { cause?: unknown }).cause;
+      continue;
+    }
+    break;
+  }
+  return false;
 }
 
 router.post("/auth/signup", async (req: Request, res: Response) => {

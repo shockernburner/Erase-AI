@@ -872,7 +872,7 @@ private fun ErrorCard(message: String) {
 private fun scansUsed(entitlement: EntitlementState?): String = entitlement?.let { if (it.scanLimit == null) it.scansUsed.toString() else "${it.scansUsed}/${it.scanLimit}" } ?: "Loading"
 
 private fun Screen.title(): String = when (this) {
-  Screen.Splash, Screen.Login -> "EraseAI AI Firewall"
+  Screen.Splash, Screen.Login -> "EraseAI Firewall"
   Screen.Dashboard -> "Firewall Home"
   Screen.Subscription -> "Subscription"
   Screen.AccessibilityGuide -> "Enable Accessibility"

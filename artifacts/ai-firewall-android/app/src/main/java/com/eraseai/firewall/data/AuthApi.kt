@@ -28,8 +28,8 @@ class AuthApi(
     val payload = JSONObject()
       .put("email", email)
       .put("password", password)
-      .put("firstName", firstName)
-      .put("lastName", lastName)
+    if (!firstName.isNullOrBlank()) payload.put("firstName", firstName)
+    if (!lastName.isNullOrBlank()) payload.put("lastName", lastName)
     return postForSession("/mobile-auth/signup", payload)
   }
 

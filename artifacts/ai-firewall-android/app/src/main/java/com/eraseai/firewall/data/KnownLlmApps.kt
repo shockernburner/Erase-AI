@@ -16,6 +16,7 @@ object KnownLlmApps {
     "com.perplexity.app" to "Perplexity",
     "com.quora.poe" to "Poe",
     "com.character.AI" to "Character.AI",
+    "com.character.ai" to "Character.AI",
     "ai.character.app" to "Character.AI",
     "com.meta.ai" to "Meta AI",
     "com.facebook.orca" to "Messenger / Meta AI",

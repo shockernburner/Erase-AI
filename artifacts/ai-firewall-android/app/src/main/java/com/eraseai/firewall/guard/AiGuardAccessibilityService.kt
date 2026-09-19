@@ -92,7 +92,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
     when (event.eventType) {
       AccessibilityEvent.TYPE_VIEW_CLICKED -> {
         val source = event.source ?: return
-        if (AppSendAdapter.isSendClick(source, packageName)) {
+        val root = rootInActiveWindow
+        val draft = AppSendAdapter.composerText(root)
+        val hasSendable = draft.length >= MIN_SCAN_LENGTH
+        if (AppSendAdapter.isSendClick(source, packageName, composerHasSendableText = hasSendable)) {
           handleSendGate(packageName, source)
         }
       }
@@ -112,8 +115,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (shouldSkipSystemSurface(packageName)) return false
     if (!protectedAppsStore.isProtected(packageName) || !protectedAppsStore.isFirewallEnabled()) return false
 
-    val editable = AppSendAdapter.findComposerEditable(root) ?: return false
-    if (editable.text.isNullOrBlank()) return false
+    val draft = AppSendAdapter.composerText(root)
+    if (draft.length < MIN_SCAN_LENGTH) return false
     val sendNode = AppSendAdapter.findSendButton(root, packageName)
     handleSendGate(packageName, sendNode)
     return gateInProgress
@@ -141,7 +144,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     val root = rootInActiveWindow ?: return
     val editable = AppSendAdapter.findComposerEditable(root) ?: return
-    val text = editable.text?.toString()?.trim()?.take(MAX_SCAN_TEXT_LENGTH).orEmpty()
+    val text = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
     if (text.length < MIN_SCAN_LENGTH) return
 
     activeNode = editable
@@ -238,8 +241,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (gateInProgress) return
     val root = rootInActiveWindow ?: return
     val node = AppSendAdapter.findComposerEditable(root) ?: return
-    if (node.isPassword || node.text.isNullOrBlank()) return
-    val text = node.text.toString().trim().take(MAX_SCAN_TEXT_LENGTH)
+    if (node.isPassword) return
+    val text = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
     if (text.length < MIN_SCAN_LENGTH) return
 
     activeNode = node
@@ -258,9 +261,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
           targetPackage = packageName,
           targetName = packageName,
         ).onSuccess { result ->
-          if (result.findings.isNotEmpty() && result.action != "allow") {
-            protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
-          }
+          protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
         }
       }
     }

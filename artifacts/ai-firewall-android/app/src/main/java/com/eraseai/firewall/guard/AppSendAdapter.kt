@@ -9,13 +9,13 @@ import android.view.accessibility.AccessibilityNodeInfo
  */
 object AppSendAdapter {
   fun isSendButton(node: AccessibilityNodeInfo, packageName: String): Boolean {
-    // Prefer clickable controls; Gemini sometimes nests the label on a non-clickable child.
     val className = node.className?.toString().orEmpty()
     if (className.contains("EditText", ignoreCase = true)) return false
     if (node.isEditable) return false
 
     val haystack = nodeHaystack(node)
     if (haystack.isBlank()) return false
+    if (isExcludedComposerChrome(haystack)) return false
 
     packageHints(packageName).forEach { hint ->
       if (haystack.contains(hint)) return true
@@ -28,18 +28,28 @@ object AppSendAdapter {
     return false
   }
 
-  /** True if [node] or any ancestor looks like a send control (Gemini icon taps). */
-  fun isSendClick(node: AccessibilityNodeInfo?, packageName: String): Boolean {
+  /**
+   * True if this click should trigger the send gate.
+   * Gemini often uses an unlabeled / waveform / arrow control once text is present.
+   */
+  fun isSendClick(
+    node: AccessibilityNodeInfo?,
+    packageName: String,
+    composerHasSendableText: Boolean = false,
+  ): Boolean {
     var current = node
     var depth = 0
     while (current != null && depth < 6) {
       if (isSendButton(current, packageName)) return true
-      // Clickable container near composer often wraps an unlabeled arrow icon.
       if ((current.isClickable || current.isEnabled) && looksLikeSendIcon(current, packageName)) {
         return true
       }
       current = current.parent
       depth++
+    }
+
+    if (composerHasSendableText && isGeminiFamily(packageName)) {
+      return isGeminiPrimaryActionWhileTyping(node)
     }
     return false
   }
@@ -51,17 +61,66 @@ object AppSendAdapter {
     return root.findEditableNode()
   }
 
+  fun composerText(root: AccessibilityNodeInfo?): String {
+    val node = findComposerEditable(root) ?: return ""
+    val raw = node.text?.toString()?.trim().orEmpty()
+    if (raw.isBlank()) return ""
+    val hint = if (Build.VERSION.SDK_INT >= 26) {
+      node.hintText?.toString()?.trim().orEmpty()
+    } else {
+      ""
+    }
+    // Gemini placeholder ("Ask Gemini") is often exposed as text before the user types.
+    if (hint.isNotBlank() && raw.equals(hint, ignoreCase = true)) return ""
+    if (raw.equals("Ask Gemini", ignoreCase = true) || raw.startsWith("Ask Gem", ignoreCase = true)) return ""
+    return raw
+  }
+
   fun findSendButton(root: AccessibilityNodeInfo?, packageName: String): AccessibilityNodeInfo? {
     if (root == null) return null
     return root.findSendNode(packageName)
+  }
+
+  private fun isGeminiPrimaryActionWhileTyping(node: AccessibilityNodeInfo?): Boolean {
+    var current = node
+    var depth = 0
+    while (current != null && depth < 5) {
+      if (current.isClickable) {
+        val haystack = nodeHaystack(current)
+        if (isExcludedComposerChrome(haystack)) return false
+        val className = current.className?.toString().orEmpty()
+        val looksLikeAction =
+          className.contains("Button", ignoreCase = true) ||
+            className.contains("ImageView", ignoreCase = true) ||
+            className.contains("ImageButton", ignoreCase = true) ||
+            haystack.contains("send") ||
+            haystack.contains("submit") ||
+            haystack.contains("arrow") ||
+            // Gemini frequently exposes an unlabeled circular send control.
+            (haystack.isBlank() && current.childCount <= 2)
+        if (looksLikeAction) return true
+      }
+      current = current.parent
+      depth++
+    }
+    return false
   }
 
   private fun looksLikeSendIcon(node: AccessibilityNodeInfo, packageName: String): Boolean {
     if (!isGeminiFamily(packageName) && packageName != "com.openai.chatgpt") return false
     if (!node.isClickable) return false
     val haystack = nodeHaystack(node)
-    // Gemini/ChatGPT often use icon buttons labeled Send / Submit / arrow (not plain "Send" text).
+    if (isExcludedComposerChrome(haystack)) return false
     return haystack.contains("arrow") || haystack.contains("send") || haystack.contains("submit")
+  }
+
+  private fun isExcludedComposerChrome(haystack: String): Boolean {
+    val excluded = listOf(
+      "microphone", "mic", "voice", "speak", "camera", "photo", "image",
+      "attach", "attachment", "gallery", "plus", "add", "new chat",
+      "keyboard", "tools", "menu", "more", "share", "listen",
+    )
+    return excluded.any { haystack.contains(it) }
   }
 
   private fun nodeHaystack(node: AccessibilityNodeInfo): String {
