@@ -712,7 +712,13 @@ private fun AccessibilityGuideScreen(enabled: Boolean, onOpenSettings: () -> Uni
 @Composable
 private fun ProtectedAppsScreen(apps: List<ProtectedApp>, selected: Set<String>, onToggle: (String) -> Unit) {
   LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    item { Text("Select AI or coding apps to protect. Suggested LLM apps are listed first. Newly installed known AI apps are offered automatically.") }
+    item {
+      Text(
+        "Select AI or coding apps to protect. Suggested LLM apps are listed first. " +
+          "For Gemini, enable both “Gemini” and “Google / Gemini” if both appear — " +
+          "some phones open Gemini inside the Google app.",
+      )
+    }
     items(apps) { app ->
       Card(border = if (app.suggested) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null) {
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {

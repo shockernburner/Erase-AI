@@ -70,7 +70,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
       feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
       flags = flags or
         AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS or
-        AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
+        AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+        AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
       notificationTimeout = 250
     }
   }
@@ -91,7 +92,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     when (event.eventType) {
       AccessibilityEvent.TYPE_VIEW_CLICKED -> {
         val source = event.source ?: return
-        if (AppSendAdapter.isSendButton(source, packageName)) {
+        if (AppSendAdapter.isSendClick(source, packageName)) {
           handleSendGate(packageName, source)
         }
       }
@@ -144,9 +145,20 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (text.length < MIN_SCAN_LENGTH) return
 
     activeNode = editable
-    pendingSendNode = sendNode ?: AppSendAdapter.findSendButton(root, packageName)
+    pendingSendNode = sendNode?.takeIf { it.isClickable }
+      ?: AppSendAdapter.findSendButton(root, packageName)
+      ?: sendNode
     gateInProgress = true
     removeOverlay()
+
+    // Race the host app: clear composer so the original tap cannot deliver the prompt.
+    editable.performAction(
+      AccessibilityNodeInfo.ACTION_SET_TEXT,
+      Bundle().apply {
+        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
+      },
+    )
+    overlayText = text
 
     val attachments = AttachmentHints.extract(root)
     val pieces = buildPieces(text, attachments)
@@ -170,6 +182,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
           showGateOverlay(text, packageName, multi.result, multi.pieces, attachments)
         }
       }.onFailure { err ->
+        // Restore draft so the user does not lose text when scan fails.
+        restoreComposerText(text)
         gateInProgress = false
         protectedAppsStore.saveLastErrorCategory(err.errorCategory())
         if (err is ApiError.Unauthorized) {
@@ -178,10 +192,20 @@ class AiGuardAccessibilityService : AccessibilityService() {
             Toast.makeText(this@AiGuardAccessibilityService, "Sign in to EraseAI to keep firewall scanning active", Toast.LENGTH_LONG).show()
           }
         } else {
-          Toast.makeText(this@AiGuardAccessibilityService, "EraseAI scan unavailable — send blocked", Toast.LENGTH_SHORT).show()
+          Toast.makeText(this@AiGuardAccessibilityService, "EraseAI scan unavailable — message held. Try again.", Toast.LENGTH_SHORT).show()
         }
       }
     }
+  }
+
+  private fun restoreComposerText(text: String) {
+    val node = activeNode ?: return
+    node.performAction(
+      AccessibilityNodeInfo.ACTION_SET_TEXT,
+      Bundle().apply {
+        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+      },
+    )
   }
 
   private fun buildPieces(promptText: String, attachments: List<AttachmentHint>): List<ScanPiece> {
@@ -264,6 +288,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     mountOverlay(container, modal = true)
     safeAutoSendRunnable = Runnable {
       reportOutcome("auto-send")
+      restoreComposerText(originalText)
       performApprovedSend()
     }
     handler.postDelayed(safeAutoSendRunnable!!, SAFE_AUTO_SEND_MS)
@@ -389,6 +414,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (showCancel) {
       actions.addView(outlinedButton("Cancel") {
         reportOutcome("cancel")
+        // Keep the draft in the composer so the user can edit instead of losing it.
+        restoreComposerText(originalText)
         finishGate()
       })
     }
@@ -402,6 +429,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
       val label = if (result.action == "block") "Send Anyway (Risky)" else "Send Anyway"
       actions.addView(outlinedButton(label) {
         reportOutcome("send-anyway")
+        restoreComposerText(originalText)
         performApprovedSend()
       })
     }
