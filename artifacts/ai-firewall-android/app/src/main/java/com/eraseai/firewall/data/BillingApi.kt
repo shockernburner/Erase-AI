@@ -11,7 +11,9 @@ data class PlayProduct(
 
 class BillingApi(private val apiClient: ApiClient) {
   suspend fun playProducts(): Result<List<PlayProduct>> = runCatching {
-    val response = apiClient.get("/mobile/play/products", includeAuth = false)
+    // Prefer authenticated request; endpoint is also public as a fallback.
+    val response = runCatching { apiClient.get("/mobile/play/products", includeAuth = true) }
+      .getOrElse { apiClient.get("/mobile/play/products", includeAuth = false) }
     val products = response.optJSONArray("products") ?: return@runCatching emptyList()
     buildList {
       for (index in 0 until products.length()) {

@@ -297,7 +297,12 @@ private fun EraseAIFirewallApp(
 
   fun loadPlayProducts() {
     scope.launch {
-      billingApi.playProducts().onSuccess { playProducts = it }
+      billingApi.playProducts()
+        .onSuccess { playProducts = it }
+        .onFailure {
+          billingMessage = it.safeMessage()
+          protectedStore.saveLastErrorCategory(it.errorCategory())
+        }
     }
   }
 
@@ -821,7 +826,7 @@ private fun DashboardScreen(
       }
     }
 
-    item { BrandSectionLabel("Controls") }
+    item { BrandSectionLabel("Firewall") }
     item {
       BrandCard(highlighted = !accessibilityEnabled) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -887,16 +892,7 @@ private fun DashboardScreen(
       }
     }
 
-    item { BrandSectionLabel("Tools") }
-    item { BrandSecondaryButton("Choose Protected Apps", onApps) }
-    item {
-      BrandSecondaryButton(
-        text = "Manual / Share Scan",
-        onClick = onManual,
-        enabled = entitlement?.manualScan != false,
-      )
-    }
-    item { BrandSecondaryButton("Dataset Sanitizer", onDatasetSanitizer) }
+    item { BrandSecondaryButton("Protected Apps", onApps, icon = Icons.Default.Security) }
     item {
       BrandSecondaryButton(
         text = "Scanner History",
@@ -912,6 +908,16 @@ private fun DashboardScreen(
         icon = Icons.Default.OpenInBrowser,
       )
     }
+
+    item { BrandSectionLabel("Misc services") }
+    item {
+      BrandSecondaryButton(
+        text = "Manual / Share Scan",
+        onClick = onManual,
+        enabled = entitlement?.manualScan != false,
+      )
+    }
+    item { BrandSecondaryButton("Dataset Sanitizer", onDatasetSanitizer) }
     item {
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         BrandTextButton("Refresh", onRefresh)
@@ -969,7 +975,10 @@ private fun SubscriptionScreen(
     if (products.isEmpty()) {
       item {
         BrandCard {
-          Text("Google Play subscription products are not available yet. Create matching subscription IDs in Play Console before internal testing checkout.")
+          Text(
+            message
+              ?: "Google Play subscription products are not available yet. Create matching subscription IDs in Play Console (eraseai_personal_monthly / annual), then Refresh. Install from Play internal testing for real purchases.",
+          )
         }
       }
     } else {

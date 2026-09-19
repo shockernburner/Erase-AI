@@ -263,6 +263,19 @@ router.post("/mobile-auth/signup", async (req: Request, res: Response) => {
       return;
     }
 
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, emailLower))
+      .limit(1);
+    if (existing) {
+      res.status(409).json({
+        error: "An account with this email already exists",
+        message: "An account with this email already exists. Sign in instead.",
+      });
+      return;
+    }
+
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const isAdmin = emailLower === ADMIN_EMAIL;
 
@@ -270,6 +283,8 @@ router.post("/mobile-auth/signup", async (req: Request, res: Response) => {
       const now = new Date();
       const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+      // Mobile Privacy screen covers disclosure; accept current terms at signup
+      // so /personal/* and history work without a separate web cookie flow.
       const [user] = await db
         .insert(usersTable)
         .values({
@@ -283,6 +298,8 @@ router.post("/mobile-auth/signup", async (req: Request, res: Response) => {
           subscriptionStatus: isAdmin ? "active" : null,
           planStartDate: now,
           planEndDate: isAdmin ? null : trialEnd,
+          termsAcceptedAt: now,
+          termsVersion: CURRENT_TERMS_VERSION,
         })
         .returning();
 
@@ -290,14 +307,21 @@ router.post("/mobile-auth/signup", async (req: Request, res: Response) => {
       res.status(201).json(session);
     } catch (insertErr) {
       if (isUniqueConstraintError(insertErr)) {
-        res.status(409).json({ error: "An account with this email already exists" });
+        res.status(409).json({
+          error: "An account with this email already exists",
+          message: "An account with this email already exists. Sign in instead.",
+        });
         return;
       }
+      console.error("Mobile signup insert error:", insertErr);
       throw insertErr;
     }
   } catch (err) {
     console.error("Mobile signup error:", err);
-    res.status(500).json({ error: "An error occurred during signup" });
+    res.status(500).json({
+      error: "An error occurred during signup",
+      message: "Could not create your account. Please try again or sign in if you already registered.",
+    });
   }
 });
 
@@ -397,7 +421,21 @@ router.post("/mobile-auth/login", async (req: Request, res: Response) => {
       return;
     }
 
-    const session = await createSessionTokenForUser(user);
+    let sessionUser = user;
+    if (user.termsVersion !== CURRENT_TERMS_VERSION) {
+      const now = new Date();
+      const [updated] = await db
+        .update(usersTable)
+        .set({
+          termsAcceptedAt: now,
+          termsVersion: CURRENT_TERMS_VERSION,
+        })
+        .where(eq(usersTable.id, user.id))
+        .returning();
+      if (updated) sessionUser = updated;
+    }
+
+    const session = await createSessionTokenForUser(sessionUser);
     res.json(session);
   } catch (err) {
     console.error("Mobile login error:", err);

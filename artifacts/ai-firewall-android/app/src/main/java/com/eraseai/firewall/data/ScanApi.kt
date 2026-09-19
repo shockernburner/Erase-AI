@@ -11,7 +11,7 @@ class ScanApi(private val apiClient: ApiClient) {
     targetName: String? = null,
   ): Result<ScanResult> = runCatching {
     val response = apiClient.post(
-      "/personal/analyze",
+      "/mobile/analyze",
       JSONObject()
         .put("text", text)
         .put("source", source)

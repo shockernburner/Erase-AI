@@ -5,6 +5,7 @@ export const PUBLIC_PREFIXES = [
   "/api/auth/",
   "/api/mobile-auth/",
   "/api/mobile/health",
+  "/api/mobile/play/products",
   "/api/healthz",
   "/api/billing/webhook",
   "/api/billing/pricing",

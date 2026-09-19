@@ -23,6 +23,10 @@ describe("mobile public route contract", () => {
     assert.equal(isPublicRoute("/api/mobile-auth/signup"), true);
   });
 
+  test("mobile play products catalog is public", () => {
+    assert.equal(isPublicRoute("/api/mobile/play/products"), true);
+  });
+
   test("mobile entitlement requires auth", () => {
     assert.equal(isPublicRoute("/api/mobile/entitlement"), false);
   });
