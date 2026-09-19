@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,14 +38,14 @@ import androidx.core.content.FileProvider
 import com.eraseai.firewall.R
 import com.eraseai.firewall.data.DatasetAnalysisResult
 import com.eraseai.firewall.data.DatasetUploadResult
+import com.eraseai.firewall.ui.theme.BrandBackground
+import com.eraseai.firewall.ui.theme.BrandMutedForeground
+import com.eraseai.firewall.ui.theme.BrandPrimary
+import com.eraseai.firewall.ui.theme.BrandPrimaryBright
+import com.eraseai.firewall.ui.theme.BrandSurface
 import java.io.File
 
-private val SplashTop = Color(0xFF0B111E)
 private val SplashMid = Color(0xFF0F172A)
-private val SplashBottom = Color(0xFF070A13)
-private val SplashAccent = Color(0xFF0DCCF2)
-private val SplashMuted = Color(0xFF94A3B8)
-private val SplashTitle = Color(0xFFF8FAFC)
 
 @Composable
 fun BrandedSplashScreen() {
@@ -55,42 +53,50 @@ fun BrandedSplashScreen() {
     modifier = Modifier
       .fillMaxSize()
       .background(
-        Brush.verticalGradient(listOf(SplashTop, SplashMid, SplashBottom)),
+        Brush.verticalGradient(
+          listOf(BrandSurface, SplashMid, BrandBackground),
+        ),
       ),
   ) {
     Column(
       modifier = Modifier
         .fillMaxSize()
-        .padding(horizontal = 28.dp, vertical = 40.dp),
+        .padding(horizontal = 28.dp, vertical = 48.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center,
     ) {
       Image(
         painter = painterResource(id = R.drawable.eraseai_shield),
-        contentDescription = "EraseAI shield",
+        contentDescription = "EraseAI Firewall",
         modifier = Modifier
-          .size(120.dp)
-          .clip(RoundedCornerShape(28.dp)),
+          .size(128.dp)
+          .clip(RoundedCornerShape(32.dp)),
         contentScale = ContentScale.Fit,
       )
-      Spacer(Modifier.height(28.dp))
+      Spacer(modifier = Modifier.height(28.dp))
       Text(
         text = "EraseAI",
-        style = MaterialTheme.typography.headlineLarge,
-        color = SplashTitle,
+        style = MaterialTheme.typography.displayLarge,
+        color = BrandPrimaryBright,
         textAlign = TextAlign.Center,
       )
-      Spacer(Modifier.height(12.dp))
       Text(
-        text = "EraseAI — the firewall that stops unwanted data from reaching public AI apps",
-        style = MaterialTheme.typography.bodyLarge,
-        color = SplashMuted,
+        text = "Firewall",
+        style = MaterialTheme.typography.headlineLarge,
+        color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center,
       )
-      Spacer(Modifier.height(32.dp))
+      Spacer(modifier = Modifier.height(14.dp))
+      Text(
+        text = "Stop unwanted data from reaching public AI apps",
+        style = MaterialTheme.typography.bodyLarge,
+        color = BrandMutedForeground,
+        textAlign = TextAlign.Center,
+      )
+      Spacer(modifier = Modifier.height(36.dp))
       CircularProgressIndicator(
-        color = SplashAccent,
-        trackColor = Color(0xFF1E293B),
+        color = BrandPrimary,
+        trackColor = BrandSurface,
         strokeWidth = 3.dp,
         modifier = Modifier.size(36.dp),
       )
@@ -114,83 +120,95 @@ fun DatasetSanitizerScreen(
 ) {
   val context = LocalContext.current
   LazyColumn(
-    modifier = Modifier.fillMaxSize().padding(16.dp),
+    modifier = Modifier.fillMaxSize(),
+    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp),
   ) {
     item {
-      Text("Dataset Sanitizer", style = MaterialTheme.typography.headlineSmall)
-      Text("Upload CSV, JSON, or TXT training data. Analyze for PII and quality issues, apply fixes, then download a cleaned dataset.")
+      BrandHero(
+        title = "Dataset Sanitizer",
+        subtitle = "Upload CSV, JSON, or TXT. Analyze for PII, apply fixes, then download a cleaned dataset.",
+      )
     }
-    if (error != null) {
-      item { Text(error, color = MaterialTheme.colorScheme.error) }
-    }
+    if (error != null) item { BrandErrorBanner(error) }
     if (status != null) {
-      item { Text(status) }
+      item {
+        BrandCard {
+          Text(status, style = MaterialTheme.typography.bodyMedium)
+        }
+      }
     }
     item {
-      OutlinedButton(onClick = onPickFile, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
-        androidx.compose.material3.Icon(Icons.Default.Upload, null)
-        Text("  Choose file")
-      }
+      BrandSecondaryButton(
+        text = "Choose file",
+        onClick = onPickFile,
+        enabled = !loading,
+        icon = Icons.Default.Upload,
+      )
     }
     upload?.let { result ->
       item {
-        Card(Modifier.fillMaxWidth()) {
-          Column(Modifier.padding(12.dp)) {
-            Text(result.name, style = MaterialTheme.typography.titleMedium)
-            Text("${result.rowCount} rows · ${result.format.uppercase()}")
-          }
+        BrandCard(highlighted = true) {
+          Text(result.name, style = MaterialTheme.typography.titleMedium)
+          Text("${result.rowCount} rows · ${result.format.uppercase()}", color = BrandMutedForeground)
         }
       }
       item {
-        Button(onClick = onAnalyze, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
-          Text(if (loading) "Working…" else "Analyze dataset")
-        }
+        BrandPrimaryButton(
+          text = if (loading) "Working…" else "Analyze dataset",
+          onClick = onAnalyze,
+          enabled = !loading,
+        )
       }
     }
     analysis?.let { result ->
       item {
-        Card(Modifier.fillMaxWidth()) {
-          Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("${result.totalIssues} issues found", style = MaterialTheme.typography.titleMedium)
-            Text("Version ${result.version}")
-          }
+        BrandCard {
+          Text("${result.totalIssues} issues found", style = MaterialTheme.typography.titleMedium)
+          Text("Version ${result.version}", color = BrandMutedForeground)
         }
       }
       items(result.summary) { item ->
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-          Text(item.type)
-          Text("${item.count} · ${item.severity}")
+        BrandCard {
+          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(item.type)
+            Text("${item.count} · ${item.severity}", color = BrandMutedForeground)
+          }
         }
       }
       if (result.totalIssues > 0) {
         item {
-          Button(onClick = onApplyFixes, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
-            Text("Apply suggested fixes")
-          }
+          BrandPrimaryButton(
+            text = "Apply suggested fixes",
+            onClick = onApplyFixes,
+            enabled = !loading,
+          )
         }
       }
       item {
-        OutlinedButton(onClick = onDownload, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
-          androidx.compose.material3.Icon(Icons.Default.Download, null)
-          Text("  Download cleaned file")
-        }
+        BrandSecondaryButton(
+          text = "Download cleaned file",
+          onClick = onDownload,
+          enabled = !loading,
+          icon = Icons.Default.Download,
+        )
       }
     }
     downloadedFile?.let { file ->
       item {
-        OutlinedButton(onClick = {
-          val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-          val share = Intent(Intent.ACTION_SEND).apply {
-            type = "application/octet-stream"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          }
-          context.startActivity(Intent.createChooser(share, "Share cleaned dataset"))
-          onShareDownload()
-        }, modifier = Modifier.fillMaxWidth()) {
-          Text("Share downloaded file")
-        }
+        BrandSecondaryButton(
+          text = "Share downloaded file",
+          onClick = {
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val share = Intent(Intent.ACTION_SEND).apply {
+              type = "application/octet-stream"
+              putExtra(Intent.EXTRA_STREAM, uri)
+              addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(share, "Share cleaned dataset"))
+            onShareDownload()
+          },
+        )
       }
     }
   }
