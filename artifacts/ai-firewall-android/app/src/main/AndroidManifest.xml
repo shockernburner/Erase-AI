@@ -117,6 +117,26 @@
         android:resource="@xml/accessibility_service_config" />
     </service>
 
+    <!--
+      Disabled until the keyboard has a real key layout. Android runs one IME at a time, so
+      selecting this gate-only surface leaves the user unable to type. The accessibility
+      curtain covers send interception on its own; flip enabled to true to revive this.
+    -->
+    <service
+      android:name=".ime.EraseAiKeyboardService"
+      android:label="@string/ime_label"
+      android:permission="android.permission.BIND_INPUT_METHOD"
+      android:enabled="false"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.view.InputMethod" />
+      </intent-filter>
+
+      <meta-data
+        android:name="android.view.im"
+        android:resource="@xml/method" />
+    </service>
+
     <receiver
       android:name=".PackageInstallReceiver"
       android:exported="true">

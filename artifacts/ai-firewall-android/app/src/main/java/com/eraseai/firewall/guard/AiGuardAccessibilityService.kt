@@ -7,7 +7,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
@@ -28,7 +27,6 @@ import com.eraseai.firewall.MainActivity
 import com.eraseai.firewall.data.ApiClient
 import com.eraseai.firewall.data.ApiError
 import com.eraseai.firewall.data.MobileSessionStore
-import com.eraseai.firewall.data.MultiScanResult
 import com.eraseai.firewall.data.PieceScanSummary
 import com.eraseai.firewall.data.ProtectedAppsStore
 import com.eraseai.firewall.data.ScanApi
@@ -50,23 +48,37 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private var previewRunnable: Runnable? = null
   private val lastTextHashByPackage = mutableMapOf<String, String>()
   private val lastScanAtByPackage = mutableMapOf<String, Long>()
-  /** Gemini often clears the composer before our click handler runs — keep last typed draft. */
-  private val lastDraftByPackage = mutableMapOf<String, String>()
   private var activeNode: AccessibilityNodeInfo? = null
   private var pendingSendNode: AccessibilityNodeInfo? = null
   private var overlayView: View? = null
-  private var sendShieldView: View? = null
   private var overlayText: String? = null
   private var overlayPackageName: String? = null
   private var overlayResult: ScanResult? = null
   private var overlayPieces: List<PieceScanSummary> = emptyList()
-  private var bypassNextSend = false
   private var gateInProgress = false
   private var sessionPromptShown = false
   private var safeAutoSendRunnable: Runnable? = null
-  /** Risk text currently blocked by the send-button shield (not yet decided). */
-  private var shieldedDraft: String? = null
-  private var shieldedPackage: String? = null
+
+  private val curtain by lazy { SendCurtain(this) }
+  private var curtainPackage: String? = null
+
+  /** Risky text found while typing, awaiting a user decision. */
+  private data class PendingRisk(val text: String, val scan: LocalRiskScanner.LocalScan)
+
+  private var pendingRisk: PendingRisk? = null
+
+  /** High-risk text pulled out of the host composer so a send cannot transmit it. */
+  private var heldText: String? = null
+
+  /** Text the user explicitly approved for sending; re-gating it would trap them in a loop. */
+  private var decidedText: String? = null
+
+  /**
+   * Set when the user cancels. The draft is handed back so they can edit it, and EraseAI stops
+   * yanking it out of the composer — but the curtain stays armed, so cancelling is never a way
+   * to get an unguarded send.
+   */
+  private var holdSuspended = false
 
   override fun onServiceConnected() {
     super.onServiceConnected()
@@ -100,57 +112,44 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     when (event.eventType) {
       AccessibilityEvent.TYPE_VIEW_CLICKED -> {
-        val source = event.source ?: return
-        val root = rootInActiveWindow
-        val liveDraft = AppSendAdapter.composerText(root)
-        if (liveDraft.length >= MIN_SCAN_LENGTH) {
-          lastDraftByPackage[packageName] = liveDraft.take(MAX_SCAN_TEXT_LENGTH)
+        // Telemetry only. This event is delivered after the host app already submitted, so it
+        // can never block a send — the curtain does that.
+        val source = event.source
+        if (source != null && AppSendAdapter.isSendClick(source, packageName)) {
+          GuardLog.gate("host-send-observed", packageName, "curtain=${curtain.isShowing}")
         }
-        val draft = resolveDraftText(packageName, liveDraft)
-        val hasAttachments = AttachmentHints.extract(root).isNotEmpty()
-        val hasSendable = draft.length >= MIN_SCAN_LENGTH || hasAttachments
-        if (AppSendAdapter.isSendClick(source, packageName, composerHasSendableText = hasSendable)) {
-          handleSendGate(packageName, source)
-        }
+        scheduleComposerEvaluation(packageName)
       }
       AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
       AccessibilityEvent.TYPE_VIEW_FOCUSED,
       AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
-      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
-        val liveDraft = AppSendAdapter.composerText(rootInActiveWindow)
-        if (liveDraft.length >= MIN_SCAN_LENGTH) {
-          lastDraftByPackage[packageName] = liveDraft.take(MAX_SCAN_TEXT_LENGTH)
-        }
-        schedulePreviewScan(packageName)
-      }
+      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> scheduleComposerEvaluation(packageName)
     }
   }
 
   override fun onKeyEvent(event: KeyEvent): Boolean {
     if (event.action != KeyEvent.ACTION_DOWN) return false
     if (event.keyCode != KeyEvent.KEYCODE_ENTER && event.keyCode != KeyEvent.KEYCODE_NUMPAD_ENTER) return false
+    if (gateInProgress) return true
 
-    val root = rootInActiveWindow ?: return false
-    val packageName = root.packageName?.toString() ?: return false
+    val packageName = curtainPackage ?: rootInActiveWindow?.packageName?.toString() ?: return false
     if (shouldSkipSystemSurface(packageName)) return false
     if (!protectedAppsStore.isProtected(packageName) || !protectedAppsStore.isFirewallEnabled()) return false
 
-    val draft = resolveDraftText(packageName, AppSendAdapter.composerText(root))
-    val hasAttachments = AttachmentHints.extract(root).isNotEmpty()
-    if (draft.length < MIN_SCAN_LENGTH && !hasAttachments) return false
-    val sendNode = AppSendAdapter.findSendButton(root, packageName)
-    handleSendGate(packageName, sendNode)
-    return gateInProgress
+    val pending = pendingRisk ?: return false
+    GuardLog.gate("hardware-enter", packageName, "level=${pending.scan.level}")
+    openGate(packageName, pending.text, pending.scan)
+    return true
   }
 
   override fun onInterrupt() {
     removeOverlay()
-    removeSendShield()
+    releaseCurtain("service-interrupt")
   }
 
   override fun onDestroy() {
     removeOverlay()
-    removeSendShield()
+    releaseCurtain("service-destroyed")
     handler.removeCallbacksAndMessages(null)
     activeNode = null
     pendingSendNode = null
@@ -158,54 +157,169 @@ class AiGuardAccessibilityService : AccessibilityService() {
     super.onDestroy()
   }
 
-  private fun handleSendGate(packageName: String, sendNode: AccessibilityNodeInfo?) {
-    if (bypassNextSend) {
-      bypassNextSend = false
+  private fun scheduleComposerEvaluation(packageName: String) {
+    if (gateInProgress) return
+    previewRunnable?.let { handler.removeCallbacks(it) }
+    previewRunnable = Runnable { evaluateComposer(packageName) }
+    handler.postDelayed(previewRunnable!!, PREVIEW_DEBOUNCE_MS)
+  }
+
+  /**
+   * Single source of truth for protection state: locate the composer across all windows, scan
+   * locally, then keep the curtain pinned to the live action row.
+   */
+  private fun evaluateComposer(packageName: String) {
+    if (gateInProgress) return
+    curtainPackage = packageName
+
+    val target = ComposerLocator.locate(this, packageName)
+    if (target == null) {
+      // Only drop protection when nothing is in custody; a missing composer is often just a
+      // transient relayout while the keyboard animates.
+      if (heldText == null) releaseCurtain("composer-missing")
       return
     }
-    if (gateInProgress) return
 
-    val root = rootInActiveWindow ?: return
-    val editable = AppSendAdapter.findComposerEditable(root)
-    val liveText = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
-    val text = resolveDraftText(packageName, liveText).take(MAX_SCAN_TEXT_LENGTH)
-    val attachments = AttachmentHints.extract(root)
-    if (text.length < MIN_SCAN_LENGTH && attachments.isEmpty()) return
+    activeNode = target.editable
+    pendingSendNode = target.sendNode
 
-    val local = LocalRiskScanner.scan(text)
-    protectedAppsStore.appendLocalScan(text.ifBlank { "[attachment]" }, local.riskScore, local.level)
-    protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
-
-    activeNode = editable
-    pendingSendNode = sendNode?.takeIf { it.isClickable }
-      ?: AppSendAdapter.findSendButton(root, packageName)
-      ?: sendNode
-    gateInProgress = true
-    removeSendShield()
-    removeOverlay()
-    lastDraftByPackage.remove(packageName)
-
-    // Race the host app: clear composer so the original tap cannot deliver the prompt.
-    editable?.performAction(
-      AccessibilityNodeInfo.ACTION_SET_TEXT,
-      Bundle().apply {
-        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
-      },
-    )
-    overlayText = text.ifBlank { attachments.joinToString { it.label }.ifBlank { "[media]" } }
-
-    if (local.shouldWarn || attachments.isNotEmpty()) {
-      showGateOverlay(
-        text.ifBlank { "[attachment / media]" },
-        packageName,
-        local.toScanResult(text),
-        emptyList(),
-        attachments,
-      )
+    val pending = pendingRisk
+    if (heldText != null && pending != null) {
+      // Text is in EraseAI custody: the composer is empty by design, so keep the curtain up
+      // and just track the row as the layout moves.
+      curtain.show(target.submitZone, pending.scan.level, packageName) { openGateFromCurtain(packageName) }
+      return
     }
 
-    val pieces = buildPieces(text, attachments)
+    val text = target.text.take(MAX_SCAN_TEXT_LENGTH)
+    if (text.length < MIN_SCAN_LENGTH) {
+      releaseCurtain("composer-empty")
+      return
+    }
+    if (text == decidedText) {
+      releaseCurtain("user-decided")
+      return
+    }
+    GuardLog.composer(packageName, text.length, target.actionRow, "locator")
 
+    val local = LocalRiskScanner.scan(text)
+    if (!local.shouldWarn) {
+      releaseCurtain("no-findings")
+      maybePreviewApiScan(packageName, text)
+      return
+    }
+
+    pendingRisk = PendingRisk(text, local)
+    protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
+    curtain.show(target.submitZone, local.level, packageName) { openGateFromCurtain(packageName) }
+
+    // High risk only: take the text out of the app so no send path can transmit it, even if
+    // the user reaches the send control before the curtain is repositioned. Once the user has
+    // cancelled, the draft stays put for editing and the curtain alone blocks the send.
+    if (local.level == "high" && !holdSuspended) holdText(packageName, target.editable, text)
+
+    GuardLog.risk(packageName, local.level, local.riskScore, local.findings.size, held = heldText != null)
+    maybePreviewApiScan(packageName, text)
+  }
+
+  private fun holdText(packageName: String, editable: AccessibilityNodeInfo, text: String) {
+    if (heldText != null) return
+    setComposerText(editable, "")
+    heldText = text
+    GuardLog.gate("hold", packageName, "len=${text.length}")
+    // ACTION_SET_TEXT can report success while the host app repopulates its own draft, and an
+    // immediate re-read returns stale content. Confirm once the UI has settled so the log
+    // reflects what actually happened. Either way the curtain still covers every send control.
+    handler.postDelayed({
+      editable.refresh()
+      if (!editable.text.isNullOrEmpty()) {
+        GuardLog.warn("hold.repopulated", packageName, "composer refilled by host app")
+      }
+    }, HOLD_VERIFY_DELAY_MS)
+  }
+
+  private fun openGateFromCurtain(packageName: String) {
+    val pending = pendingRisk ?: return
+    GuardLog.gate("curtain-tapped", packageName, "level=${pending.scan.level}")
+    openGate(packageName, pending.text, pending.scan)
+  }
+
+  private fun releaseCurtain(reason: String) {
+    pendingRisk = null
+    heldText = null
+    // The composer is safe or empty again, so the next risky draft gets full protection.
+    holdSuspended = false
+    curtain.hide(curtainPackage, reason)
+  }
+
+  /** Silent background refinement: never writes history and never opens UI on its own. */
+  private fun maybePreviewApiScan(packageName: String, text: String) {
+    val hash = text.sha256()
+    if (hash == lastTextHashByPackage[packageName]) return
+    val now = System.currentTimeMillis()
+    if (now - (lastScanAtByPackage[packageName] ?: 0L) < MIN_PREVIEW_INTERVAL_MS) return
+    lastTextHashByPackage[packageName] = hash
+    lastScanAtByPackage[packageName] = now
+    serviceScope.launch {
+      scanApi.scan(
+        text = text,
+        source = "android_accessibility_preview",
+        targetPackage = packageName,
+        targetName = packageName,
+      ).onSuccess { result ->
+        protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
+      }.onFailure { err ->
+        protectedAppsStore.saveLastErrorCategory(err.errorCategory())
+      }
+    }
+  }
+
+  private fun openGate(packageName: String, text: String, local: LocalRiskScanner.LocalScan) {
+    if (gateInProgress) return
+    gateInProgress = true
+    curtain.hide(packageName, "gate-opened")
+    handler.removeCallbacksAndMessages(null)
+
+    val target = ComposerLocator.locate(this, packageName)
+    target?.let {
+      activeNode = it.editable
+      pendingSendNode = it.sendNode
+    }
+    val attachments = target?.root?.let { AttachmentHints.extract(it) } ?: emptyList()
+    if (attachments.isNotEmpty()) {
+      GuardLog.gate("attachments", packageName, "labels=${attachments.joinToString("|") { it.label }}")
+    }
+
+    // Take custody now if the medium-risk path left the text in the composer.
+    if (heldText == null) {
+      activeNode?.let { setComposerText(it, "") }
+      heldText = text
+    }
+
+    // One history row per decision — preview scans never write history.
+    protectedAppsStore.appendLocalScan(text.ifBlank { "[attachment]" }, local.riskScore, local.level)
+    protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
+    GuardLog.gate("open", packageName, "level=${local.level} findings=${local.findings.size}")
+
+    overlayText = text.ifBlank { attachments.joinToString { it.label }.ifBlank { "[media]" } }
+    showGateOverlay(
+      text.ifBlank { "[attachment / media]" },
+      packageName,
+      local.toScanResult(text),
+      emptyList(),
+      attachments,
+    )
+
+    refineGateWithApi(packageName, text, attachments)
+  }
+
+  /** Upgrades the already-visible local verdict with the server result, if it arrives in time. */
+  private fun refineGateWithApi(
+    packageName: String,
+    text: String,
+    attachments: List<AttachmentHint>,
+  ) {
+    val pieces = buildPieces(text, attachments)
     serviceScope.launch {
       scanApi.scanPieces(
         pieces = pieces,
@@ -213,49 +327,59 @@ class AiGuardAccessibilityService : AccessibilityService() {
         targetPackage = packageName,
         targetName = packageName,
       ).onSuccess { multi ->
+        if (!gateInProgress) return@onSuccess
         protectedAppsStore.saveLastScanSummary(multi.result.summary(), multi.result.diagnosticsType())
-        if (overlayView != null) return@onSuccess
         overlayResult = multi.result
         overlayPieces = multi.pieces
-        val safeToAutoSend = multi.result.findings.isEmpty() &&
+        GuardLog.gate("api-refined", packageName, "level=${multi.result.level}")
+
+        val serverSaysClear = multi.result.findings.isEmpty() &&
           !multi.result.hasAttachmentBlocker &&
           attachments.isEmpty() &&
           text.isNotBlank()
-        if (safeToAutoSend) {
+        if (serverSaysClear) {
           showSafeAutoSendOverlay(text, packageName, multi.result)
-        } else {
-          showGateOverlay(
-            text.ifBlank { "[attachment / media]" },
-            packageName,
-            multi.result,
-            multi.pieces,
-            attachments,
-          )
+          return@onSuccess
         }
+        showGateOverlay(
+          text.ifBlank { "[attachment / media]" },
+          packageName,
+          multi.result,
+          multi.pieces,
+          attachments,
+        )
       }.onFailure { err ->
-        restoreComposerText(text)
-        gateInProgress = false
         protectedAppsStore.saveLastErrorCategory(err.errorCategory())
-        if (err is ApiError.Unauthorized) {
-          if (!sessionPromptShown) {
-            sessionPromptShown = true
-            Toast.makeText(this@AiGuardAccessibilityService, "Sign in to EraseAI to keep firewall scanning active", Toast.LENGTH_LONG).show()
-          }
-        } else {
-          Toast.makeText(this@AiGuardAccessibilityService, "EraseAI scan unavailable — message held. Try again.", Toast.LENGTH_SHORT).show()
+        GuardLog.warn("api-scan.failed", packageName, "category=${err.errorCategory()}")
+        // The local verdict stays on screen: a failed API call must never unblock a send.
+        if (err is ApiError.Unauthorized && !sessionPromptShown) {
+          sessionPromptShown = true
+          Toast.makeText(
+            this@AiGuardAccessibilityService,
+            "Sign in to EraseAI for full scanning — local protection is still active",
+            Toast.LENGTH_LONG,
+          ).show()
         }
       }
     }
   }
 
-  private fun restoreComposerText(text: String) {
-    val node = activeNode ?: return
+  private fun setComposerText(node: AccessibilityNodeInfo, text: String): Boolean =
     node.performAction(
       AccessibilityNodeInfo.ACTION_SET_TEXT,
       Bundle().apply {
         putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
       },
     )
+
+  private fun restoreComposerText(text: String) {
+    val node = activeNode ?: return
+    if (setComposerText(node, text)) {
+      heldText = null
+    } else {
+      copyText(text)
+      Toast.makeText(this, "Your prompt was copied — paste it to continue.", Toast.LENGTH_LONG).show()
+    }
   }
 
   private fun buildPieces(promptText: String, attachments: List<AttachmentHint>): List<ScanPiece> {
@@ -295,162 +419,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
     return pieces
   }
 
-  private fun schedulePreviewScan(packageName: String) {
-    if (gateInProgress) return
-    val root = rootInActiveWindow ?: return
-    val node = AppSendAdapter.findComposerEditable(root) ?: return
-    if (node.isPassword) return
-    val text = AppSendAdapter.composerText(root).take(MAX_SCAN_TEXT_LENGTH)
-    if (text.length < MIN_SCAN_LENGTH) {
-      removeSendShield()
-      return
-    }
-
-    activeNode = node
-    previewRunnable?.let { handler.removeCallbacks(it) }
-    previewRunnable = Runnable {
-      val local = LocalRiskScanner.scan(text)
-      // Cover the Send control before the user taps — Accessibility click events
-      // arrive AFTER Gemini already submitted, so mid-type shields are required.
-      if (local.shouldWarn) {
-        protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
-        mountSendShield(packageName, text, local)
-      } else {
-        removeSendShield()
-      }
-
-      val hash = text.sha256()
-      if (hash == lastTextHashByPackage[packageName]) return@Runnable
-      val now = System.currentTimeMillis()
-      if (now - (lastScanAtByPackage[packageName] ?: 0L) < MIN_PREVIEW_INTERVAL_MS) return@Runnable
-      lastTextHashByPackage[packageName] = hash
-      lastScanAtByPackage[packageName] = now
-      // Preview API scan is silent: no history rows, no overlay spam.
-      serviceScope.launch {
-        scanApi.scan(
-          text = text,
-          source = "android_accessibility_preview",
-          targetPackage = packageName,
-          targetName = packageName,
-        ).onSuccess { result ->
-          protectedAppsStore.saveLastScanSummary(result.summary(), result.diagnosticsType())
-        }.onFailure { err ->
-          protectedAppsStore.saveLastErrorCategory(err.errorCategory())
-        }
-      }
-    }
-    handler.postDelayed(previewRunnable!!, PREVIEW_DEBOUNCE_MS)
-  }
-
-  /**
-   * Blocks taps on the host app's Send control while risky text is in the composer.
-   * Opening the decision sheet happens only when the user taps this shield (or Enter).
-   */
-  private fun mountSendShield(
-    packageName: String,
-    text: String,
-    local: LocalRiskScanner.LocalScan,
-  ) {
-    if (gateInProgress) return
-    shieldedDraft = text
-    shieldedPackage = packageName
-    val root = rootInActiveWindow
-    val send = AppSendAdapter.findSendButton(root, packageName)
-    val bounds = Rect()
-    send?.getBoundsInScreen(bounds)
-    val density = resources.displayMetrics.density
-    val minSize = (56 * density).toInt()
-    if (bounds.isEmpty || bounds.width() < 24 || bounds.height() < 24) {
-      // Fallback: cover the lower-right send area used by Gemini / ChatGPT.
-      val dm = resources.displayMetrics
-      bounds.set(
-        dm.widthPixels - (88 * density).toInt(),
-        dm.heightPixels - (120 * density).toInt(),
-        dm.widthPixels - (8 * density).toInt(),
-        dm.heightPixels - (40 * density).toInt(),
-      )
-    } else {
-      bounds.inset((-8 * density).toInt(), (-8 * density).toInt())
-      if (bounds.width() < minSize) {
-        val pad = (minSize - bounds.width()) / 2
-        bounds.left -= pad
-        bounds.right += pad
-      }
-      if (bounds.height() < minSize) {
-        val pad = (minSize - bounds.height()) / 2
-        bounds.top -= pad
-        bounds.bottom += pad
-      }
-    }
-
-    removeSendShield()
-    val shield = TextView(this).apply {
-      setText("⊘")
-      gravity = Gravity.CENTER
-      textSize = 18f
-      setTextColor(0xFFF8FAFC.toInt())
-      background = GradientDrawable().apply {
-        shape = GradientDrawable.OVAL
-        setColor(0xE8DC2626.toInt())
-      }
-      contentDescription = "EraseAI blocked send — tap to review"
-      setOnClickListener {
-        openGateFromShield(packageName, text, local)
-      }
-    }
-    val params = WindowManager.LayoutParams(
-      bounds.width().coerceAtLeast(minSize),
-      bounds.height().coerceAtLeast(minSize),
-      WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-      PixelFormat.TRANSLUCENT,
-    ).apply {
-      gravity = Gravity.TOP or Gravity.START
-      x = bounds.left.coerceAtLeast(0)
-      y = bounds.top.coerceAtLeast(0)
-    }
-    runCatching {
-      getSystemService(WindowManager::class.java).addView(shield, params)
-      sendShieldView = shield
-    }
-  }
-
-  private fun openGateFromShield(
-    packageName: String,
-    text: String,
-    local: LocalRiskScanner.LocalScan,
-  ) {
-    if (gateInProgress) return
-    removeSendShield()
-    val root = rootInActiveWindow
-    val editable = AppSendAdapter.findComposerEditable(root)
-    activeNode = editable
-    pendingSendNode = AppSendAdapter.findSendButton(root, packageName)
-    gateInProgress = true
-    protectedAppsStore.appendLocalScan(text, local.riskScore, local.level)
-    protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
-    lastDraftByPackage[packageName] = text
-    // Clear composer only after the user engages the shield — prompt never left the device.
-    editable?.performAction(
-      AccessibilityNodeInfo.ACTION_SET_TEXT,
-      Bundle().apply {
-        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
-      },
-    )
-    showGateOverlay(text, packageName, local.toScanResult(text), emptyList(), emptyList())
-  }
-
-  private fun removeSendShield() {
-    sendShieldView?.let { view ->
-      runCatching { getSystemService(WindowManager::class.java).removeView(view) }
-    }
-    sendShieldView = null
-    shieldedDraft = null
-    shieldedPackage = null
-  }
-
   private fun showSafeAutoSendOverlay(originalText: String, packageName: String, result: ScanResult) {
     overlayText = originalText
     overlayPackageName = packageName
@@ -472,6 +440,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     mountOverlay(container, modal = true)
     safeAutoSendRunnable = Runnable {
       reportOutcome("auto-send")
+      decidedText = originalText
       restoreComposerText(originalText)
       performApprovedSend()
     }
@@ -627,6 +596,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (showCancel) {
       actions.addView(gateButton("Cancel", filled = false) {
         reportOutcome("cancel")
+        // Hand the draft back for editing but keep the send blocked: cancelling declines the
+        // send, so it must not mark the text as approved the way Send Anyway does.
+        holdSuspended = true
         restoreComposerText(originalText)
         finishGate()
       })
@@ -641,6 +613,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
       val label = if (result.action == "block") "Send Anyway (Risky)" else "Send Anyway"
       actions.addView(gateButton(label, filled = false) {
         reportOutcome("send-anyway")
+        decidedText = originalText
         restoreComposerText(originalText)
         performApprovedSend()
       })
@@ -717,14 +690,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
     serviceScope.launch {
       scanApi.rewrite(originalText, findings)
         .onSuccess { rewritten ->
-          val node = activeNode
-          val replaced = node?.performAction(
-            AccessibilityNodeInfo.ACTION_SET_TEXT,
-            Bundle().apply {
-              putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, rewritten)
-            },
-          ) ?: false
-          if (!replaced) {
+          val replaced = activeNode?.let { setComposerText(it, rewritten) } ?: false
+          if (replaced) {
+            heldText = null
+          } else {
             copyText(rewritten)
             Toast.makeText(this@AiGuardAccessibilityService, "Safe text copied. Paste it into the field.", Toast.LENGTH_LONG).show()
           }
@@ -737,6 +706,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
           }
         }
         .onFailure {
+          // Gate stays open on purpose: the prompt is still held, so the user can still
+          // Cancel or Send Anyway rather than being silently released.
+          GuardLog.warn("sanitize.failed", overlayPackageName, "reason=${it.message ?: "unknown"}")
           protectedAppsStore.saveLastErrorCategory("entitlement")
           Toast.makeText(this@AiGuardAccessibilityService, "Sanitization requires an active EraseAI plan", Toast.LENGTH_LONG).show()
         }
@@ -744,13 +716,17 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   private fun performApprovedSend() {
-    bypassNextSend = true
     val sendNode = pendingSendNode
+    var clicked = false
     if (sendNode != null) {
       sendNode.refresh()
       if (sendNode.isEnabled) {
-        sendNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        clicked = sendNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
       }
+    }
+    GuardLog.gate("approved-send", curtainPackage, "clicked=$clicked")
+    if (!clicked) {
+      Toast.makeText(this, "Your prompt is back in the composer — tap send to continue.", Toast.LENGTH_SHORT).show()
     }
     finishGate()
   }
@@ -760,7 +736,11 @@ class AiGuardAccessibilityService : AccessibilityService() {
     safeAutoSendRunnable = null
     gateInProgress = false
     removeOverlay()
-    removeSendShield()
+    pendingRisk = null
+    heldText = null
+    curtain.hide(curtainPackage, "gate-finished")
+    // The restored draft would immediately re-trigger the curtain; let the user act first.
+    lastTextHashByPackage.clear()
   }
 
   private fun reportOutcome(action: String) {
@@ -803,16 +783,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
     return packageName == "com.android.systemui" || packageName == applicationContext.packageName
   }
 
-  private fun resolveDraftText(packageName: String, liveText: String): String {
-    val cached = lastDraftByPackage[packageName].orEmpty()
-    return when {
-      liveText.length >= MIN_SCAN_LENGTH -> liveText
-      cached.length >= MIN_SCAN_LENGTH -> cached
-      liveText.isNotBlank() -> liveText
-      else -> cached
-    }
-  }
-
   private fun chunkText(text: String, chunkSize: Int): List<String> {
     if (text.length <= chunkSize) return listOf(text)
     val chunks = mutableListOf<String>()
@@ -845,5 +815,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
     private const val MAX_SCAN_TEXT_LENGTH = 5000
     private const val PIECE_CHUNK_SIZE = 4000
     private const val SAFE_AUTO_SEND_MS = 450L
+    private const val HOLD_VERIFY_DELAY_MS = 300L
   }
 }

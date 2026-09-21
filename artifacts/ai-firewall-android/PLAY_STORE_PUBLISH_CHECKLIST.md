@@ -192,6 +192,13 @@ Present in the app today:
 - [ ] `BIND_ACCESSIBILITY_SERVICE` (guard service only)
 - [ ] `PACKAGE_ADDED` receiver for known LLM install hints (not `QUERY_ALL_PACKAGES`)
 
+### 3.9b EraseAI Keyboard — not shipped in this release
+
+The IME service is present in the source but declared `android:enabled="false"`, so it never
+appears in the system keyboard list and needs no Play declaration. It has no key layout yet, and
+Android runs one IME at a time, so selecting it would leave the user unable to type. Before
+enabling it, give it a real keyboard layout and add the `BIND_INPUT_METHOD` declaration back.
+
 Not present (confirm before review):
 
 - [ ] No VPN / `BIND_VPN_SERVICE`

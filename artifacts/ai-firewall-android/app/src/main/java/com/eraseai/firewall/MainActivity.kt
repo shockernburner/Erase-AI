@@ -885,6 +885,7 @@ private fun DashboardScreen(
       }
     }
 
+    item { BrandSectionLabel("Apps & activity") }
     item { BrandSecondaryButton("Protected Apps", onApps, icon = Icons.Default.Security) }
     item {
       BrandSecondaryButton(

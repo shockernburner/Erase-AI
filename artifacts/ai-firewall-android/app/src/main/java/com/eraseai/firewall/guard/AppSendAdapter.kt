@@ -29,14 +29,11 @@ object AppSendAdapter {
   }
 
   /**
-   * True if this click should trigger the send gate.
-   * Gemini often uses an unlabeled / waveform / arrow control once text is present.
+   * True if this click looks like a send. Used for telemetry only — accessibility click
+   * events arrive after the host app already submitted, so this can never block a send.
+   * Blocking is the [SendCurtain]'s job.
    */
-  fun isSendClick(
-    node: AccessibilityNodeInfo?,
-    packageName: String,
-    composerHasSendableText: Boolean = false,
-  ): Boolean {
+  fun isSendClick(node: AccessibilityNodeInfo?, packageName: String): Boolean {
     var current = node
     var depth = 0
     while (current != null && depth < 6) {
@@ -46,10 +43,6 @@ object AppSendAdapter {
       }
       current = current.parent
       depth++
-    }
-
-    if (composerHasSendableText && isGeminiFamily(packageName)) {
-      return isGeminiPrimaryActionWhileTyping(node)
     }
     return false
   }
@@ -79,31 +72,6 @@ object AppSendAdapter {
   fun findSendButton(root: AccessibilityNodeInfo?, packageName: String): AccessibilityNodeInfo? {
     if (root == null) return null
     return root.findSendNode(packageName)
-  }
-
-  private fun isGeminiPrimaryActionWhileTyping(node: AccessibilityNodeInfo?): Boolean {
-    var current = node
-    var depth = 0
-    while (current != null && depth < 5) {
-      if (current.isClickable) {
-        val haystack = nodeHaystack(current)
-        if (isExcludedComposerChrome(haystack)) return false
-        val className = current.className?.toString().orEmpty()
-        val looksLikeAction =
-          className.contains("Button", ignoreCase = true) ||
-            className.contains("ImageView", ignoreCase = true) ||
-            className.contains("ImageButton", ignoreCase = true) ||
-            haystack.contains("send") ||
-            haystack.contains("submit") ||
-            haystack.contains("arrow") ||
-            // Gemini frequently exposes an unlabeled circular send control.
-            (haystack.isBlank() && current.childCount <= 2)
-        if (looksLikeAction) return true
-      }
-      current = current.parent
-      depth++
-    }
-    return false
   }
 
   private fun looksLikeSendIcon(node: AccessibilityNodeInfo, packageName: String): Boolean {

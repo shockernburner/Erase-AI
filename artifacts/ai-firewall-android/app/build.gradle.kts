@@ -28,8 +28,8 @@ android {
     applicationId = "com.eraseai.firewall"
     minSdk = 28
     targetSdk = 36
-    versionCode = 10
-    versionName = "0.1.9-internal"
+    versionCode = 12
+    versionName = "0.2.1-internal"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "API_BASE_URL", "\"https://eraseai.ai/api\"")
