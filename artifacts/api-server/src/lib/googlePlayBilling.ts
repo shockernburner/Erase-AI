@@ -11,30 +11,78 @@ import { resolvePlayProduct, ANDROID_PACKAGE_NAME } from "./mobileEntitlement";
 
 const ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
 
-function getServiceAccountJson(): Record<string, unknown> | null {
+function getServiceAccountJson():
+  | { ok: true; credentials: Record<string, unknown> }
+  | { ok: false; error: string; code: string }
+  | null {
   const raw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
   if (!raw) return null;
+  let parsed: Record<string, unknown>;
   try {
-    return JSON.parse(raw) as Record<string, unknown>;
+    parsed = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    return null;
+    return {
+      ok: false,
+      code: "PLAY_BAD_CREDENTIALS",
+      error: "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not valid JSON.",
+    };
   }
+
+  // Android OAuth client JSON (Download JSON on Credentials → OAuth 2.0 Client IDs)
+  // is NOT usable for Play purchase verification.
+  if (
+    parsed.type !== "service_account" ||
+    typeof parsed.private_key !== "string" ||
+    typeof parsed.client_email !== "string"
+  ) {
+    const looksLikeOauthClient =
+      "installed" in parsed ||
+      "web" in parsed ||
+      typeof parsed.client_id === "string" ||
+      parsed.type === "authorized_user";
+    return {
+      ok: false,
+      code: "PLAY_BAD_CREDENTIALS",
+      error: looksLikeOauthClient
+        ? "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON looks like an OAuth client file. Use a Service Account key instead: Cloud Console → IAM → Service accounts → EraseAI → Keys → Add key → JSON. Then invite that service account email in Play Console → Users and permissions."
+        : "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON must be a service_account key with private_key and client_email (not an Android OAuth client ID).",
+    };
+  }
+
+  return { ok: true, credentials: parsed };
 }
 
 function getPackageName(inputPackage?: string): string {
   return inputPackage || process.env.GOOGLE_PLAY_PACKAGE_NAME || ANDROID_PACKAGE_NAME;
 }
 
-async function getAndroidPublisherAccessToken(): Promise<string | null> {
-  const credentials = getServiceAccountJson();
-  if (!credentials) return null;
-  const auth = new GoogleAuth({
-    credentials,
-    scopes: [ANDROID_PUBLISHER_SCOPE],
-  });
-  const client = await auth.getClient();
-  const token = await client.getAccessToken();
-  return token.token ?? null;
+async function getAndroidPublisherAccessToken(): Promise<string> {
+  const credentialsResult = getServiceAccountJson();
+  if (!credentialsResult) {
+    throw Object.assign(new Error("Google Play billing verification is not configured on the server"), {
+      code: "PLAY_NOT_CONFIGURED",
+    });
+  }
+  if (!credentialsResult.ok) {
+    throw Object.assign(new Error(credentialsResult.error), { code: credentialsResult.code });
+  }
+  try {
+    const auth = new GoogleAuth({
+      credentials: credentialsResult.credentials,
+      scopes: [ANDROID_PUBLISHER_SCOPE],
+    });
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+    if (!token.token) {
+      throw new Error("Service account returned an empty access token");
+    }
+    return token.token;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Google Play auth failed";
+    throw Object.assign(new Error(`Play service account could not sign in: ${message}`), {
+      code: "PLAY_BAD_CREDENTIALS",
+    });
+  }
 }
 
 async function fetchSubscriptionV2(
@@ -77,13 +125,19 @@ export async function verifyGooglePlayPurchase(input: PlayVerifyInput): Promise<
     return { ok: false, status: 400, error: "Unknown Google Play product id", code: "UNKNOWN_PRODUCT" };
   }
 
-  const accessToken = await getAndroidPublisherAccessToken();
-  if (!accessToken) {
+  let accessToken: string;
+  try {
+    accessToken = await getAndroidPublisherAccessToken();
+  } catch (err) {
+    const code = typeof err === "object" && err && "code" in err
+      ? String((err as { code?: unknown }).code || "PLAY_NOT_CONFIGURED")
+      : "PLAY_NOT_CONFIGURED";
+    const message = err instanceof Error ? err.message : "Google Play billing verification is not configured on the server";
     return {
       ok: false,
       status: 503,
-      error: "Google Play billing verification is not configured on the server",
-      code: "PLAY_NOT_CONFIGURED",
+      error: message,
+      code,
     };
   }
 

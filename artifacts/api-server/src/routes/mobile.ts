@@ -263,7 +263,12 @@ router.post("/play/verify", async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error("Google Play verify error:", err);
-    res.status(500).json({ error: "Failed to verify Google Play purchase" });
+    const raw = err instanceof Error ? err.message : "Failed to verify Google Play purchase";
+    const safe = raw.replace(/ya29\.[A-Za-z0-9._-]+/g, "[token]").slice(0, 280);
+    res.status(500).json({
+      error: safe || "Failed to verify Google Play purchase",
+      code: "PLAY_VERIFY_FAILED",
+    });
   }
 });
 

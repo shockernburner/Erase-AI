@@ -231,12 +231,16 @@ In Play Console → Monetize → Products → Subscriptions:
 
 ### 4.4 Service account for server verification
 
+**Do not** put an Android OAuth client “Download JSON” file in `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`. That file has a `client_id` and is for app signing / OAuth identity — Play purchase verification will fail.
+
+Use a **service account key** instead:
+
 - [ ] Google Cloud project with **Google Play Android Developer API** enabled
   - `https://console.developers.google.com/apis/api/androidpublisher.googleapis.com/overview?project=YOUR_PROJECT_ID`
-  - If Subscribe fails with “API has not been used… or it is disabled”, enable it on the **same** Cloud project as the Play service account (error includes the project number, e.g. `919131003927`), wait 5–10 minutes, retry
-- [ ] Service account created; JSON key downloaded
-- [ ] In Play Console → Users and permissions: invite the service account with access to view financial data / manage orders (as required for subscriptionsv2)
-- [ ] Paste JSON into production env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+- [ ] Service account created (e.g. `eraseai@YOUR_PROJECT.iam.gserviceaccount.com`); **Keys → Add key → Create new key → JSON**
+- [ ] The JSON must include `"type": "service_account"`, `client_email`, and `private_key`
+- [ ] In Play Console → Users and permissions (or Setup → API access): invite that **service account email** with access to view financial data / manage orders
+- [ ] Paste the **service account** JSON into production env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (single-line JSON is fine)
 - [ ] Redeploy API and confirm `POST /api/mobile/play/verify` no longer returns `PLAY_NOT_CONFIGURED`
 
 ---

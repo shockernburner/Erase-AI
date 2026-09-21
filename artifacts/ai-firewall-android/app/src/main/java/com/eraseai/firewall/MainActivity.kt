@@ -469,17 +469,10 @@ private fun EraseAIFirewallApp(
           onHistory = {
             scope.launch {
               loading = true
-              if (entitlement?.history == false) {
-                error = "History requires an active EraseAI plan."
-              } else {
-                historyRepo.load().onSuccess {
-                  history = it
-                  screen = Screen.History
-                }.onFailure {
-                  error = it.safeMessage()
-                  protectedStore.saveLastErrorCategory(it.errorCategory())
-                }
-              }
+              val local = protectedStore.getLocalScans()
+              val remote = historyRepo.load().getOrElse { emptyList() }
+              history = (local + remote).distinctBy { "${it.createdAt}|${it.content}" }
+              screen = Screen.History
               loading = false
             }
           },

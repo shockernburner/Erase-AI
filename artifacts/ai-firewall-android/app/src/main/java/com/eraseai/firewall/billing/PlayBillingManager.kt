@@ -102,13 +102,15 @@ class PlayBillingManager(
     scope.launch {
       billingApi.verifyPlayPurchase(productId, purchase.purchaseToken)
         .onSuccess {
-          if (!purchase.isAcknowledged) {
-            acknowledge(purchase)
-          }
+          if (!purchase.isAcknowledged) acknowledge(purchase)
           onStatus("Subscription active via Google Play")
           onEntitlementRefresh()
         }
-        .onFailure { onError(it.message ?: "Could not verify Google Play purchase") }
+        .onFailure {
+          if (!purchase.isAcknowledged) acknowledge(purchase)
+          onStatus("Verification failed")
+          onError(it.message ?: "Could not verify Google Play purchase. Enable the Google Play Android Developer API, then tap Restore.")
+        }
     }
   }
 

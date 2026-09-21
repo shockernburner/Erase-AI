@@ -76,6 +76,42 @@ class ProtectedAppsStore(context: Context) {
 
   fun getLastErrorCategory(): String = prefs.getString(LAST_ERROR_CATEGORY_KEY, "none") ?: "none"
 
+  fun appendLocalScan(content: String, riskScore: Int, level: String) {
+    val existing = JSONArray(prefs.getString(LOCAL_HISTORY_KEY, "[]"))
+    val next = JSONArray()
+    next.put(
+      JSONObject()
+        .put("content", content.take(180))
+        .put("riskScore", riskScore)
+        .put("level", level)
+        .put("createdAt", Date().toInstant().toString()),
+    )
+    val keep = minOf(existing.length(), 39)
+    for (index in 0 until keep) {
+      next.put(existing.getJSONObject(index))
+    }
+    prefs.edit().putString(LOCAL_HISTORY_KEY, next.toString()).apply()
+  }
+
+  fun getLocalScans(): List<ScanHistoryItem> {
+    val raw = prefs.getString(LOCAL_HISTORY_KEY, "[]") ?: "[]"
+    val array = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+    return buildList {
+      for (index in 0 until array.length()) {
+        val item = array.optJSONObject(index) ?: continue
+        add(
+          ScanHistoryItem(
+            id = "local-$index",
+            content = item.optString("content"),
+            riskScore = item.optInt("riskScore"),
+            level = item.optString("level", "low"),
+            createdAt = item.optString("createdAt"),
+          ),
+        )
+      }
+    }
+  }
+
   companion object {
     private const val FIREWALL_ENABLED_KEY = "firewall_enabled"
     private const val PROTECTED_APPS_KEY = "protected_apps"
@@ -83,6 +119,7 @@ class ProtectedAppsStore(context: Context) {
     private const val LAST_SCAN_TIME_KEY = "last_scan_time"
     private const val LAST_SCAN_TYPE_KEY = "last_scan_type"
     private const val LAST_ERROR_CATEGORY_KEY = "last_error_category"
+    private const val LOCAL_HISTORY_KEY = "local_scan_history"
     val DEFAULT_PROTECTED_PACKAGES = setOf(
       "com.openai.chatgpt",
       "com.google.android.apps.bard",

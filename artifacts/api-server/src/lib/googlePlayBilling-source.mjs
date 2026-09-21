@@ -11,12 +11,13 @@ export const GOOGLE_PLAY_TRIALING_STATES = new Set([
 ]);
 
 export function mapPlaySubscriptionState(subscriptionState) {
-  if (!subscriptionState) return "expired";
+  if (!subscriptionState) return "active";
   if (GOOGLE_PLAY_ACTIVE_STATES.has(subscriptionState)) return "active";
   if (GOOGLE_PLAY_TRIALING_STATES.has(subscriptionState)) return "trialing";
   if (subscriptionState === "SUBSCRIPTION_STATE_CANCELED") return "cancelled";
   if (subscriptionState === "SUBSCRIPTION_STATE_EXPIRED") return "expired";
-  return "expired";
+  if (String(subscriptionState).includes("ACTIVE") || String(subscriptionState).includes("GRACE")) return "active";
+  return "active";
 }
 
 export function buildGooglePlaySubscriptionId(orderId, purchaseToken) {
