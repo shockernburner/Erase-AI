@@ -385,7 +385,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     removeSendShield()
     val shield = TextView(this).apply {
-      text = "⊘"
+      setText("⊘")
       gravity = Gravity.CENTER
       textSize = 18f
       setTextColor(0xFFF8FAFC.toInt())
