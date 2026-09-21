@@ -65,16 +65,10 @@ adb shell settings put secure accessibility_enabled 1
 | A11 | Child-exploitation wording | **Blocked** — Cancel only |
 | A12 | Voice send with risky text held | Nothing sent — the composer is empty |
 
-## Phase A2 — EraseAI Keyboard (IME)
+## Phase A2 — EraseAI Keyboard (IME) — not in this release
 
-| # | Scenario | Expected |
-|---|----------|----------|
-| K1 | Settings shows "EraseAI Keyboard" after install | Listed under on-screen keyboards |
-| K2 | Switch to EraseAI Keyboard, open Gemini | Bar reads "ERASEAI KEYBOARD · ACTIVE" |
-| K3 | Type an API key | Text is withheld from the app; bar reads "HELD" with Discard / Sanitize / Insert anyway |
-| K4 | Tap Discard | Text gone, app composer still empty |
-| K5 | Tap Sanitize | Redacted text inserted into the app |
-| K6 | Focus a password field | Bar reads "OFF"; no scanning |
+The IME is disabled in the manifest and has no key layout, so there is nothing to test. Confirm
+only that **"EraseAI Keyboard" does not appear** under Settings → On-screen keyboards.
 
 ## Phase A3 — History hygiene
 
