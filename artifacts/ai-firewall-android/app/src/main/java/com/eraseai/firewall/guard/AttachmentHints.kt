@@ -26,6 +26,25 @@ object AttachmentHints {
     "uploaded", "gallery", "file added", "1 image", "2 images", "media",
   )
 
+  /**
+   * Composer buttons that *offer* to add media ("Add photos & files", "Open gallery") are not
+   * attachments. Without this, every Gemini and ChatGPT composer looks like it has an unscanned
+   * file and the gate wrongly downgrades to "Sanitize Prompt".
+   */
+  private val affordanceVerbs = listOf(
+    "add", "attach", "upload", "choose", "select", "open", "take", "browse",
+    "insert", "capture", "record", "camera", "create", "new ",
+  )
+
+  /**
+   * Container descriptors that exist even when nothing is attached. Gemini always exposes a
+   * "List of attachments" node, which otherwise makes every prompt look like it carries a file.
+   */
+  private val containerPhrases = listOf(
+    "list of", "attachments list", "attachment list", "carousel", "container",
+    "region", "no attachments", "gallery view", "grid",
+  )
+
   fun extract(root: AccessibilityNodeInfo?): List<AttachmentHint> {
     if (root == null) return emptyList()
     val found = linkedMapOf<String, AttachmentHint>()
@@ -36,9 +55,10 @@ object AttachmentHints {
   private fun collect(node: AccessibilityNodeInfo, found: LinkedHashMap<String, AttachmentHint>) {
     val text = node.text?.toString()?.trim().orEmpty()
     val description = node.contentDescription?.toString()?.trim().orEmpty()
+    val clickable = node.isClickable
     listOf(text, description).forEach { candidate ->
       if (candidate.isBlank()) return@forEach
-      val label = normalizeLabel(candidate) ?: return@forEach
+      val label = normalizeLabel(candidate, clickable) ?: return@forEach
       if (found.containsKey(label)) return@forEach
       found[label] = AttachmentHint(
         label = label,
@@ -54,14 +74,24 @@ object AttachmentHints {
     }
   }
 
-  private fun normalizeLabel(raw: String): String? {
+  private fun normalizeLabel(raw: String, clickable: Boolean): String? {
     val trimmed = raw.trim()
     if (trimmed.length < 3 || trimmed.length > 120) return null
     if (trimmed.equals("Ask Gemini", ignoreCase = true) || trimmed.startsWith("Ask Gem", ignoreCase = true)) {
       return null
     }
+    // A real filename is trustworthy even on a clickable chip.
     if (fileSuffixes.any { trimmed.endsWith(it, ignoreCase = true) }) return trimmed
+    if (isAffordance(trimmed, clickable)) return null
     if (mediaKeywords.any { trimmed.contains(it, ignoreCase = true) }) return trimmed
     return null
+  }
+
+  private fun isAffordance(label: String, clickable: Boolean): Boolean {
+    val lower = label.lowercase()
+    if (affordanceVerbs.any { lower.startsWith(it) }) return true
+    if (containerPhrases.any { lower.contains(it) }) return true
+    // Bare media words on a tappable control are composer chrome, not a pending file.
+    return clickable && lower.split(' ').size <= 3
   }
 }

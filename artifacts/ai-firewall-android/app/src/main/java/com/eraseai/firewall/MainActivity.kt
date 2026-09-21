@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -185,6 +186,8 @@ private fun EraseAIFirewallApp(
   var selectedPackages by remember { mutableStateOf(protectedStore.getSelectedPackages()) }
   var firewallEnabled by remember { mutableStateOf(protectedStore.isFirewallEnabled()) }
   var accessibilityEnabled by remember { mutableStateOf(isAccessibilityEnabled(context)) }
+  var keyboardEnabled by remember { mutableStateOf(isKeyboardEnabled(context)) }
+  var keyboardActive by remember { mutableStateOf(isKeyboardActive(context)) }
   var history by remember { mutableStateOf<List<ScanHistoryItem>>(emptyList()) }
   var manualText by remember { mutableStateOf(initialSharedText.orEmpty().take(MAX_SCAN_TEXT_LENGTH)) }
   var scanResult by remember { mutableStateOf<ScanResult?>(null) }
@@ -203,6 +206,8 @@ private fun EraseAIFirewallApp(
   fun refreshAccessibility() {
     accessibilityEnabled = isAccessibilityEnabled(context)
     firewallEnabled = protectedStore.isFirewallEnabled()
+    keyboardEnabled = isKeyboardEnabled(context)
+    keyboardActive = isKeyboardActive(context)
   }
 
   val datasetPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -446,6 +451,15 @@ private fun EraseAIFirewallApp(
           entitlement = entitlement,
           loading = loading,
           accessibilityEnabled = accessibilityEnabled,
+          keyboardEnabled = keyboardEnabled,
+          keyboardActive = keyboardActive,
+          onEnableKeyboard = {
+            context.startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+          },
+          onSwitchKeyboard = {
+            val imm = context.getSystemService(InputMethodManager::class.java)
+            imm?.showInputMethodPicker()
+          },
           firewallEnabled = firewallEnabled,
           protectedAppsCount = selectedPackages.size,
           lastScan = protectedStore.getLastScanSummary(),
@@ -617,6 +631,8 @@ private fun EraseAIFirewallApp(
             backendStatus = backendStatus,
             entitlement = entitlement,
             accessibilityEnabled = accessibilityEnabled,
+            keyboardEnabled = keyboardEnabled,
+            keyboardActive = keyboardActive,
             firewallEnabled = firewallEnabled,
             protectedAppsCount = selectedPackages.size,
             lastScanTime = protectedStore.getLastScanTime(),
@@ -750,6 +766,10 @@ private fun DashboardScreen(
   entitlement: EntitlementState?,
   loading: Boolean,
   accessibilityEnabled: Boolean,
+  keyboardEnabled: Boolean,
+  keyboardActive: Boolean,
+  onEnableKeyboard: () -> Unit,
+  onSwitchKeyboard: () -> Unit,
   firewallEnabled: Boolean,
   protectedAppsCount: Int,
   lastScan: String,
@@ -885,6 +905,43 @@ private fun DashboardScreen(
       }
     }
 
+    item { BrandSectionLabel("EraseAI Keyboard") }
+    item {
+      BrandCard(highlighted = !keyboardEnabled) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Text(
+            when {
+              keyboardActive -> "Keyboard active"
+              keyboardEnabled -> "Keyboard ready"
+              else -> "Strongest protection"
+            },
+            style = MaterialTheme.typography.titleMedium,
+          )
+          Text(
+            when {
+              keyboardActive -> "High-risk text is held in EraseAI and never typed into the AI app."
+              keyboardEnabled -> "Switch to EraseAI Keyboard to stop risky text before it reaches the app."
+              else -> "Accessibility reacts after text is in the app. The keyboard blocks it one step earlier — risky text is never typed into the AI app at all."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = BrandMutedForeground,
+          )
+        }
+      }
+    }
+    item {
+      if (!keyboardEnabled) {
+        BrandSecondaryButton("Enable EraseAI Keyboard", onEnableKeyboard, icon = Icons.Default.Lock)
+      } else {
+        BrandSecondaryButton(
+          text = if (keyboardActive) "Change keyboard" else "Switch to EraseAI Keyboard",
+          onClick = onSwitchKeyboard,
+          icon = Icons.Default.Lock,
+        )
+      }
+    }
+
+    item { BrandSectionLabel("Apps & activity") }
     item { BrandSecondaryButton("Protected Apps", onApps, icon = Icons.Default.Security) }
     item {
       BrandSecondaryButton(
@@ -1365,6 +1422,8 @@ private fun buildDiagnosticsReport(
   backendStatus: String,
   entitlement: EntitlementState?,
   accessibilityEnabled: Boolean,
+  keyboardEnabled: Boolean,
+  keyboardActive: Boolean,
   firewallEnabled: Boolean,
   protectedAppsCount: Int,
   lastScanTime: String,
@@ -1376,12 +1435,30 @@ private fun buildDiagnosticsReport(
   "auth_status=${if (entitlement?.authenticated == true) "authenticated" else "unknown"}",
   "entitlement_status=${entitlement?.status ?: "unknown"}",
   "accessibility_permission=${if (accessibilityEnabled) "enabled" else "disabled"}",
+  "keyboard_installed=${if (keyboardEnabled) "enabled" else "disabled"}",
+  "keyboard_selected=${if (keyboardActive) "yes" else "no"}",
   "firewall_scanning=${if (firewallEnabled) "on" else "off"}",
   "protected_apps_count=$protectedAppsCount",
   "last_scan_time=$lastScanTime",
   "last_scan_result_type=$lastScanResultType",
   "last_error_category=$lastErrorCategory",
 ).joinToString("\n")
+
+private fun isKeyboardEnabled(context: Context): Boolean {
+  val enabled = Settings.Secure.getString(
+    context.contentResolver,
+    Settings.Secure.ENABLED_INPUT_METHODS,
+  ).orEmpty()
+  return enabled.split(':').any { it.startsWith("${context.packageName}/") }
+}
+
+private fun isKeyboardActive(context: Context): Boolean {
+  val current = Settings.Secure.getString(
+    context.contentResolver,
+    Settings.Secure.DEFAULT_INPUT_METHOD,
+  ).orEmpty()
+  return current.startsWith("${context.packageName}/")
+}
 
 private fun isAccessibilityEnabled(context: Context): Boolean {
   val expected = ComponentName(context, "${context.packageName}.guard.AiGuardAccessibilityService")

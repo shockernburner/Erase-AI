@@ -190,7 +190,23 @@ Present in the app today:
 - [ ] `INTERNET` / `ACCESS_NETWORK_STATE`
 - [ ] `com.android.vending.BILLING`
 - [ ] `BIND_ACCESSIBILITY_SERVICE` (guard service only)
+- [ ] `BIND_INPUT_METHOD` (EraseAI Keyboard — optional, user must enable and select it)
 - [ ] `PACKAGE_ADDED` receiver for known LLM install hints (not `QUERY_ALL_PACKAGES`)
+
+### 3.9b Input method (EraseAI Keyboard) declaration
+
+Play treats IMEs as sensitive because a keyboard can observe everything typed. Declaration:
+
+> EraseAI Keyboard is an optional input method that checks text for credentials and other
+> sensitive data before it is entered into AI apps the user has selected. It withholds
+> high-risk text locally and asks the user to discard, sanitize, or insert it. Password and
+> secure fields are skipped entirely. The keyboard does not log keystrokes and does not
+> transmit typed text on its own.
+
+- [ ] Keyboard is optional — Accessibility path still works without it
+- [ ] Password / secure input variations skipped (verify Phase A2 K6 in the QA matrix)
+- [ ] No keystroke logging or background upload from the IME
+- [ ] Privacy policy updated to cover the keyboard
 
 Not present (confirm before review):
 

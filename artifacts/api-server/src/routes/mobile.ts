@@ -36,6 +36,15 @@ type MobilePieceInput = {
 
 const LEVEL_RANK: Record<string, number> = { low: 0, medium: 1, high: 2 };
 
+/**
+ * Background scans the guard runs while the user types. They must not be stored as history
+ * rows (partial prompts) and must not consume the free-trial scan allowance, since the user
+ * never asked for them.
+ */
+function isSilentPreviewScan(source: unknown): boolean {
+  return typeof source === "string" && source.endsWith("_preview");
+}
+
 function getWebBaseUrl(): string {
   const configured = process.env.WEB_BASE_URL || process.env.PUBLIC_WEB_BASE_URL;
   if (configured) return configured;
@@ -182,8 +191,9 @@ router.post("/analyze", requireActivePlan(), async (req: Request, res: Response)
     return;
   }
 
+  const silentPreview = isSilentPreviewScan(req.body?.source);
   const plan = user.planType || "free";
-  if (plan === "free") {
+  if (plan === "free" && !silentPreview) {
     const scansUsed = await countPersonalScans(userId);
     if (scansUsed >= FREE_TRIAL_SCAN_LIMIT) {
       res.status(429).json({
@@ -201,17 +211,21 @@ router.post("/analyze", requireActivePlan(), async (req: Request, res: Response)
     const risk = calculateRiskScore(analysis.flags);
     const storedContent = text.length > 500 ? `${text.substring(0, 500)}...` : text;
 
-    const [scan] = await db
-      .insert(personalScansTable)
-      .values({
-        userId,
-        content: storedContent,
-        riskScore: risk.score,
-        level: risk.level,
-        flags: JSON.stringify(analysis.flags ?? []),
-        suggestions: JSON.stringify(analysis.suggestions ?? []),
-      })
-      .returning();
+    const scan = silentPreview
+      ? undefined
+      : (
+        await db
+          .insert(personalScansTable)
+          .values({
+            userId,
+            content: storedContent,
+            riskScore: risk.score,
+            level: risk.level,
+            flags: JSON.stringify(analysis.flags ?? []),
+            suggestions: JSON.stringify(analysis.suggestions ?? []),
+          })
+          .returning()
+      )[0];
 
     res.json({
       id: scan?.id,
@@ -221,6 +235,7 @@ router.post("/analyze", requireActivePlan(), async (req: Request, res: Response)
       flags: analysis.flags,
       suggestions: analysis.suggestions,
       createdAt: scan?.createdAt,
+      recorded: !silentPreview,
     });
   } catch (err) {
     console.error("Mobile analyze error:", err);

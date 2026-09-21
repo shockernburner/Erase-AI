@@ -5,3 +5,5 @@ keystore.properties
 *.keystore
 /app/build/
 /build/
+# Kotlin compiler scratch output
+.kotlin/

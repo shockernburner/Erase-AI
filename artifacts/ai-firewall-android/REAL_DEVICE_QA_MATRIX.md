@@ -9,19 +9,80 @@ Run this checklist on a physical Android device before promoting an internal tes
 - ChatGPT, Claude, and Gemini installed (minimum adapter set)
 - Backend deployed with `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` for billing verification
 
-## Phase A — Send gate
+## Test loop — debug build over adb, not Play
+
+Do **not** iterate through Internal testing uploads. Install directly and watch the guard trace:
+
+```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+./gradlew installDebug
+adb logcat -c && adb logcat -s EraseAIGuard
+```
+
+Expected trace while typing a risky prompt in Gemini:
+
+```
+composer.locate pkg=com.google.android.apps.bard found=true windowId=... windows=2
+composer.text   pkg=com.google.android.apps.bard len=24 row=... via=locator
+risk.scan       pkg=com.google.android.apps.bard level=high score=80 findings=1 held=true
+curtain.show    pkg=com.google.android.apps.bard reason=level=high bounds=...
+```
+
+`found=false` means the composer window was not located; `curtain.hide` with a reason explains
+every teardown. No prompt text is ever logged.
+
+**Reinstalling unbinds the accessibility service.** Re-enable it after every `installDebug`, or the
+whole matrix silently passes with no guard running:
+
+```bash
+adb shell settings put secure enabled_accessibility_services \
+  com.eraseai.firewall/com.eraseai.firewall.guard.AiGuardAccessibilityService
+adb shell settings put secure accessibility_enabled 1
+```
+
+### Known behaviour to expect
+
+- Gemini repopulates its composer after `ACTION_SET_TEXT`, so the high-risk hold does not always
+  stick there (`hold.repopulated` in the trace). The curtain is the guarantee, not the hold.
+- `Sanitize & Send` calls the backend rewrite endpoint and needs a signed-in plan. Unauthenticated,
+  it toasts and leaves the gate open (`sanitize.failed`) — the prompt stays blocked.
+- The curtain covers the submit band only, so the text line stays editable on purpose.
+
+## Phase A — Interception (the part that was broken)
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| A1 | Type safe prompt in ChatGPT, tap Send | Brief "All clear", message sends |
-| A2 | Type prompt with email/phone, tap Send | Modal: Cancel / Sanitize / Send Anyway (no Send Anyway if high-risk block) |
-| A3 | Tap Cancel on gate | Prompt stays, nothing sent |
-| A4 | Tap Sanitize & Send | Prompt rewritten, send proceeds |
-| A5 | Tap Send Anyway (medium risk) | Message sends after confirmation |
-| A6 | Press Enter in composer (Gemini) | Same gate as send button |
-| A7 | Firearm + "when are most students at school" | **Blocked** — Cancel only (no Send Anyway / Sanitize & Send) |
-| A8 | Child-exploitation wording | **Blocked** — Cancel only |
-| A9 | Hunting rifle / novel research alone | Warn — Send Anyway allowed |
+| A1 | Type safe prompt in ChatGPT, tap Send | No curtain, message sends normally |
+| A2 | Type an API key in Gemini, wait ~0.5s | Red curtain covers the composer action row; text is pulled out of the composer |
+| A3 | With curtain up, tap where Send is | Tap hits the curtain, **not** Gemini; gate opens. Gemini must not answer |
+| A4 | With curtain up, press Enter on the soft keyboard | Nothing is sent (composer is empty because text is held) |
+| A5 | With curtain up, resize composer (type multi-line) | Curtain tracks the row, `curtain.move` in logcat, never blinks off |
+| A6 | Medium risk (firearm wording) | Amber curtain, text stays in composer, nothing sent until decided |
+| A7 | Tap Cancel on gate | Prompt returned to composer, nothing sent, curtain does not re-arm on the same text |
+| A8 | Tap Sanitize & Send | Prompt rewritten, send proceeds |
+| A9 | Tap Send Anyway (medium risk) | Message sends |
+| A10 | Firearm + "when are most students at school" | **Blocked** — Cancel only (no Send Anyway / Sanitize & Send) |
+| A11 | Child-exploitation wording | **Blocked** — Cancel only |
+| A12 | Voice send with risky text held | Nothing sent — the composer is empty |
+
+## Phase A2 — EraseAI Keyboard (IME)
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| K1 | Settings shows "EraseAI Keyboard" after install | Listed under on-screen keyboards |
+| K2 | Switch to EraseAI Keyboard, open Gemini | Bar reads "ERASEAI KEYBOARD · ACTIVE" |
+| K3 | Type an API key | Text is withheld from the app; bar reads "HELD" with Discard / Sanitize / Insert anyway |
+| K4 | Tap Discard | Text gone, app composer still empty |
+| K5 | Tap Sanitize | Redacted text inserted into the app |
+| K6 | Focus a password field | Bar reads "OFF"; no scanning |
+
+## Phase A3 — History hygiene
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| H1 | Type a long risky prompt without deciding | **Zero** new history rows |
+| H2 | Open the gate and decide once | Exactly **one** history row, full prompt, correct risk score |
+| H3 | Check trial counter after heavy typing | Scan allowance unchanged by background preview scans |
 
 ## Phase B — Attachments
 
@@ -51,3 +112,5 @@ Run this checklist on a physical Android device before promoting an internal tes
 
 - Stripe checkout must **not** appear in the Android app (Google Play only).
 - Record failures with app version, device model, and protected app package name.
+- Phase A must pass on a physical device before bumping `versionCode` and running
+  `scripts/build-signed-aab.sh`. Accessibility overlays cannot be validated on an emulator.
