@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -108,10 +109,14 @@ class AiGuardAccessibilityService : AccessibilityService() {
         if (source != null && AppSendAdapter.isSendClick(source, packageName)) {
           GuardLog.gate("host-send-observed", packageName, "curtain=${curtain.isShowing}")
         }
-        scheduleComposerEvaluation(packageName)
+        evaluateComposer(packageName)
       }
+      // Text and focus have to pin the curtain on this event, not 450ms later. Gemini (and
+      // ChatGPT) will accept a send tap in that gap, which is the "fast send gets through"
+      // failure: the last character of a paste is what makes the prompt risky, and send is
+      // tappable immediately after.
       AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
-      AccessibilityEvent.TYPE_VIEW_FOCUSED,
+      AccessibilityEvent.TYPE_VIEW_FOCUSED -> evaluateComposer(packageName)
       AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
       AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> scheduleComposerEvaluation(packageName)
     }
@@ -130,6 +135,22 @@ class AiGuardAccessibilityService : AccessibilityService() {
     GuardLog.gate("hardware-enter", packageName, "level=${pending.scan.level}")
     openGate(packageName, pending.text, pending.scan)
     return true
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    // Rotation, fold, and landscape all change the coordinate space the curtain is using.
+    // The old band is in the previous orientation, so leaving it up either covers the
+    // keyboard or leaves send exposed.
+    curtain.resetForDisplayChange()
+    val pkg = curtainPackage ?: return
+    if (gateInProgress) {
+      val target = ComposerLocator.locate(this, pkg) ?: return
+      val level = pendingRisk?.scan?.level ?: "high"
+      curtain.show(target.submitZone, level, pkg) { openGateFromCurtain(pkg) }
+      return
+    }
+    evaluateComposer(pkg)
   }
 
   override fun onInterrupt() {
@@ -820,7 +841,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   companion object {
-    private const val PREVIEW_DEBOUNCE_MS = 450L
+    private const val PREVIEW_DEBOUNCE_MS = 50L
     private const val MIN_PREVIEW_INTERVAL_MS = 4000L
     private const val MIN_SCAN_LENGTH = 3
     private const val MAX_SCAN_TEXT_LENGTH = 5000

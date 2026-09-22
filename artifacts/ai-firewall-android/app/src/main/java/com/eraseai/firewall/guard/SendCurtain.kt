@@ -34,8 +34,17 @@ class SendCurtain(private val context: Context) {
    * and expose the control it is there to block.
    */
   private var coveredBounds = Rect()
+  private var lastDisplayWidth = 0
+  private var lastDisplayHeight = 0
 
   val isShowing: Boolean get() = view != null
+
+  /** Drops the sticky band so the next show() measures against the new screen. */
+  fun resetForDisplayChange() {
+    coveredBounds.setEmpty()
+    lastDisplayWidth = 0
+    lastDisplayHeight = 0
+  }
 
   /**
    * Widen to the newest measurement, then clamp back to a band around the submit row.
@@ -60,6 +69,12 @@ class SendCurtain(private val context: Context) {
 
   /** Mounts the curtain, or repositions it in place if already mounted. */
   fun show(bounds: Rect, level: String, packageName: String, onTap: () -> Unit) {
+    val dm = context.resources.displayMetrics
+    if (CurtainGeometry.displayChanged(lastDisplayWidth, lastDisplayHeight, dm.widthPixels, dm.heightPixels)) {
+      coveredBounds.setEmpty()
+    }
+    lastDisplayWidth = dm.widthPixels
+    lastDisplayHeight = dm.heightPixels
     val target = inflateBounds(mergeBounds(bounds))
     val existing = view
     if (existing != null) {
@@ -195,4 +210,9 @@ class SendCurtain(private val context: Context) {
     /** Widest the covered band may grow relative to the latest measured submit row. */
     const val MAX_BAND_GROWTH = 2
   }
+}
+
+internal object CurtainGeometry {
+  fun displayChanged(prevW: Int, prevH: Int, w: Int, h: Int): Boolean =
+    (prevW != 0 || prevH != 0) && (prevW != w || prevH != h)
 }

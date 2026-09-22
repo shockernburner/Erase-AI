@@ -50,24 +50,46 @@ object AppSendAdapter {
 
   fun findComposerEditable(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
     if (root == null) return null
+    // ChatGPT's Compose field takes input focus without isEditable=true. Requiring
+    // isEditable here made locate() return null in a real conversation, which dropped
+    // the curtain and looked exactly like the firewall having been switched off.
     val focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-    if (focused != null && focused.isEditable && !focused.isPassword) return focused
-    return root.findEditableNode()
+    if (focused != null && !focused.isPassword) return focused
+
+    var best: AccessibilityNodeInfo? = null
+    var bestScore = 0
+    root.forEachNode { node ->
+      val score = composerScore(node)
+      if (score > bestScore) {
+        bestScore = score
+        best = node
+      }
+    }
+    return best
   }
 
   fun composerText(root: AccessibilityNodeInfo?): String {
     val node = findComposerEditable(root) ?: return ""
     val raw = node.text?.toString()?.trim().orEmpty()
-    if (raw.isBlank()) return ""
     val hint = if (Build.VERSION.SDK_INT >= 26) {
       node.hintText?.toString()?.trim().orEmpty()
     } else {
       ""
     }
-    // Gemini placeholder ("Ask Gemini") is often exposed as text before the user types.
-    if (hint.isNotBlank() && raw.equals(hint, ignoreCase = true)) return ""
-    if (raw.equals("Ask Gemini", ignoreCase = true) || raw.startsWith("Ask Gem", ignoreCase = true)) return ""
-    return raw
+    return liveComposerText(raw, hint)
+  }
+
+  /**
+   * The host's placeholder is often exposed as the node's text before anything is typed.
+   * Scanning it would either false-positive or, more often, look like an empty composer
+   * and stand the guard down.
+   */
+  fun liveComposerText(raw: String, hint: String = ""): String {
+    val text = raw.trim()
+    if (text.isEmpty()) return ""
+    if (hint.isNotBlank() && text.equals(hint.trim(), ignoreCase = true)) return ""
+    if (isComposerPlaceholder(text)) return ""
+    return text
   }
 
   fun findSendButton(root: AccessibilityNodeInfo?, packageName: String): AccessibilityNodeInfo? {
@@ -175,6 +197,27 @@ object AppSendAdapter {
     packageName == "com.google.android.apps.bard" ||
       packageName == "com.google.android.googlequicksearchbox"
 
+  private val COMPOSER_PLACEHOLDERS = listOf(
+    "ask gemini",
+    "ask gem",
+    "ask anything",
+    "ask chatgpt",
+    "message chatgpt",
+    "message claude",
+    "ask claude",
+    "ask copilot",
+    "message",
+  )
+
+  private val COMPOSER_HINT_MARKERS = listOf(
+    "ask gemini",
+    "ask anything",
+    "ask chatgpt",
+    "message chatgpt",
+    "prompt",
+    "composer",
+  )
+
   private fun packageHints(packageName: String): List<String> = when (packageName) {
     "com.openai.chatgpt" -> listOf(
       "send prompt",
@@ -199,14 +242,29 @@ object AppSendAdapter {
     else -> listOf("send", "submit")
   }
 
-  private fun AccessibilityNodeInfo.findEditableNode(): AccessibilityNodeInfo? {
-    if (isEditable && !isPassword) return this
-    for (index in 0 until childCount) {
-      val child = getChild(index) ?: continue
-      val found = child.findEditableNode()
-      if (found != null) return found
-    }
-    return null
+  private fun composerScore(node: AccessibilityNodeInfo): Int {
+    if (node.isPassword) return 0
+    var score = 0
+    if (node.isEditable) score += 20
+    val className = node.className?.toString().orEmpty()
+    if (className.contains("EditText", ignoreCase = true)) score += 16
+    val haystack = nodeHaystack(node)
+    if (COMPOSER_HINT_MARKERS.any { haystack.contains(it) }) score += 18
+    if (node.isFocused) score += 12
+    if (score == 0) return 0
+    // Composer sits at the bottom of the conversation; search boxes sit at the top.
+    val bounds = Rect().also { node.getBoundsInScreen(it) }
+    if (!bounds.isEmpty) score += bounds.bottom / 40
+    return score
+  }
+
+  private fun isComposerPlaceholder(value: String): Boolean {
+    val normalized = value.trim().lowercase()
+    if (normalized.isEmpty()) return true
+    if (COMPOSER_PLACEHOLDERS.contains(normalized)) return true
+    // Gemini sometimes truncates the placeholder in the accessibility tree.
+    if (normalized.startsWith("ask gem") && normalized.length <= 12) return true
+    return false
   }
 
   /** Smallest plausible icon touch target, in px; below this we are looking at a divider. */
