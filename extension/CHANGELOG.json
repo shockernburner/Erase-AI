@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "1.4.2",
+      "date": "2026-09-22",
+      "changes": [
+        "Fixed Gemini prompts sending unscanned in an ongoing conversation. Gemini gives every message you have already sent its own hidden edit box, and the firewall was reading the first one it found rather than the composer you are typing in — it saw an empty prompt, decided there was nothing to check, and let the real prompt through with no overlay and no history entry. The composer is now identified by focus and content",
+        "The firewall now guards every send control on the page instead of only the first one, and 'Send anyway' now clicks the send button Gemini is actually showing rather than a leftover from an edit box",
+        "Gemini's send arrow is also recognised by its structure now, not just its English label, so the firewall keeps working in a translated interface",
+        "Fixed being unable to remove a flagged attachment on Claude. The X on an attachment chip matched the rule used to find Claude's send button, so clicking it started another scan instead of detaching the file — the one action that resolves a blocked attachment was the one action that was prevented",
+        "Buttons that remove, delete, discard, close, or clear are never treated as send controls now, so a send rule that is too broad on any platform can no longer trap an attachment in the composer"
+      ]
+    },
+    {
       "version": "1.4.1",
       "date": "2026-09-22",
       "changes": [

@@ -69,7 +69,13 @@
       sendButtonSelectors: [
         'button[aria-label="Send Message"]',
         'button[aria-label="Send message"]',
-        'fieldset button:last-of-type',
+        // Replaces `fieldset button:last-of-type`, which matched the remove
+        // button on an attachment chip just as readily as the send control —
+        // and matched it earlier in document order, because chips render above
+        // the composer toolbar. An explicit type keeps chip buttons out: they
+        // are plain <button>s, and the attribute selector does not match the
+        // implicit submit type they inherit inside a form.
+        'fieldset button[type="submit"]',
       ],
       getInputText(el) {
         return el.innerText || el.textContent || "";
@@ -96,8 +102,12 @@
       ],
       sendButtonSelectors: [
         'button[aria-label="Send message"]',
+        // The arrow is a bare <button> inside a gem-icon-button host that carries
+        // the class, so the class-on-button form below never matches current
+        // Gemini. Matching via the host also survives a non-English UI, where the
+        // aria-label above is translated and stops matching entirely.
+        ".send-button button",
         "button.send-button",
-        ".input-area button[mat-icon-button]",
       ],
       getInputText(el) {
         return el.innerText || el.textContent || "";
@@ -675,6 +685,43 @@
       if (el) return el;
     }
     return null;
+  }
+
+  /**
+   * Resolves the composer the user is actually working in.
+   *
+   * Taking the first selector match is wrong on any host that renders more than
+   * one editor. Gemini gives every previously sent message its own inline-edit
+   * .ql-editor, so in an ongoing conversation the first match is an empty box
+   * from an earlier turn. Reading that one made interceptSubmission see an empty
+   * prompt and return early, and made the Enter handler decide the keystroke had
+   * not come from the composer — so the real prompt went to the model with no
+   * scan, no overlay and nothing in history.
+   *
+   * Focus is the strongest signal, then visible text, then anything the page is
+   * actually rendering; the plain first match remains the last resort so a DOM
+   * with no layout or focus still resolves.
+   */
+  function findComposerInput() {
+    const matches = platform.inputSelectors.flatMap((s) => {
+      try {
+        return Array.from(document.querySelectorAll(s));
+      } catch {
+        return [];
+      }
+    });
+    if (!matches.length) return null;
+
+    const active = document.activeElement;
+    const focused = matches.find((el) => el === active || el.contains(active));
+    if (focused) return focused;
+
+    const withText = matches.find(
+      (el) => (platform.getInputText(el) || "").trim().length > 0,
+    );
+    if (withText) return withText;
+
+    return matches.find((el) => el.getClientRects().length > 0) || matches[0];
   }
 
   function createOverlayBackdrop() {
@@ -1353,9 +1400,27 @@
     }
   }
 
+  function allSendButtons() {
+    return platform.sendButtonSelectors.flatMap((s) => {
+      try {
+        return Array.from(document.querySelectorAll(s));
+      } catch {
+        return [];
+      }
+    });
+  }
+
   function triggerSend() {
     if (!platform) return;
-    const sendBtn = findElement(platform.sendButtonSelectors);
+    // Prefer a control the page is actually showing. Where several match, the
+    // first in document order can be a leftover from an inline message editor,
+    // and clicking that one sends nothing — so Send Anyway would appear to do
+    // nothing at all. Falls back to the first match when no candidate reports
+    // any geometry, which is also the case in a DOM with no layout engine.
+    const candidates = allSendButtons();
+    const sendBtn = candidates.find((el) => el.getClientRects().length > 0)
+      || candidates[0]
+      || null;
     if (sendBtn) {
       setTimeout(() => sendBtn.click(), 50);
     }
@@ -1688,11 +1753,34 @@
     };
   }
 
+  // A control that takes something back out of the composer is never a send
+  // control, however loosely a platform's send selector happens to be written.
+  // Without this, a selector that also matched an attachment chip's X turned
+  // "remove this file" into "scan and block it again", so the one action that
+  // resolves a flagged attachment was the one action the firewall prevented.
+  const DISMISS_LABEL = /\b(remove|delete|discard|detach|close|dismiss|clear|cancel)\b/i;
+
+  function isDismissControl(target) {
+    if (!target || typeof target.closest !== "function") return false;
+    const control = target.closest("button, [role='button']");
+    if (!control) return false;
+    const label = [
+      control.getAttribute("aria-label"),
+      control.getAttribute("title"),
+      control.dataset ? control.dataset.testid : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return DISMISS_LABEL.test(label);
+  }
+
   function interceptSubmission(e) {
     if (bypassNext) {
       bypassNext = false;
       return;
     }
+
+    if (isDismissControl(e.target)) return;
 
     if (isIntercepting) {
       e.preventDefault();
@@ -1701,7 +1789,7 @@
       return;
     }
 
-    const inputEl = findElement(platform.inputSelectors);
+    const inputEl = findComposerInput();
     if (!inputEl) return;
 
     const text = platform.getInputText(inputEl).trim();
@@ -1754,7 +1842,7 @@
 
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
-      const inputEl = findElement(platform.inputSelectors);
+      const inputEl = findComposerInput();
       if (inputEl && (inputEl === e.target || inputEl.contains(e.target))) {
         interceptSubmission(e);
       }
@@ -1762,9 +1850,13 @@
   }
 
   function hookSendButtons() {
-    const sendBtns = platform.sendButtonSelectors
-      .map((s) => document.querySelector(s))
-      .filter(Boolean);
+    // Every match, not just the first. A platform can have several elements
+    // answering to one selector — Gemini keeps the composers for inline message
+    // edits alongside the live one — and querySelector pinned the hook to
+    // whichever came first in document order, which is not necessarily the
+    // composer the user is typing in. When it picked the wrong one the real
+    // send button was never hooked and prompts went straight through.
+    const sendBtns = allSendButtons();
 
     sendBtns.forEach((btn) => {
       if (!btn.dataset.eraseaiHooked) {
