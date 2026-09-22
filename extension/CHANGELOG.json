@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "version": "1.4.1",
+      "date": "2026-09-22",
+      "changes": [
+        "Fixed attachments piling up across a conversation: once a file was flagged and the send cancelled, every later send in that tab kept re-scanning it and stayed blocked, even after the file was removed from the composer — clearing it needed a page reload. Removing an attachment in the host app now drops it from the next scan",
+        "Eviction runs on positive evidence only: a file is dropped after it has been seen in the composer and is then gone. A file whose name the host app never renders is still scanned, so a broken selector over-scans instead of silently letting attachments through",
+        "The result panel now says how many files are attached to the current message and points at the composer, so a multi-file scan no longer reads as if the firewall were scanning chat history"
+      ]
+    },
+    {
       "version": "1.4.0",
       "date": "2026-06-05",
       "changes": [

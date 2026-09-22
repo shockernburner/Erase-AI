@@ -381,6 +381,12 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.eraseai-pieces-hint {
+  margin: -2px 0 10px;
+  color: #a1a1aa;
+  font-size: 11px;
+  line-height: 1.5;
+}
 .eraseai-piece-row {
   display: grid;
   grid-template-columns: auto 1fr auto;

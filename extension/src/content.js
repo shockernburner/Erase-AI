@@ -218,8 +218,12 @@
   const ANALYZE_CONCURRENCY_DEFAULT = globalThis.EraseAIConcurrency.DEFAULT;
   const coerceAnalyzeConcurrency = globalThis.EraseAIConcurrency.coerce;
   let analyzeConcurrency = ANALYZE_CONCURRENCY_DEFAULT;
-  const fileCache = new Map(); // key -> File
+  const fileCache = new Map(); // key -> { file, seen }
   let fileCacheUrl = typeof window !== "undefined" ? window.location.href : "";
+  // How long to give the host app to render a chip for a just-attached file
+  // before we look for it in the composer.
+  const ATTACHMENT_SETTLE_MS = 600;
+  let attachmentSettleTimer = null;
   // Maximum text length we send to /api/dev/analyze in a single call.
   // Anything bigger is sliced into ~PIECE_CHUNK_SIZE chunks per piece.
   const ANALYZE_MAX_CHARS = 10000;
@@ -248,9 +252,40 @@
     fileCache.clear();
   }
 
+  function composerRoot() {
+    if (!platform || !platform.composerSelectors) return null;
+    if (typeof document === "undefined") return null;
+    for (const sel of platform.composerSelectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (el) return el;
+      } catch {
+        // :has() on older engines / jsdom may throw on parse — try the next.
+      }
+    }
+    return null;
+  }
+
+  // The host app owns attachment state; we only hold File objects because
+  // their bytes are unreachable from the DOM. So eviction runs on positive
+  // evidence: a file is dropped only once we have seen its chip in the
+  // composer AND that chip is gone. A file whose name the host never renders
+  // is never marked seen and never evicted, so a selector that stops matching
+  // degrades into scanning too much rather than waving attachments through.
+  function reconcileAttachments() {
+    const root = composerRoot();
+    if (!root) return;
+    const rendered = root.textContent || "";
+    for (const [key, entry] of fileCache) {
+      if (rendered.includes(entry.file.name)) entry.seen = true;
+      else if (entry.seen) fileCache.delete(key);
+    }
+  }
+
   function getCachedFiles() {
     maybeResetCacheForUrl();
-    return Array.from(fileCache.values());
+    reconcileAttachments();
+    return Array.from(fileCache.values(), (entry) => entry.file);
   }
 
   function targetIsInComposer(target) {
@@ -280,8 +315,16 @@
       if (!file || typeof file.name !== "string") continue;
       const key = fileCacheKey(file);
       if (!key) continue;
-      fileCache.set(key, file);
+      if (!fileCache.has(key)) fileCache.set(key, { file, seen: false });
     }
+    // Record which of these the host actually renders, so a file the user
+    // attaches and then removes without ever sending can still be evicted.
+    if (typeof setTimeout !== "function") return;
+    if (attachmentSettleTimer != null) clearTimeout(attachmentSettleTimer);
+    attachmentSettleTimer = setTimeout(() => {
+      attachmentSettleTimer = null;
+      reconcileAttachments();
+    }, ATTACHMENT_SETTLE_MS);
   }
 
   function handleFileInputChange(e) {
@@ -811,7 +854,16 @@
           ${partial}
         </div>`;
     }).join("");
-    return `<div class="eraseai-pieces"><h4>What we scanned (${perPiece.length})</h4>${rows}</div>`;
+    // Multiple files read as "it scanned my whole chat history". They are
+    // actually all still attached to this one message, so say where they are
+    // and how to drop the one the user no longer wants to send.
+    const fileCount = perPiece.filter(
+      (p) => typeof p.source === "string" && p.source.startsWith("file:"),
+    ).length;
+    const hint = fileCount > 1
+      ? `<p class="eraseai-pieces-hint">${fileCount} files are attached to this message. Remove any you didn't mean to send from the composer, then send again.</p>`
+      : "";
+    return `<div class="eraseai-pieces"><h4>What we scanned (${perPiece.length})</h4>${hint}${rows}</div>`;
   }
 
   function renderResults(panel, result, inputEl) {
@@ -1652,6 +1704,11 @@
     if (observer) {
       observer.disconnect();
       observer = null;
+    }
+
+    if (attachmentSettleTimer != null) {
+      clearTimeout(attachmentSettleTimer);
+      attachmentSettleTimer = null;
     }
 
     document.querySelectorAll("[data-eraseai-hooked='true']").forEach((el) => {
