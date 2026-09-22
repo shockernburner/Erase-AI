@@ -277,7 +277,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private fun openGate(packageName: String, text: String, local: LocalRiskScanner.LocalScan) {
     if (gateInProgress) return
     gateInProgress = true
-    curtain.hide(packageName, "gate-opened")
+    // The curtain deliberately stays mounted underneath the gate. The gate is a full-screen
+    // modal so nothing shows through, and leaving it up means dismissing the gate with Cancel
+    // cannot expose the send control even for an instant.
     handler.removeCallbacksAndMessages(null)
 
     val target = ComposerLocator.locate(this, packageName)
@@ -600,7 +602,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
         // send, so it must not mark the text as approved the way Send Anyway does.
         holdSuspended = true
         restoreComposerText(originalText)
-        finishGate()
+        dismissGateKeepingGuard(packageName)
       })
     }
     if (showSanitize) {
@@ -660,7 +662,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   private fun mountOverlay(container: LinearLayout, modal: Boolean) {
-    removeOverlay()
+    // Only the window: the caller has just populated overlayText / overlayResult for the
+    // buttons we are about to mount, and removeOverlay() would wipe them right back out.
+    detachOverlayView()
     val scroll = ScrollView(this).apply {
       setBackgroundColor(if (modal) 0xCC070A13.toInt() else 0x00000000)
       addView(container)
@@ -708,9 +712,18 @@ class AiGuardAccessibilityService : AccessibilityService() {
         .onFailure {
           // Gate stays open on purpose: the prompt is still held, so the user can still
           // Cancel or Send Anyway rather than being silently released.
-          GuardLog.warn("sanitize.failed", overlayPackageName, "reason=${it.message ?: "unknown"}")
-          protectedAppsStore.saveLastErrorCategory("entitlement")
-          Toast.makeText(this@AiGuardAccessibilityService, "Sanitization requires an active EraseAI plan", Toast.LENGTH_LONG).show()
+          val category = it.errorCategory()
+          GuardLog.warn("sanitize.failed", overlayPackageName, "category=$category reason=${it.message ?: "unknown"}")
+          protectedAppsStore.saveLastErrorCategory(category)
+          // Blaming billing for what is usually an expired session sends people to the
+          // upgrade screen when all they need is to sign in again.
+          val message = when (category) {
+            "auth" -> "Sign in to EraseAI again to sanitize this prompt"
+            "entitlement" -> "Sanitization requires an active EraseAI plan"
+            "network" -> "Couldn't reach EraseAI to sanitize — check your connection"
+            else -> "Sanitization failed — the prompt is still blocked"
+          }
+          Toast.makeText(this@AiGuardAccessibilityService, message, Toast.LENGTH_LONG).show()
         }
     }
   }
@@ -729,6 +742,22 @@ class AiGuardAccessibilityService : AccessibilityService() {
       Toast.makeText(this, "Your prompt is back in the composer — tap send to continue.", Toast.LENGTH_SHORT).show()
     }
     finishGate()
+  }
+
+  /**
+   * Closes the gate without standing the guard down, for Cancel.
+   *
+   * finishGate() drops the curtain and clears pendingRisk, and the next evaluation is a
+   * PREVIEW_DEBOUNCE_MS away — with the draft already restored, that gap is long enough to
+   * tap send. Declining a send must leave the submit control covered, so the curtain and the
+   * pending verdict both stay; the scheduled pass only re-pins the curtain to the new row.
+   */
+  private fun dismissGateKeepingGuard(packageName: String) {
+    safeAutoSendRunnable?.let { handler.removeCallbacks(it) }
+    safeAutoSendRunnable = null
+    gateInProgress = false
+    removeOverlay()
+    scheduleComposerEvaluation(packageName)
   }
 
   private fun finishGate() {
@@ -766,13 +795,18 @@ class AiGuardAccessibilityService : AccessibilityService() {
     clipboard.setPrimaryClip(ClipData.newPlainText("EraseAI safe text", text))
   }
 
-  private fun removeOverlay() {
+  /** Detaches the overlay window only. The gate's state outlives a remount. */
+  private fun detachOverlayView() {
     safeAutoSendRunnable?.let { handler.removeCallbacks(it) }
     safeAutoSendRunnable = null
     overlayView?.let { overlay ->
       runCatching { getSystemService(WindowManager::class.java).removeView(overlay) }
     }
     overlayView = null
+  }
+
+  private fun removeOverlay() {
+    detachOverlayView()
     overlayText = null
     overlayPackageName = null
     overlayResult = null

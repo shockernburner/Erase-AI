@@ -37,10 +37,30 @@ class SendCurtain(private val context: Context) {
 
   val isShowing: Boolean get() = view != null
 
+  /**
+   * Widen to the newest measurement, then clamp back to a band around the submit row.
+   *
+   * Unioning alone was unbounded: every reflow that reported a taller row ratcheted the
+   * curtain upward until it covered the keyboard and the user could not type at all. The
+   * clamp keeps the reason the union exists — absorbing the shrink that follows emptying
+   * the composer — without letting the covered area climb the screen.
+   */
+  private fun mergeBounds(latest: Rect): Rect {
+    if (coveredBounds.isEmpty) {
+      coveredBounds.set(latest)
+      return coveredBounds
+    }
+    val merged = Rect(coveredBounds)
+    merged.union(latest)
+    val maxHeight = latest.height() * MAX_BAND_GROWTH
+    if (merged.height() > maxHeight) merged.top = merged.bottom - maxHeight
+    coveredBounds.set(merged)
+    return coveredBounds
+  }
+
   /** Mounts the curtain, or repositions it in place if already mounted. */
   fun show(bounds: Rect, level: String, packageName: String, onTap: () -> Unit) {
-    if (coveredBounds.isEmpty) coveredBounds.set(bounds) else coveredBounds.union(bounds)
-    val target = inflateBounds(coveredBounds)
+    val target = inflateBounds(mergeBounds(bounds))
     val existing = view
     if (existing != null) {
       applyLevel(level)
@@ -169,5 +189,10 @@ class SendCurtain(private val context: Context) {
     rect.right = rect.right.coerceAtMost(dm.widthPixels)
     rect.bottom = rect.bottom.coerceAtMost(dm.heightPixels)
     return rect
+  }
+
+  private companion object {
+    /** Widest the covered band may grow relative to the latest measured submit row. */
+    const val MAX_BAND_GROWTH = 2
   }
 }
