@@ -48,8 +48,17 @@ object LocalRiskScanner {
 
   fun scan(text: String): LocalScan {
     val findings = mutableListOf<ScanFinding>()
-    fun add(pattern: Regex, type: String, label: String, severity: String) {
-      val match = pattern.find(text) ?: return
+    // Credential findings are typed PII deliberately: the server's rewriter only redacts
+    // flags whose type is "pii", so any other value would show a finding in the gate and
+    // then hand back an unchanged prompt when the user taps Sanitize.
+    fun add(
+      pattern: Regex,
+      type: String,
+      label: String,
+      severity: String,
+      accept: (MatchResult) -> Boolean = { true },
+    ) {
+      val match = pattern.findAll(text).firstOrNull(accept) ?: return
       findings.add(
         ScanFinding(
           type = type,
@@ -80,7 +89,7 @@ object LocalRiskScanner {
       "medium",
     )
     add(
-      Regex("(?i)(?:api(?:\\s+key)?|client\\s+secret|access\\s+token|secret|bearer)\\s*(?:is|=|:|for)\\s*\\S{6,}"),
+      Regex("(?i)(?:api(?:\\s+key)?|client\\s+secret|access\\s+token|secret|bearer|password|passwd|pwd)\\s*(?:is|=|:|for)\\s*\\S{6,}"),
       "PII",
       "Shared API credential",
       "high",
@@ -97,6 +106,63 @@ object LocalRiskScanner {
       "Google API key detected",
       "high",
     )
+    // Everything below mirrors the server's secret rules. They were server-only, so an
+    // expired trial, a dropped network or simply a verdict that had not come back yet left
+    // these completely ungated on device — a pasted AWS key went straight through.
+    add(
+      Regex("\\bAKIA[0-9A-Z]{16}\\b"),
+      "PII",
+      "AWS access key",
+      "high",
+    )
+    add(
+      Regex("\\b(?:gh[posur]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\\b"),
+      "PII",
+      "GitHub token",
+      "high",
+    )
+    add(
+      Regex("\\bxox[baprs]-[A-Za-z0-9-]{10,}\\b"),
+      "PII",
+      "Slack token",
+      "high",
+    )
+    add(
+      Regex("\\bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}\\b"),
+      "PII",
+      "AI provider API key",
+      "high",
+    )
+    add(
+      Regex("\\beyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"),
+      "PII",
+      "JWT token",
+      "high",
+    )
+    add(
+      Regex("-----BEGIN[A-Z ]*PRIVATE KEY-----"),
+      "PII",
+      "Private key",
+      "high",
+    )
+    add(
+      Regex("\\bssh-(?:rsa|ed25519|dss)\\s+[A-Za-z0-9+/=]{40,}"),
+      "PII",
+      "SSH key",
+      "high",
+    )
+    add(
+      Regex("(?i)\\b(?:postgres(?:ql)?|mysql|mongodb(?:\\+srv)?|redis)://\\S{3,}"),
+      "PII",
+      "Database connection URL",
+      "high",
+    )
+    add(
+      Regex("\\b\\d(?:[ -]?\\d){12,18}\\b"),
+      "PII",
+      "Payment card number",
+      "high",
+    ) { isLuhnValid(it.value) }
     add(
       Regex("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"),
       "PII",
@@ -123,5 +189,26 @@ object LocalRiskScanner {
       else -> 0
     }
     return LocalScan(findings, level, risk, block)
+  }
+
+  /**
+   * Any long-enough digit run looks like a card number — order references, IDs and phone
+   * numbers all match the shape. The checksum is what separates a real card from noise.
+   */
+  private fun isLuhnValid(candidate: String): Boolean {
+    val digits = candidate.filter(Char::isDigit)
+    if (digits.length !in 13..19) return false
+    var sum = 0
+    var doubling = false
+    for (index in digits.indices.reversed()) {
+      var digit = digits[index] - '0'
+      if (doubling) {
+        digit *= 2
+        if (digit > 9) digit -= 9
+      }
+      sum += digit
+      doubling = !doubling
+    }
+    return sum % 10 == 0
   }
 }
