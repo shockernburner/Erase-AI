@@ -125,258 +125,301 @@ id = "sE0wKug6HQjGTvoYNjAzB"
 uri = "file://.local/outputs/Erase-AI.pdf"
 type = "pdf"
 title = "Erase AI.pdf"
+logical_id = "3bfc0971-53e6-40c0-a840-9eba69aa2ae7"
 
 [[outputs]]
 id = "JzQxH9-vyafK9NvNhCsdM"
 uri = "file://.local/outputs/Erase-AI.pptx"
 type = "slides"
 title = "Erase AI.pptx"
+logical_id = "b770f933-8b16-4051-aca6-dd07121f46e7"
 
 [[outputs]]
 id = "CcToUOqWdqOD7gG8Qrhlt"
 uri = "file://EraseAI_Prospects_Customers.csv"
 type = "table"
 title = "Prospect List — Customers (Asia)"
+logical_id = "bbccc610-8720-43de-b85d-2a4317d81c48"
 
 [[outputs]]
 id = "cYq8cFTTMdMWhqKkY6v_S"
 uri = "file://EraseAI_Prospects_Investors.csv"
 type = "table"
 title = "Prospect List — Investors (Asia)"
+logical_id = "641c01d7-ca11-4cc2-9197-1cc8a69d597c"
 
 [[outputs]]
 id = "OxNVzWsMRKknixJwnxmwC"
 uri = "file://EraseAI_Pitch_Video_Script.txt"
 type = "text"
 title = "Pitch Video Script (~2.5 min)"
+logical_id = "8e59ab26-3d2b-4873-89b2-7e75e44c89b4"
 
 [[outputs]]
 id = "082sdoWM0_jt9N7m8lx3L"
 uri = "file://EraseAI_Buildathon_Answers.txt"
 type = "text"
 title = "Buildathon Answers (3 Questions)"
+logical_id = "2a91678c-afa2-4bc5-8b0d-e05333bf851f"
 
 [[outputs]]
 id = "qlM0zebp6Wrikg4V8e0aC"
 uri = "file://EraseAI_Pitch_Deck_URL.txt"
 type = "text"
 title = "Pitch Deck URL & Slide Summary"
+logical_id = "80a8c3c6-33dc-4d64-a9d1-4bde409382e6"
 
 [[outputs]]
 id = "VRxAcjCrsz3r1EpHYHfbM"
 uri = "file://EraseAI_Project_Hero.png"
 type = "image"
 title = "EraseAI Project Hero Image"
+logical_id = "3ce2cbd8-db12-4ee2-8eb3-a9d5938bf618"
 
 [[outputs]]
 id = "a-R6M0jLix0o5kLkzq9zH"
 uri = "file://attached_assets/eraseai_thumbnail_v1.png"
 type = "image"
 title = "Option 1: Dark Shield (Navy/Teal)"
+logical_id = "df42741d-c787-4c9b-b59f-806454e86457"
 
 [[outputs]]
 id = "6o_FJMiqTZHKXNoZgmXDZ"
 uri = "file://attached_assets/eraseai_thumbnail_v2.png"
 type = "image"
 title = "Option 2: Purple Shield (Purple/Blue)"
+logical_id = "96e59d20-20c3-4c71-af44-c0600c230f42"
 
 [[outputs]]
 id = "geOcFAKBQnDeWQh6RtCsO"
 uri = "file://attached_assets/eraseai_thumbnail_v3.png"
 type = "image"
 title = "Option 3: Light Clean (White/Blue)"
+logical_id = "ed249b0b-5c71-469b-acab-af2a6adc27e7"
 
 [[outputs]]
 id = "5Rwifi_O3Gc54-WdrYQPv"
 uri = "file://attached_assets/eraseai_linkedin_cover.png"
 type = "image"
 title = "EraseAI LinkedIn Article Cover Image"
+logical_id = "ea87de0d-b4a2-48ec-8dc7-76bdbb88c499"
 
 [[outputs]]
 id = "rYnKGW9dw6VlGRE1csLLh"
 uri = "file://attached_assets/eraseai_linkedin_article.md"
 type = "text"
 title = "LinkedIn article — The Missing Layer in AI"
+logical_id = "5df4b65f-e790-4f1e-9dbb-021371d101c0"
 
 [[outputs]]
 id = "URwqqBqo1oAsQLvvy4dYv"
 uri = "file://attached_assets/eraseai_linkedin_post.md"
 type = "text"
 title = "LinkedIn Post — \"Tell Your Network\" Blurb"
+logical_id = "8b4f9d8a-c343-4bca-b64b-f960b50f4e1d"
 
 [[outputs]]
 id = "-58n82cyVYfHpLJ49vJcM"
 uri = "file://outputs/vantward-letterhead.jpg"
 type = "image"
 title = "Vantward Solutions Letterhead (Image)"
+logical_id = "f4545028-182d-4e37-b355-4bf46bfc7efe"
 
 [[outputs]]
 id = "taJw0DAxLyQdEgz1aiA6O"
 uri = "file://outputs/akij-pitch-letter.md"
 type = "text"
 title = "Akij Ventures Pitch Letter (Markdown)"
+logical_id = "65234034-f7a5-4f51-9b93-188705a1840a"
 
 [[outputs]]
 id = "X_qNhncpGbVzyZBP028iJ"
 uri = "file://attached_assets/vantward_logo_v1.png"
 type = "image"
 title = "Logo Option A - Shield with Circuit Flow"
+logical_id = "a13d683d-4945-48f8-930d-b8ce4fc16fb4"
 
 [[outputs]]
 id = "X1o52fAUh_R_sLnxnOGkT"
 uri = "file://attached_assets/vantward_logo_v2.png"
 type = "image"
 title = "Logo Option B - Hexagonal Shield with Lightning"
+logical_id = "0925a678-9804-4aa1-9513-d39a807ee236"
 
 [[outputs]]
 id = "Q46o1nvvjaD0YL3Gne1Xx"
 uri = "file://attached_assets/vantward_logo_v3.png"
 type = "image"
 title = "Logo Option C - V-Shape Circuit Convergence"
+logical_id = "d17d7e3c-8d47-4dfc-8a15-aea614af7292"
 
 [[outputs]]
 id = "u_Pks_NgMtZ0ignKQJvdB"
 uri = "file://attached_assets/vantward_linkedin_banner.png"
 type = "image"
 title = "LinkedIn Cover Banner"
+logical_id = "ec588ff6-e8da-4e63-9698-e706ba61e2e2"
 
 [[outputs]]
 id = "OEzevJ6jlOUF-FxTav34E"
 uri = "file://attached_assets/eraseai_linkedin_ad_image.png"
 type = "image"
 title = "EraseAI LinkedIn Ad Image"
+logical_id = "85c563d8-9ba2-4371-aee9-313e28b0dd91"
 
 [[outputs]]
 id = "wBvjRS4AyHSk4G6lNXwdt"
 uri = "file://attached_assets/vantward_article_machine_unlearning.png"
 type = "image"
 title = "LinkedIn Article #3 Cover — Machine Unlearning"
+logical_id = "890b5251-5772-4653-bd13-5b1e0bc6e55a"
 
 [[outputs]]
 id = "5Xdy8NDVPeyPrDiYwzXcY"
 uri = "file://attached_assets/generated_images/eraseai_linkedin_cover.png"
 type = "image"
 title = "Cover image (16:9)"
+logical_id = "ec80255b-8e16-48ac-973e-b1acb6831961"
 
 [[outputs]]
 id = "QKApBaTnWf_t7nd30soJX"
 uri = "file://attached_assets/screenshots/eraseai_ai.png"
 type = "image"
 title = "Screenshot 1 — eraseai.ai homepage (3 audience modes)"
+logical_id = "76118f27-3270-4601-85ef-191f75d53a4f"
 
 [[outputs]]
 id = "y_lhrukBr84Rem7c9UB3U"
 uri = "file://attached_assets/screenshots/eraseai_ai_ai-firewall.png"
 type = "image"
 title = "Screenshot 2 — AI Firewall product page"
+logical_id = "5636d3f6-4634-4adb-b04d-71cb85757193"
 
 [[outputs]]
 id = "r8w0wSdyNzMVcwVmf6fIS"
 uri = "file://attached_assets/screenshots/eraseai_ai_blog.png"
 type = "image"
 title = "Screenshot 3 — AI Security Blog (credibility)"
+logical_id = "76c27cc7-0b49-4513-bfad-c9d7e3dcf48c"
 
 [[outputs]]
 id = "rQNhYDS-LCEvj6gP50JbZ"
 uri = "file://attached_assets/meeting-prep-joseph-callahan-2026-04-29.tar.gz"
 type = "unspecified"
 title = "Meeting prep — Joe Callahan (29 Apr 2026)"
+logical_id = "00475433-d6d3-4f9f-995d-82d82d5e59df"
 
 [[outputs]]
 id = "mSaIMF3nDfarRkcHYA6ZQ"
 uri = "file://attached_assets/medium-cover/identity-gap-model-master-1500x750.png"
 type = "image"
 title = "Medium cover — Identity / Gap / Model (1500×750, upload this one)"
+logical_id = "28c97887-6ead-4879-8891-2e354284a829"
 
 [[outputs]]
 id = "4x4zKMGjioeb4BAhqPNIV"
 uri = "file://attached_assets/medium-cover/identity-gap-model-master-2400x1200.png"
 type = "image"
 title = "Medium cover — Identity / Gap / Model (2400×1200 hi-res master)"
+logical_id = "6385b7b3-9182-4d95-9c34-c5a14444c016"
 
 [[outputs]]
 id = "O1QPlYdkwQrPP6e5DD-UA"
 uri = "file://attached_assets/medium-cover/hallway-missing-door-master-1500x750.png"
 type = "image"
 title = "Stock-alternative — hallway with missing door (1500×750)"
+logical_id = "9636dfc3-fb31-4a71-ae85-d3809568a997"
 
 [[outputs]]
 id = "noiWzd1ChMqydswYoXE1q"
 uri = "file://attached_assets/medium-cover/hallway-missing-door-master-2400x1200.png"
 type = "image"
 title = "Stock-alternative — hallway with missing door (2400×1200 hi-res master)"
+logical_id = "a2b83612-e9e5-475c-8441-3e2b7eac5cf6"
 
 [[outputs]]
 id = "dgCEc5QjbxLCaoPTSeIK-"
 uri = "file://docs/handoff/AIRWALLEX_INTEGRATION.md"
 type = "text"
 title = "Airwallex Integration Guide (for the other Replit Agents)"
+logical_id = "6583607e-53b9-4442-9a69-f22b345b2bcb"
 
 [[outputs]]
 id = "_AZxTutoANdJhJkcUpBi8"
 uri = "file://deliverables/EraseAI_Investor_List.xlsx"
 type = "table"
 title = "EraseAI Investor List (Excel, 44 firms)"
+logical_id = "d28edf1a-dd0e-45ca-885f-0d42f20d505f"
 
 [[outputs]]
 id = "8_k0LQW0aSE4tLlabtIh4"
 uri = "file://deliverables/EraseAI_Investor_List.csv"
 type = "table"
 title = "EraseAI Investor List (CSV)"
+logical_id = "d51fbda0-cba4-4c57-b096-94c043b48184"
 
 [[outputs]]
 id = "k8oyp9dBPLyq89veuWPKm"
 uri = "file://deliverables/EraseAI_Investor_Outreach_Emails.md"
 type = "text"
 title = "EraseAI Investor Outreach Emails"
+logical_id = "5ee8611f-0df6-4c7a-abc2-4395a2a85975"
 
 [[outputs]]
 id = "kssE0_jiZdTLnPUrEO6i6"
 uri = "file://.local/outputs/EraseAI----------.pdf"
 type = "pdf"
 title = "EraseAI 投资路演 (中文) (PDF)"
+logical_id = "732b1ab5-f8bf-4fb0-84f5-eb094e388d0e"
 
 [[outputs]]
 id = "Xk8xDdof4juNtKiZPyNcC"
 uri = "file://artifacts/pitch-video-cn/public/audio/bg_music.mp3"
 type = "audio"
 title = "background music"
+logical_id = "26664854-a32b-434e-ae1e-bd8f4091f90b"
 
 [[outputs]]
 id = "pR6QgD673WzKVeq--nJZ6"
 uri = "file://exports/EraseAI_Outbound_Pilot_Kickoff_Brief.pdf"
 type = "pdf"
 title = "EraseAI Outbound Pilot — Kickoff Brief (PDF)"
+logical_id = "39531681-1a24-4f78-add2-61ea3c0b0c7b"
 
 [[outputs]]
 id = "Jxn9QsgxMrWwz4kjMDgJR"
 uri = "file://exports/EraseAI_Enterprise_Architecture_Brief.pdf"
 type = "pdf"
 title = "EraseAI Enterprise Deployment — Architecture Brief (PDF)"
+logical_id = "81bf63e3-20cf-4bf3-8c06-158f7dcfe4d2"
 
 [[outputs]]
 id = "RUbgTYlWVuajTo6Vt-Z1u"
 uri = "file://exports/EraseAI_enterprise_prospect_targets.csv"
 type = "table"
 title = "EraseAI B2B Prospect Target List (CSV)"
+logical_id = "2587557b-901f-41fc-abe9-15c69b3e59ce"
 
 [[outputs]]
 id = "ChpEmiN75C7D_Vy6Rgn1O"
 uri = "file://branding/eraseai-brand-kit.zip"
 type = "unspecified"
 title = "EraseAI Brand Kit (full package)"
+logical_id = "8db3da22-08ef-41c4-98e4-9e70d0dd0f54"
 
 [[outputs]]
 id = "au5cBhsewMiktnCmYsUQ4"
 uri = "file://branding/brand-guidelines.pdf"
 type = "pdf"
 title = "EraseAI Brand Guidelines (PDF)"
+logical_id = "87a8e103-234b-4df7-aaf5-535466d0d3f1"
 
 [[outputs]]
 id = "uZ29yXdRb83u1Y-ikygnD"
 uri = "file://attached_assets/Campaign_Script_x_EraseAI_REVIEWED.docx"
 type = "word_document"
 title = "Campaign Script — Reviewed (red markup)"
+logical_id = "b752bd96-f2c5-4c77-b76c-91ffcc6d6810"
 
 [[outputs]]
 id = "A_Sle5iU6L6UgEwYVBqvs"
@@ -384,6 +427,7 @@ uri = "file://marketing-assets/EraseAI_Shadow_AI_Visibility_Checklist.pdf"
 type = "pdf"
 title = "Shadow AI Visibility Checklist (Campaign 1 CTA asset)"
 description = "One-page 15-point checklist for engineering leaders — the asset offered in Campaign 1's Email 2."
+logical_id = "f6acb9eb-07fb-43a4-ab39-04ac7652a7da"
 
 [[outputs]]
 id = "CtHZ7TeMg5tj9JQGKfDOb"
@@ -391,6 +435,7 @@ uri = "file://marketing-assets/EraseAI_Prevention_vs_Detection_SideBySide.pdf"
 type = "pdf"
 title = "Prevention-first vs. Alert-first Side-by-Side (Campaign 2 CTA asset)"
 description = "One-page comparison of prevention-first vs. alert-first AI security — the asset offered in Campaign 2's Email 2."
+logical_id = "ee1ba025-1800-48a4-a93a-230b6981fa38"
 
 [[outputs]]
 id = "U0razJSUuPrbgLx9YZEHL"
@@ -398,6 +443,7 @@ uri = "file://attached_assets/V.3_QA_REALIGNED.csv"
 type = "table"
 title = "Campaign 3 lead list — QA verdicts re-aligned"
 description = "Corrected version of the C3 CSV: each lead's true QA status/reason restored after the column misalignment, with a match-confidence flag. 3 rows need manual verification."
+logical_id = "1fd75ad9-81c3-426f-bc0d-21f9a4047df6"
 
 [[outputs]]
 id = "96UUT4Y04O_iyPKJzkNN8"
@@ -405,3 +451,34 @@ uri = "file://attached_assets/V.4_QA_REALIGNED.csv"
 type = "table"
 title = "Campaign 4 lead list — QA verdicts re-aligned"
 description = "Corrected C4 CSV with each lead's true QA status/reason restored after the same column misalignment found in C3. 18 rows flagged LOW confidence for manual verification."
+logical_id = "91a158b1-a248-4808-abcc-d4627c87ec66"
+
+[[outputs]]
+id = "jcNXnWL_MAQveD3RrZq4M"
+uri = "file://attached_assets/generated_audio/eraseai_english_pitch_soothing.mp3"
+type = "audio"
+title = "EraseAI English pitch soothing music"
+description = "Generated music: Soothing cinematic ambient technology instrumental for an investor pitch. Warm piano, soft glassy synth pads, subtle low pulse, restrained percussion, confident and optimistic, elega…"
+logical_id = "58ae559b-7759-4eb2-b5ea-b74d8211b8a6"
+
+[[outputs]]
+id = "vNoDlvwFsU5mvtY4LY31v"
+uri = "file://artifacts/pitch-video-en/public/audio/bg_music_2.mp3"
+type = "audio"
+title = "EraseAI soothing investor pitch music"
+description = "Generated music: Ambient atmospheric instrumental background music scoring a calm enterprise AI cybersecurity investor pitch. Warm felt piano, soft glassy synth pads, subtle low pulse, restrained per…"
+logical_id = "fd7fb852-0a4b-4e57-8170-803d371b4a99"
+
+[[outputs]]
+id = "Aa2Up9gSf4oXVEwK4-gor"
+uri = "file://artifacts/pitch-video-en/PRESENTER_SCRIPT.md"
+type = "text"
+title = "EraseAI English Presenter Script"
+description = "A scene-timed 30-second voiceover plus a two-minute live investor presentation script and delivery notes for tomorrow."
+logical_id = "1076f0f6-bd1f-4fb4-9950-b44672c96651"
+content_hash = "sha256:7fc9dbca76b6fa8ca013979a52d5a0bb4a68f19a36d98e16ef94563a96d25f65"
+size = 3058
+mtime_ms = 1790056687862
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:875881c0-b2eb-4021-bfd3-641b1f1dff37/1076f0f6-bd1f-4fb4-9950-b44672c96651/71e100dd-7100-4243-86e4-e0cfb6fe0e23"
+storage_version_token = "1790056789834615"
+content_type = "text/markdown"

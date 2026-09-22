@@ -1,0 +1,29 @@
+kind = "video"
+videoAspectRatio = "16:9"
+previewPath = "/pitch-video-en/"
+title = "EraseAI Investor Pitch Animation"
+description = "A polished 16:9 English investor-pitch animation for EraseAI, adapted from the Chinese pitch video with calm instrumental music and a matching presenter script."
+version = "1.0.0"
+id = "artifacts/pitch-video-en"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/pitch-video-en/" ]
+localPort = 18150
+
+[services.development]
+run = "pnpm --filter @workspace/pitch-video-en run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pitch-video-en", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pitch-video-en/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18150"
+BASE_PATH = "/pitch-video-en/"
