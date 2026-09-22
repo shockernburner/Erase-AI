@@ -1258,6 +1258,7 @@
     "installStep3": "Aktivieren Sie den Entwicklermodus oben rechts.",
     "installStep4": "Klicken Sie auf Entpackte Erweiterung laden und wählen Sie /extension.",
     "installStep5": "Geben Sie Ihren EraseAI API-Schlüssel ein und klicken Sie auf Speichern.",
+    "installStep6": "Laden Sie alle geöffneten ChatGPT-, Claude- oder Gemini-Tabs neu (Cmd+Shift+R auf dem Mac, Strg+Shift+R unter Windows). Bereits geöffnete Tabs behalten den alten Erweiterungscode — die Firewall fängt Sendungen erst nach dem Neuladen ab.",
     "configTitle": "Manifest-Konfiguration",
     "configDesc": "Die Erweiterung verwendet Chrome Manifest V3:",
     "browserCompatTitle": "Browser-Kompatibilität",

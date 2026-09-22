@@ -1258,6 +1258,7 @@
     "installStep3": "右上のトグルでデベロッパーモードを有効にします。",
     "installStep4": "パッケージ化されていない拡張機能を読み込むをクリックし/extensionを選択します。",
     "installStep5": "拡張機能アイコンをクリックしAPIキーを入力して保存します。",
+    "installStep6": "開いている ChatGPT、Claude、Gemini のタブを再読み込みします（Mac は Cmd+Shift+R、Windows は Ctrl+Shift+R）。インストール前から開いていたタブは古い拡張機能コードのままなので、再読み込みするまでファイアウォールは送信をブロックしません。",
     "configTitle": "マニフェスト設定",
     "configDesc": "Chrome Manifest V3の主要な設定：",
     "browserCompatTitle": "ブラウザ互換性",

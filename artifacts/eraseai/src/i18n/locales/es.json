@@ -1258,6 +1258,7 @@
     "installStep3": "Activa el Modo desarrollador en la esquina superior derecha.",
     "installStep4": "Haz clic en Cargar extensión sin empaquetar y selecciona /extension.",
     "installStep5": "Ingresa tu clave API de EraseAI y haz clic en Guardar.",
+    "installStep6": "Recarga las pestañas abiertas de ChatGPT, Claude o Gemini (Cmd+Shift+R en Mac, Ctrl+Shift+R en Windows). Las pestañas que ya estaban abiertas conservan el código antiguo de la extensión; el firewall no interceptará envíos hasta que recargues.",
     "configTitle": "Configuración del manifiesto",
     "configDesc": "La extensión usa Chrome Manifest V3:",
     "browserCompatTitle": "Compatibilidad de navegadores",

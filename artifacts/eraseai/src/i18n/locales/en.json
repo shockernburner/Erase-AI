@@ -1258,6 +1258,7 @@
     "installStep3": "Enable \"Developer mode\" using the toggle in the top-right corner.",
     "installStep4": "Click \"Load unpacked\" and select the /extension folder.",
     "installStep5": "Click the extension icon in the toolbar, enter your EraseAI API key (from the Developer Dashboard), and click Save.",
+    "installStep6": "Reload any open ChatGPT, Claude, or Gemini tabs (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows). Tabs that were already open keep the old extension code, so the firewall will not intercept sends until you reload.",
     "configTitle": "Manifest Configuration",
     "configDesc": "The extension uses Chrome Manifest V3 with the following key configuration:",
     "browserCompatTitle": "Browser Compatibility",

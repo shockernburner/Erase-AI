@@ -1258,6 +1258,7 @@
     "installStep3": "启用右上角的开发者模式。",
     "installStep4": "点击加载已解压的扩展程序并选择/extension。",
     "installStep5": "点击扩展图标输入API密钥并保存。",
+    "installStep6": "重新加载已打开的 ChatGPT、Claude 或 Gemini 标签页（Mac 按 Cmd+Shift+R，Windows 按 Ctrl+Shift+R）。安装前已打开的标签页仍运行旧版扩展代码，重新加载后防火墙才会拦截发送。",
     "configTitle": "清单配置",
     "configDesc": "使用Chrome Manifest V3的关键配置：",
     "browserCompatTitle": "浏览器兼容性",

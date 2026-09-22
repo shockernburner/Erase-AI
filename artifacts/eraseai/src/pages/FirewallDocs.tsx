@@ -653,6 +653,7 @@ function InstallSection({ onOpenPublishing }: { onOpenPublishing: () => void }) 
                 t("firewallDocs.installStep3"),
                 t("firewallDocs.installStep4"),
                 t("firewallDocs.installStep5"),
+                t("firewallDocs.installStep6"),
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-3 text-sm bg-card/40 border border-border/20 rounded-lg p-3">
                   <span className="text-primary font-bold shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs">{i + 1}</span>
