@@ -560,6 +560,20 @@
       if (worstLevel === "safe") worstLevel = "caution";
     }
 
+    // Files we can offer a sanitized copy of. Only a plain-text read is
+    // eligible: the extract IS the file, so a redacted rewrite is still a
+    // valid file of the same type. Text recovered from a PDF, a DOCX, OCR,
+    // or an archive member cannot be rebuilt into the original, and a
+    // truncated read would hand back a file missing everything past the
+    // size cap — in both cases the download would silently differ from
+    // what the user attached.
+    const cleanCopies = {};
+    for (const f of extractedFiles || []) {
+      if (!f || f.kind !== "text" || f.truncated || f.skipReason) continue;
+      if (typeof f.text !== "string" || !f.text) continue;
+      cleanCopies[f.name] = { text: f.text, mimeType: f.mimeType || "text/plain" };
+    }
+
     return {
       level: worstLevel,
       riskScore: worstResult ? worstScore : 100,
@@ -567,6 +581,7 @@
       firstError,
       categories: Array.from(allCategories),
       perPiece,
+      cleanCopies,
       worstResult,
     };
   }
@@ -817,7 +832,93 @@
     return escapeHtml(String(s));
   }
 
-  function renderPiecesBlock(perPiece) {
+  // Offered only on a flagged text file we can rewrite faithfully. The
+  // download is a replacement the user re-attaches themselves — we never
+  // swap it into the composer, so the file the host app holds only ever
+  // changes because the user changed it.
+  function renderCleanCopyButton(piece, cleanCopies) {
+    if (!cleanCopies) return "";
+    if (piece.level !== "caution" && piece.level !== "danger") return "";
+    if (typeof piece.source !== "string" || !piece.source.startsWith("file:")) return "";
+    const name = piece.source.slice("file:".length);
+    if (!Object.prototype.hasOwnProperty.call(cleanCopies, name)) return "";
+    return `<button type="button" class="eraseai-clean-copy" data-clean-file="${escapeHtml(name)}">Download clean copy</button>`;
+  }
+
+  function cleanCopyName(name) {
+    const dot = name.lastIndexOf(".");
+    if (dot <= 0) return `${name}-clean`;
+    return `${name.slice(0, dot)}-clean${name.slice(dot)}`;
+  }
+
+  function downloadText(name, text, mimeType) {
+    const blob = new Blob([text], { type: mimeType || "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = cleanCopyName(name);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  // Shared long-lived-port sanitize call. Same MV3 worker-suspension
+  // reasoning as the prompt Sanitize button: a plain sendMessage can be
+  // dropped when the worker sleeps mid-fetch, stranding the caller.
+  function requestSanitize(text, done) {
+    let responded = false;
+    const settle = (result) => {
+      if (responded) return;
+      responded = true;
+      done(result);
+    };
+    let port = null;
+    try {
+      port = chrome.runtime.connect({ name: "sanitize" });
+    } catch {
+      settle({ error: "Sanitization failed" });
+      return;
+    }
+    if (!port) {
+      settle({ error: "Sanitization failed" });
+      return;
+    }
+    port.onMessage.addListener((msg) => {
+      if (!msg || msg.type !== "SANITIZE_RESULT") return;
+      settle(msg.result);
+    });
+    port.onDisconnect.addListener(() => settle({ error: "Sanitization failed" }));
+    try {
+      port.postMessage({ type: "SANITIZE", text });
+    } catch {
+      settle({ error: "Sanitization failed" });
+    }
+  }
+
+  function wireCleanCopyButtons(panel, cleanCopies) {
+    if (!cleanCopies) return;
+    panel.querySelectorAll(".eraseai-clean-copy").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const name = btn.dataset.cleanFile;
+        const entry = cleanCopies[name];
+        if (!entry) return;
+        btn.disabled = true;
+        btn.textContent = "Sanitizing...";
+        requestSanitize(entry.text, (result) => {
+          if (!result || result.error || typeof result.sanitized !== "string") {
+            btn.textContent = "Failed";
+            btn.disabled = false;
+            return;
+          }
+          downloadText(name, result.sanitized, entry.mimeType);
+          btn.textContent = "Downloaded";
+        });
+      });
+    });
+  }
+
+  function renderPiecesBlock(perPiece, cleanCopies) {
     if (!Array.isArray(perPiece) || perPiece.length === 0) return "";
     // Show the per-piece block whenever there are multiple rows OR even a
     // single row that comes from a file — single-file scenarios still need
@@ -852,6 +953,7 @@
           <span class="eraseai-piece-label">${escapeHtml(labelText)}${chunkSuffix}</span>
           ${detail}
           ${partial}
+          ${renderCleanCopyButton(p, cleanCopies)}
         </div>`;
     }).join("");
     // Multiple files read as "it scanned my whole chat history". They are
@@ -867,12 +969,12 @@
   }
 
   function renderResults(panel, result, inputEl) {
-    const { riskScore, level, issues, suggestions, summary, perPiece } = result;
+    const { riskScore, level, issues, suggestions, summary, perPiece, cleanCopies } = result;
     const color = getScoreColor(riskScore);
     const circumference = 2 * Math.PI * 26;
     const dashOffset = circumference * (1 - riskScore / 100);
 
-    const piecesHtml = renderPiecesBlock(perPiece);
+    const piecesHtml = renderPiecesBlock(perPiece, cleanCopies);
 
     let issuesHtml = "";
     if (issues && issues.length > 0) {
@@ -982,6 +1084,8 @@
     // click Send Sanitized afterwards. We attribute the final outcome based
     // on which path they actually committed to.
     let sanitizedApplied = false;
+
+    wireCleanCopyButtons(panel, cleanCopies);
 
     panel.querySelector("#eraseai-cancel").addEventListener("click", () => {
       reportOutcome("cancel");
@@ -1580,6 +1684,7 @@
         ? worst.summary
         : (aggregated.level === "safe" ? "All clear" : "Issues detected in prompt or attachments"),
       perPiece: aggregated.perPiece,
+      cleanCopies: aggregated.cleanCopies || {},
     };
   }
 

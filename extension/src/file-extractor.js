@@ -265,6 +265,9 @@
       sizeBytes,
       text,
       truncated,
+      // "text" means the extract IS the file, byte for byte — the only case
+      // where a sanitized rewrite can be handed back in the original format.
+      kind: "text",
     };
   }
 
@@ -295,6 +298,9 @@
       sizeBytes,
       text,
       truncated,
+      // Text pulled out of a PDF/DOCX/image. Useful to scan, but it cannot
+      // be rebuilt into the original format.
+      kind,
     };
   }
 
@@ -352,6 +358,9 @@
         sizeBytes: innerSize,
         text,
         truncated: truncated || !!e.truncated,
+        // Deliberately not "text": handing back one member of an archive
+        // would not give the user something they can re-attach in place.
+        kind: "archive-entry",
       });
     }
     return rows;

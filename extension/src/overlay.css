@@ -381,6 +381,26 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+.eraseai-clean-copy {
+  grid-column: 2 / -1;
+  justify-self: start;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 6px;
+  color: #67e8f9;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.eraseai-clean-copy:hover:not(:disabled) {
+  background: rgba(6, 182, 212, 0.18);
+}
+.eraseai-clean-copy:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 .eraseai-pieces-hint {
   margin: -2px 0 10px;
   color: #a1a1aa;
