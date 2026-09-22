@@ -67,18 +67,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   private var pendingRisk: PendingRisk? = null
 
-  /** High-risk text pulled out of the host composer so a send cannot transmit it. */
-  private var heldText: String? = null
-
   /** Text the user explicitly approved for sending; re-gating it would trap them in a loop. */
   private var decidedText: String? = null
-
-  /**
-   * Set when the user cancels. The draft is handed back so they can edit it, and EraseAI stops
-   * yanking it out of the composer — but the curtain stays armed, so cancelling is never a way
-   * to get an unguarded send.
-   */
-  private var holdSuspended = false
 
   override fun onServiceConnected() {
     super.onServiceConnected()
@@ -174,22 +164,12 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     val target = ComposerLocator.locate(this, packageName)
     if (target == null) {
-      // Only drop protection when nothing is in custody; a missing composer is often just a
-      // transient relayout while the keyboard animates.
-      if (heldText == null) releaseCurtain("composer-missing")
+      releaseCurtain("composer-missing")
       return
     }
 
     activeNode = target.editable
     pendingSendNode = target.sendNode
-
-    val pending = pendingRisk
-    if (heldText != null && pending != null) {
-      // Text is in EraseAI custody: the composer is empty by design, so keep the curtain up
-      // and just track the row as the layout moves.
-      curtain.show(target.submitZone, pending.scan.level, packageName) { openGateFromCurtain(packageName) }
-      return
-    }
 
     val text = target.text.take(MAX_SCAN_TEXT_LENGTH)
     if (text.length < MIN_SCAN_LENGTH) {
@@ -213,29 +193,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
     curtain.show(target.submitZone, local.level, packageName) { openGateFromCurtain(packageName) }
 
-    // High risk only: take the text out of the app so no send path can transmit it, even if
-    // the user reaches the send control before the curtain is repositioned. Once the user has
-    // cancelled, the draft stays put for editing and the curtain alone blocks the send.
-    if (local.level == "high" && !holdSuspended) holdText(packageName, target.editable, text)
-
-    GuardLog.risk(packageName, local.level, local.riskScore, local.findings.size, held = heldText != null)
+    GuardLog.risk(packageName, local.level, local.riskScore, local.findings.size)
     maybePreviewApiScan(packageName, text)
-  }
-
-  private fun holdText(packageName: String, editable: AccessibilityNodeInfo, text: String) {
-    if (heldText != null) return
-    setComposerText(editable, "")
-    heldText = text
-    GuardLog.gate("hold", packageName, "len=${text.length}")
-    // ACTION_SET_TEXT can report success while the host app repopulates its own draft, and an
-    // immediate re-read returns stale content. Confirm once the UI has settled so the log
-    // reflects what actually happened. Either way the curtain still covers every send control.
-    handler.postDelayed({
-      editable.refresh()
-      if (!editable.text.isNullOrEmpty()) {
-        GuardLog.warn("hold.repopulated", packageName, "composer refilled by host app")
-      }
-    }, HOLD_VERIFY_DELAY_MS)
   }
 
   private fun openGateFromCurtain(packageName: String) {
@@ -246,9 +205,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   private fun releaseCurtain(reason: String) {
     pendingRisk = null
-    heldText = null
-    // The composer is safe or empty again, so the next risky draft gets full protection.
-    holdSuspended = false
     curtain.hide(curtainPackage, reason)
   }
 
@@ -290,12 +246,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
     val attachments = target?.root?.let { AttachmentHints.extract(it) } ?: emptyList()
     if (attachments.isNotEmpty()) {
       GuardLog.gate("attachments", packageName, "labels=${attachments.joinToString("|") { it.label }}")
-    }
-
-    // Take custody now if the medium-risk path left the text in the composer.
-    if (heldText == null) {
-      activeNode?.let { setComposerText(it, "") }
-      heldText = text
     }
 
     // One history row per decision — preview scans never write history.
@@ -374,14 +324,23 @@ class AiGuardAccessibilityService : AccessibilityService() {
       },
     )
 
-  private fun restoreComposerText(text: String) {
-    val node = activeNode ?: return
-    if (setComposerText(node, text)) {
-      heldText = null
-    } else {
-      copyText(text)
-      Toast.makeText(this, "Your prompt was copied — paste it to continue.", Toast.LENGTH_LONG).show()
+  /**
+   * Writes into the composer after re-locating it.
+   *
+   * The node captured when the gate opened is frequently detached by the time the user picks
+   * an action, and ACTION_SET_TEXT against a detached node reports nothing useful while doing
+   * nothing at all. Re-locating first is what makes the sanitized prompt actually land.
+   */
+  private fun writeComposerText(text: String): Boolean {
+    (overlayPackageName ?: curtainPackage)?.let { pkg ->
+      ComposerLocator.locate(this, pkg)?.let { target ->
+        activeNode = target.editable
+        pendingSendNode = target.sendNode
+      }
     }
+    val node = activeNode ?: return false
+    node.refresh()
+    return setComposerText(node, text)
   }
 
   private fun buildPieces(promptText: String, attachments: List<AttachmentHint>): List<ScanPiece> {
@@ -443,7 +402,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
     safeAutoSendRunnable = Runnable {
       reportOutcome("auto-send")
       decidedText = originalText
-      restoreComposerText(originalText)
       performApprovedSend()
     }
     handler.postDelayed(safeAutoSendRunnable!!, SAFE_AUTO_SEND_MS)
@@ -598,10 +556,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (showCancel) {
       actions.addView(gateButton("Cancel", filled = false) {
         reportOutcome("cancel")
-        // Hand the draft back for editing but keep the send blocked: cancelling declines the
-        // send, so it must not mark the text as approved the way Send Anyway does.
-        holdSuspended = true
-        restoreComposerText(originalText)
+        // The draft is untouched in the composer, so there is nothing to hand back. Cancelling
+        // declines the send, so it must not mark the text approved the way Send Anyway does.
         dismissGateKeepingGuard(packageName)
       })
     }
@@ -616,7 +572,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
       actions.addView(gateButton(label, filled = false) {
         reportOutcome("send-anyway")
         decidedText = originalText
-        restoreComposerText(originalText)
         performApprovedSend()
       })
     }
@@ -694,20 +649,21 @@ class AiGuardAccessibilityService : AccessibilityService() {
     serviceScope.launch {
       scanApi.rewrite(originalText, findings)
         .onSuccess { rewritten ->
-          val replaced = activeNode?.let { setComposerText(it, rewritten) } ?: false
-          if (replaced) {
-            heldText = null
-          } else {
+          val replaced = writeComposerText(rewritten)
+          // The rewritten prompt is what the user agreed to send. Without this the next
+          // evaluation re-scans it, still matches on the surrounding phrasing ("my API key
+          // is ..."), and drops the curtain back over a draft EraseAI itself produced.
+          if (replaced) decidedText = rewritten
+          if (!replaced) {
             copyText(rewritten)
             Toast.makeText(this@AiGuardAccessibilityService, "Safe text copied. Paste it into the field.", Toast.LENGTH_LONG).show()
           }
           protectedAppsStore.saveLastScanSummary("Sanitized prompt", "redact")
           reportOutcome("sanitize")
-          if (!promptOnly) {
-            performApprovedSend()
-          } else {
-            finishGate()
-          }
+          GuardLog.gate("sanitized", overlayPackageName, "replaced=$replaced len=${rewritten.length}")
+          // Only auto-send what we actually managed to put in the field; otherwise the click
+          // would fire on an empty composer, or on text we never rewrote.
+          if (!promptOnly && replaced) performApprovedSend() else finishGate()
         }
         .onFailure {
           // Gate stays open on purpose: the prompt is still held, so the user can still
@@ -729,19 +685,42 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   private fun performApprovedSend() {
-    val sendNode = pendingSendNode
-    var clicked = false
-    if (sendNode != null) {
-      sendNode.refresh()
-      if (sendNode.isEnabled) {
-        clicked = sendNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+    // Get the modal out of the way first so the host can settle behind it.
+    detachOverlayView()
+    attemptApprovedSend(overlayPackageName ?: curtainPackage, attempt = 1)
+  }
+
+  /**
+   * Clicks the host's send control once it is ready.
+   *
+   * A host only re-enables its send button after it has processed the text we wrote, and how
+   * long that takes varies by app and device — a single fixed delay silently no-ops on the
+   * slow ones. The node is re-located every attempt because the one captured when the gate
+   * opened is routinely detached by now.
+   */
+  private fun attemptApprovedSend(packageName: String?, attempt: Int) {
+    handler.postDelayed({
+      packageName?.let { pkg ->
+        ComposerLocator.locate(this, pkg)?.let { pendingSendNode = it.sendNode }
       }
-    }
-    GuardLog.gate("approved-send", curtainPackage, "clicked=$clicked")
-    if (!clicked) {
-      Toast.makeText(this, "Your prompt is back in the composer — tap send to continue.", Toast.LENGTH_SHORT).show()
-    }
-    finishGate()
+      val sendNode = pendingSendNode
+      var clicked = false
+      if (sendNode != null) {
+        sendNode.refresh()
+        if (sendNode.isEnabled) {
+          clicked = sendNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        }
+      }
+      GuardLog.gate("approved-send", packageName, "attempt=$attempt clicked=$clicked")
+      if (!clicked && attempt < SEND_ATTEMPTS) {
+        attemptApprovedSend(packageName, attempt + 1)
+        return@postDelayed
+      }
+      if (!clicked) {
+        Toast.makeText(this, "Your prompt is ready — tap send to continue.", Toast.LENGTH_SHORT).show()
+      }
+      finishGate()
+    }, SEND_SETTLE_MS)
   }
 
   /**
@@ -766,9 +745,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     gateInProgress = false
     removeOverlay()
     pendingRisk = null
-    heldText = null
     curtain.hide(curtainPackage, "gate-finished")
-    // The restored draft would immediately re-trigger the curtain; let the user act first.
     lastTextHashByPackage.clear()
   }
 
@@ -849,6 +826,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     private const val MAX_SCAN_TEXT_LENGTH = 5000
     private const val PIECE_CHUNK_SIZE = 4000
     private const val SAFE_AUTO_SEND_MS = 450L
-    private const val HOLD_VERIFY_DELAY_MS = 300L
+    /** Time the host needs to accept written text and re-enable its send control. */
+    private const val SEND_SETTLE_MS = 350L
+    private const val SEND_ATTEMPTS = 4
   }
 }

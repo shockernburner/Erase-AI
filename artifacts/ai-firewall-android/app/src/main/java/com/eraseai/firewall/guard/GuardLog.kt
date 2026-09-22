@@ -11,7 +11,13 @@ import com.eraseai.firewall.BuildConfig
 object GuardLog {
   const val TAG = "EraseAIGuard"
 
-  private val enabled: Boolean get() = BuildConfig.DEBUG
+  /**
+   * Release builds stay silent by default, but a device can be opted in at runtime with
+   * `adb shell setprop log.tag.EraseAIGuard DEBUG`. Without this, diagnosing a gate that
+   * misbehaves only on a user's handset means shipping them a debug build — which cannot
+   * upgrade a Play install in place, so it costs them their session.
+   */
+  private val enabled: Boolean get() = BuildConfig.DEBUG || Log.isLoggable(TAG, Log.DEBUG)
 
   fun event(event: String, pkg: String?, detail: String = "") {
     if (!enabled) return
@@ -46,11 +52,11 @@ object GuardLog {
     )
   }
 
-  fun risk(pkg: String?, level: String, score: Int, findings: Int, held: Boolean) {
+  fun risk(pkg: String?, level: String, score: Int, findings: Int) {
     event(
       "risk.scan",
       pkg,
-      "level=$level score=$score findings=$findings held=$held",
+      "level=$level score=$score findings=$findings",
     )
   }
 

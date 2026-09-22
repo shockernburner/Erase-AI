@@ -1,5 +1,6 @@
 package com.eraseai.firewall.guard
 
+import android.graphics.Rect
 import android.os.Build
 import android.view.accessibility.AccessibilityNodeInfo
 
@@ -71,7 +72,66 @@ object AppSendAdapter {
 
   fun findSendButton(root: AccessibilityNodeInfo?, packageName: String): AccessibilityNodeInfo? {
     if (root == null) return null
-    return root.findSendNode(packageName)
+    root.findSendNode(packageName)?.let { return it }
+    return findSendByGeometry(root, packageName)
+  }
+
+  /**
+   * Last resort for send controls that carry no label at all.
+   *
+   * Gemini's send arrow exposes no text, no content description and no view id, so every
+   * name-based rule misses it. Without a node there is nothing to click, which silently
+   * breaks Sanitize & Send and Send Anyway. Icons sit in a trailing row beside the composer,
+   * and send is conventionally the last of them, so take the right-most icon-sized clickable
+   * that shares the composer's band and is not recognisable as mic or attach.
+   */
+  private fun findSendByGeometry(
+    root: AccessibilityNodeInfo,
+    packageName: String,
+  ): AccessibilityNodeInfo? {
+    val editable = findComposerEditable(root) ?: return null
+    val editableBounds = Rect().also { editable.getBoundsInScreen(it) }
+    if (editableBounds.isEmpty) return null
+
+    val maxIconSide = editableBounds.height().coerceAtLeast(MIN_ICON_SIDE) * 2
+    var best: AccessibilityNodeInfo? = null
+    var bestRight = Int.MIN_VALUE
+
+    root.forEachNode { node ->
+      if (!node.isClickable || !node.isEnabled || node.isEditable) return@forEachNode
+      if (isExcludedComposerChrome(nodeHaystack(node))) return@forEachNode
+      val bounds = Rect().also { node.getBoundsInScreen(it) }
+      if (bounds.isEmpty) return@forEachNode
+      // Icon-sized and roughly square, so containers and the text line are ruled out.
+      if (bounds.width() > maxIconSide || bounds.height() > maxIconSide) return@forEachNode
+      if (bounds.width() < MIN_ICON_SIDE || bounds.height() < MIN_ICON_SIDE) return@forEachNode
+      if (bounds.width() > bounds.height() * 2 || bounds.height() > bounds.width() * 2) return@forEachNode
+      // On the composer's band, and at or past its trailing edge.
+      if (bounds.centerY() < editableBounds.top || bounds.centerY() > editableBounds.bottom + maxIconSide) {
+        return@forEachNode
+      }
+      if (bounds.centerX() <= editableBounds.centerX()) return@forEachNode
+      if (bounds.right > bestRight) {
+        bestRight = bounds.right
+        best = node
+      }
+    }
+    if (best != null) GuardLog.gate("send-node.geometry", packageName, "right=$bestRight")
+    return best
+  }
+
+  private inline fun AccessibilityNodeInfo.forEachNode(action: (AccessibilityNodeInfo) -> Unit) {
+    val queue = ArrayDeque<AccessibilityNodeInfo>()
+    queue.add(this)
+    var visited = 0
+    while (queue.isNotEmpty() && visited < MAX_NODES_SCANNED) {
+      val node = queue.removeFirst()
+      visited++
+      action(node)
+      for (index in 0 until node.childCount) {
+        queue.add(node.getChild(index) ?: continue)
+      }
+    }
   }
 
   private fun looksLikeSendIcon(node: AccessibilityNodeInfo, packageName: String): Boolean {
@@ -149,12 +209,38 @@ object AppSendAdapter {
     return null
   }
 
+  /** Smallest plausible icon touch target, in px; below this we are looking at a divider. */
+  private const val MIN_ICON_SIDE = 48
+  private const val MAX_NODES_SCANNED = 600
+  private const val CLICKABLE_ANCESTOR_DEPTH = 4
+
   private fun AccessibilityNodeInfo.findSendNode(packageName: String): AccessibilityNodeInfo? {
-    if (isSendButton(this, packageName) && (isClickable || isEnabled)) return this
+    if (isSendButton(this, packageName)) {
+      clickableSelfOrAncestor()?.let { return it }
+    }
     for (index in 0 until childCount) {
       val child = getChild(index) ?: continue
       val found = child.findSendNode(packageName)
       if (found != null) return found
+    }
+    return null
+  }
+
+  /**
+   * Resolves a label to the node that can actually take the click.
+   *
+   * Gemini's composer puts `content-desc="Send"` on an inner, non-clickable `View` and the
+   * click handler on an unlabeled ancestor. Returning the labelled node looked like success
+   * but every ACTION_CLICK against it failed, which is what broke Sanitize & Send and
+   * Send Anyway while leaving no obvious symptom beyond "nothing happens".
+   */
+  private fun AccessibilityNodeInfo.clickableSelfOrAncestor(): AccessibilityNodeInfo? {
+    var current: AccessibilityNodeInfo? = this
+    var depth = 0
+    while (current != null && depth < CLICKABLE_ANCESTOR_DEPTH) {
+      if (current.isClickable && current.isEnabled) return current
+      current = current.parent
+      depth++
     }
     return null
   }
