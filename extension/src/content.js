@@ -19,7 +19,16 @@
       inputSelectors: [
         "#prompt-textarea",
         'div[contenteditable="true"][id="prompt-textarea"]',
+        '[data-testid="prompt-textarea"]',
+        'textarea[data-id="root"]',
         "textarea[data-id]",
+        '[data-testid="composer-input"]',
+        'form[aria-label="Chat input form"] textarea',
+        'form[aria-label="Chat input form"] [contenteditable="true"]',
+        'footer textarea',
+        'footer [contenteditable="true"]',
+        'div[contenteditable="true"][data-placeholder]',
+        '[role="textbox"][contenteditable="true"]',
         "form textarea",
       ],
       // Composer scope used by the file-attachment cache to ignore
@@ -28,15 +37,23 @@
       // the prompt textarea, the toolbar with the paperclip, and the
       // attachment chip row that ChatGPT renders above the textarea.
       composerSelectors: [
+        'form[aria-label="Chat input form"]',
         'form:has(#prompt-textarea)',
         'form:has(textarea[data-id])',
+        'form:has([data-testid="composer-input"])',
+        "footer",
         'main form',
+        "main",
       ],
       sendButtonSelectors: [
+        "#composer-submit-button",
         'button[data-testid="send-button"]',
         'button[data-testid="fruitjuice-send-button"]',
+        'button[data-testid*="send-button"]',
         'form button[type="submit"]',
         'button[aria-label="Send prompt"]',
+        'button[aria-label="Send message"]',
+        'button[aria-label*="Send"]',
       ],
       getInputText(el) {
         if (el.tagName === "TEXTAREA") return el.value;
@@ -287,7 +304,11 @@
     if (!root) return;
     const rendered = root.textContent || "";
     for (const [key, entry] of fileCache) {
-      if (rendered.includes(entry.file.name)) entry.seen = true;
+      const name = entry.file.name;
+      const stem = name.replace(/\.[^.]+$/, "").slice(0, 24);
+      const matchesChip = rendered.includes(name)
+        || (stem.length >= 8 && rendered.includes(stem));
+      if (matchesChip) entry.seen = true;
       else if (entry.seen) fileCache.delete(key);
     }
   }
@@ -340,7 +361,9 @@
   function handleFileInputChange(e) {
     const target = e && e.target ? e.target : null;
     if (!target || target.tagName !== "INPUT" || target.type !== "file") return;
-    if (!targetIsInComposer(target)) return;
+    // Work mode mounts the hidden picker outside the labelled form; if a
+    // composer is on screen, treat any file pick as in-scope.
+    if (!targetIsInComposer(target) && !composerRoot()) return;
     addFilesFromList(target.files);
   }
 
@@ -1774,6 +1797,55 @@
     return DISMISS_LABEL.test(label);
   }
 
+  /**
+   * Catch send controls the per-button hooks missed — ChatGPT Work ships
+   * #composer-submit-button and often omits data-testid on the arrow until
+   * after first paint, so hookSendButtons can register zero listeners while
+   * the user is already typing.
+   */
+  function isSendLikeControl(target) {
+    if (!target || typeof target.closest !== "function") return false;
+    if (target.closest("#eraseai-overlay-backdrop, #eraseai-overlay-panel")) return false;
+    const control = target.closest("button, [role='button']");
+    if (!control || control.disabled) return false;
+    if (isDismissControl(target)) return false;
+
+    const hay = [
+      control.id,
+      control.getAttribute("aria-label"),
+      control.dataset ? control.dataset.testid : null,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    if (control.dataset?.testid === "stop-button") return false;
+    if (hay.includes("stop streaming") || hay.includes("stop generating")) return false;
+    if (control.id === "composer-submit-button") return true;
+    if (control.dataset?.testid?.includes("send")) return true;
+    if (/\bsend\b/.test(hay) || hay.includes("submit")) return true;
+
+    // Unlabeled trailing icon beside the live composer — Work mode's arrow.
+    const inputEl = findComposerInput();
+    if (!inputEl) return false;
+    const ib = inputEl.getBoundingClientRect();
+    const bb = control.getBoundingClientRect();
+    if (!ib.width || !bb.width) return false;
+    const iconSized = bb.width <= 72 && bb.height <= 72;
+    const sameBand = bb.top >= ib.top - 96 && bb.bottom <= ib.bottom + 96;
+    const trailing = bb.left >= ib.right - 140;
+    return iconSized && sameBand && trailing;
+  }
+
+  function handleDocumentSendClick(e) {
+    if (!isSendLikeControl(e.target)) return;
+    // Hooked buttons already have their own capture listener. Running here
+    // too consumed bypassNext on the first pass and left the button listener
+    // to intercept again — which broke auto-send and Send Anyway.
+    const control = e.target.closest("button, [role='button']");
+    if (control?.dataset?.eraseaiHooked === "true") return;
+    interceptSubmission(e);
+  }
+
   function interceptSubmission(e) {
     if (bypassNext) {
       bypassNext = false;
@@ -1789,16 +1861,16 @@
       return;
     }
 
-    const inputEl = findComposerInput();
-    if (!inputEl) return;
-
-    const text = platform.getInputText(inputEl).trim();
     const cachedFiles = getCachedFiles();
+    const inputEl = findComposerInput();
+    const text = inputEl ? platform.getInputText(inputEl).trim() : "";
 
     // Allow submission to proceed when there's truly nothing to scan —
     // empty prompt with no attachments. If there ARE attached files we
     // intercept even with an empty prompt so the firewall can read them
-    // (this is the demo failure mode we're fixing in #142).
+    // (this is the demo failure mode we're fixing in #142). Work mode can
+    // also hide the editable from our selectors while the attachment chip
+    // is visible, so attachments must not depend on finding the input.
     if ((!text || text.length < 3) && cachedFiles.length === 0) return;
 
     e.preventDefault();
@@ -1871,6 +1943,7 @@
     listenersAttached = true;
 
     document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("click", handleDocumentSendClick, true);
     // File-attachment capture: composer-scoped paperclip clicks fire a
     // change event on a hidden <input type="file">; drag-drop and pasted
     // files surface via drop and paste on the composer container. Use
@@ -1894,6 +1967,7 @@
     listenersAttached = false;
 
     document.removeEventListener("keydown", handleKeyDown, true);
+    document.removeEventListener("click", handleDocumentSendClick, true);
     document.removeEventListener("change", handleFileInputChange, true);
     document.removeEventListener("drop", handleComposerDrop, true);
     document.removeEventListener("paste", handleComposerPaste, true);
@@ -1920,7 +1994,10 @@
     if (!platform) return;
 
     chrome.storage.local.get(["enabled", "analyzeConcurrency"], (result) => {
-      if (chrome.runtime.lastError) return;
+      if (chrome.runtime.lastError) {
+        attachListeners();
+        return;
+      }
       if ("analyzeConcurrency" in result) {
         analyzeConcurrency = coerceAnalyzeConcurrency(result.analyzeConcurrency);
       }

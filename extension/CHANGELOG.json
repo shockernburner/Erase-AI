@@ -1,6 +1,15 @@
 {
   "entries": [
     {
+      "version": "1.4.3",
+      "date": "2026-09-22",
+      "changes": [
+        "Fixed ChatGPT Work mode letting every send through: the Work composer uses #composer-submit-button and often hides the editable from legacy selectors, so hookSendButtons registered nothing and interceptSubmission returned early. A document-level send catcher now blocks those taps, and attachment-only sends no longer require finding the text field",
+        "Broadened ChatGPT composer and file-picker detection for the Work tab (footer form, data-id root textarea, truncated attachment chip names)",
+        "Firewall listeners now attach even when a storage read fails, instead of silently staying off"
+      ]
+    },
+    {
       "version": "1.4.2",
       "date": "2026-09-22",
       "changes": [
