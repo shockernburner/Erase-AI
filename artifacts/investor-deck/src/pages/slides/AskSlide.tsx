@@ -8,7 +8,7 @@ export default function AskSlide() {
             <span className="w-[0.5vw] h-[0.5vw] rounded-full bg-primary" />
             <span className="font-mono text-[1vw] uppercase tracking-[0.35em] text-primary">The Ask</span>
           </div>
-          <span className="font-mono text-[1vw] text-muted">11 / 12</span>
+          <span className="font-mono text-[1vw] text-muted">12 / 13</span>
         </div>
         <div className="mt-[5.5vh]">
           <span className="font-mono text-[1.2vw] uppercase tracking-[0.3em] text-muted">Raising</span>

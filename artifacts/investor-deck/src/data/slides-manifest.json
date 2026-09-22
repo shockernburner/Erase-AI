@@ -80,8 +80,16 @@
     "speakerNotes": "Be honest: pre-revenue. Sell the path and product readiness."
   },
   {
-    "id": "bf0adce9-cb17-49ff-9dff-e4f959c74b8c",
+    "id": "a8f3c2e1-9b4d-4a7e-8f1c-2d6e5b0a9c3f",
     "position": 11,
+    "filepath": "src/pages/slides/EnterpriseDeploymentSlide.tsx",
+    "title": "Enterprise Deployment",
+    "description": "Endpoint + network backstop + on-prem policy server; live vs Enterprise table.",
+    "speakerNotes": "WiFi cannot read HTTPS prompts alone. Endpoint inspects at Send; network blocks bypass; policy server on customer infra. Full HOW TO in deliverables/EraseAI_Enterprise_Deployment_Guide.md"
+  },
+  {
+    "id": "bf0adce9-cb17-49ff-9dff-e4f959c74b8c",
+    "position": 12,
     "filepath": "src/pages/slides/AskSlide.tsx",
     "title": "The Ask",
     "description": "$2.5M seed — console, detection, GTM for Team ARR.",
@@ -89,7 +97,7 @@
   },
   {
     "id": "115404dd-5f39-4c8a-9d2c-6307175c98e5",
-    "position": 12,
+    "position": 13,
     "filepath": "src/pages/slides/ClosingSlide.tsx",
     "title": "Closing",
     "description": "Stop the leak before Send. Sell the control plane after.",

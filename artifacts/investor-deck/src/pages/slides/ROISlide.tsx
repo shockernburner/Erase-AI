@@ -8,7 +8,7 @@ export default function ROISlide() {
             <span className="w-[0.5vw] h-[0.5vw] rounded-full bg-primary" />
             <span className="font-mono text-[1vw] uppercase tracking-[0.35em] text-primary">Unit Economics</span>
           </div>
-          <span className="font-mono text-[1vw] text-muted">09 / 12</span>
+          <span className="font-mono text-[1vw] text-muted">09 / 13</span>
         </div>
         <h2 className="mt-[5vh] max-w-[60vw] font-display text-[4.4vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
           The economics of prevention

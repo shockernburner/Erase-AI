@@ -8,7 +8,7 @@ export default function SolutionSlide() {
             <span className="w-[0.5vw] h-[0.5vw] rounded-full bg-primary" />
             <span className="font-mono text-[1vw] uppercase tracking-[0.35em] text-primary">The Solution</span>
           </div>
-          <span className="font-mono text-[1vw] text-muted">04 / 12</span>
+          <span className="font-mono text-[1vw] text-muted">04 / 13</span>
         </div>
         <h2 className="mt-[5vh] max-w-[68vw] font-display text-[4.4vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
           A prompt-layer firewall for public AI

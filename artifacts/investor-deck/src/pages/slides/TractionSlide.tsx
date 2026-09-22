@@ -8,7 +8,7 @@ export default function TractionSlide() {
             <span className="w-[0.5vw] h-[0.5vw] rounded-full bg-primary" />
             <span className="font-mono text-[1vw] uppercase tracking-[0.35em] text-primary">Traction</span>
           </div>
-          <span className="font-mono text-[1vw] text-muted">10 / 12</span>
+          <span className="font-mono text-[1vw] text-muted">10 / 13</span>
         </div>
         <h2 className="mt-[5vh] max-w-[68vw] font-display text-[4.2vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
           Shipping the wedge. Converting to seats.

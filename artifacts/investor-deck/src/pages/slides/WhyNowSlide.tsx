@@ -8,7 +8,7 @@ export default function WhyNowSlide() {
             <span className="w-[0.5vw] h-[0.5vw] rounded-full bg-primary" />
             <span className="font-mono text-[1vw] uppercase tracking-[0.35em] text-primary">Why Now</span>
           </div>
-          <span className="font-mono text-[1vw] text-muted">03 / 12</span>
+          <span className="font-mono text-[1vw] text-muted">03 / 13</span>
         </div>
         <h2 className="mt-[5vh] max-w-[62vw] font-display text-[4.6vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
           Three forces converging in 2025–2026
