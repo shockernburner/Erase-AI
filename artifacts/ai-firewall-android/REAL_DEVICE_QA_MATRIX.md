@@ -65,10 +65,26 @@ adb shell settings put secure accessibility_enabled 1
 | A11 | Child-exploitation wording | **Blocked** — Cancel only |
 | A12 | Voice send with risky text held | Nothing sent — the composer is empty |
 
-## Phase A2 — EraseAI Keyboard (IME) — not in this release
+## Phase A2 — EraseAI Keyboard (IME)
 
-The IME is disabled in the manifest and has no key layout, so there is nothing to test. Confirm
-only that **"EraseAI Keyboard" does not appear** under Settings → On-screen keyboards.
+| # | Scenario | Expected |
+|---|----------|----------|
+| K1 | Enable EraseAI Keyboard in system settings | Appears under On-screen keyboards |
+| K2 | Lowercase, Shift, 123, #+= layers | Can type `user@host.com`, `AKIA…`, symbols |
+| K3 | Select EraseAI Keyboard in ChatGPT, type API key | `ime.withhold` in logcat; text removed from composer; gate shows HELD |
+| K4 | Tap Discard on keyboard gate | Text gone, nothing sent |
+| K5 | With risky text in composer, tap ChatGPT Send | `curtain.show` blocks tap even when EraseAI keyboard is active |
+| K6 | Keyboard Send on safe text | Message sends (`ime.commit handled=true` or Enter fallback) |
+| K7 | Attach a file with EraseAI Keyboard active | Accessibility curtain still appears (`mode=geometry` or `resolved`) |
+| K8 | Minimize/reopen keyboard three times | Single keyboard instance (no stacking) |
+
+## Phase A4 — Strict network gate (optional)
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| N1 | Settings → Strict network gate ON, accept VPN permission | `strict_egress_gate=on` in diagnostics |
+| N2 | Risky prompt + curtain up | `egress.arm` / `egress.tunnel.up` in logcat; ChatGPT cannot reach network |
+| N3 | Send Anyway approved | `egress.window` then send succeeds within ~15s window |
 
 ## Phase A3 — History hygiene
 

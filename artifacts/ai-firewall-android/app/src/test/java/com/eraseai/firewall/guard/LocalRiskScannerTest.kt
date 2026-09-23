@@ -24,6 +24,19 @@ class LocalRiskScannerTest {
   }
 
   @Test
+  fun `flags lowercase aws keys and aws key phrases`() {
+    assertTrue(labels("paste akiaiosfodnn7example here").contains("AWS access key"))
+    assertTrue(labels("aws key is AKIAIOSFODNN7EXAMPLE").contains("Shared API credential"))
+  }
+
+  @Test
+  fun `flags aws keys embedded without word boundaries`() {
+    assertTrue(labels("MyAWSkeyisAKIAIOSFODNN7EXAMPLE").contains("AWS access key"))
+    assertTrue(labels("sis sAKIAIOSFODNN7EXAMPLE").contains("AWS access key"))
+    assertTrue(labels("MyAWSkeyisakiaiosfodnn7example").contains("AWS access key"))
+  }
+
+  @Test
   fun `flags provider tokens`() {
     assertTrue(labels("token ghp_abcdefghij0123456789ABCDEFGHIJ").contains("GitHub token"))
     assertTrue(labels("use xoxb-1234567890-abcdefghij").contains("Slack token"))

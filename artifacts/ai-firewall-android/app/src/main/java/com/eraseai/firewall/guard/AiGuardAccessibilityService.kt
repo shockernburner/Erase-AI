@@ -25,6 +25,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import com.eraseai.firewall.MainActivity
+import com.eraseai.firewall.ime.ImeGuardHelper
 import com.eraseai.firewall.data.ApiClient
 import com.eraseai.firewall.data.ApiError
 import com.eraseai.firewall.data.MobileSessionStore
@@ -70,6 +71,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   /** Text the user explicitly approved for sending; re-gating it would trap them in a loop. */
   private var decidedText: String? = null
+  private var activeProtectedPackage: String? = null
+  private val imePromptedPackages = mutableSetOf<String>()
 
   override fun onServiceConnected() {
     super.onServiceConnected()
@@ -90,6 +93,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   override fun onCreate() {
     super.onCreate()
+    GuardStateStore.init(this)
     val sessionStore = MobileSessionStore(this)
     protectedAppsStore = ProtectedAppsStore(this)
     scanApi = ScanApi(ApiClient(sessionStore))
@@ -97,6 +101,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     val packageName = event?.packageName?.toString() ?: return
+    if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+      handleForegroundChange(packageName)
+    }
     if (shouldSkipSystemSurface(packageName)) return
     if (!protectedAppsStore.isProtected(packageName)) return
     if (!protectedAppsStore.isFirewallEnabled()) return
@@ -109,16 +116,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
         if (source != null && AppSendAdapter.isSendClick(source, packageName)) {
           GuardLog.gate("host-send-observed", packageName, "curtain=${curtain.isShowing}")
         }
-        evaluateComposer(packageName)
+        evaluateComposer(packageName, event)
       }
       // Text and focus have to pin the curtain on this event, not 450ms later. Gemini (and
       // ChatGPT) will accept a send tap in that gap, which is the "fast send gets through"
       // failure: the last character of a paste is what makes the prompt risky, and send is
       // tappable immediately after.
       AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
-      AccessibilityEvent.TYPE_VIEW_FOCUSED -> evaluateComposer(packageName)
+      AccessibilityEvent.TYPE_VIEW_FOCUSED -> evaluateComposer(packageName, event)
       AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
-      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> scheduleComposerEvaluation(packageName)
+      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> scheduleComposerEvaluation(packageName, event)
     }
   }
 
@@ -147,7 +154,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (gateInProgress) {
       val target = ComposerLocator.locate(this, pkg) ?: return
       val level = pendingRisk?.scan?.level ?: "high"
-      curtain.show(target.submitZone, level, pkg) { openGateFromCurtain(pkg) }
+      curtain.show(target.submitZone, level, pkg, target.submitZoneMode, guardActive = true) {
+        openGateFromCurtain(pkg)
+      }
       return
     }
     evaluateComposer(pkg)
@@ -168,18 +177,49 @@ class AiGuardAccessibilityService : AccessibilityService() {
     super.onDestroy()
   }
 
-  private fun scheduleComposerEvaluation(packageName: String) {
+  private var pendingComposerEvent: AccessibilityEvent? = null
+  private var composerBurstRunnable: Runnable? = null
+
+  private fun scheduleComposerEvaluation(packageName: String, event: AccessibilityEvent? = null) {
     if (gateInProgress) return
+    if (event != null) pendingComposerEvent = event
     previewRunnable?.let { handler.removeCallbacks(it) }
-    previewRunnable = Runnable { evaluateComposer(packageName) }
+    previewRunnable = Runnable {
+      evaluateComposer(packageName, pendingComposerEvent)
+      pendingComposerEvent = null
+    }
     handler.postDelayed(previewRunnable!!, PREVIEW_DEBOUNCE_MS)
+    scheduleComposerBurst(packageName, event)
+  }
+
+  /** Paste into ChatGPT/Gemini often lands after the first accessibility pass — re-scan quickly. */
+  private fun scheduleComposerBurst(packageName: String, event: AccessibilityEvent?) {
+    if (gateInProgress) return
+    if (event?.eventType != AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED &&
+      event?.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+    ) {
+      return
+    }
+    composerBurstRunnable?.let { handler.removeCallbacks(it) }
+    var pass = 0
+    composerBurstRunnable = object : Runnable {
+      override fun run() {
+        if (gateInProgress) return
+        evaluateComposer(packageName, null)
+        pass++
+        if (pass < COMPOSER_BURST_PASSES) {
+          handler.postDelayed(this, COMPOSER_BURST_INTERVAL_MS)
+        }
+      }
+    }
+    handler.postDelayed(composerBurstRunnable!!, COMPOSER_BURST_INTERVAL_MS)
   }
 
   /**
    * Single source of truth for protection state: locate the composer across all windows, scan
    * locally, then keep the curtain pinned to the live action row.
    */
-  private fun evaluateComposer(packageName: String) {
+  private fun evaluateComposer(packageName: String, event: AccessibilityEvent? = null) {
     if (gateInProgress) return
     curtainPackage = packageName
 
@@ -192,7 +232,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
     activeNode = target.editable
     pendingSendNode = target.sendNode
 
-    val text = target.text.take(MAX_SCAN_TEXT_LENGTH)
+    val dm = resources.displayMetrics
+    val text = ComposerTextExtractor.bestText(target.root, dm.heightPixels, event)
+      .ifBlank { target.text }
+      .take(MAX_SCAN_TEXT_LENGTH)
     if (text.length < MIN_SCAN_LENGTH) {
       releaseCurtain("composer-empty")
       return
@@ -201,10 +244,11 @@ class AiGuardAccessibilityService : AccessibilityService() {
       releaseCurtain("user-decided")
       return
     }
-    GuardLog.composer(packageName, text.length, target.actionRow, "locator")
+    GuardLog.composer(packageName, text.length, target.actionRow, "extractor event=${event != null}")
 
     val local = LocalRiskScanner.scan(text)
     if (!local.shouldWarn) {
+      GuardLog.event("scan.clear", packageName, "len=${text.length}")
       releaseCurtain("no-findings")
       maybePreviewApiScan(packageName, text)
       return
@@ -212,7 +256,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     pendingRisk = PendingRisk(text, local)
     protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
-    curtain.show(target.submitZone, local.level, packageName) { openGateFromCurtain(packageName) }
+    GuardStateStore.setArmed(packageName)
+    curtain.show(target.submitZone, local.level, packageName, target.submitZoneMode, guardActive = true) {
+      openGateFromCurtain(packageName)
+    }
 
     GuardLog.risk(packageName, local.level, local.riskScore, local.findings.size)
     maybePreviewApiScan(packageName, text)
@@ -226,6 +273,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   private fun releaseCurtain(reason: String) {
     pendingRisk = null
+    GuardStateStore.setArmed(null)
     curtain.hide(curtainPackage, reason)
   }
 
@@ -706,6 +754,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   private fun performApprovedSend() {
+    GuardStateStore.grantEgressWindow()
     // Get the modal out of the way first so the host can settle behind it.
     detachOverlayView()
     attemptApprovedSend(overlayPackageName ?: curtainPackage, attempt = 1)
@@ -757,7 +806,53 @@ class AiGuardAccessibilityService : AccessibilityService() {
     safeAutoSendRunnable = null
     gateInProgress = false
     removeOverlay()
-    scheduleComposerEvaluation(packageName)
+    // Re-pin immediately — a debounced pass after keyboard hide left send exposed below the band.
+    repinCurtainKeepingGuard(packageName)
+  }
+
+  private fun repinCurtainKeepingGuard(packageName: String) {
+    val pending = pendingRisk ?: return
+    val target = ComposerLocator.locate(this, packageName) ?: return
+    activeNode = target.editable
+    pendingSendNode = target.sendNode
+    val dm = resources.displayMetrics
+    val editableBounds = android.graphics.Rect().also { target.editable.getBoundsInScreen(it) }
+    val zone = ComposerGeometry.geometrySubmitZone(dm.widthPixels, dm.heightPixels, editableBounds)
+    curtain.show(zone, pending.scan.level, packageName, "geometry", guardActive = true) {
+      openGateFromCurtain(packageName)
+    }
+    GuardLog.curtain("repin", packageName, "after-cancel")
+  }
+
+  private fun handleForegroundChange(packageName: String) {
+    if (!protectedAppsStore.isFirewallEnabled()) return
+    if (protectedAppsStore.isProtected(packageName)) {
+      activeProtectedPackage = packageName
+      maybePromptEraseAiKeyboard(packageName)
+      return
+    }
+    val left = activeProtectedPackage ?: return
+    if (packageName == left) return
+    GuardLog.event("foreground.left", left, "next=$packageName")
+    activeProtectedPackage = null
+    releaseCurtain("left-protected-app")
+    GuardStateStore.setArmed(null)
+    if (gateInProgress) {
+      gateInProgress = false
+      removeOverlay()
+    }
+  }
+
+  /** Android blocks silent IME switches — open the picker once per protected app per session. */
+  private fun maybePromptEraseAiKeyboard(packageName: String) {
+    if (ImeGuardHelper.isEraseAiKeyboardSelected(this)) return
+    if (!imePromptedPackages.add(packageName)) return
+    Toast.makeText(
+      this,
+      "Switch to EraseAI Keyboard for input-layer protection in this app.",
+      Toast.LENGTH_LONG,
+    ).show()
+    ImeGuardHelper.showKeyboardPicker(this)
   }
 
   private fun finishGate() {
@@ -766,6 +861,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     gateInProgress = false
     removeOverlay()
     pendingRisk = null
+    GuardStateStore.setArmed(null)
     curtain.hide(curtainPackage, "gate-finished")
     lastTextHashByPackage.clear()
   }
@@ -842,6 +938,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   companion object {
     private const val PREVIEW_DEBOUNCE_MS = 50L
+    private const val COMPOSER_BURST_INTERVAL_MS = 120L
+    private const val COMPOSER_BURST_PASSES = 4
     private const val MIN_PREVIEW_INTERVAL_MS = 4000L
     private const val MIN_SCAN_LENGTH = 3
     private const val MAX_SCAN_TEXT_LENGTH = 5000

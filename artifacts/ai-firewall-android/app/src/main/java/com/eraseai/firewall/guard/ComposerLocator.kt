@@ -24,11 +24,14 @@ object ComposerLocator {
      * while leaving the text line tappable, so a user who cancels can still edit their draft.
      */
     val submitZone: Rect,
+    /** `geometry` when the band uses screen geometry; `resolved` when anchored to a send node. */
+    val submitZoneMode: String,
     val windowId: Int,
     val text: String,
   )
 
   fun locate(service: AccessibilityService, packageName: String): ComposerTarget? {
+    val dm = service.resources.displayMetrics
     val roots = candidateRoots(service, packageName)
     var fallback: ComposerTarget? = null
 
@@ -38,12 +41,21 @@ object ComposerLocator {
       val text = AppSendAdapter.composerText(root)
       val sendNode = AppSendAdapter.findSendButton(root, packageName)
       val row = actionRowBounds(editable, sendNode)
+      val editableBounds = Rect().also { editable.getBoundsInScreen(it) }
+      val (submitZone, submitZoneMode) = ComposerGeometry.submitZone(
+        row = row,
+        sendNode = sendNode,
+        screenWidth = dm.widthPixels,
+        screenHeight = dm.heightPixels,
+        editableBounds = editableBounds,
+      )
       val target = ComposerTarget(
         editable = editable,
         root = root,
         sendNode = sendNode,
         actionRow = row,
-        submitZone = submitZoneBounds(row, sendNode),
+        submitZone = submitZone,
+        submitZoneMode = submitZoneMode,
         windowId = root.windowId,
         text = text,
       )
@@ -109,17 +121,4 @@ object ComposerLocator {
     return row
   }
 
-  /**
-   * Everything from the top of the send control to the bottom of the row. Mic, attach and send
-   * sit on that band together. When the send control cannot be resolved we cover the whole row,
-   * because an unidentified submit affordance must not be left exposed.
-   */
-  private fun submitZoneBounds(row: Rect, sendNode: AccessibilityNodeInfo?): Rect {
-    val send = sendNode?.let { node -> Rect().also { node.getBoundsInScreen(it) } }
-    if (send == null || send.isEmpty) return Rect(row)
-    val top = send.top.coerceIn(row.top, row.bottom)
-    val zone = Rect(row.left, top, row.right, row.bottom)
-    // A degenerate band would leave send reachable; fall back to the full row.
-    return if (zone.height() < send.height() / 2) Rect(row) else zone
-  }
 }

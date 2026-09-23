@@ -36,11 +36,14 @@ class SendCurtain(private val context: Context) {
   private var coveredBounds = Rect()
   private var lastDisplayWidth = 0
   private var lastDisplayHeight = 0
+  /** When true the band is pinned to the physical bottom — keyboard hide must not shrink it. */
+  private var guardActive = false
 
   val isShowing: Boolean get() = view != null
 
   /** Drops the sticky band so the next show() measures against the new screen. */
   fun resetForDisplayChange() {
+    if (guardActive) return
     coveredBounds.setEmpty()
     lastDisplayWidth = 0
     lastDisplayHeight = 0
@@ -55,6 +58,10 @@ class SendCurtain(private val context: Context) {
    * the composer — without letting the covered area climb the screen.
    */
   private fun mergeBounds(latest: Rect): Rect {
+    if (guardActive) {
+      coveredBounds.set(pinToScreenBottom(latest))
+      return coveredBounds
+    }
     if (coveredBounds.isEmpty) {
       coveredBounds.set(latest)
       return coveredBounds
@@ -67,15 +74,37 @@ class SendCurtain(private val context: Context) {
     return coveredBounds
   }
 
+  /** Full-width band flush with the screen bottom so send cannot peek below the overlay. */
+  private fun pinToScreenBottom(seed: Rect): Rect {
+    val dm = context.resources.displayMetrics
+    val bandHeight = ComposerGeometry.bandHeightPx(dm.heightPixels)
+    val bottom = dm.heightPixels
+    val top = (bottom - bandHeight).coerceAtLeast(0)
+    val rect = Rect(0, top, dm.widthPixels, bottom)
+    if (!seed.isEmpty) rect.union(seed)
+    rect.bottom = bottom
+    if (rect.height() < bandHeight) rect.top = bottom - bandHeight
+    return rect
+  }
+
   /** Mounts the curtain, or repositions it in place if already mounted. */
-  fun show(bounds: Rect, level: String, packageName: String, onTap: () -> Unit) {
+  fun show(
+    bounds: Rect,
+    level: String,
+    packageName: String,
+    zoneMode: String = "resolved",
+    guardActive: Boolean = false,
+    onTap: () -> Unit,
+  ) {
+    if (guardActive) this.guardActive = true
     val dm = context.resources.displayMetrics
     if (CurtainGeometry.displayChanged(lastDisplayWidth, lastDisplayHeight, dm.widthPixels, dm.heightPixels)) {
-      coveredBounds.setEmpty()
+      if (!this.guardActive) coveredBounds.setEmpty()
     }
     lastDisplayWidth = dm.widthPixels
     lastDisplayHeight = dm.heightPixels
-    val target = inflateBounds(mergeBounds(bounds))
+    val merged = mergeBounds(bounds)
+    val target = inflateBounds(if (this.guardActive) pinToScreenBottom(merged) else merged)
     val existing = view
     if (existing != null) {
       applyLevel(level)
@@ -116,7 +145,7 @@ class SendCurtain(private val context: Context) {
       view = container
       params = lp
       currentBounds = target
-      GuardLog.curtain("show", packageName, "level=$level", target)
+      GuardLog.curtain("show", packageName, "level=$level mode=$zoneMode", target)
     }.onFailure {
       GuardLog.warn("curtain.show.failed", packageName, "error=${it.message}")
     }
@@ -130,6 +159,7 @@ class SendCurtain(private val context: Context) {
     label = null
     currentBounds = Rect()
     coveredBounds = Rect()
+    guardActive = false
     GuardLog.curtain("hide", packageName, reason)
   }
 
@@ -199,10 +229,13 @@ class SendCurtain(private val context: Context) {
       rect.top -= pad
       rect.bottom += pad
     }
-    rect.left = rect.left.coerceAtLeast(0)
+    rect.left = 0
     rect.top = rect.top.coerceAtLeast(0)
-    rect.right = rect.right.coerceAtMost(dm.widthPixels)
-    rect.bottom = rect.bottom.coerceAtMost(dm.heightPixels)
+    rect.right = dm.widthPixels
+    rect.bottom = dm.heightPixels
+    val minBand = ComposerGeometry.bandHeightPx(dm.heightPixels)
+    if (rect.height() < minBand) rect.top = dm.heightPixels - minBand
+    if (rect.height() > minBand) rect.top = dm.heightPixels - minBand
     return rect
   }
 

@@ -1,62 +1,77 @@
 package com.eraseai.firewall.ime
 
 import android.inputmethodservice.InputMethodService
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.text.InputType
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
+import android.widget.LinearLayout
 import android.widget.Toast
 import com.eraseai.firewall.data.ProtectedAppsStore
 import com.eraseai.firewall.guard.GuardLog
+import com.eraseai.firewall.guard.GuardStateStore
 import com.eraseai.firewall.guard.LocalRiskScanner
 
 /**
- * EraseAI Keyboard.
- *
- * The accessibility guard can only react to text that already reached the host app. An IME sits
- * one layer earlier: it owns the composing buffer, so high-risk text can be withheld and never
- * committed into the AI app's composer at all. If the text is not in the composer, no send path
- * — button, Enter, or voice — can transmit it.
- *
- * This is a gate, not a full keyboard layout: it delegates character entry to the user's normal
- * typing surface and only interposes on commit.
+ * EraseAI Keyboard — input-layer firewall. Risky text is withheld before it reaches the host
+ * composer's send path, so per-app send button layouts do not matter for typed prompts.
  */
 class EraseAiKeyboardService : InputMethodService() {
 
   private lateinit var protectedAppsStore: ProtectedAppsStore
-
-  /**
-   * Null until the system asks for an input view, and again after it is torn down.
-   * `onUpdateSelection` can arrive outside that window, so every use must be null-safe —
-   * an exception here kills the whole process, taking the accessibility guard down with it.
-   */
+  private var rootLayout: LinearLayout? = null
   private var gateView: KeyboardGateView? = null
-
-  /** Text withheld from the host app, awaiting a user decision. */
+  private var keyboardView: QwertyKeyboardView? = null
   private var withheldText: String? = null
   private var targetPackage: String? = null
+  private var editorInfo: EditorInfo? = null
+  private val handler = Handler(Looper.getMainLooper())
 
   override fun onCreate() {
     super.onCreate()
     protectedAppsStore = ProtectedAppsStore(this)
+    GuardStateStore.init(this)
   }
 
   override fun onCreateInputView(): View {
-    val view = KeyboardGateView(
+    val root = LinearLayout(this).apply {
+      orientation = LinearLayout.VERTICAL
+      setBackgroundColor(0xFF0B1220.toInt())
+    }
+    val gate = KeyboardGateView(
       context = this,
       onRelease = { releaseWithheldText() },
       onDiscard = { discardWithheldText() },
       onSanitize = { sanitizeWithheldText() },
     )
-    gateView = view
-    return view
+    val keyboard = QwertyKeyboardView(
+      context = this,
+      onCharacter = { char -> commitCharacter(char) },
+      onBackspace = { deleteCharacter() },
+      onSpace = { commitCharacter(" ") },
+      onSend = { onSendRequested() },
+    )
+    root.addView(gate)
+    root.addView(keyboard)
+    rootLayout = root
+    gateView = gate
+    keyboardView = keyboard
+    return root
   }
 
   override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
     super.onStartInputView(info, restarting)
+    editorInfo = info
     targetPackage = info?.packageName
     withheldText = null
+    keyboardView?.visibility = View.VISIBLE
+    keyboardView?.updateEditorInfo(info)
     gateView?.showIdle(protectionActive(info))
+    clearGuardState()
     GuardLog.ime("start", "pkg=${targetPackage ?: "-"} protected=${protectionActive(info)}")
   }
 
@@ -70,7 +85,7 @@ class EraseAiKeyboardService : InputMethodService() {
   ) {
     super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
     if (withheldText != null) return
-    evaluateBuffer()
+    evaluateBuffer(commit = false)
   }
 
   private fun protectionActive(info: EditorInfo?): Boolean {
@@ -87,34 +102,90 @@ class EraseAiKeyboardService : InputMethodService() {
       variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
   }
 
-  /**
-   * Reads what the host composer currently holds and, on a high-risk finding, takes it into
-   * EraseAI custody so nothing risky is left in the app.
-   */
-  private fun evaluateBuffer() {
+  private fun commitCharacter(char: String) {
+    if (withheldText != null) return
+    currentInputConnection?.commitText(char, 1)
+    handler.post { evaluateBuffer(commit = false) }
+  }
+
+  private fun deleteCharacter() {
+    if (withheldText != null) return
+    currentInputConnection?.deleteSurroundingText(1, 0)
+    handler.post { evaluateBuffer(commit = false) }
+  }
+
+  private fun onSendRequested() {
+    if (withheldText != null) return
+    evaluateBuffer(commit = true)
+  }
+
+  private fun evaluateBuffer(commit: Boolean) {
     val info = currentInputEditorInfo
-    if (!protectionActive(info)) return
+    if (!protectionActive(info)) {
+      clearGuardState()
+      return
+    }
     val connection = currentInputConnection ?: return
 
+    val buffer = readComposerBuffer(connection)
     val before = connection.getTextBeforeCursor(MAX_BUFFER, 0)?.toString().orEmpty()
     val after = connection.getTextAfterCursor(MAX_BUFFER, 0)?.toString().orEmpty()
-    val buffer = (before + after).trim()
     if (buffer.length < MIN_BUFFER) {
       gateView?.showIdle(true)
+      clearGuardState()
+      if (commit) performEditorSend(connection)
       return
     }
 
     val scan = LocalRiskScanner.scan(buffer)
     GuardLog.ime(
       "scan",
-      "pkg=${targetPackage ?: "-"} len=${buffer.length} level=${scan.level} findings=${scan.findings.size}",
+      "pkg=${targetPackage ?: "-"} len=${buffer.length} level=${scan.level} commit=$commit",
     )
 
-    when {
-      scan.level == "high" -> withholdText(connection, before.length, after.length, buffer, scan)
-      scan.shouldWarn -> gateView?.showWarning(scan)
-      else -> gateView?.showIdle(true)
+    when (ImeBufferPolicy.evaluate(scan, buffer.length, MIN_BUFFER, commit)) {
+      ImeBufferPolicy.Action.WITHHOLD ->
+        withholdText(connection, before.length, after.length, buffer, scan)
+      ImeBufferPolicy.Action.SEND_SAFE -> {
+        clearGuardState()
+        gateView?.showIdle(true)
+        performEditorSend(connection)
+      }
+      ImeBufferPolicy.Action.IDLE -> {
+        clearGuardState()
+        gateView?.showIdle(true)
+      }
     }
+  }
+
+  private fun performEditorSend(connection: InputConnection) {
+    if (withheldText != null) {
+      GuardLog.ime("commit.blocked", "pkg=${targetPackage ?: "-"} reason=withheld")
+      return
+    }
+    val hostAction = editorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)
+      ?: EditorInfo.IME_ACTION_UNSPECIFIED
+    val actions = buildList {
+      if (hostAction != EditorInfo.IME_ACTION_UNSPECIFIED) add(hostAction)
+      if (!contains(EditorInfo.IME_ACTION_SEND)) add(EditorInfo.IME_ACTION_SEND)
+      if (!contains(EditorInfo.IME_ACTION_DONE)) add(EditorInfo.IME_ACTION_DONE)
+      add(EditorInfo.IME_ACTION_GO)
+      add(EditorInfo.IME_ACTION_NEXT)
+    }
+    var handled = false
+    var usedAction = hostAction
+    for (action in actions) {
+      if (connection.performEditorAction(action)) {
+        handled = true
+        usedAction = action
+        break
+      }
+    }
+    if (!handled) {
+      connection.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER))
+      connection.sendKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER))
+    }
+    GuardLog.ime("commit", "pkg=${targetPackage ?: "-"} action=$usedAction handled=$handled")
   }
 
   private fun withholdText(
@@ -124,38 +195,83 @@ class EraseAiKeyboardService : InputMethodService() {
     buffer: String,
     scan: LocalRiskScanner.LocalScan,
   ) {
-    connection.beginBatchEdit()
-    val removed = connection.deleteSurroundingText(beforeLength, afterLength)
-    connection.endBatchEdit()
+    val removed = removeComposerText(connection, beforeLength, afterLength, buffer.length)
     if (!removed) {
       GuardLog.ime("withhold.failed", "pkg=${targetPackage ?: "-"} len=${buffer.length}")
-      gateView?.showWarning(scan)
+      GuardStateStore.setImeWithholdFailed(true)
+      GuardStateStore.setArmed(targetPackage)
+      gateView?.showWithheld(scan)
       return
     }
     withheldText = buffer
+    GuardStateStore.setImeWithheld(true)
+    GuardStateStore.setArmed(targetPackage)
     protectedAppsStore.appendLocalScan(buffer, scan.riskScore, scan.level)
     protectedAppsStore.saveLastScanSummary(scan.summary(), scan.level)
     gateView?.showWithheld(scan)
     GuardLog.ime("withhold", "pkg=${targetPackage ?: "-"} len=${buffer.length}")
   }
 
+  private fun readComposerBuffer(connection: InputConnection): String {
+    val request = ExtractedTextRequest().apply {
+      flags = InputConnection.GET_TEXT_WITH_STYLES
+      hintMaxLines = 100
+      hintMaxChars = MAX_BUFFER
+    }
+    val extracted = connection.getExtractedText(request, 0)?.text?.toString()?.trim()
+    if (!extracted.isNullOrBlank()) return extracted
+    val before = connection.getTextBeforeCursor(MAX_BUFFER, 0)?.toString().orEmpty()
+    val after = connection.getTextAfterCursor(MAX_BUFFER, 0)?.toString().orEmpty()
+    return (before + after).trim()
+  }
+
+  private fun removeComposerText(
+    connection: InputConnection,
+    beforeLength: Int,
+    afterLength: Int,
+    bufferLength: Int,
+  ): Boolean {
+    connection.beginBatchEdit()
+    var removed = connection.deleteSurroundingText(beforeLength, afterLength)
+    if (!removed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      removed = connection.deleteSurroundingTextInCodePoints(beforeLength, afterLength)
+    }
+    if (!removed) {
+      connection.setSelection(0, bufferLength)
+      removed = connection.commitText("", 1)
+    }
+    connection.endBatchEdit()
+    if (removed) {
+      val remaining = connection.getTextBeforeCursor(MAX_BUFFER, 0)?.toString().orEmpty() +
+        connection.getTextAfterCursor(MAX_BUFFER, 0)?.toString().orEmpty()
+      if (remaining.trim().length >= MIN_BUFFER) {
+        GuardLog.ime("withhold.partial", "pkg=${targetPackage ?: "-"} remaining=${remaining.trim().length}")
+        return false
+      }
+    }
+    return removed
+  }
+
   private fun releaseWithheldText() {
     val text = withheldText ?: return
+    GuardStateStore.grantEgressWindow()
     currentInputConnection?.commitText(text, 1)
     withheldText = null
+    clearGuardState()
     gateView?.showIdle(true)
     GuardLog.ime("release", "pkg=${targetPackage ?: "-"} len=${text.length}")
+    performEditorSend(currentInputConnection ?: return)
   }
 
   private fun discardWithheldText() {
-    val text = withheldText ?: return
+    withheldText ?: return
     withheldText = null
+    clearGuardState()
     gateView?.showIdle(true)
-    GuardLog.ime("discard", "pkg=${targetPackage ?: "-"} len=${text.length}")
+    GuardLog.ime("discard", "pkg=${targetPackage ?: "-"}")
     Toast.makeText(this, "EraseAI discarded the risky text.", Toast.LENGTH_SHORT).show()
   }
 
-  /** Local-only redaction so the keyboard keeps working without a network round trip. */
   private fun sanitizeWithheldText() {
     val text = withheldText ?: return
     val scan = LocalRiskScanner.scan(text)
@@ -168,20 +284,31 @@ class EraseAiKeyboardService : InputMethodService() {
       }
       .toString()
 
+    GuardStateStore.grantEgressWindow()
     currentInputConnection?.commitText(redacted, 1)
     withheldText = null
+    clearGuardState()
     protectedAppsStore.saveLastScanSummary("Sanitized prompt", "redact")
     gateView?.showIdle(true)
     GuardLog.ime("sanitize", "pkg=${targetPackage ?: "-"} len=${redacted.length}")
+    performEditorSend(currentInputConnection ?: return)
+  }
+
+  private fun clearGuardState() {
+    GuardStateStore.clearImeState()
+    GuardStateStore.setArmed(null)
   }
 
   override fun onFinishInputView(finishingInput: Boolean) {
     super.onFinishInputView(finishingInput)
     withheldText = null
+    clearGuardState()
   }
 
   override fun onDestroy() {
+    rootLayout = null
     gateView = null
+    keyboardView = null
     super.onDestroy()
   }
 

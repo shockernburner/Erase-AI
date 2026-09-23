@@ -8,7 +8,10 @@ Dual-rail billing:
 ## Scope
 
 - Backend scanning for prompts and shared text/JSON/CSV uploads.
-- **Send gate (Accessibility):** intercepts Send / Enter in protected AI apps with Cancel · Sanitize · Send Anyway · safe auto-send; high-risk prompts are blocked from Send Anyway.
+- **Send gate (three layers):**
+  - **EraseAI Keyboard (IME, recommended):** withholds risky typed text before it reaches the AI app — no send-button tracking.
+  - **Accessibility curtain (fallback):** geometry-based submit-band overlay when IME is off or attachments are present.
+  - **Strict network gate (optional):** local VPN blackhole for protected apps while a risky prompt is held.
 - **Multi-piece scans:** prompt + attachment files via `/api/mobile/analyze-pieces`.
 - **Dataset sanitizer:** upload CSV/JSON/TXT → analyze → apply fixes → download cleaned file (`/api/datasets/*`).
 - Mobile bearer session tokens from `/api/mobile-auth/*`.

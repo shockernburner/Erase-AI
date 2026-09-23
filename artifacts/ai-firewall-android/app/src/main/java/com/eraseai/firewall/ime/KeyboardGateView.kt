@@ -11,8 +11,7 @@ import android.widget.TextView
 import com.eraseai.firewall.guard.LocalRiskScanner
 
 /**
- * The EraseAI Keyboard's decision bar. Kept deliberately small: it reports state and offers the
- * three decisions, while the user keeps typing on their normal keyboard surface.
+ * The EraseAI Keyboard's decision bar. Reports scan state and offers release/discard/sanitize.
  */
 @SuppressLint("ViewConstructor")
 class KeyboardGateView(
@@ -57,17 +56,10 @@ class KeyboardGateView(
     statusLabel.setTextColor(0xFF38BDF8.toInt())
     statusLabel.text = if (protectionActive) "ERASEAI KEYBOARD · ACTIVE" else "ERASEAI KEYBOARD · OFF"
     detailLabel.text = if (protectionActive) {
-      "Watching this app. Risky text is held before it reaches the AI."
+      "Watching. Risky text will be held when detected."
     } else {
       "This app is not protected. Enable it in EraseAI to gate prompts here."
     }
-    actions.removeAllViews()
-  }
-
-  fun showWarning(scan: LocalRiskScanner.LocalScan) {
-    statusLabel.setTextColor(0xFFF59E0B.toInt())
-    statusLabel.text = "ERASEAI KEYBOARD · REVIEW"
-    detailLabel.text = "Found ${describe(scan)}. Text is still in the app — check before sending."
     actions.removeAllViews()
   }
 

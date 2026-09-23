@@ -18,10 +18,6 @@ object AppSendAdapter {
     if (haystack.isBlank()) return false
     if (isExcludedComposerChrome(haystack)) return false
 
-    packageHints(packageName).forEach { hint ->
-      if (haystack.contains(hint)) return true
-    }
-
     if (haystack.contains(" send ") || haystack.startsWith("send ") || haystack.endsWith(" send") || haystack == "send") {
       return !haystack.contains("sender")
     }
@@ -217,30 +213,6 @@ object AppSendAdapter {
     "prompt",
     "composer",
   )
-
-  private fun packageHints(packageName: String): List<String> = when (packageName) {
-    "com.openai.chatgpt" -> listOf(
-      "send prompt",
-      "send message",
-      "send-button",
-      "fruitjuice-send",
-      "sendbutton",
-    )
-    "com.anthropic.claude" -> listOf("send message", "send")
-    "com.google.android.apps.bard",
-    "com.google.android.googlequicksearchbox" -> listOf(
-      "send message",
-      "send prompt",
-      "submit",
-      "send",
-      "arrow",
-    )
-    "com.microsoft.copilot",
-    "com.microsoft.bing" -> listOf("send", "submit")
-    "com.replit.app" -> listOf("send")
-    "com.perplexity.app" -> listOf("send", "submit")
-    else -> listOf("send", "submit")
-  }
 
   private fun composerScore(node: AccessibilityNodeInfo): Int {
     if (node.isPassword) return 0

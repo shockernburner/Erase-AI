@@ -89,7 +89,7 @@ object LocalRiskScanner {
       "medium",
     )
     add(
-      Regex("(?i)(?:api(?:\\s+key)?|client\\s+secret|access\\s+token|secret|bearer|password|passwd|pwd)\\s*(?:is|=|:|for)\\s*\\S{6,}"),
+      Regex("(?i)(?:api(?:\\s+key)?|aws(?:\\s+access)?\\s+key|client\\s+secret|access\\s+token|secret|bearer|password|passwd|pwd)\\s*(?:is|=|:|for)?\\s*['\"]?\\S{6,}"),
       "PII",
       "Shared API credential",
       "high",
@@ -109,10 +109,18 @@ object LocalRiskScanner {
     // Everything below mirrors the server's secret rules. They were server-only, so an
     // expired trial, a dropped network or simply a verdict that had not come back yet left
     // these completely ungated on device — a pasted AWS key went straight through.
+    // Do not use \\b — pasted keys are often glued to words ("MyAWSkeyisAKIA…") or prefixes
+    // ("sAKIA…" when the prior character is still in the accessibility chunk).
     add(
-      Regex("\\bAKIA[0-9A-Z]{16}\\b"),
+      Regex("(?i)AKIA[0-9A-Z]{16}"),
       "PII",
       "AWS access key",
+      "high",
+    )
+    add(
+      Regex("(?i)ASIA[0-9A-Z]{16}"),
+      "PII",
+      "AWS session key",
       "high",
     )
     add(

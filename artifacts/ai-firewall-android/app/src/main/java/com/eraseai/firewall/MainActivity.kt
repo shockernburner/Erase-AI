@@ -1,9 +1,11 @@
 package com.eraseai.firewall
 
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.net.VpnService
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -83,6 +85,8 @@ import com.eraseai.firewall.data.ScanHistoryItem
 import com.eraseai.firewall.data.ScanPiece
 import com.eraseai.firewall.data.ScanResult
 import com.eraseai.firewall.data.loadInstalledApps
+import com.eraseai.firewall.guard.GuardStateStore
+import com.eraseai.firewall.ime.ImeGuardHelper
 import com.eraseai.firewall.ui.BrandCard
 import com.eraseai.firewall.ui.BrandChipButton
 import com.eraseai.firewall.ui.BrandErrorBanner
@@ -109,10 +113,10 @@ import kotlinx.coroutines.launch
 private const val MAX_SCAN_TEXT_LENGTH = 5000
 private const val SPLASH_MIN_MS = 1800L
 private const val INTERNAL_RELEASE_NOTES =
-  "Play internal build: dual-rail billing (Google Play on Android, Stripe on web), 7-day trial, Accessibility AI firewall, share-sheet scan/sanitize, protected LLM app sync."
+  "0.3.0: geometry submit band, EraseAI Keyboard IME firewall, optional Strict network gate (VPN blackhole while risky prompt held)."
 
 private enum class Screen {
-  Splash, Login, Dashboard, Subscription, AccessibilityGuide, ProtectedApps,
+  Splash, Login, Dashboard, Subscription, AccessibilityGuide, KeyboardGuide, ProtectedApps,
   ManualScan, History, Settings, Diagnostics, Privacy, DatasetSanitizer,
 }
 
@@ -185,6 +189,9 @@ private fun EraseAIFirewallApp(
   var selectedPackages by remember { mutableStateOf(protectedStore.getSelectedPackages()) }
   var firewallEnabled by remember { mutableStateOf(protectedStore.isFirewallEnabled()) }
   var accessibilityEnabled by remember { mutableStateOf(isAccessibilityEnabled(context)) }
+  var keyboardEnabled by remember { mutableStateOf(ImeGuardHelper.isEraseAiKeyboardEnabled(context)) }
+  var keyboardSelected by remember { mutableStateOf(ImeGuardHelper.isEraseAiKeyboardSelected(context)) }
+  var strictEgressEnabled by remember { mutableStateOf(GuardStateStore.isStrictEgressEnabled()) }
   var history by remember { mutableStateOf<List<ScanHistoryItem>>(emptyList()) }
   var manualText by remember { mutableStateOf(initialSharedText.orEmpty().take(MAX_SCAN_TEXT_LENGTH)) }
   var scanResult by remember { mutableStateOf<ScanResult?>(null) }
@@ -203,6 +210,22 @@ private fun EraseAIFirewallApp(
   fun refreshAccessibility() {
     accessibilityEnabled = isAccessibilityEnabled(context)
     firewallEnabled = protectedStore.isFirewallEnabled()
+    keyboardEnabled = ImeGuardHelper.isEraseAiKeyboardEnabled(context)
+    keyboardSelected = ImeGuardHelper.isEraseAiKeyboardSelected(context)
+    strictEgressEnabled = GuardStateStore.isStrictEgressEnabled()
+  }
+
+  val vpnPermissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.StartActivityForResult(),
+  ) { result ->
+    if (result.resultCode == Activity.RESULT_OK) {
+      GuardStateStore.setStrictEgressEnabled(true)
+      strictEgressEnabled = true
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    GuardStateStore.init(context)
   }
 
   val datasetPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -446,6 +469,7 @@ private fun EraseAIFirewallApp(
           entitlement = entitlement,
           loading = loading,
           accessibilityEnabled = accessibilityEnabled,
+          keyboardSelected = keyboardSelected,
           firewallEnabled = firewallEnabled,
           protectedAppsCount = selectedPackages.size,
           lastScan = protectedStore.getLastScanSummary(),
@@ -458,6 +482,10 @@ private fun EraseAIFirewallApp(
           onEnable = {
             refreshAccessibility()
             screen = Screen.AccessibilityGuide
+          },
+          onKeyboard = {
+            refreshAccessibility()
+            screen = Screen.KeyboardGuide
           },
           onApps = {
             apps = loadInstalledApps(context)
@@ -509,6 +537,16 @@ private fun EraseAIFirewallApp(
             if (isAccessibilityEnabled(context) && !protectedStore.isFirewallEnabled()) {
               setFirewallScanning(true)
             }
+            screen = Screen.Dashboard
+          },
+        )
+        Screen.KeyboardGuide -> KeyboardGuideScreen(
+          enabled = keyboardEnabled,
+          selected = keyboardSelected,
+          onOpenSettings = { ImeGuardHelper.openKeyboardSettings(context) },
+          onPickKeyboard = { ImeGuardHelper.showKeyboardPicker(context) },
+          onDone = {
+            refreshAccessibility()
             screen = Screen.Dashboard
           },
         )
@@ -595,6 +633,21 @@ private fun EraseAIFirewallApp(
         Screen.Settings -> SettingsScreen(
           BuildConfig.API_BASE_URL,
           BuildConfig.WEB_BASE_URL,
+          strictEgressEnabled = strictEgressEnabled,
+          onStrictEgressChange = { desired ->
+            if (!desired) {
+              GuardStateStore.setStrictEgressEnabled(false)
+              strictEgressEnabled = false
+              return@SettingsScreen
+            }
+            val prepare = VpnService.prepare(context)
+            if (prepare == null) {
+              GuardStateStore.setStrictEgressEnabled(true)
+              strictEgressEnabled = true
+            } else {
+              vpnPermissionLauncher.launch(prepare)
+            }
+          },
           onBilling = { screen = Screen.Subscription },
           onDiagnostics = {
             refreshBackendStatus()
@@ -617,6 +670,8 @@ private fun EraseAIFirewallApp(
             backendStatus = backendStatus,
             entitlement = entitlement,
             accessibilityEnabled = accessibilityEnabled,
+            keyboardSelected = keyboardSelected,
+            strictEgressEnabled = strictEgressEnabled,
             firewallEnabled = firewallEnabled,
             protectedAppsCount = selectedPackages.size,
             lastScanTime = protectedStore.getLastScanTime(),
@@ -750,6 +805,7 @@ private fun DashboardScreen(
   entitlement: EntitlementState?,
   loading: Boolean,
   accessibilityEnabled: Boolean,
+  keyboardSelected: Boolean,
   firewallEnabled: Boolean,
   protectedAppsCount: Int,
   lastScan: String,
@@ -757,6 +813,7 @@ private fun DashboardScreen(
   onRefresh: () -> Unit,
   onToggleFirewall: (Boolean) -> Unit,
   onEnable: () -> Unit,
+  onKeyboard: () -> Unit,
   onApps: () -> Unit,
   onManual: () -> Unit,
   onDatasetSanitizer: () -> Unit,
@@ -803,13 +860,19 @@ private fun DashboardScreen(
     item {
       BrandStatRow(
         "Accessibility" to if (accessibilityEnabled) "Enabled" else "Needed",
-        "Apps" to protectedAppsCount.toString(),
+        "Keyboard" to if (keyboardSelected) "EraseAI" else "System",
       )
     }
     item {
       BrandStatRow(
+        "Apps" to protectedAppsCount.toString(),
         "Plan" to (entitlement?.subscriptionLabel ?: if (loading) "Loading…" else "Unknown"),
+      )
+    }
+    item {
+      BrandStatRow(
         "Scans" to scansUsed(entitlement),
+        "Mode" to if (keyboardSelected) "IME primary" else "Curtain fallback",
       )
     }
     item {
@@ -881,6 +944,29 @@ private fun DashboardScreen(
           text = "Review Accessibility setup",
           onClick = onEnable,
           icon = Icons.Default.Shield,
+        )
+      }
+    }
+    if (accessibilityEnabled) {
+      item {
+        BrandCard(highlighted = !keyboardSelected) {
+          Text("EraseAI Keyboard (recommended)", style = MaterialTheme.typography.titleMedium)
+          Text(
+            if (keyboardSelected) {
+              "Input-layer firewall active — typed prompts are held before they reach the AI app."
+            } else {
+              "Switch to EraseAI Keyboard in ChatGPT/Gemini for send protection that does not depend on send-button UI."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = BrandMutedForeground,
+          )
+        }
+      }
+      item {
+        BrandPrimaryButton(
+          text = if (keyboardSelected) "Keyboard setup" else "Enable EraseAI Keyboard",
+          onClick = onKeyboard,
+          icon = Icons.Default.Security,
         )
       }
     }
@@ -996,6 +1082,55 @@ private fun SubscriptionScreen(
     }
     item { BrandSecondaryButton("Restore Google Play purchases", onRestore) }
     item { BrandTextButton("Refresh subscription", onRefresh) }
+  }
+}
+
+@Composable
+private fun KeyboardGuideScreen(
+  enabled: Boolean,
+  selected: Boolean,
+  onOpenSettings: () -> Unit,
+  onPickKeyboard: () -> Unit,
+  onDone: () -> Unit,
+) {
+  LazyColumn(
+    modifier = Modifier.fillMaxSize(),
+    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+    verticalArrangement = Arrangement.spacedBy(12.dp),
+  ) {
+    item {
+      BrandHero(
+        title = "EraseAI Keyboard",
+        subtitle = "Real firewall for typed prompts — risky text is withheld before it reaches the AI app's composer. No send-button tracking required.",
+      )
+    }
+    item {
+      BrandStatusBanner(
+        title = when {
+          selected -> "EraseAI Keyboard active"
+          enabled -> "Enabled — select it in your AI app"
+          else -> "Enable the keyboard"
+        },
+        body = when {
+          selected -> "Accessibility curtain is skipped for text-only sends. Attachments still use the curtain."
+          enabled -> "Open ChatGPT or Gemini, tap the keyboard icon, and choose EraseAI Keyboard."
+          else -> "Turn on EraseAI Keyboard under system keyboard settings."
+        },
+        active = selected,
+      )
+    }
+    item {
+      BrandCard {
+        Text("Setup", style = MaterialTheme.typography.titleMedium)
+        Text("1. Enable EraseAI Keyboard in system settings.")
+        Text("2. Open a protected AI app and switch to EraseAI Keyboard.")
+        Text("3. Type a risky prompt and tap Send on the keyboard — text is held, not transmitted.")
+        Text("4. Optional: Settings → Strict network gate blocks AI app network while a prompt is held.")
+      }
+    }
+    item { BrandPrimaryButton("Open Keyboard Settings", onOpenSettings, icon = Icons.Default.Settings) }
+    item { BrandSecondaryButton("Choose keyboard now", onPickKeyboard) }
+    item { BrandSecondaryButton(if (selected) "Done" else "I'll set it up later", onDone) }
   }
 }
 
@@ -1227,6 +1362,8 @@ private fun HistoryScreen(items: List<ScanHistoryItem>) {
 private fun SettingsScreen(
   apiBase: String,
   webBase: String,
+  strictEgressEnabled: Boolean,
+  onStrictEgressChange: (Boolean) -> Unit,
   onBilling: () -> Unit,
   onDiagnostics: () -> Unit,
   onPrivacy: () -> Unit,
@@ -1240,6 +1377,28 @@ private fun SettingsScreen(
   ) {
     item {
       BrandHero(title = "Settings", subtitle = "Account, billing, diagnostics, and privacy.")
+    }
+    item {
+      BrandCard {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+          Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Strict network gate", style = MaterialTheme.typography.titleMedium)
+            Text(
+              "While a risky prompt is held, block protected AI apps from reaching the network. Does not read HTTPS content.",
+              style = MaterialTheme.typography.bodySmall,
+              color = BrandMutedForeground,
+            )
+          }
+          Switch(
+            checked = strictEgressEnabled,
+            onCheckedChange = onStrictEgressChange,
+            colors = SwitchDefaults.colors(
+              checkedThumbColor = BrandBackground,
+              checkedTrackColor = BrandSuccess,
+            ),
+          )
+        }
+      }
     }
     item {
       BrandCard {
@@ -1335,6 +1494,7 @@ private fun Screen.title(): String = when (this) {
   Screen.Dashboard -> "Home"
   Screen.Subscription -> "Subscription"
   Screen.AccessibilityGuide -> "Enable Accessibility"
+  Screen.KeyboardGuide -> "EraseAI Keyboard"
   Screen.ProtectedApps -> "Protected Apps"
   Screen.ManualScan -> "Manual Scan"
   Screen.DatasetSanitizer -> "Dataset Sanitizer"
@@ -1366,6 +1526,8 @@ private fun buildDiagnosticsReport(
   backendStatus: String,
   entitlement: EntitlementState?,
   accessibilityEnabled: Boolean,
+  keyboardSelected: Boolean,
+  strictEgressEnabled: Boolean,
   firewallEnabled: Boolean,
   protectedAppsCount: Int,
   lastScanTime: String,
@@ -1377,6 +1539,8 @@ private fun buildDiagnosticsReport(
   "auth_status=${if (entitlement?.authenticated == true) "authenticated" else "unknown"}",
   "entitlement_status=${entitlement?.status ?: "unknown"}",
   "accessibility_permission=${if (accessibilityEnabled) "enabled" else "disabled"}",
+  "eraseai_keyboard_selected=${if (keyboardSelected) "yes" else "no"}",
+  "strict_egress_gate=${if (strictEgressEnabled) "on" else "off"}",
   "firewall_scanning=${if (firewallEnabled) "on" else "off"}",
   "protected_apps_count=$protectedAppsCount",
   "last_scan_time=$lastScanTime",
