@@ -44,18 +44,20 @@ object AppSendAdapter {
     return false
   }
 
-  fun findComposerEditable(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+  fun findComposerEditable(root: AccessibilityNodeInfo?, screenHeight: Int = 0): AccessibilityNodeInfo? {
     if (root == null) return null
     // ChatGPT's Compose field takes input focus without isEditable=true. Requiring
     // isEditable here made locate() return null in a real conversation, which dropped
     // the curtain and looked exactly like the firewall having been switched off.
     val focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-    if (focused != null && !focused.isPassword) return focused
+    if (focused != null && !focused.isPassword && focusedInComposerBand(focused, screenHeight)) {
+      return focused
+    }
 
     var best: AccessibilityNodeInfo? = null
     var bestScore = 0
     root.forEachNode { node ->
-      val score = composerScore(node)
+      val score = composerScore(node, screenHeight)
       if (score > bestScore) {
         bestScore = score
         best = node
@@ -64,8 +66,21 @@ object AppSendAdapter {
     return best
   }
 
+  /** Ignore search/history fields at the top when the real composer is in the lower half. */
+  private fun focusedInComposerBand(node: AccessibilityNodeInfo, screenHeight: Int): Boolean {
+    if (screenHeight <= 0) return true
+    val bounds = Rect().also { node.getBoundsInScreen(it) }
+    if (bounds.isEmpty) return true
+    return bounds.bottom >= screenHeight * 0.45f
+  }
+
   fun composerText(root: AccessibilityNodeInfo?): String {
     val node = findComposerEditable(root) ?: return ""
+    return editableText(node)
+  }
+
+  /** Draft text of an already-located composer, with the host placeholder filtered out. */
+  fun editableText(node: AccessibilityNodeInfo): String {
     val raw = node.text?.toString()?.trim().orEmpty()
     val hint = if (Build.VERSION.SDK_INT >= 26) {
       node.hintText?.toString()?.trim().orEmpty()
@@ -201,6 +216,9 @@ object AppSendAdapter {
     "message chatgpt",
     "message claude",
     "ask claude",
+    "chat with claude",
+    "reply to claude",
+    "reply to chatgpt",
     "ask copilot",
     "message",
   )
@@ -214,7 +232,7 @@ object AppSendAdapter {
     "composer",
   )
 
-  private fun composerScore(node: AccessibilityNodeInfo): Int {
+  private fun composerScore(node: AccessibilityNodeInfo, screenHeight: Int = 0): Int {
     if (node.isPassword) return 0
     var score = 0
     if (node.isEditable) score += 20
@@ -226,12 +244,16 @@ object AppSendAdapter {
     if (score == 0) return 0
     // Composer sits at the bottom of the conversation; search boxes sit at the top.
     val bounds = Rect().also { node.getBoundsInScreen(it) }
-    if (!bounds.isEmpty) score += bounds.bottom / 40
+    if (!bounds.isEmpty) {
+      score += bounds.bottom / 40
+      if (screenHeight > 0 && bounds.bottom < screenHeight * 0.35f) score -= 40
+    }
     return score
   }
 
   private fun isComposerPlaceholder(value: String): Boolean {
-    val normalized = value.trim().lowercase()
+    // Hosts end placeholders with "…" or "..." ("Chat with Claude…", "Reply to ChatGPT").
+    val normalized = value.trim().lowercase().trimEnd('…', '.').trim()
     if (normalized.isEmpty()) return true
     if (COMPOSER_PLACEHOLDERS.contains(normalized)) return true
     // Gemini sometimes truncates the placeholder in the accessibility tree.

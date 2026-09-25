@@ -40,7 +40,17 @@ class EgressGateService : VpnService() {
       tearDownAndStop()
       return START_NOT_STICKY
     }
-    startForeground(NOTIFICATION_ID, buildNotification())
+    try {
+      startForeground(NOTIFICATION_ID, buildNotification())
+    } catch (err: Exception) {
+      GuardLog.warn(
+        "egress.foreground.failed",
+        GuardStateStore.getArmedPackage(),
+        err.message ?: err.javaClass.simpleName,
+      )
+      tearDownAndStop()
+      return START_NOT_STICKY
+    }
     if (tunInterface == null) establishTunnel()
     return START_NOT_STICKY
   }
@@ -54,7 +64,9 @@ class EgressGateService : VpnService() {
   private fun establishTunnel() {
     val prepare = prepare(this)
     if (prepare != null) {
-      GuardLog.warn("egress.tunnel.failed", GuardStateStore.getArmedPackage(), "vpn-permission-missing")
+      // Another VPN app connecting takes consent away from us; the settings screen reports it.
+      val reason = if (GuardHealth.otherVpnActive(this)) "other-vpn-active" else "vpn-permission-missing"
+      GuardLog.warn("egress.tunnel.failed", GuardStateStore.getArmedPackage(), reason)
       tearDownAndStop()
       return
     }
@@ -155,6 +167,9 @@ class EgressGateService : VpnService() {
 
     @Volatile
     private var runningInstance: EgressGateService? = null
+
+    /** True while EraseAI's own tunnel service is alive, so its VPN is not mistaken for another. */
+    val isRunning: Boolean get() = runningInstance != null
 
     fun stop(context: Context) {
       runningInstance?.tearDownAndStop()

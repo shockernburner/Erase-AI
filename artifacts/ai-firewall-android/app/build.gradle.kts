@@ -28,8 +28,8 @@ android {
     applicationId = "com.eraseai.firewall"
     minSdk = 28
     targetSdk = 36
-    versionCode = 28
-    versionName = "1.0.0"
+    versionCode = 30
+    versionName = "1.0.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "API_BASE_URL", "\"https://eraseai.ai/api\"")
@@ -103,6 +103,8 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.android.billingclient:billing-ktx:8.0.0")
+  // On-device OCR for EraseAI Safe (bundled model: works offline, nothing leaves the phone).
+  implementation("com.google.mlkit:text-recognition:16.0.1")
 
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")

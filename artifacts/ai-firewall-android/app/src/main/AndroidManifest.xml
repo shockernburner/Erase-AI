@@ -6,6 +6,7 @@
   <uses-permission android:name="com.android.vending.BILLING" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
   <queries>
     <package android:name="com.openai.chatgpt" />
@@ -50,6 +51,7 @@
   </queries>
 
   <application
+    android:name=".EraseAiApplication"
     android:allowBackup="true"
     android:fullBackupContent="@xml/backup_rules"
     android:dataExtractionRules="@xml/data_extraction_rules"
@@ -95,6 +97,41 @@
         <data android:mimeType="application/octet-stream" />
       </intent-filter>
     </activity>
+
+    <activity
+      android:name=".safe.SafeActivity"
+      android:exported="true"
+      android:label="@string/safe_share_label"
+      android:taskAffinity=""
+      android:excludeFromRecents="true">
+      <intent-filter android:label="@string/safe_share_label">
+        <action android:name="android.intent.action.SEND" />
+        <action android:name="android.intent.action.SEND_MULTIPLE" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="text/*" />
+      </intent-filter>
+      <intent-filter android:label="@string/safe_share_label">
+        <action android:name="android.intent.action.SEND" />
+        <action android:name="android.intent.action.SEND_MULTIPLE" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="application/json" />
+        <data android:mimeType="application/xml" />
+        <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+        <data android:mimeType="application/pdf" />
+        <data android:mimeType="image/*" />
+      </intent-filter>
+    </activity>
+
+    <provider
+      android:name=".safe.SafeDocumentsProvider"
+      android:authorities="${applicationId}.safe"
+      android:exported="true"
+      android:grantUriPermissions="true"
+      android:permission="android.permission.MANAGE_DOCUMENTS">
+      <intent-filter>
+        <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+      </intent-filter>
+    </provider>
 
     <provider
       android:name="androidx.core.content.FileProvider"

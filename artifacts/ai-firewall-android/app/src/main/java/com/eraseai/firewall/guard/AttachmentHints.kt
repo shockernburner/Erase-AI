@@ -1,11 +1,14 @@
 package com.eraseai.firewall.guard
 
 import android.view.accessibility.AccessibilityNodeInfo
+import com.eraseai.firewall.safe.SafeMarker
 
 data class AttachmentHint(
   val label: String,
   val source: String,
   val skipReason: String? = null,
+  /** A redacted copy EraseAI Safe served on this device — already clean, nothing to gate. */
+  val safe: Boolean = false,
 )
 
 /**
@@ -45,14 +48,32 @@ object AttachmentHints {
     "region", "no attachments", "gallery view", "grid",
   )
 
-  fun extract(root: AccessibilityNodeInfo?): List<AttachmentHint> {
+  /**
+   * [isServedSafe] confirms a marked chip label against the names EraseAI Safe actually
+   * served; the marker alone is just text anyone could put in a file name.
+   */
+  /**
+   * [draft] is the composer's own editable: its text is the prompt, not an attachment, and a
+   * prompt like "describe this image" otherwise read as an unscanned file.
+   */
+  fun extract(
+    root: AccessibilityNodeInfo?,
+    draft: AccessibilityNodeInfo? = null,
+    isServedSafe: (String) -> Boolean = { false },
+  ): List<AttachmentHint> {
     if (root == null) return emptyList()
     val found = linkedMapOf<String, AttachmentHint>()
-    collect(root, found)
+    collect(root, draft, found, isServedSafe)
     return found.values.toList()
   }
 
-  private fun collect(node: AccessibilityNodeInfo, found: LinkedHashMap<String, AttachmentHint>) {
+  private fun collect(
+    node: AccessibilityNodeInfo,
+    draft: AccessibilityNodeInfo?,
+    found: LinkedHashMap<String, AttachmentHint>,
+    isServedSafe: (String) -> Boolean,
+  ) {
+    if (draft != null && node == draft) return
     val text = node.text?.toString()?.trim().orEmpty()
     val description = node.contentDescription?.toString()?.trim().orEmpty()
     val clickable = node.isClickable
@@ -60,17 +81,30 @@ object AttachmentHints {
       if (candidate.isBlank()) return@forEach
       val label = normalizeLabel(candidate, clickable) ?: return@forEach
       if (found.containsKey(label)) return@forEach
+      if (SafeMarker.isMarked(label)) {
+        found[label] = if (isServedSafe(label)) {
+          AttachmentHint(label = label, source = "safe:$label", safe = true)
+        } else {
+          AttachmentHint(
+            label = label,
+            source = "file:$label",
+            skipReason = "\"$label\" is named like an EraseAI Safe file but was not issued by " +
+              "EraseAI on this device, so it is treated as unscanned.",
+          )
+        }
+        return@forEach
+      }
       found[label] = AttachmentHint(
         label = label,
         source = "file:$label",
         skipReason = "Attachment \"$label\" cannot be scanned inside the AI app. " +
-          "Remove it, or Cancel / Send Anyway after reviewing the risk yourself.",
+          "Attach it from EraseAI Safe instead, or Cancel / Send Anyway after reviewing it.",
       )
     }
 
     for (index in 0 until node.childCount) {
       val child = node.getChild(index) ?: continue
-      collect(child, found)
+      collect(child, draft, found, isServedSafe)
     }
   }
 

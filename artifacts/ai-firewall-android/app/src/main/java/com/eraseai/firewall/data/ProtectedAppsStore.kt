@@ -1,6 +1,7 @@
 package com.eraseai.firewall.data
 
 import android.content.Context
+import com.eraseai.firewall.guard.LocalRiskScanner
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
@@ -81,7 +82,8 @@ class ProtectedAppsStore(context: Context) {
     val next = JSONArray()
     next.put(
       JSONObject()
-        .put("content", content.take(180))
+        // History exists to show what was caught, not to become a second copy of the secret.
+        .put("content", LocalRiskScanner.redact(content).take(180))
         .put("riskScore", riskScore)
         .put("level", level)
         .put("createdAt", Date().toInstant().toString()),

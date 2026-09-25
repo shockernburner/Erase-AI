@@ -43,12 +43,15 @@ object GuardStateStore {
   }
 
   fun setArmed(packageName: String?) {
-    prefs()?.edit()
-      ?.putString(ARMED_PKG_KEY, packageName)
-      ?.apply()
+    // Called on every composer evaluation and keystroke; re-committing and re-syncing the VPN
+    // for an unchanged value was a synchronous disk write plus a service call per character.
+    if (packageName == getArmedPackage()) return
+    val edit = prefs()?.edit() ?: return
+    edit.putString(ARMED_PKG_KEY, packageName)
     if (packageName == null) {
-      prefs()?.edit()?.putLong(EGRESS_WINDOW_UNTIL_KEY, 0L)?.apply()
+      edit.putLong(EGRESS_WINDOW_UNTIL_KEY, 0L)
     }
+    edit.commit()
     syncEgressService()
   }
 
@@ -97,20 +100,39 @@ object GuardStateStore {
     return true
   }
 
+  /** Reconcile VPN service with persisted strict/armed state (e.g. after notification grant). */
+  fun refreshEgressGate() {
+    syncEgressService()
+  }
+
   private fun syncEgressService() {
     if (!::appContext.isInitialized) return
     if (isEgressBlocked()) {
-      val intent = Intent(appContext, EgressGateService::class.java)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        ContextCompat.startForegroundService(appContext, intent)
-      } else {
-        appContext.startService(intent)
+      // Only one VPN can run. Starting ours would either fail on consent or, if we still hold
+      // it, tear down the user's work/privacy VPN mid-session — neither is ours to decide here.
+      if (GuardHealth.otherVpnActive(appContext)) {
+        GuardLog.warn("egress.skipped", getArmedPackage(), "reason=other-vpn-active")
+        return
       }
-      GuardLog.event(
-        "egress.arm",
-        getArmedPackage(),
-        "strict=${isStrictEgressEnabled()} armed=${isArmed()}",
-      )
+      val intent = Intent(appContext, EgressGateService::class.java)
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          ContextCompat.startForegroundService(appContext, intent)
+        } else {
+          appContext.startService(intent)
+        }
+        GuardLog.event(
+          "egress.arm",
+          getArmedPackage(),
+          "strict=${isStrictEgressEnabled()} armed=${isArmed()}",
+        )
+      } catch (err: Exception) {
+        GuardLog.warn(
+          "egress.start.failed",
+          getArmedPackage(),
+          "${err.javaClass.simpleName}: ${err.message ?: "unknown"}",
+        )
+      }
     } else {
       EgressGateService.stop(appContext)
       GuardLog.event(

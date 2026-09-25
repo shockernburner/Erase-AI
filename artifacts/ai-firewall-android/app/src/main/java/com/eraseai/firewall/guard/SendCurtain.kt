@@ -59,7 +59,7 @@ class SendCurtain(private val context: Context) {
    */
   private fun mergeBounds(latest: Rect): Rect {
     if (guardActive) {
-      coveredBounds.set(pinToScreenBottom(latest))
+      coveredBounds.set(pinSubmitBand(latest))
       return coveredBounds
     }
     if (coveredBounds.isEmpty) {
@@ -74,17 +74,11 @@ class SendCurtain(private val context: Context) {
     return coveredBounds
   }
 
-  /** Full-width band flush with the screen bottom so send cannot peek below the overlay. */
-  private fun pinToScreenBottom(seed: Rect): Rect {
+  /** Keeps the submit band on the composer row when the keyboard is open. */
+  private fun pinSubmitBand(seed: Rect): Rect {
     val dm = context.resources.displayMetrics
-    val bandHeight = ComposerGeometry.bandHeightPx(dm.heightPixels)
-    val bottom = dm.heightPixels
-    val top = (bottom - bandHeight).coerceAtLeast(0)
-    val rect = Rect(0, top, dm.widthPixels, bottom)
-    if (!seed.isEmpty) rect.union(seed)
-    rect.bottom = bottom
-    if (rect.height() < bandHeight) rect.top = bottom - bandHeight
-    return rect
+    val minHeight = (48 * dm.density).toInt()
+    return ComposerGeometry.clampSubmitOverlay(seed, dm.widthPixels, dm.heightPixels, minHeight)
   }
 
   /** Mounts the curtain, or repositions it in place if already mounted. */
@@ -104,7 +98,7 @@ class SendCurtain(private val context: Context) {
     lastDisplayWidth = dm.widthPixels
     lastDisplayHeight = dm.heightPixels
     val merged = mergeBounds(bounds)
-    val target = inflateBounds(if (this.guardActive) pinToScreenBottom(merged) else merged)
+    val target = inflateBounds(if (this.guardActive) pinSubmitBand(merged) else merged)
     val existing = view
     if (existing != null) {
       applyLevel(level)
@@ -214,29 +208,10 @@ class SendCurtain(private val context: Context) {
     val dm = context.resources.displayMetrics
     val density = dm.density
     val minHeight = (48 * density).toInt()
-    val rect = Rect(bounds)
-
-    if (rect.isEmpty || rect.width() < 48 * density) {
-      rect.set(
-        (12 * density).toInt(),
-        dm.heightPixels - (112 * density).toInt(),
-        dm.widthPixels - (12 * density).toInt(),
-        dm.heightPixels - (48 * density).toInt(),
-      )
+    if (bounds.isEmpty || bounds.width() < 48 * density) {
+      return ComposerGeometry.geometrySubmitZone(dm.widthPixels, dm.heightPixels, Rect())
     }
-    if (rect.height() < minHeight) {
-      val pad = (minHeight - rect.height()) / 2
-      rect.top -= pad
-      rect.bottom += pad
-    }
-    rect.left = 0
-    rect.top = rect.top.coerceAtLeast(0)
-    rect.right = dm.widthPixels
-    rect.bottom = dm.heightPixels
-    val minBand = ComposerGeometry.bandHeightPx(dm.heightPixels)
-    if (rect.height() < minBand) rect.top = dm.heightPixels - minBand
-    if (rect.height() > minBand) rect.top = dm.heightPixels - minBand
-    return rect
+    return ComposerGeometry.clampSubmitOverlay(bounds, dm.widthPixels, dm.heightPixels, minHeight)
   }
 
   private companion object {

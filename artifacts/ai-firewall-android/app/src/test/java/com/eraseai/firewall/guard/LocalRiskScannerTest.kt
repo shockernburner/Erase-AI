@@ -94,4 +94,24 @@ class LocalRiskScannerTest {
     assertTrue(scan.blockSend)
     assertEquals("high", scan.level)
   }
+
+  @Test
+  fun `redact replaces every match, not just the first per rule`() {
+    val redacted = LocalRiskScanner.redact("cc a@example.com and b@example.com, key AKIAIOSFODNN7EXAMPLE")
+    assertFalse(redacted.contains("@example.com"))
+    assertFalse(redacted.contains("AKIA"))
+    assertTrue(LocalRiskScanner.scan(redacted).findings.none { it.type == "PII" })
+  }
+
+  @Test
+  fun `redact leaves clean text alone`() {
+    assertEquals("what is the capital of France", LocalRiskScanner.redact("what is the capital of France"))
+  }
+
+  @Test
+  fun `redacted placeholders do not trip the scanner again`() {
+    val redacted = LocalRiskScanner.redact("Staging AWS key: AKIAIOSFODNN7EXAMPLE and api key is sk_live_abcdefgh1234")
+    assertTrue(redacted.contains("[SHARED API CREDENTIAL]"))
+    assertTrue(LocalRiskScanner.scan(redacted).findings.isEmpty())
+  }
 }

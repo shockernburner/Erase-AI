@@ -1,7 +1,6 @@
 package com.eraseai.firewall.guard
 
 import android.graphics.Rect
-import android.os.Build
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
@@ -9,25 +8,41 @@ import android.view.accessibility.AccessibilityNodeInfo
  * Pulls the fullest composer draft available from the accessibility tree and events.
  *
  * ChatGPT/Gemini often keep the real draft in a WebView where the focused node's [text]
- * lags behind or stays empty after paste. Pasted AWS keys were slipping through because
- * [AppSendAdapter.composerText] only read that one node.
+ * lags behind or stays empty after paste, so the editable's own descendants and the
+ * TEXT_CHANGED payload are read as well.
+ *
+ * Every candidate is confined to the located composer. An earlier version took the longest
+ * text anywhere in the lower screen, which is the assistant's reply bubble in any real
+ * conversation: a key typed under a long answer was never scanned, and a reply that quoted an
+ * email address held the curtain over every later send.
  */
 object ComposerTextExtractor {
 
   fun bestText(
-    root: AccessibilityNodeInfo?,
-    screenHeight: Int,
+    editable: AccessibilityNodeInfo,
+    editableText: String,
     event: AccessibilityEvent? = null,
   ): String {
-    val fromEvent = textFromEvent(event)
-    val fromTree = textFromTree(root, screenHeight)
-    val fromFocused = root?.let { AppSendAdapter.composerText(it) }.orEmpty()
-    return listOf(fromEvent, fromTree, fromFocused)
-      .maxByOrNull { it.length }
-      .orEmpty()
+    val composerBounds = Rect().also { editable.getBoundsInScreen(it) }
+    val fromEvent = if (isComposerTextEvent(event, composerBounds)) textFromEvent(event) else ""
+    val fromTree = textWithin(editable)
+    return pickDraft(listOf(fromEvent, fromTree, editableText))
   }
 
-  fun textFromEvent(event: AccessibilityEvent?): String {
+  /** All candidates already belong to the composer, so the fullest one is the live draft. */
+  internal fun pickDraft(candidates: List<String>): String =
+    candidates.maxByOrNull { it.length }.orEmpty()
+
+  /** Only a text change raised by the composer itself carries the draft. */
+  private fun isComposerTextEvent(event: AccessibilityEvent?, composerBounds: Rect): Boolean {
+    if (event == null || event.eventType != AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) return false
+    if (composerBounds.isEmpty) return false
+    val source = event.source ?: return false
+    val sourceBounds = Rect().also { source.getBoundsInScreen(it) }
+    return !sourceBounds.isEmpty && Rect.intersects(sourceBounds, composerBounds)
+  }
+
+  private fun textFromEvent(event: AccessibilityEvent?): String {
     if (event == null) return ""
     val chunks = event.text?.mapNotNull { it?.toString()?.trim() }.orEmpty()
     val joined = chunks.joinToString("").trim()
@@ -38,25 +53,13 @@ object ComposerTextExtractor {
     return AppSendAdapter.liveComposerText(before)
   }
 
-  private fun textFromTree(root: AccessibilityNodeInfo?, screenHeight: Int): String {
-    if (root == null || screenHeight <= 0) return ""
-    val composerBandTop = (screenHeight * 0.35f).toInt()
+  /** Longest non-placeholder text on the editable or any of its descendants. */
+  private fun textWithin(editable: AccessibilityNodeInfo): String {
     var best = ""
-    root.forEachNode { node ->
+    editable.forEachNode { node ->
       if (node.isPassword) return@forEachNode
-      val bounds = Rect().also { node.getBoundsInScreen(it) }
-      if (bounds.isEmpty || bounds.bottom < composerBandTop) return@forEachNode
-      val candidates = buildList {
-        node.text?.toString()?.trim()?.let { add(it) }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          node.hintText?.toString()?.trim()?.let { add(it) }
-        }
-        node.contentDescription?.toString()?.trim()?.let { add(it) }
-      }
-      candidates.forEach { raw ->
-        val live = AppSendAdapter.liveComposerText(raw)
-        if (live.length > best.length) best = live
-      }
+      val live = AppSendAdapter.liveComposerText(node.text?.toString().orEmpty())
+      if (live.length > best.length) best = live
     }
     return best
   }
@@ -75,5 +78,5 @@ object ComposerTextExtractor {
     }
   }
 
-  private const val MAX_NODES = 800
+  private const val MAX_NODES = 200
 }

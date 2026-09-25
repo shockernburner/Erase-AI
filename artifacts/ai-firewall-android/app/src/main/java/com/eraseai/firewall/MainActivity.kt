@@ -1,13 +1,17 @@
 package com.eraseai.firewall
 
+import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -35,6 +39,7 @@ import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,11 +50,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,6 +92,8 @@ import com.eraseai.firewall.data.ScanHistoryItem
 import com.eraseai.firewall.data.ScanPiece
 import com.eraseai.firewall.data.ScanResult
 import com.eraseai.firewall.data.loadInstalledApps
+import com.eraseai.firewall.guard.GuardHealth
+import com.eraseai.firewall.safe.SafeActivity
 import com.eraseai.firewall.guard.GuardStateStore
 import com.eraseai.firewall.ime.ImeGuardHelper
 import com.eraseai.firewall.ui.BrandCard
@@ -192,6 +201,14 @@ private fun EraseAIFirewallApp(
   var keyboardEnabled by remember { mutableStateOf(ImeGuardHelper.isEraseAiKeyboardEnabled(context)) }
   var keyboardSelected by remember { mutableStateOf(ImeGuardHelper.isEraseAiKeyboardSelected(context)) }
   var strictEgressEnabled by remember { mutableStateOf(GuardStateStore.isStrictEgressEnabled()) }
+  val accessibilityRunning by GuardHealth.accessibilityRunning.collectAsState()
+  // Re-read on a timer only while the bind grace window is open, so STARTING can age into STALLED.
+  var healthTick by remember { mutableStateOf(0) }
+  val accessibilityStatus = remember(accessibilityEnabled, accessibilityRunning, healthTick) {
+    GuardHealth.accessibilityStatus(accessibilityEnabled)
+  }
+  var egressStatus by remember { mutableStateOf(GuardHealth.egressStatus(context)) }
+  var showVpnConflictDialog by remember { mutableStateOf(false) }
   var history by remember { mutableStateOf<List<ScanHistoryItem>>(emptyList()) }
   var manualText by remember { mutableStateOf(initialSharedText.orEmpty().take(MAX_SCAN_TEXT_LENGTH)) }
   var scanResult by remember { mutableStateOf<ScanResult?>(null) }
@@ -213,7 +230,18 @@ private fun EraseAIFirewallApp(
     keyboardEnabled = ImeGuardHelper.isEraseAiKeyboardEnabled(context)
     keyboardSelected = ImeGuardHelper.isEraseAiKeyboardSelected(context)
     strictEgressEnabled = GuardStateStore.isStrictEgressEnabled()
+    egressStatus = GuardHealth.egressStatus(context)
+    healthTick++
   }
+
+  LaunchedEffect(accessibilityStatus, healthTick) {
+    if (accessibilityStatus == GuardHealth.AccessibilityStatus.STARTING) {
+      kotlinx.coroutines.delay(HEALTH_RECHECK_MS)
+      healthTick++
+    }
+  }
+
+  var pendingStrictEgressEnable by remember { mutableStateOf(false) }
 
   val vpnPermissionLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.StartActivityForResult(),
@@ -221,7 +249,83 @@ private fun EraseAIFirewallApp(
     if (result.resultCode == Activity.RESULT_OK) {
       GuardStateStore.setStrictEgressEnabled(true)
       strictEgressEnabled = true
+      pendingStrictEgressEnable = false
     }
+    egressStatus = GuardHealth.egressStatus(context)
+  }
+
+  val notificationPermissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.RequestPermission(),
+  ) { granted ->
+    if (granted && pendingStrictEgressEnable) {
+      val prepare = VpnService.prepare(context)
+      if (prepare == null) {
+        GuardStateStore.setStrictEgressEnabled(true)
+        strictEgressEnabled = true
+        pendingStrictEgressEnable = false
+      } else {
+        vpnPermissionLauncher.launch(prepare)
+      }
+    } else {
+      pendingStrictEgressEnable = false
+    }
+  }
+
+  fun enableStrictEgressGate() {
+    val prepare = VpnService.prepare(context)
+    if (prepare == null) {
+      GuardStateStore.setStrictEgressEnabled(true)
+      strictEgressEnabled = true
+      pendingStrictEgressEnable = false
+      egressStatus = GuardHealth.egressStatus(context)
+    } else {
+      vpnPermissionLauncher.launch(prepare)
+    }
+  }
+
+  fun requestStrictEgress() {
+    pendingStrictEgressEnable = true
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+      ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+      PackageManager.PERMISSION_GRANTED
+    ) {
+      notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+      enableStrictEgressGate()
+    }
+  }
+
+  // Granting VPN consent makes EraseAI the device's VPN app, which disconnects whatever VPN is
+  // running now — a work VPN or a privacy VPN the user relies on. They must choose that knowingly.
+  fun startStrictEgressFlow() {
+    if (GuardHealth.otherVpnActive(context)) {
+      showVpnConflictDialog = true
+    } else {
+      requestStrictEgress()
+    }
+  }
+
+  if (showVpnConflictDialog) {
+    AlertDialog(
+      onDismissRequest = { showVpnConflictDialog = false },
+      title = { Text("Another VPN is connected") },
+      text = {
+        Text(
+          "Android runs one VPN at a time. Turning on the Strict network gate makes EraseAI " +
+            "the VPN app and disconnects the VPN you are using now. While that other VPN is " +
+            "connected later, the Strict gate cannot run.",
+        )
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          showVpnConflictDialog = false
+          requestStrictEgress()
+        }) { Text("Continue") }
+      },
+      dismissButton = {
+        TextButton(onClick = { showVpnConflictDialog = false }) { Text("Keep my VPN") }
+      },
+    )
   }
 
   LaunchedEffect(Unit) {
@@ -358,6 +462,7 @@ private fun EraseAIFirewallApp(
     val observer = LifecycleEventObserver { _, event ->
       if (event == Lifecycle.Event.ON_RESUME) {
         refreshAccessibility()
+        GuardStateStore.refreshEgressGate()
         if (!sessionStore.getToken().isNullOrBlank()) refreshEntitlement()
       }
     }
@@ -469,6 +574,8 @@ private fun EraseAIFirewallApp(
           entitlement = entitlement,
           loading = loading,
           accessibilityEnabled = accessibilityEnabled,
+          accessibilityStatus = accessibilityStatus,
+          egressStatus = egressStatus,
           keyboardSelected = keyboardSelected,
           firewallEnabled = firewallEnabled,
           protectedAppsCount = selectedPackages.size,
@@ -493,6 +600,7 @@ private fun EraseAIFirewallApp(
           },
           onManual = { screen = Screen.ManualScan },
           onDatasetSanitizer = { screen = Screen.DatasetSanitizer },
+          onSafeFiles = { context.startActivity(Intent(context, SafeActivity::class.java)) },
           onBilling = { screen = Screen.Subscription },
           onHistory = {
             scope.launch {
@@ -634,20 +742,18 @@ private fun EraseAIFirewallApp(
           BuildConfig.API_BASE_URL,
           BuildConfig.WEB_BASE_URL,
           strictEgressEnabled = strictEgressEnabled,
+          egressStatus = egressStatus,
           onStrictEgressChange = { desired ->
             if (!desired) {
               GuardStateStore.setStrictEgressEnabled(false)
               strictEgressEnabled = false
+              pendingStrictEgressEnable = false
+              egressStatus = GuardHealth.egressStatus(context)
               return@SettingsScreen
             }
-            val prepare = VpnService.prepare(context)
-            if (prepare == null) {
-              GuardStateStore.setStrictEgressEnabled(true)
-              strictEgressEnabled = true
-            } else {
-              vpnPermissionLauncher.launch(prepare)
-            }
+            startStrictEgressFlow()
           },
+          onReconnectStrictEgress = { startStrictEgressFlow() },
           onBilling = { screen = Screen.Subscription },
           onDiagnostics = {
             refreshBackendStatus()
@@ -670,8 +776,10 @@ private fun EraseAIFirewallApp(
             backendStatus = backendStatus,
             entitlement = entitlement,
             accessibilityEnabled = accessibilityEnabled,
+            accessibilityStatus = accessibilityStatus,
             keyboardSelected = keyboardSelected,
             strictEgressEnabled = strictEgressEnabled,
+            egressStatus = egressStatus,
             firewallEnabled = firewallEnabled,
             protectedAppsCount = selectedPackages.size,
             lastScanTime = protectedStore.getLastScanTime(),
@@ -805,6 +913,8 @@ private fun DashboardScreen(
   entitlement: EntitlementState?,
   loading: Boolean,
   accessibilityEnabled: Boolean,
+  accessibilityStatus: GuardHealth.AccessibilityStatus,
+  egressStatus: GuardHealth.EgressStatus,
   keyboardSelected: Boolean,
   firewallEnabled: Boolean,
   protectedAppsCount: Int,
@@ -817,12 +927,15 @@ private fun DashboardScreen(
   onApps: () -> Unit,
   onManual: () -> Unit,
   onDatasetSanitizer: () -> Unit,
+  onSafeFiles: () -> Unit,
   onBilling: () -> Unit,
   onHistory: () -> Unit,
   onSettings: () -> Unit,
   onPrivacy: () -> Unit,
 ) {
-  val protectionActive = firewallEnabled && accessibilityEnabled && protectedAppsCount > 0
+  val serviceRunning = accessibilityStatus == GuardHealth.AccessibilityStatus.ACTIVE
+  val serviceStalled = accessibilityStatus == GuardHealth.AccessibilityStatus.STALLED
+  val protectionActive = firewallEnabled && serviceRunning && protectedAppsCount > 0
   val canUseFirewall = entitlement?.androidFirewall != false
   val canUseAccessibility = entitlement?.accessibilityFirewall != false
 
@@ -849,6 +962,11 @@ private fun DashboardScreen(
         title = if (protectionActive) "Protection active" else "Protection incomplete",
         body = when {
           !accessibilityEnabled -> "Accessibility is off — EraseAI cannot intercept Send yet."
+          serviceStalled ->
+            "Accessibility is switched on, but Android stopped the EraseAI service, so nothing " +
+              "is being checked. Turn EraseAI off and on again in Accessibility settings."
+          accessibilityStatus == GuardHealth.AccessibilityStatus.STARTING ->
+            "Starting the EraseAI service…"
           protectedAppsCount == 0 -> "No protected apps selected."
           !firewallEnabled -> "Scanning is paused. Turn it back on below."
           else -> "Scanning prompts in $protectedAppsCount protected app(s)."
@@ -859,7 +977,12 @@ private fun DashboardScreen(
 
     item {
       BrandStatRow(
-        "Accessibility" to if (accessibilityEnabled) "Enabled" else "Needed",
+        "Accessibility" to when (accessibilityStatus) {
+          GuardHealth.AccessibilityStatus.ACTIVE -> "Running"
+          GuardHealth.AccessibilityStatus.STARTING -> "Starting…"
+          GuardHealth.AccessibilityStatus.STALLED -> "Not running"
+          GuardHealth.AccessibilityStatus.OFF -> "Needed"
+        },
         "Keyboard" to if (keyboardSelected) "EraseAI" else "System",
       )
     }
@@ -921,12 +1044,23 @@ private fun DashboardScreen(
       }
     }
 
+    if (egressStatus == GuardHealth.EgressStatus.OTHER_VPN ||
+      egressStatus == GuardHealth.EgressStatus.PERMISSION_LOST
+    ) {
+      item { BrandErrorBanner(egressStatusMessage(egressStatus)) }
+    }
+
     item {
       when {
         !accessibilityEnabled -> BrandPrimaryButton(
           text = "Enable EraseAI Firewall",
           onClick = onEnable,
           enabled = canUseAccessibility,
+          icon = Icons.Default.Shield,
+        )
+        serviceStalled -> BrandPrimaryButton(
+          text = "Restart EraseAI in Accessibility",
+          onClick = onEnable,
           icon = Icons.Default.Shield,
         )
         protectedAppsCount == 0 -> BrandPrimaryButton(
@@ -997,6 +1131,7 @@ private fun DashboardScreen(
         enabled = entitlement?.manualScan != false,
       )
     }
+    item { BrandSecondaryButton("EraseAI Safe files", onSafeFiles) }
     item { BrandSecondaryButton("Dataset Sanitizer", onDatasetSanitizer) }
     item {
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1363,7 +1498,9 @@ private fun SettingsScreen(
   apiBase: String,
   webBase: String,
   strictEgressEnabled: Boolean,
+  egressStatus: GuardHealth.EgressStatus,
   onStrictEgressChange: (Boolean) -> Unit,
+  onReconnectStrictEgress: () -> Unit,
   onBilling: () -> Unit,
   onDiagnostics: () -> Unit,
   onPrivacy: () -> Unit,
@@ -1388,6 +1525,18 @@ private fun SettingsScreen(
               style = MaterialTheme.typography.bodySmall,
               color = BrandMutedForeground,
             )
+            if (egressStatus == GuardHealth.EgressStatus.OTHER_VPN ||
+              egressStatus == GuardHealth.EgressStatus.PERMISSION_LOST
+            ) {
+              Text(
+                egressStatusMessage(egressStatus),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+              )
+              if (egressStatus == GuardHealth.EgressStatus.PERMISSION_LOST) {
+                TextButton(onClick = onReconnectStrictEgress) { Text("Reconnect gate") }
+              }
+            }
           }
           Switch(
             checked = strictEgressEnabled,
@@ -1526,8 +1675,10 @@ private fun buildDiagnosticsReport(
   backendStatus: String,
   entitlement: EntitlementState?,
   accessibilityEnabled: Boolean,
+  accessibilityStatus: GuardHealth.AccessibilityStatus,
   keyboardSelected: Boolean,
   strictEgressEnabled: Boolean,
+  egressStatus: GuardHealth.EgressStatus,
   firewallEnabled: Boolean,
   protectedAppsCount: Int,
   lastScanTime: String,
@@ -1539,14 +1690,31 @@ private fun buildDiagnosticsReport(
   "auth_status=${if (entitlement?.authenticated == true) "authenticated" else "unknown"}",
   "entitlement_status=${entitlement?.status ?: "unknown"}",
   "accessibility_permission=${if (accessibilityEnabled) "enabled" else "disabled"}",
+  "accessibility_service=${accessibilityStatus.name.lowercase()}",
+  "accessibility_last_event=${GuardHealth.lastEventAtMs.takeIf { it > 0 }?.let { "${(System.currentTimeMillis() - it) / 1000}s ago" } ?: "never"}",
   "eraseai_keyboard_selected=${if (keyboardSelected) "yes" else "no"}",
   "strict_egress_gate=${if (strictEgressEnabled) "on" else "off"}",
+  "strict_egress_status=${egressStatus.name.lowercase()}",
+  "egress_armed=${GuardStateStore.getArmedPackage() ?: "none"}",
+  "egress_blocked=${if (GuardStateStore.isEgressBlocked()) "yes" else "no"}",
   "firewall_scanning=${if (firewallEnabled) "on" else "off"}",
   "protected_apps_count=$protectedAppsCount",
   "last_scan_time=$lastScanTime",
   "last_scan_result_type=$lastScanResultType",
   "last_error_category=$lastErrorCategory",
 ).joinToString("\n")
+
+private fun egressStatusMessage(status: GuardHealth.EgressStatus): String = when (status) {
+  GuardHealth.EgressStatus.OTHER_VPN ->
+    "Strict network gate paused: another VPN is connected, and Android runs one VPN at a time. " +
+      "The send curtain and keyboard still protect you."
+  GuardHealth.EgressStatus.PERMISSION_LOST ->
+    "Strict network gate is not active: EraseAI lost VPN permission, usually because another " +
+      "VPN app was connected. Reconnect to restore it."
+  else -> ""
+}
+
+private const val HEALTH_RECHECK_MS = 3_000L
 
 private fun isAccessibilityEnabled(context: Context): Boolean {
   val expected = ComponentName(context, "${context.packageName}.guard.AiGuardAccessibilityService")

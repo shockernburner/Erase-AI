@@ -1,16 +1,20 @@
 package com.eraseai.firewall.ime
 
+import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.InputType
+import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.eraseai.firewall.data.ProtectedAppsStore
 import com.eraseai.firewall.guard.GuardLog
 import com.eraseai.firewall.guard.GuardStateStore
@@ -57,10 +61,34 @@ class EraseAiKeyboardService : InputMethodService() {
     )
     root.addView(gate)
     root.addView(keyboard)
+    // Edge-to-edge IME windows draw under the navigation bar, whose keyboard-switcher button
+    // then sat on top of the gate's "Insert anyway" action.
+    ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+      val navBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+      view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, navBottom)
+      insets
+    }
     rootLayout = root
     gateView = gate
     keyboardView = keyboard
     return root
+  }
+
+  /**
+   * With a physical keyboard attached (tablets, Chromebooks, DeX, Bluetooth keyboards) the
+   * platform hides soft keyboards by default, and this one never appeared. The gate strip is
+   * the only place a withheld prompt can be released or discarded — hidden, the text simply
+   * vanished from the composer — so it is always shown; only the key rows collapse.
+   */
+  override fun onEvaluateInputViewShown(): Boolean {
+    super.onEvaluateInputViewShown()
+    return true
+  }
+
+  private fun hasHardwareKeyboard(): Boolean {
+    val config = resources.configuration
+    return config.keyboard != Configuration.KEYBOARD_NOKEYS &&
+      config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO
   }
 
   override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
@@ -68,7 +96,7 @@ class EraseAiKeyboardService : InputMethodService() {
     editorInfo = info
     targetPackage = info?.packageName
     withheldText = null
-    keyboardView?.visibility = View.VISIBLE
+    keyboardView?.visibility = if (hasHardwareKeyboard()) View.GONE else View.VISIBLE
     keyboardView?.updateEditorInfo(info)
     gateView?.showIdle(protectionActive(info))
     clearGuardState()
@@ -86,6 +114,20 @@ class EraseAiKeyboardService : InputMethodService() {
     super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
     if (withheldText != null) return
     evaluateBuffer(commit = false)
+  }
+
+  /**
+   * Physical keys reach the host directly unless the IME consumes them. While a prompt is held
+   * the soft keys are already inert; without this, hardware typing kept landing in the
+   * composer, and releasing the held text then spliced it in after whatever was typed since.
+   */
+  override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+    if (withheldText != null && (event.isPrintingKey || keyCode == KeyEvent.KEYCODE_ENTER ||
+        keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_SPACE)
+    ) {
+      return true
+    }
+    return super.onKeyDown(keyCode, event)
   }
 
   private fun protectionActive(info: EditorInfo?): Boolean {
@@ -274,15 +316,7 @@ class EraseAiKeyboardService : InputMethodService() {
 
   private fun sanitizeWithheldText() {
     val text = withheldText ?: return
-    val scan = LocalRiskScanner.scan(text)
-    val redacted = scan.findings
-      .sortedByDescending { it.start }
-      .fold(StringBuilder(text)) { acc, finding ->
-        val start = finding.start.coerceIn(0, acc.length)
-        val end = finding.end.coerceIn(start, acc.length)
-        acc.replace(start, end, "[${finding.type}]")
-      }
-      .toString()
+    val redacted = LocalRiskScanner.redact(text)
 
     GuardStateStore.grantEgressWindow()
     currentInputConnection?.commitText(redacted, 1)

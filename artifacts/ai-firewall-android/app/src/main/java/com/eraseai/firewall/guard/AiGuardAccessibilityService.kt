@@ -35,6 +35,7 @@ import com.eraseai.firewall.data.ScanApi
 import com.eraseai.firewall.data.ScanFinding
 import com.eraseai.firewall.data.ScanPiece
 import com.eraseai.firewall.data.ScanResult
+import com.eraseai.firewall.safe.SafeServedRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -65,9 +66,17 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private var curtainPackage: String? = null
 
   /** Risky text found while typing, awaiting a user decision. */
-  private data class PendingRisk(val text: String, val scan: LocalRiskScanner.LocalScan)
+  private data class PendingRisk(
+    val text: String,
+    val scan: LocalRiskScanner.LocalScan,
+    val unscannedAttachments: List<AttachmentHint> = emptyList(),
+  ) {
+    /** An unscanned file with a clean prompt still holds send, at warning level. */
+    val level: String get() = if (scan.shouldWarn) scan.level else "medium"
+  }
 
   private var pendingRisk: PendingRisk? = null
+  private var riskSeenAt = 0L
 
   /** Text the user explicitly approved for sending; re-gating it would trap them in a loop. */
   private var decidedText: String? = null
@@ -81,7 +90,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
         AccessibilityEvent.TYPE_VIEW_FOCUSED or
         AccessibilityEvent.TYPE_VIEW_CLICKED or
         AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
-        AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+        AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
+        AccessibilityEvent.TYPE_WINDOWS_CHANGED
       feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
       flags = flags or
         AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS or
@@ -89,6 +99,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
         AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
       notificationTimeout = 250
     }
+    GuardHealth.onServiceConnected()
+    // A (re)bind — after an app update, a crash or the user re-enabling the service — can land
+    // while a risky draft is already sitting in the composer. No event will announce it, so
+    // gate whatever is in front of the user now instead of waiting for the next keystroke.
+    rootInActiveWindow?.packageName?.toString()
+      ?.takeIf { !shouldSkipSystemSurface(it) && protectedAppsStore.isProtected(it) }
+      ?.let { pkg ->
+        activeProtectedPackage = pkg
+        evaluateComposer(pkg)
+      }
   }
 
   override fun onCreate() {
@@ -100,6 +120,13 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+    GuardHealth.onEvent()
+    if (event?.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
+      // The IME window appearing or leaving moves the composer, and hosts do not reliably
+      // raise a content change for it — the band has to follow from this event instead.
+      curtainPackage?.takeIf { pendingRisk != null && !gateInProgress }?.let { repinCurtainKeepingGuard(it, "windows-changed") }
+      return
+    }
     val packageName = event?.packageName?.toString() ?: return
     if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
       handleForegroundChange(packageName)
@@ -139,7 +166,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (!protectedAppsStore.isProtected(packageName) || !protectedAppsStore.isFirewallEnabled()) return false
 
     val pending = pendingRisk ?: return false
-    GuardLog.gate("hardware-enter", packageName, "level=${pending.scan.level}")
+    GuardLog.gate("hardware-enter", packageName, "level=${pending.level}")
     openGate(packageName, pending.text, pending.scan)
     return true
   }
@@ -153,7 +180,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     val pkg = curtainPackage ?: return
     if (gateInProgress) {
       val target = ComposerLocator.locate(this, pkg) ?: return
-      val level = pendingRisk?.scan?.level ?: "high"
+      val level = pendingRisk?.level ?: "high"
       curtain.show(target.submitZone, level, pkg, target.submitZoneMode, guardActive = true) {
         openGateFromCurtain(pkg)
       }
@@ -167,7 +194,13 @@ class AiGuardAccessibilityService : AccessibilityService() {
     releaseCurtain("service-interrupt")
   }
 
+  override fun onUnbind(intent: Intent?): Boolean {
+    GuardHealth.onServiceStopped()
+    return super.onUnbind(intent)
+  }
+
   override fun onDestroy() {
+    GuardHealth.onServiceStopped()
     removeOverlay()
     releaseCurtain("service-destroyed")
     handler.removeCallbacksAndMessages(null)
@@ -225,6 +258,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     val target = ComposerLocator.locate(this, packageName)
     if (target == null) {
+      if (holdThroughTransient(packageName, "composer-missing")) return
       releaseCurtain("composer-missing")
       return
     }
@@ -232,42 +266,75 @@ class AiGuardAccessibilityService : AccessibilityService() {
     activeNode = target.editable
     pendingSendNode = target.sendNode
 
-    val dm = resources.displayMetrics
-    val text = ComposerTextExtractor.bestText(target.root, dm.heightPixels, event)
-      .ifBlank { target.text }
+    val text = ComposerTextExtractor.bestText(target.editable, target.text, event)
       .take(MAX_SCAN_TEXT_LENGTH)
-    if (text.length < MIN_SCAN_LENGTH) {
+    // A file with an empty or harmless prompt used to stand the guard down entirely — a
+    // document full of keys went out with send fully exposed. Anything attached that did not
+    // come from EraseAI Safe now holds send just like a risky prompt does.
+    val attachments = attachmentsIn(target)
+    val unscanned = attachments.filter { !it.safe }
+    val hasText = text.length >= MIN_SCAN_LENGTH
+    if (!hasText && unscanned.isEmpty()) {
+      if (holdThroughTransient(packageName, "composer-empty")) return
       releaseCurtain("composer-empty")
       return
     }
-    if (text == decidedText) {
+    if (text == decidedText && unscanned.isEmpty()) {
       releaseCurtain("user-decided")
       return
     }
-    GuardLog.composer(packageName, text.length, target.actionRow, "extractor event=${event != null}")
+    GuardLog.composer(packageName, text.length, target.actionRow, "extractor event=${event != null} safe=${attachments.size - unscanned.size} unscanned=${unscanned.size}")
 
-    val local = LocalRiskScanner.scan(text)
-    if (!local.shouldWarn) {
+    val local = LocalRiskScanner.scan(if (hasText) text else "")
+    if (!local.shouldWarn && unscanned.isEmpty()) {
+      if (holdThroughTransient(packageName, "no-findings-partial")) return
       GuardLog.event("scan.clear", packageName, "len=${text.length}")
       releaseCurtain("no-findings")
       maybePreviewApiScan(packageName, text)
       return
     }
 
-    pendingRisk = PendingRisk(text, local)
-    protectedAppsStore.saveLastScanSummary(local.summary(), local.level)
+    val pending = PendingRisk(text, local, unscanned)
+    pendingRisk = pending
+    riskSeenAt = System.currentTimeMillis()
+    protectedAppsStore.saveLastScanSummary(
+      if (local.shouldWarn) local.summary() else "Unscanned attachment held",
+      pending.level,
+    )
+    // Arm Strict VPN before mounting the curtain so egress starts while the overlay blocks send.
     GuardStateStore.setArmed(packageName)
-    curtain.show(target.submitZone, local.level, packageName, target.submitZoneMode, guardActive = true) {
+    curtain.show(target.submitZone, pending.level, packageName, target.submitZoneMode, guardActive = true) {
       openGateFromCurtain(packageName)
     }
+    startRepinTicker(packageName)
 
-    GuardLog.risk(packageName, local.level, local.riskScore, local.findings.size)
-    maybePreviewApiScan(packageName, text)
+    GuardLog.risk(packageName, pending.level, local.riskScore, local.findings.size + unscanned.size)
+    if (hasText) maybePreviewApiScan(packageName, text)
+  }
+
+  private fun attachmentsIn(target: ComposerLocator.ComposerTarget): List<AttachmentHint> =
+    AttachmentHints.extract(
+      ComposerLocator.composerContainer(target.editable, resources.displayMetrics.heightPixels),
+      draft = target.editable,
+    ) { label -> SafeServedRegistry.wasServed(this, label) }
+
+  /**
+   * Hosts briefly report an empty, missing or half-pasted composer while they re-render, and
+   * dropping the curtain in that gap exposes send. The hold is bounded: once the draft has
+   * really been cleared or edited clean, the band must come down, or the user is left with a
+   * send control they can never reach again.
+   */
+  private fun holdThroughTransient(packageName: String, reason: String): Boolean {
+    if (pendingRisk == null) return false
+    if (System.currentTimeMillis() - riskSeenAt > TRANSIENT_HOLD_MS) return false
+    GuardLog.curtain("hold", packageName, reason)
+    scheduleComposerEvaluation(packageName)
+    return true
   }
 
   private fun openGateFromCurtain(packageName: String) {
     val pending = pendingRisk ?: return
-    GuardLog.gate("curtain-tapped", packageName, "level=${pending.scan.level}")
+    GuardLog.gate("curtain-tapped", packageName, "level=${pending.level}")
     openGate(packageName, pending.text, pending.scan)
   }
 
@@ -312,7 +379,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
       activeNode = it.editable
       pendingSendNode = it.sendNode
     }
-    val attachments = target?.root?.let { AttachmentHints.extract(it) } ?: emptyList()
+    // Files served by EraseAI Safe are already redacted; only the rest need a decision.
+    val attachments = target?.let { attachmentsIn(it) }?.filter { !it.safe } ?: emptyList()
     if (attachments.isNotEmpty()) {
       GuardLog.gate("attachments", packageName, "labels=${attachments.joinToString("|") { it.label }}")
     }
@@ -518,8 +586,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
       blockSendAnyway ->
         "EraseAI blocked this send due to high-risk content: $summary. Cancel to stay safe."
       hasFileBlocker && result.findings.isEmpty() ->
-        "An attachment was detected but cannot be scanned inside this AI app. " +
-          "Remove the file, Cancel, or explicitly Send Anyway after you review the risk."
+        "This file was attached directly, so EraseAI cannot check it. Remove it and attach " +
+          "it again from EraseAI Safe (+ → Files → ☰ → EraseAI Safe) to send a redacted copy, " +
+          "or Send Anyway after you review it."
       hasFileBlocker ->
         "EraseAI found $summary. Attachments are unscanned — Sanitize only rewrites the prompt text."
       else -> "EraseAI found $summary before sending to AI."
@@ -717,6 +786,15 @@ class AiGuardAccessibilityService : AccessibilityService() {
     val originalText = overlayText ?: return
     serviceScope.launch {
       scanApi.rewrite(originalText, findings)
+        .recoverCatching { err ->
+          // An expired session or a dead network must not turn Sanitize into a no-op: the
+          // on-device rules cover the same secrets, so redact locally. Plan gating stays.
+          if (err is ApiError.UpgradeRequired) throw err
+          GuardLog.warn("sanitize.local-fallback", overlayPackageName, "category=${err.errorCategory()}")
+          LocalRiskScanner.redact(originalText).also { redacted ->
+            check(LocalRiskScanner.scan(redacted).findings.none { it.type == "PII" }) { "local redaction incomplete" }
+          }
+        }
         .onSuccess { rewritten ->
           val replaced = writeComposerText(rewritten)
           // The rewritten prompt is what the user agreed to send. Without this the next
@@ -806,22 +884,44 @@ class AiGuardAccessibilityService : AccessibilityService() {
     safeAutoSendRunnable = null
     gateInProgress = false
     removeOverlay()
+    GuardStateStore.setArmed(packageName)
     // Re-pin immediately — a debounced pass after keyboard hide left send exposed below the band.
-    repinCurtainKeepingGuard(packageName)
+    repinCurtainKeepingGuard(packageName, "after-cancel")
+    // The keyboard usually comes back a beat after Cancel and lifts the composer above the band
+    // just placed; the ticker keeps following it even if the host raises no event for that.
+    startRepinTicker(packageName)
   }
 
-  private fun repinCurtainKeepingGuard(packageName: String) {
+  private fun repinCurtainKeepingGuard(packageName: String, reason: String) {
     val pending = pendingRisk ?: return
     val target = ComposerLocator.locate(this, packageName) ?: return
     activeNode = target.editable
     pendingSendNode = target.sendNode
-    val dm = resources.displayMetrics
-    val editableBounds = android.graphics.Rect().also { target.editable.getBoundsInScreen(it) }
-    val zone = ComposerGeometry.geometrySubmitZone(dm.widthPixels, dm.heightPixels, editableBounds)
-    curtain.show(zone, pending.scan.level, packageName, "geometry", guardActive = true) {
+    curtain.show(target.submitZone, pending.level, packageName, target.submitZoneMode, guardActive = true) {
       openGateFromCurtain(packageName)
     }
-    GuardLog.curtain("repin", packageName, "after-cancel")
+    if (reason != "tick") GuardLog.curtain("repin", packageName, reason)
+  }
+
+  /**
+   * Re-measures the band while a risk is pending. Keyboard show/hide and host re-layouts do
+   * not reliably produce accessibility events, and a band left at a stale position exposes
+   * send for as long as the host stays quiet. One composer lookup per tick is cheap, and the
+   * ticker stops itself as soon as the guard stands down.
+   */
+  private val repinTicker = object : Runnable {
+    override fun run() {
+      val pkg = curtainPackage ?: return
+      if (pendingRisk == null || !curtain.isShowing || gateInProgress) return
+      repinCurtainKeepingGuard(pkg, "tick")
+      handler.postDelayed(this, REPIN_TICK_MS)
+    }
+  }
+
+  private fun startRepinTicker(packageName: String) {
+    curtainPackage = packageName
+    handler.removeCallbacks(repinTicker)
+    handler.postDelayed(repinTicker, REPIN_TICK_MS)
   }
 
   private fun handleForegroundChange(packageName: String) {
@@ -833,6 +933,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
     }
     val left = activeProtectedPackage ?: return
     if (packageName == left) return
+    // Our own toast/overlay, System UI, the platform's keyboard picker and the keyboard itself
+    // all raise window-state events without the user leaving the AI app. Treating those as an
+    // exit dropped the curtain over a risky draft that was still one tap from send.
+    if (isTransientSurface(packageName)) return
     GuardLog.event("foreground.left", left, "next=$packageName")
     activeProtectedPackage = null
     releaseCurtain("left-protected-app")
@@ -907,6 +1011,12 @@ class AiGuardAccessibilityService : AccessibilityService() {
     overlayPieces = emptyList()
   }
 
+  private fun isTransientSurface(packageName: String): Boolean {
+    if (shouldSkipSystemSurface(packageName) || packageName == "android") return true
+    val imm = getSystemService(android.view.inputmethod.InputMethodManager::class.java) ?: return false
+    return runCatching { imm.enabledInputMethodList.any { it.packageName == packageName } }.getOrDefault(false)
+  }
+
   private fun shouldSkipSystemSurface(packageName: String): Boolean {
     return packageName == "com.android.systemui" || packageName == applicationContext.packageName
   }
@@ -938,6 +1048,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   companion object {
     private const val PREVIEW_DEBOUNCE_MS = 50L
+    private const val TRANSIENT_HOLD_MS = 1_500L
+    private const val REPIN_TICK_MS = 200L
     private const val COMPOSER_BURST_INTERVAL_MS = 120L
     private const val COMPOSER_BURST_PASSES = 4
     private const val MIN_PREVIEW_INTERVAL_MS = 4000L

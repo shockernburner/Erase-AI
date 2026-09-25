@@ -9,4 +9,5 @@
   <string name="privacy_policy_url">https://eraseai.ai/privacy</string>
   <string name="ime_label">EraseAI Keyboard</string>
   <string name="ime_subtype_label">EraseAI Keyboard</string>
+  <string name="safe_share_label">Save to EraseAI Safe</string>
 </resources>

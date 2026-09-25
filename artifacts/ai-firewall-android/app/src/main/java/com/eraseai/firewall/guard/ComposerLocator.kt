@@ -3,6 +3,7 @@ package com.eraseai.firewall.guard
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 
 /**
  * Finds the AI app's composer across *all* interactive windows.
@@ -33,22 +34,27 @@ object ComposerLocator {
   fun locate(service: AccessibilityService, packageName: String): ComposerTarget? {
     val dm = service.resources.displayMetrics
     val roots = candidateRoots(service, packageName)
+    val imeTop = imeWindowTop(service)
     var fallback: ComposerTarget? = null
 
     roots.forEach { root ->
-      val editable = AppSendAdapter.findComposerEditable(root) ?: return@forEach
+      val editable = AppSendAdapter.findComposerEditable(root, dm.heightPixels) ?: return@forEach
       if (editable.isPassword) return@forEach
-      val text = AppSendAdapter.composerText(root)
-      val sendNode = AppSendAdapter.findSendButton(root, packageName)
+      // Cached node bounds go stale when the keyboard lifts the composer without the host
+      // raising a content change; measuring the cache put the band where send used to be.
+      editable.refresh()
+      val text = AppSendAdapter.editableText(editable)
+      val sendNode = AppSendAdapter.findSendButton(root, packageName)?.also { it.refresh() }
       val row = actionRowBounds(editable, sendNode)
       val editableBounds = Rect().also { editable.getBoundsInScreen(it) }
-      val (submitZone, submitZoneMode) = ComposerGeometry.submitZone(
+      val (measuredZone, submitZoneMode) = ComposerGeometry.submitZone(
         row = row,
         sendNode = sendNode,
         screenWidth = dm.widthPixels,
         screenHeight = dm.heightPixels,
         editableBounds = editableBounds,
       )
+      val submitZone = ComposerGeometry.clampAboveIme(measuredZone, imeTop)
       val target = ComposerTarget(
         editable = editable,
         root = root,
@@ -70,6 +76,40 @@ object ComposerLocator {
     GuardLog.window(packageName, fallback?.windowId ?: -1, roots.size, found = fallback != null)
     return fallback
   }
+
+  /**
+   * The composer card: the highest ancestor of [editable] that is still a bottom-sheet-sized
+   * block rather than the whole conversation. Pending attachment chips live inside it; reply
+   * bubbles do not, so scanning only this subtree keeps "screenshots" or "image" in the
+   * assistant's answer from being reported as an unscanned attachment.
+   */
+  fun composerContainer(editable: AccessibilityNodeInfo, screenHeight: Int): AccessibilityNodeInfo {
+    val maxHeight = (screenHeight * COMPOSER_CONTAINER_MAX_FRACTION).toInt()
+    var best = editable
+    var parent = editable.parent
+    var depth = 0
+    while (parent != null && depth < 8) {
+      val bounds = Rect().also { parent!!.getBoundsInScreen(it) }
+      if (bounds.isEmpty || bounds.height() > maxHeight) break
+      best = parent
+      parent = parent.parent
+      depth++
+    }
+    return best
+  }
+
+  /**
+   * Top edge of the visible keyboard, straight from the window manager. Unlike node bounds it
+   * is never stale, so it is the one reliable signal for where the composer row must now sit.
+   */
+  private fun imeWindowTop(service: AccessibilityService): Int? = runCatching {
+    val dm = service.resources.displayMetrics
+    service.windows
+      .firstOrNull { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+      ?.let { window -> Rect().also { window.getBoundsInScreen(it) } }
+      ?.takeIf { ComposerGeometry.isDockedIme(it, dm.widthPixels, dm.heightPixels) }
+      ?.top
+  }.getOrNull()
 
   private fun candidateRoots(
     service: AccessibilityService,
@@ -111,6 +151,7 @@ object ComposerLocator {
     var parent = editable.parent
     var depth = 0
     while (parent != null && depth < 4) {
+      parent.refresh()
       val bounds = Rect().also { parent!!.getBoundsInScreen(it) }
       val growsSideways = bounds.width() > row.width()
       val staysHorizontal = bounds.height() <= editableBounds.height() * 3
@@ -121,4 +162,5 @@ object ComposerLocator {
     return row
   }
 
+  private const val COMPOSER_CONTAINER_MAX_FRACTION = 0.4f
 }
