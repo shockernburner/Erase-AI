@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 
 export const PINNED_EXTENSION_ID: string;
+export const STORE_EXTENSION_IDS: readonly string[];
 
 export function buildAllowedOrigins(opts?: {
   extensionId?: string | null;

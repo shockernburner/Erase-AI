@@ -5,8 +5,8 @@ Source of truth for the store listing text and assets. The **title** and
 with an upload; everything else below is pasted into the Developer Dashboard
 (Store listing tab) and can be edited without a new version.
 
-Listing URL (pinned extension ID):
-<https://chromewebstore.google.com/detail/bhcdkolfchcihbiakkbkfpfpempgdgji>
+Listing URL (Chrome Web Store ID `hckhbadbpkihjpooeljdocgidelcampp`):
+<https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp>
 
 ---
 
@@ -127,7 +127,7 @@ No voice-over needed; use on-screen captions so it works muted.
 Always add a `utm_source` so the Developer Dashboard can attribute installs:
 
 ```
-https://chromewebstore.google.com/detail/bhcdkolfchcihbiakkbkfpfpempgdgji?utm_source=<channel>&utm_medium=<type>&utm_campaign=launch
+https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp?utm_source=<channel>&utm_medium=<type>&utm_campaign=launch
 ```
 
 Suggested `utm_source` values: `site`, `reddit`, `hackernews`,

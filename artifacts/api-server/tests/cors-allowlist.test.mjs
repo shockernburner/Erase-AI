@@ -18,6 +18,7 @@ import crypto from "node:crypto";
 import express from "express";
 import {
   PINNED_EXTENSION_ID,
+  STORE_EXTENSION_IDS,
   buildAllowedOrigins,
   isOriginAllowed,
   createCorsMiddleware,
@@ -228,5 +229,16 @@ describe("createCorsMiddleware — Express integration", () => {
     // Stripe webhooks, healthz curls, etc. — nothing CORS-related is set,
     // and that's fine because the browser isn't involved.
     assert.equal(res.headers["access-control-allow-origin"], undefined);
+  });
+});
+
+describe("published store IDs are allowed without any environment config", () => {
+  test("the Chrome Web Store listing's extension ID is in the default allow-list", () => {
+    // Production had no PUBLISHED_EXTENSION_IDS set, so the store install's
+    // preflight was rejected with 403. The store ID must be allowed by default.
+    assert.ok(STORE_EXTENSION_IDS.includes("hckhbadbpkihjpooeljdocgidelcampp"));
+    const set = buildAllowedOrigins();
+    assert.ok(set.has("chrome-extension://hckhbadbpkihjpooeljdocgidelcampp"));
+    assert.ok(set.has(`chrome-extension://${PINNED_EXTENSION_ID}`));
   });
 });

@@ -57,7 +57,9 @@ describe("growth policy", () => {
   it("tags every outbound link and keeps the uninstall URL free of user data", () => {
     const uninstall = new URL(G.urls.uninstall("1.4.4"));
     expect([...uninstall.searchParams.keys()].sort()).toEqual(["utm_medium", "utm_source", "v"]);
-    expect(G.urls.review()).toContain(`/detail/${G.EXTENSION_ID}/reviews`);
+    // The published Chrome Web Store listing (store-assigned ID, not the pinned dev ID).
+    expect(G.EXTENSION_ID).toBe("hckhbadbpkihjpooeljdocgidelcampp");
+    expect(G.urls.review()).toContain(`/detail/eraseai-firewall/${G.EXTENSION_ID}/reviews`);
     expect(new URL(G.urls.welcome("1.4.4")).searchParams.get("utm_medium")).toBe("install");
   });
 });

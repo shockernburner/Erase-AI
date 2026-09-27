@@ -7,6 +7,14 @@ import cors from "cors";
 // § 0 for how this ID is derived.
 export const PINNED_EXTENSION_ID = "bhcdkolfchcihbiakkbkfpfpempgdgji";
 
+// IDs the stores assigned to the published extension. The store build strips
+// the manifest `key`, so the Chrome Web Store install has its own ID; it is
+// allowed here by default so production does not depend on remembering to
+// set PUBLISHED_EXTENSION_IDS (which was missing, and the preflight 403'd).
+export const STORE_EXTENSION_IDS = Object.freeze([
+  "hckhbadbpkihjpooeljdocgidelcampp", // Chrome Web Store
+]);
+
 export function buildAllowedOrigins({
   extensionId = PINNED_EXTENSION_ID,
   extensionIds = null,
@@ -19,7 +27,7 @@ export function buildAllowedOrigins({
   // Accept both the legacy single-ID input (`extensionId`) and the new
   // list input (`extensionIds`) so the Chrome Web Store published ID
   // can be added alongside the pinned dev ID without dropping either.
-  const ids = new Set();
+  const ids = new Set(STORE_EXTENSION_IDS);
   if (extensionId) ids.add(extensionId);
   if (Array.isArray(extensionIds)) {
     for (const id of extensionIds) {

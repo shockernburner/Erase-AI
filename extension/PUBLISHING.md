@@ -189,11 +189,21 @@ build` and upload the `…-store-<v>.zip` it produces.
 
 ### After the first publish: allow-listing the published extension ID
 
-Once the Chrome Web Store assigns the published extension a permanent
-ID, that ID is **different** from the dev unpacked ID we pin via `key`.
-The api-server CORS allow-list accepts both via the
-`PUBLISHED_EXTENSION_IDS` environment variable
-(`artifacts/api-server/src/middlewares/corsMiddleware.ts`):
+The Chrome Web Store assigned the published extension
+**`hckhbadbpkihjpooeljdocgidelcampp`**
+(<https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp>).
+It is **different** from the dev unpacked ID we pin via `key`, because the
+store build strips `key`.
+
+Store IDs are allow-listed in code, in `STORE_EXTENSION_IDS`
+(`artifacts/api-server/src/lib/security/cors-source.mjs`) — add the Edge and
+Firefox IDs there when those stores assign them. The listing URL is also
+used by `extension/src/growth.js` (review link) and
+`artifacts/eraseai/src/lib/extensionStore.ts` (site "Add to Chrome" links).
+
+The `PUBLISHED_EXTENSION_IDS` environment variable
+(`artifacts/api-server/src/middlewares/corsMiddleware.ts`) still works for
+adding an ID without a code change:
 
 ```sh
 # Comma-separated; supports the Edge and Firefox IDs too once those

@@ -11,8 +11,10 @@
 // "Report a problem" path next to "Rate" and no incentive — the Chrome Web
 // Store forbids manipulating ratings.
 (function (root) {
-  const EXTENSION_ID = "bhcdkolfchcihbiakkbkfpfpempgdgji";
-  const STORE_URL = `https://chromewebstore.google.com/detail/${EXTENSION_ID}`;
+  // Chrome Web Store ID of the published listing (not the pinned dev ID in
+  // manifest.json's `key`, which the store build strips).
+  const EXTENSION_ID = "hckhbadbpkihjpooeljdocgidelcampp";
+  const STORE_URL = `https://chromewebstore.google.com/detail/eraseai-firewall/${EXTENSION_ID}`;
   const SITE = "https://eraseai.ai";
 
   const REVIEW_MIN_PROTECTED = 3;

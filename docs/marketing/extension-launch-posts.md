@@ -30,7 +30,7 @@ anything.
 
 ## Links (one per channel, so installs are attributable)
 
-Base: `https://chromewebstore.google.com/detail/bhcdkolfchcihbiakkbkfpfpempgdgji`
+Base: `https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp`
 
 | Channel | Append |
 |---|---|
@@ -67,7 +67,7 @@ Things you'll probably ask:
 
 Free to install; the on-device checks don't need an account. Would love feedback, especially false positives and things it should have caught.
 
-https://chromewebstore.google.com/detail/bhcdkolfchcihbiakkbkfpfpempgdgji?utm_source=hackernews&utm_medium=post&utm_campaign=launch
+https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp?utm_source=hackernews&utm_medium=post&utm_campaign=launch
 ```
 
 **Prepared answers for the thread** (reply fast in the first 2 hours):
