@@ -1,4 +1,5 @@
-import { ShieldX, Shield, ArrowRight, MessageCircle, Mail } from "lucide-react";
+import { ShieldX, Shield, ArrowRight, MessageCircle, Mail, Chromium } from "lucide-react";
+import { chromeStoreLink } from "@/lib/extensionStore";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -16,6 +17,14 @@ export function SeoNav() {
         </a>
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
           <a href={`${BASE}ai-firewall`} className="hover:text-primary transition-colors">AI Firewall</a>
+          <a
+            href={chromeStoreLink("seo-nav")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Chrome Extension
+          </a>
           <a href={`${BASE}ai-prompt-security`} className="hover:text-primary transition-colors">Prompt Security</a>
           <a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a>
         </nav>
@@ -98,6 +107,21 @@ export function CtaButton({ text = "Try EraseAI" }: { text?: string }) {
     >
       {text}
       <ArrowRight className="w-4 h-4" />
+    </a>
+  );
+}
+
+/** "Add to Chrome" call to action; [placement] tags the click for install attribution. */
+export function AddToChromeButton({ placement, text = "Add to Chrome — it's free" }: { placement: string; text?: string }) {
+  return (
+    <a
+      href={chromeStoreLink(placement)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-primary text-primary-foreground text-base font-bold shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] hover:scale-105 transition-all"
+    >
+      <Chromium className="w-5 h-5" />
+      {text}
     </a>
   );
 }

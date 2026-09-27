@@ -264,6 +264,26 @@ async function ensureBurstLimitHitsTable() {
   }
 }
 
+// Anonymous extension uninstall survey (POST /api/extension/uninstall-feedback).
+// No user id, email or IP is stored — only the reason, an optional short
+// comment and the extension version.
+async function ensureExtensionUninstallFeedbackTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS extension_uninstall_feedback (
+        id SERIAL PRIMARY KEY,
+        reason VARCHAR(32) NOT NULL,
+        comment TEXT,
+        extension_version VARCHAR(20),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    logger.info("Startup migration: extension_uninstall_feedback table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: extension_uninstall_feedback table warning (non-fatal)");
+  }
+}
+
 async function ensureContactInquiriesTable() {
   try {
     await db.execute(sql`
@@ -296,6 +316,7 @@ export async function runStartupMigrations() {
   await ensureFirewallOutcomesTable();
   await ensureBurstLimitHitsTable();
   await ensureContactInquiriesTable();
+  await ensureExtensionUninstallFeedbackTable();
   await ensureDemoUser();
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@workspace/replit-auth-web";
 import { motion } from "framer-motion";
+import { CHROME_STORE_URL, chromeStoreLink } from "@/lib/extensionStore";
 import {
   ArrowLeft,
   Copy,
@@ -406,7 +407,8 @@ const CANONICAL_PING_URL = "https://eraseai.ai/api/dev/ping";
 
 function GoLiveChecklistCard({ onOpenPublishing }: { onOpenPublishing: () => void }) {
   const { t } = useTranslation();
-  const chromeStoreSet = !!(import.meta.env.VITE_CHROME_STORE_URL as string | undefined);
+  // The Chrome listing falls back to the pinned extension ID (lib/extensionStore), so it is always set.
+  const chromeStoreSet = !!CHROME_STORE_URL;
   const edgeStoreSet = !!(import.meta.env.VITE_EDGE_STORE_URL as string | undefined);
   const firefoxAddonSet = !!(import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined);
   const [probe, setProbe] = useState<GoLiveProbe | null>(null);
@@ -505,7 +507,7 @@ function InstallSection({ onOpenPublishing }: { onOpenPublishing: () => void }) 
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const apiBase = `${import.meta.env.BASE_URL}api`;
-  const chromeStoreUrl = (import.meta.env.VITE_CHROME_STORE_URL as string | undefined) || "";
+  const chromeStoreUrl = chromeStoreLink("docs-install");
   const edgeStoreUrl = (import.meta.env.VITE_EDGE_STORE_URL as string | undefined) || "";
   const firefoxAddonUrl = (import.meta.env.VITE_FIREFOX_ADDON_URL as string | undefined) || "";
   const [showManual, setShowManual] = useState(false);

@@ -61,7 +61,10 @@ describe("packed store-upload zip", () => {
 
   test("manifest.json sits at the zip root with the source version", () => {
     assert.equal(storeManifest.version, sourceVersion);
-    assert.equal(storeManifest.name, "EraseAI Firewall");
+    // The store title carries a descriptive suffix (extension/STORE_LISTING.md);
+    // the brand stays first and short_name is the bare brand.
+    assert.ok(storeManifest.name.startsWith("EraseAI Firewall"), storeManifest.name);
+    assert.equal(storeManifest.short_name, "EraseAI Firewall");
   });
 
   test("packed extension contains the runtime files the manifest references", () => {

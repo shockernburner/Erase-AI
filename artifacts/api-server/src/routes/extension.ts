@@ -7,7 +7,39 @@ import {
   resolveExtensionVersionPayload,
 } from "./extension-version-source.mjs";
 
+import { db } from "@workspace/db";
+import { sql } from "drizzle-orm";
+import { createIpBurstMiddleware } from "../lib/security/burst-limiter.mjs";
+import { PostgresBurstLimiter } from "../lib/security/pg-burst-limiter.mjs";
+import { parseUninstallFeedback } from "./uninstall-feedback-source.mjs";
+
 const router: IRouter = Router();
+
+// The uninstall survey is public and anonymous, so it gets its own tight
+// per-IP budget rather than the general 30/min IP limit.
+const uninstallFeedbackLimit = createIpBurstMiddleware({
+  limiter: new PostgresBurstLimiter({ db, windowMs: 60 * 60_000, maxHits: 5, scope: "uninstall-fb" }),
+  maxHits: 5,
+});
+
+router.post("/extension/uninstall-feedback", uninstallFeedbackLimit, async (req: Request, res: Response) => {
+  const parsed = parseUninstallFeedback(req.body);
+  if (!parsed.ok) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    const { reason, comment, version } = parsed.value;
+    await db.execute(sql`
+      INSERT INTO extension_uninstall_feedback (reason, comment, extension_version)
+      VALUES (${reason}, ${comment}, ${version})
+    `);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Uninstall feedback error:", err);
+    res.status(500).json({ error: "feedback_failed" });
+  }
+});
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 

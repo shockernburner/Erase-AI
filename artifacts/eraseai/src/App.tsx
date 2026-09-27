@@ -123,6 +123,8 @@ function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => voi
 }
 
 const AiFirewallPage = lazy(() => import("@/pages/seo/AiFirewallPage"));
+const ExtensionWelcomePage = lazy(() => import("@/pages/seo/ExtensionWelcomePage"));
+const ExtensionUninstalledPage = lazy(() => import("@/pages/seo/ExtensionUninstalledPage"));
 const ChatgptDataLeakPage = lazy(() => import("@/pages/seo/ChatgptDataLeakPage"));
 const AiPromptSecurityPage = lazy(() => import("@/pages/seo/AiPromptSecurityPage"));
 const ApiKeyProtectionPage = lazy(() => import("@/pages/seo/ApiKeyProtectionPage"));
@@ -475,6 +477,8 @@ function App() {
         <Router base={base === "/" ? "" : base}>
           <Suspense fallback={<SeoLoadingFallback />}>
             <Switch>
+              <Route path="/ai-firewall/welcome" component={ExtensionWelcomePage} />
+              <Route path="/ai-firewall/uninstalled" component={ExtensionUninstalledPage} />
               <Route path="/ai-firewall" component={AiFirewallPage} />
               <Route path="/chatgpt-data-leak" component={ChatgptDataLeakPage} />
               <Route path="/ai-prompt-security" component={AiPromptSecurityPage} />

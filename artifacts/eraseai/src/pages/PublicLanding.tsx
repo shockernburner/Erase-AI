@@ -26,6 +26,7 @@ import {
 import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
 import { useSeoMeta } from "@/pages/seo/useSeoMeta";
+import { chromeStoreLink } from "@/lib/extensionStore";
 
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
@@ -103,7 +104,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
       description: "For people and teams using ChatGPT, Claude, Gemini, and other AI tools.",
       cta: "Install Browser Firewall",
       icon: <Shield className="w-6 h-6" />,
-      action: () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" }),
+      action: () => window.open(chromeStoreLink("landing-modes"), "_blank", "noopener,noreferrer"),
     },
     {
       title: "Developer API",
@@ -353,13 +354,15 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                     EraseAI scans prompts, files, and AI responses before they reach ChatGPT, Claude, Gemini, or your own LLM app. It detects PII, bank details, API keys, client data, and confidential text — then redacts, blocks, or warns before damage happens.
                   </p>
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <button
-                      onClick={() => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" })}
+                    <a
+                      href={chromeStoreLink("landing-hero")}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90"
                     >
-                      Install Browser Firewall
+                      Add to Chrome — free
                       <ArrowRight className="w-4 h-4" />
-                    </button>
+                    </a>
                     <button
                       onClick={() => document.getElementById("developer-api")?.scrollIntoView({ behavior: "smooth" })}
                       className="inline-flex items-center justify-center gap-2 rounded-full border border-border/50 bg-card/40 px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-card/70"

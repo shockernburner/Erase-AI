@@ -1,5 +1,5 @@
 import { Shield, AlertTriangle, Eye, Lock, Zap, CheckCircle2 } from "lucide-react";
-import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
+import { SeoPage, CtaButton, RelatedLinks, AddToChromeButton } from "./SeoLayout";
 import { useSeoMeta } from "./useSeoMeta";
 
 export default function AiFirewallPage() {
@@ -24,6 +24,11 @@ export default function AiFirewallPage() {
         <p className="text-lg text-muted-foreground leading-relaxed mb-8">
           Every time you use ChatGPT, Gemini, or Claude, you are sending data outside your control. That data may include sensitive information that, once sent, can never be retrieved or controlled.
         </p>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-12">
+          <AddToChromeButton placement="ai-firewall-hero" />
+          <span className="text-sm text-muted-foreground">Works in ChatGPT, Claude, Gemini and Replit.</span>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
           {[
@@ -71,13 +76,16 @@ export default function AiFirewallPage() {
           AI tools are powerful — but they were never designed to protect your data. Large language models ingest everything you give them, and there is no guarantee of data deletion, privacy, or security once information is submitted.
         </p>
         <p className="text-muted-foreground leading-relaxed mb-10">
-          EraseAI ensures you can use AI safely without compromising security. Whether you're a developer debugging code, a business analyst sharing reports, or a student working on research — EraseAI protects your data before it ever leaves your machine.
+          EraseAI ensures you can use AI safely without compromising security. Whether you're a developer debugging code, a business analyst sharing reports, or a student working on research — EraseAI checks your data before it ever reaches the AI tool.
         </p>
 
         <div className="text-center py-10 rounded-2xl border border-primary/20 bg-primary/5 mb-8">
           <h3 className="text-xl font-bold text-foreground mb-3">Test your prompt before sending</h3>
           <p className="text-muted-foreground mb-6">See what EraseAI detects in your input.</p>
-          <CtaButton text="Try EraseAI Free" />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <AddToChromeButton placement="ai-firewall-bottom" />
+            <CtaButton text="Try EraseAI Free" />
+          </div>
         </div>
 
         <RelatedLinks exclude="ai-firewall" />
