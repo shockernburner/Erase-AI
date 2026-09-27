@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "1.4.4",
+      "date": "2026-09-27",
+      "changes": [
+        "Store listing: the extension name now says what it does (\"EraseAI Firewall: Block Secrets & PII Before ChatGPT, Claude, Gemini\") and the summary leads with the protection it gives; the toolbar keeps the short name \"EraseAI Firewall\""
+      ]
+    },
+    {
       "version": "1.4.3",
       "date": "2026-09-22",
       "changes": [

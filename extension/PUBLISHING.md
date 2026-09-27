@@ -228,7 +228,9 @@ development.
   `firewallDocs.overviewDesc` and the "How it works" steps.
 - Privacy policy URL: <https://eraseai.ai/privacy>.
 - Single-purpose statement: "Analyze prompts for privacy risks before they are
-  sent to AI platforms." (matches `manifest.json` description).
+  sent to AI platforms." Keep this wording stable across releases; the
+  listing title, summary and description live in
+  [`STORE_LISTING.md`](./STORE_LISTING.md).
 - Permission justifications:
   - `storage` — store the user's API key and firewall on/off toggle locally.
   - `activeTab` — read text from the focused chat input on supported AI sites.

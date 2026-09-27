@@ -15,7 +15,13 @@ const changelog = JSON.parse(
 describe("manifest.json", () => {
   it("declares MV3 and the EraseAI Firewall identity", () => {
     expect(manifest.manifest_version).toBe(3);
-    expect(manifest.name).toBe("EraseAI Firewall");
+    // The store title carries a descriptive suffix; the brand stays first and short_name is what
+    // Chrome shows where space is tight (toolbar, extensions menu).
+    expect(manifest.name.startsWith("EraseAI Firewall")).toBe(true);
+    expect(manifest.short_name).toBe("EraseAI Firewall");
+    // Chrome Web Store limits: title 75 chars, summary 132 chars.
+    expect(manifest.name.length).toBeLessThanOrEqual(75);
+    expect(manifest.description.length).toBeLessThanOrEqual(132);
     expect(typeof manifest.version).toBe("string");
   });
 
