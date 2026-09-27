@@ -350,7 +350,37 @@ async function loadState() {
     openCanonicalDashboard();
   });
 
+  wireReviewUi();
+
   await runDiagnosis();
+}
+
+// Review card (shown once the background says the user is eligible) and the
+// permanent "Rate on Chrome Web Store" footer link.
+function wireReviewUi() {
+  const G = globalThis.EraseAIGrowth;
+  const card = document.getElementById("review-card");
+  const storeLink = document.getElementById("store-link");
+  if (!G || !card || !storeLink) return;
+
+  storeLink.href = G.urls.review();
+  storeLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: G.urls.review() });
+  });
+
+  const respond = (choice) => {
+    card.style.display = "none";
+    chrome.runtime.sendMessage({ type: "REVIEW_RESPONSE", choice }, () => void chrome.runtime.lastError);
+  };
+  document.getElementById("review-rate-btn").addEventListener("click", () => respond("rate"));
+  document.getElementById("review-problem-btn").addEventListener("click", () => respond("problem"));
+  document.getElementById("review-later-btn").addEventListener("click", () => respond("later"));
+
+  chrome.runtime.sendMessage({ type: "GET_GROWTH" }, (state) => {
+    if (chrome.runtime.lastError || !state) return;
+    if (state.eligible) card.style.display = "block";
+  });
 }
 
 saveKeyBtn.addEventListener("click", async () => {

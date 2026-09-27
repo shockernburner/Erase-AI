@@ -1,5 +1,78 @@
 const API_URL = "https://eraseai.ai";
 
+if (typeof importScripts === "function") {
+  importScripts("growth.js");
+}
+
+// --- Install hooks and review prompt (see growth.js) -----------------------
+
+async function loadGrowth(now = Date.now()) {
+  const G = self.EraseAIGrowth;
+  const stored = await chrome.storage.local.get([G.STORAGE_KEY]);
+  return G.normalizeState(stored[G.STORAGE_KEY], now);
+}
+
+async function saveGrowth(state) {
+  await chrome.storage.local.set({ [self.EraseAIGrowth.STORAGE_KEY]: state });
+}
+
+function extensionVersion() {
+  try {
+    return chrome.runtime.getManifest().version;
+  } catch {
+    return "";
+  }
+}
+
+async function handleInstalled(details) {
+  const G = self.EraseAIGrowth;
+  const version = extensionVersion();
+  if (chrome.runtime.setUninstallURL) {
+    try {
+      await chrome.runtime.setUninstallURL(G.urls.uninstall(version));
+    } catch {
+      // Best effort: a bad URL must never break install.
+    }
+  }
+  if (details && details.reason === "install") {
+    await saveGrowth(G.emptyState(Date.now()));
+    try {
+      await chrome.tabs.create({ url: G.urls.welcome(version) });
+    } catch {
+      // No window to open into (e.g. installed by policy); skip the welcome tab.
+    }
+  } else {
+    // Updates keep their history; users who predate these counters start the
+    // review clock now instead of being asked on the first protected send.
+    await saveGrowth(await loadGrowth());
+  }
+}
+
+/**
+ * Counts a protective outcome and reports whether this is the moment to ask
+ * for a review. Marks the prompt as shown before answering, so it is offered
+ * exactly once even if several tabs report outcomes at the same time.
+ */
+async function trackOutcomeForReview(outcome) {
+  const G = self.EraseAIGrowth;
+  const now = Date.now();
+  const state = G.recordOutcome(await loadGrowth(now), outcome);
+  const prompt = G.shouldPromptReview(state, now);
+  await saveGrowth(prompt ? { ...state, review: "shown" } : state);
+  return prompt;
+}
+
+async function setReviewState(review) {
+  const state = await loadGrowth();
+  await saveGrowth({ ...state, review });
+}
+
+if (chrome.runtime.onInstalled) {
+  chrome.runtime.onInstalled.addListener((details) => {
+    handleInstalled(details).catch(() => {});
+  });
+}
+
 async function getConfig() {
   const result = await chrome.storage.local.get(["apiKey", "enabled"]);
   return {
@@ -500,7 +573,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "OUTCOME") {
-    reportOutcome(message.outcome).then(sendResponse).catch((err) => sendResponse({ ok: false, error: err && err.message ? err.message : "Outcome failed" }));
+    (async () => {
+      // Growth counters are local and must not depend on the API call succeeding.
+      const reviewPrompt = await trackOutcomeForReview(message.outcome).catch(() => false);
+      const result = await reportOutcome(message.outcome).catch((err) => ({
+        ok: false,
+        error: err && err.message ? err.message : "Outcome failed",
+      }));
+      sendResponse({ ...result, reviewPrompt });
+    })();
+    return true;
+  }
+
+  if (message.type === "GET_GROWTH") {
+    loadGrowth()
+      .then((state) => sendResponse({
+        ...state,
+        eligible: self.EraseAIGrowth.shouldPromptReview(state, Date.now()) || state.review === "shown",
+      }))
+      .catch(() => sendResponse(null));
+    return true;
+  }
+
+  if (message.type === "REVIEW_RESPONSE") {
+    // "rate" and "problem" open a page; any answer ends the prompt for good.
+    const G = self.EraseAIGrowth;
+    const choice = message.choice;
+    const url = choice === "rate" ? G.urls.review() : choice === "problem" ? G.urls.support() : null;
+    setReviewState(choice === "rate" ? "rated" : "dismissed")
+      .then(() => (url ? chrome.tabs.create({ url }) : null))
+      .then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
     return true;
   }
 

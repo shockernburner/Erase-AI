@@ -44,7 +44,7 @@ export async function packExtensionZip(distDir) {
   // Skip developer-facing files that should not ship inside the extension
   // package (the store reviewer flags unexpected non-extension files, and
   // they bloat the manual-install zip too).
-  const isExcluded = (name) => /(^|\/)(PUBLISHING\.md|\.DS_Store|Thumbs\.db)$/i.test(name);
+  const isExcluded = (name) => /(^|\/)(PUBLISHING\.md|STORE_LISTING\.md|\.DS_Store|Thumbs\.db)$/i.test(name);
   const includeFilter = (filename) => !isExcluded(filename);
 
   // 1) Manual-install zip — wraps everything in an /extension/ folder so users

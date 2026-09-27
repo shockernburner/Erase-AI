@@ -679,17 +679,68 @@
             ...(piecesSummary ? { pieces: piecesSummary } : {}),
           },
         },
-        () => {
+        (response) => {
           if (chrome.runtime.lastError) {
             // Outcome reporting is best-effort; never surface a failure to
             // the user mid-flow.
+            return;
           }
+          if (response && response.reviewPrompt) scheduleReviewToast();
         },
       );
     } catch {
       // Ignore — the firewall must keep working even if the service worker
       // has been suspended.
     }
+  }
+
+  // One-time "rate EraseAI" toast. The background decides when (after several
+  // protected sends, a few days in) and marks it shown before telling us, so
+  // this only ever renders once. It waits a moment so it never lands on top
+  // of the send the user just made.
+  function scheduleReviewToast() {
+    setTimeout(showReviewToast, 1500);
+  }
+
+  function showReviewToast() {
+    if (document.querySelector(".eraseai-review-toast")) return;
+    const toast = document.createElement("div");
+    toast.className = "eraseai-review-toast";
+    toast.setAttribute("role", "dialog");
+    toast.setAttribute("aria-label", "Rate EraseAI Firewall");
+
+    const title = document.createElement("div");
+    title.className = "eraseai-review-title";
+    title.textContent = "EraseAI just kept sensitive data out of this chat.";
+    const body = document.createElement("div");
+    body.className = "eraseai-review-body";
+    body.textContent = "If it's been useful, a rating helps others find it. If something's off, tell us.";
+
+    const actions = document.createElement("div");
+    actions.className = "eraseai-review-actions";
+    const respond = (choice) => {
+      try {
+        chrome.runtime.sendMessage({ type: "REVIEW_RESPONSE", choice }, () => void chrome.runtime.lastError);
+      } catch {
+        // Service worker unavailable; the toast still closes.
+      }
+      toast.remove();
+    };
+    for (const [label, choice, primary] of [
+      ["Rate EraseAI", "rate", true],
+      ["Report a problem", "problem", false],
+      ["Not now", "later", false],
+    ]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.className = primary ? "eraseai-review-btn eraseai-review-btn-primary" : "eraseai-review-btn";
+      button.addEventListener("click", () => respond(choice));
+      actions.appendChild(button);
+    }
+
+    toast.append(title, body, actions);
+    document.body.appendChild(toast);
   }
 
   function detectPlatform() {

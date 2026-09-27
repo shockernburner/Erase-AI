@@ -378,6 +378,32 @@
       text-decoration: underline;
     }
 
+    .footer .footer-sep {
+      color: #475569;
+      margin: 0 6px;
+      font-size: 12px;
+    }
+
+    .review-card {
+      margin: 0 20px 4px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(99,102,241,0.35);
+      background: rgba(99,102,241,0.08);
+      font-size: 12px;
+    }
+
+    .review-card p {
+      margin: 0 0 10px;
+      color: #cbd5e1;
+    }
+
+    .review-card .review-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .status-text {
       font-size: 11px;
       margin-top: 6px;
@@ -474,11 +500,23 @@
     </div>
   </div>
 
+  <div class="review-card" id="review-card" style="display:none">
+    <p>EraseAI has stopped sensitive data from reaching an AI chat for you. If it's been useful, a rating helps others find it.</p>
+    <div class="review-actions">
+      <button class="btn btn-primary" id="review-rate-btn">Rate EraseAI</button>
+      <button class="btn" id="review-problem-btn">Report a problem</button>
+      <button class="btn" id="review-later-btn">Not now</button>
+    </div>
+  </div>
+
   <div class="footer">
     <a href="#" id="dashboard-link">Open EraseAI Dashboard →</a>
+    <span class="footer-sep">·</span>
+    <a href="#" id="store-link">Rate on Chrome Web Store</a>
   </div>
 
   <script src="concurrency-config.js"></script>
+  <script src="growth.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
