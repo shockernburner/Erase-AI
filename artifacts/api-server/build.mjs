@@ -44,7 +44,12 @@ export async function packExtensionZip(distDir) {
   // Skip developer-facing files that should not ship inside the extension
   // package (the store reviewer flags unexpected non-extension files, and
   // they bloat the manual-install zip too).
-  const isExcluded = (name) => /(^|\/)(PUBLISHING\.md|STORE_LISTING\.md|\.DS_Store|Thumbs\.db)$/i.test(name);
+  // Dev-only files: runbooks, the vitest suite and its config, and the
+  // workspace's node_modules (jsdom, pdfjs, vitest…). The extension loads
+  // nothing from them at runtime — its PDF/OCR code is vendored under vendor/.
+  const isExcluded = (name) =>
+    /(^|\/)(PUBLISHING\.md|STORE_LISTING\.md|package\.json|vitest\.config\.js|\.DS_Store|Thumbs\.db)$/i.test(name) ||
+    /(^|\/)(node_modules|tests|\.vite)(\/|$)/.test(name);
   const includeFilter = (filename) => !isExcluded(filename);
 
   // 1) Manual-install zip — wraps everything in an /extension/ folder so users

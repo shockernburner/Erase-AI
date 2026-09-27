@@ -20,7 +20,7 @@ const REASONS: { id: string; label: string }[] = [
 
 // A short, useful reply for the reasons we can do something about.
 const FOLLOW_UP: Record<string, string> = {
-  no_account: "Fair point — we're working on protection that works before you sign up.",
+  no_account: "Good news: EraseAI now protects you without an account — prompts are checked on your device from the moment it's installed.",
   too_many_warnings: "Thanks — false alarms are the thing we most want to fix. The comment box above helps a lot.",
   missed_something: "If you can describe what slipped through (without pasting the secret itself), we'll add a rule for it.",
   broke_site: "Sorry about that. Tell us which site and what happened and we'll fix it.",

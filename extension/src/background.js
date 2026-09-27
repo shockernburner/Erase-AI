@@ -1,7 +1,51 @@
 const API_URL = "https://eraseai.ai";
 
 if (typeof importScripts === "function") {
-  importScripts("growth.js");
+  importScripts("growth.js", "local-scanner.js");
+}
+
+// --- On-device fallback -----------------------------------------------------
+//
+// local-scanner.js is generated from the api-server's own rules
+// (scripts/src/build-extension-local-scanner.mjs), so a prompt is checked the
+// same way whether or not the server can be reached. The server stays
+// authoritative whenever it answers; the local result is used when there is no
+// key yet, the key or trial is rejected, or the API is unreachable — cases that
+// previously left the user with no protection at all.
+
+const LOCAL_NOTES = {
+  no_key: "Checked on this device. Add your EraseAI API key in the extension for full scanning and history.",
+  invalid_key: "Checked on this device because your API key was rejected. Check it in the extension popup.",
+  trial_ended: "Checked on this device. Your EraseAI trial has ended; upgrade for full scanning and history.",
+  unavailable: "Checked on this device because EraseAI could not be reached.",
+};
+
+function localReasonFor(status, code) {
+  if (status === 401 || status === 403) return "invalid_key";
+  if (status === 429 && code === "RATE_LIMIT_EXCEEDED") return "trial_ended";
+  return "unavailable";
+}
+
+function localAnalyze(text, reason, serverError) {
+  const result = self.EraseAILocalScanner.analyzePromptSafety(String(text || ""));
+  return {
+    ...result,
+    summary: `${result.summary} ${LOCAL_NOTES[reason]}`,
+    local: true,
+    localReason: reason,
+    ...(serverError ? { serverError: serverError.error, code: serverError.code } : {}),
+  };
+}
+
+function localSanitize(text, reason, serverError) {
+  const result = self.EraseAILocalScanner.sanitizeText(String(text || ""));
+  return {
+    ...result,
+    changeCount: result.changes.length,
+    local: true,
+    localReason: reason,
+    ...(serverError ? { serverError: serverError.error, code: serverError.code } : {}),
+  };
 }
 
 // --- Install hooks and review prompt (see growth.js) -----------------------
@@ -84,11 +128,11 @@ async function getConfig() {
 
 async function analyzePrompt(text) {
   const config = await getConfig();
-  if (!config.apiKey) {
-    return { error: "No API key configured. Open the EraseAI extension popup to set your key." };
-  }
   if (!config.enabled) {
     return { bypass: true };
+  }
+  if (!config.apiKey) {
+    return localAnalyze(text, "no_key");
   }
 
   try {
@@ -103,19 +147,20 @@ async function analyzePrompt(text) {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      return { error: err.error || `API error: ${response.status}`, code: err.code };
+      const serverError = { error: err.error || `API error: ${response.status}`, code: err.code };
+      return localAnalyze(text, localReasonFor(response.status, err.code), serverError);
     }
 
     return await response.json();
   } catch (err) {
-    return { error: `Network error: ${err.message}` };
+    return localAnalyze(text, "unavailable", { error: `Network error: ${err.message}` });
   }
 }
 
 async function sanitizePrompt(text) {
   const config = await getConfig();
   if (!config.apiKey) {
-    return { error: "No API key configured." };
+    return localSanitize(text, "no_key");
   }
 
   try {
@@ -130,12 +175,13 @@ async function sanitizePrompt(text) {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      return { error: err.error || `API error: ${response.status}`, code: err.code };
+      const serverError = { error: err.error || `API error: ${response.status}`, code: err.code };
+      return localSanitize(text, localReasonFor(response.status, err.code), serverError);
     }
 
     return await response.json();
   } catch (err) {
-    return { error: `Network error: ${err.message}` };
+    return localSanitize(text, "unavailable", { error: `Network error: ${err.message}` });
   }
 }
 
@@ -363,6 +409,22 @@ async function processAnalyzeRequest(text, attemptId) {
     await recordLastAttempt({
       status: "error",
       reason: String(result.error).slice(0, 200),
+      at: Date.now(),
+      attemptId,
+    });
+  } else if (result && result.local && result.serverError) {
+    // The prompt was still checked, but the server refused or was unreachable;
+    // keep that visible in the popup so a bad key or lapsed trial gets fixed.
+    await recordLastAttempt({
+      status: "error",
+      reason: `${String(result.serverError).slice(0, 160)} (checked on this device)`,
+      at: Date.now(),
+      attemptId,
+    });
+  } else if (result && result.local) {
+    await recordLastAttempt({
+      status: "success",
+      reason: "checked on this device (no API key)",
       at: Date.now(),
       attemptId,
     });

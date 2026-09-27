@@ -66,7 +66,8 @@ ChatGPT (chatgpt.com, including Work mode), Claude (claude.ai), Gemini (gemini.g
 
 YOUR DATA
 • The extension only runs on the AI sites listed above.
-• Message text is checked by the EraseAI API over HTTPS. Your scan history keeps the first 500 characters of each scan, with keys, tokens, passwords and connection strings masked, so you can review it in your dashboard.
+• Without an account, every check runs on your device and nothing is sent anywhere.
+• With an account, message text is checked by the EraseAI API over HTTPS. Your scan history keeps the first 500 characters of each scan, with keys, tokens, passwords and connection strings masked, so you can review it in your dashboard.
 • Images are read with OCR inside your browser; the image itself is never uploaded.
 • We never sell your data or use it to train models. Privacy policy: https://eraseai.ai/privacy
 
@@ -74,15 +75,15 @@ FOR TEAMS
 Security and IT teams use EraseAI Firewall to cut "shadow AI" data leaks without banning AI tools. Team plans, an admin dashboard and an API are available at https://eraseai.ai.
 
 GETTING STARTED
-Install, create a free account at eraseai.ai, and paste your API key into the extension popup. The free trial includes a set number of scans; paid plans are unlimited.
+Install it and it starts checking prompts on your device right away, no account needed. For full scanning, history and your dashboard, create a free account at eraseai.ai and paste your API key into the extension popup.
 
 Made by Vantward Solutions Pte. Ltd. — https://eraseai.ai/ai-firewall
 ```
 
 Keep the "YOUR DATA" section in sync with the server's behaviour
-(`artifacts/api-server/src/lib/dev/store-redact-source.mjs`). If on-device
-first-pass scanning ships, update it to say which checks never leave the
-browser.
+(`artifacts/api-server/src/lib/dev/store-redact-source.mjs`) and the
+on-device fallback (`extension/src/local-scanner.js`, generated from the
+server rules).
 
 ---
 

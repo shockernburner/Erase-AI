@@ -5,10 +5,12 @@
       "date": "2026-09-27",
       "changes": [
         "Store listing: the extension name now says what it does (\"EraseAI Firewall: Block Secrets & PII Before ChatGPT, Claude, Gemini\") and the summary leads with the protection it gives; the toolbar keeps the short name \"EraseAI Firewall\"",
-        "First install opens a short welcome page that walks through creating an account and adding the API key, since the firewall cannot scan until a key is set",
+        "First install opens a short welcome page that explains the on-device protection and walks through connecting an EraseAI account for full scanning",
         "Uninstalling opens a one-question survey; only the extension version is sent with it",
         "After EraseAI has stopped a risky send several times and has been installed for a few days, it asks once whether you'd rate it on the Chrome Web Store, with 'Report a problem' and 'Not now' alongside. It never asks again after any answer",
-        "The popup footer links to the Chrome Web Store listing"
+        "The popup footer links to the Chrome Web Store listing",
+        "Protection works before you add an API key: prompts are checked on this device with the same rules the EraseAI server uses, and Sanitize & Send redacts locally. The same on-device check also takes over if your key is rejected, your trial has ended or EraseAI can't be reached, instead of letting the prompt through unchecked",
+        "When the on-device check stands in for the server, the result says so, and the popup's 'Last attempt' line still shows the server's reason so a bad key or lapsed trial gets noticed"
       ]
     },
     {

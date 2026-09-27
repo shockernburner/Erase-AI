@@ -357,18 +357,21 @@ describe("background.testConnection", () => {
       expect(JSON.parse(opts.body)).toEqual({ text: "hello world" });
     });
 
-    it("short-circuits with an error when no apiKey is configured", async () => {
+    it("checks on-device without calling the API when no apiKey is configured", async () => {
       init({
         storage: { enabled: true },
         fetchImpl: async () => jsonResponse({ riskScore: 0.1 }),
       });
 
-      const result = await mod.analyzePrompt("anything");
+      const result = await mod.analyzePrompt("my key is AKIAIOSFODNN7EXAMPLE");
 
-      expect(result).toEqual({
-        error: "No API key configured. Open the EraseAI extension popup to set your key.",
-      });
       expect(fetchStub).not.toHaveBeenCalled();
+      expect(result.error).toBeUndefined();
+      expect(result.local).toBe(true);
+      expect(result.localReason).toBe("no_key");
+      expect(result.level).not.toBe("safe");
+      expect(result.issues.some((i) => i.category === "secret_exposure")).toBe(true);
+      expect(result.summary).toContain("Checked on this device");
     });
 
     it("returns bypass:true without calling fetch when the firewall is disabled", async () => {
@@ -383,7 +386,7 @@ describe("background.testConnection", () => {
       expect(fetchStub).not.toHaveBeenCalled();
     });
 
-    it("surfaces err.error and err.code from a non-2xx JSON response", async () => {
+    it("falls back on-device and keeps err.error and err.code from a non-2xx JSON response", async () => {
       init({
         storage: { apiKey: "eak_good", enabled: true },
         fetchImpl: async () => ({
@@ -396,7 +399,29 @@ describe("background.testConnection", () => {
 
       const result = await mod.analyzePrompt("anything");
 
-      expect(result).toEqual({ error: "Daily limit reached", code: "QUOTA_EXCEEDED" });
+      expect(result.local).toBe(true);
+      expect(result.localReason).toBe("unavailable");
+      expect(result.serverError).toBe("Daily limit reached");
+      expect(result.code).toBe("QUOTA_EXCEEDED");
+      expect(typeof result.riskScore).toBe("number");
+    });
+
+    it("tells the user their trial ended when the server says so", async () => {
+      init({
+        storage: { apiKey: "eak_good", enabled: true },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 429,
+          headers: { get: () => "application/json" },
+          json: async () => ({ error: "Your free trial includes 25 scans.", code: "RATE_LIMIT_EXCEEDED" }),
+        }),
+      });
+
+      const result = await mod.analyzePrompt("bob@example.com");
+
+      expect(result.localReason).toBe("trial_ended");
+      expect(result.summary).toContain("trial has ended");
+      expect(result.level).not.toBe("safe");
     });
 
     it("falls back to a generic error when a non-2xx response has no error field", async () => {
@@ -414,11 +439,12 @@ describe("background.testConnection", () => {
 
       const result = await mod.analyzePrompt("anything");
 
-      expect(result.error).toBe("API error: 500");
+      expect(result.local).toBe(true);
+      expect(result.serverError).toBe("API error: 500");
       expect(result.code).toBeUndefined();
     });
 
-    it("returns a Network error when fetch throws", async () => {
+    it("falls back on-device when fetch throws", async () => {
       init({
         storage: { apiKey: "eak_good", enabled: true },
         fetchImpl: async () => {
@@ -428,9 +454,9 @@ describe("background.testConnection", () => {
 
       const result = await mod.analyzePrompt("anything");
 
-      expect(result).toEqual({
-        error: "Network error: getaddrinfo ENOTFOUND eraseai.ai",
-      });
+      expect(result.local).toBe(true);
+      expect(result.localReason).toBe("unavailable");
+      expect(result.serverError).toBe("Network error: getaddrinfo ENOTFOUND eraseai.ai");
     });
 
     it("ANALYZE message handler writes lastScan to chrome.storage.local when the response includes riskScore", async () => {
@@ -473,7 +499,7 @@ describe("background.testConnection", () => {
       expect(sendResponse).toHaveBeenCalledWith(serverPayload);
     });
 
-    it("ANALYZE message handler writes lastAttempt error (without lastScan) when the response has no riskScore", async () => {
+    it("ANALYZE message handler records a failed attempt when the key is rejected, even though the prompt was checked on-device", async () => {
       init({
         storage: { apiKey: "eak_good", enabled: true },
         fetchImpl: async () => ({
@@ -491,18 +517,19 @@ describe("background.testConnection", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       const setCalls = chromeStub.storage.local.set.mock.calls.map((c) => c[0]);
-      // No lastScan should be written for this branch.
-      expect(setCalls.some((c) => "lastScan" in c)).toBe(false);
-      // lastAttempt error must always be recorded so the popup can show it.
+      // The on-device result is a real scan, so it is recorded as the last scan…
+      expect(setCalls.some((c) => "lastScan" in c)).toBe(true);
+      // …but the attempt is still a failure so the popup keeps the bad key visible.
       const attempts = setCalls.filter((c) => "lastAttempt" in c);
       expect(attempts).toHaveLength(1);
       expect(attempts[0].lastAttempt.status).toBe("error");
-      expect(attempts[0].lastAttempt.reason).toBe("Invalid API key");
+      expect(attempts[0].lastAttempt.reason).toBe("Invalid API key (checked on this device)");
       expect(typeof attempts[0].lastAttempt.at).toBe("number");
-      expect(sendResponse).toHaveBeenCalledWith({
-        error: "Invalid API key",
-        code: "INVALID_KEY",
-      });
+      const response = sendResponse.mock.calls[0][0];
+      expect(response.local).toBe(true);
+      expect(response.localReason).toBe("invalid_key");
+      expect(response.serverError).toBe("Invalid API key");
+      expect(response.code).toBe("INVALID_KEY");
     });
 
     it("ANALYZE message handler writes lastAttempt success with bypass reason when firewall is disabled", async () => {
@@ -628,7 +655,7 @@ describe("background.testConnection", () => {
       expect(lastAttemptWrites[0].lastAttempt.attemptId).toBe("att_42");
     });
 
-    it("posts an error wrapper and disconnects when analyze returns an error (e.g. invalid API key)", async () => {
+    it("posts the on-device result and disconnects when the API rejects the key", async () => {
       init({
         storage: { apiKey: "eak_bad", enabled: true },
         fetchImpl: async () => ({
@@ -649,10 +676,9 @@ describe("background.testConnection", () => {
 
       expect(port.__posted).toHaveLength(1);
       expect(port.__posted[0].type).toBe("ANALYZE_RESULT");
-      expect(port.__posted[0].result).toEqual({
-        error: "Invalid API key",
-        code: "INVALID_KEY",
-      });
+      expect(port.__posted[0].result.local).toBe(true);
+      expect(port.__posted[0].result.serverError).toBe("Invalid API key");
+      expect(port.__posted[0].result.code).toBe("INVALID_KEY");
       expect(port.__isDisconnected()).toBe(true);
 
       // lastAttempt error must STILL be persisted so the popup status
@@ -661,7 +687,7 @@ describe("background.testConnection", () => {
       const lastAttemptWrites = setCalls.filter((c) => "lastAttempt" in c);
       expect(lastAttemptWrites).toHaveLength(1);
       expect(lastAttemptWrites[0].lastAttempt.status).toBe("error");
-      expect(lastAttemptWrites[0].lastAttempt.reason).toBe("Invalid API key");
+      expect(lastAttemptWrites[0].lastAttempt.reason).toBe("Invalid API key (checked on this device)");
     });
 
     it("ignores non-ANALYZE messages arriving on the analyze port (no fetch, no posting)", async () => {
@@ -763,7 +789,7 @@ describe("background.testConnection", () => {
       expect(fetchStub.mock.calls[0][0]).toBe(`${API_URL}/api/dev/sanitize`);
     });
 
-    it("posts an error wrapper and disconnects when sanitize returns an error (e.g. invalid API key)", async () => {
+    it("posts an on-device sanitize result and disconnects when the API rejects the key", async () => {
       init({
         storage: { apiKey: "eak_bad", enabled: true },
         fetchImpl: async () => ({
@@ -784,10 +810,9 @@ describe("background.testConnection", () => {
 
       expect(port.__posted).toHaveLength(1);
       expect(port.__posted[0].type).toBe("SANITIZE_RESULT");
-      expect(port.__posted[0].result).toEqual({
-        error: "Invalid API key",
-        code: "INVALID_KEY",
-      });
+      expect(port.__posted[0].result.local).toBe(true);
+      expect(typeof port.__posted[0].result.sanitized).toBe("string");
+      expect(port.__posted[0].result.serverError).toBe("Invalid API key");
       expect(port.__isDisconnected()).toBe(true);
     });
 
@@ -833,16 +858,18 @@ describe("background.testConnection", () => {
       expect(JSON.parse(opts.body)).toEqual({ text: "Hello alice@example.com" });
     });
 
-    it("short-circuits with an error when no apiKey is configured", async () => {
+    it("redacts on-device without calling the API when no apiKey is configured", async () => {
       init({
         storage: {},
         fetchImpl: async () => jsonResponse({ sanitized: "x" }),
       });
 
-      const result = await mod.sanitizePrompt("anything");
+      const result = await mod.sanitizePrompt("key AKIAIOSFODNN7EXAMPLE");
 
-      expect(result).toEqual({ error: "No API key configured." });
       expect(fetchStub).not.toHaveBeenCalled();
+      expect(result.local).toBe(true);
+      expect(result.sanitized).not.toContain("AKIAIOSFODNN7EXAMPLE");
+      expect(result.changeCount).toBeGreaterThan(0);
     });
 
     it("still calls the API when the firewall is disabled (no bypass for sanitize)", async () => {
@@ -870,7 +897,10 @@ describe("background.testConnection", () => {
 
       const result = await mod.sanitizePrompt("anything");
 
-      expect(result).toEqual({ error: "Invalid API key", code: "INVALID_KEY" });
+      expect(result.local).toBe(true);
+      expect(result.localReason).toBe("invalid_key");
+      expect(result.serverError).toBe("Invalid API key");
+      expect(result.code).toBe("INVALID_KEY");
     });
 
     it("falls back to a generic error when a non-2xx response body cannot be parsed", async () => {
@@ -888,11 +918,12 @@ describe("background.testConnection", () => {
 
       const result = await mod.sanitizePrompt("anything");
 
-      expect(result.error).toBe("API error: 503");
+      expect(result.local).toBe(true);
+      expect(result.serverError).toBe("API error: 503");
       expect(result.code).toBeUndefined();
     });
 
-    it("returns a Network error when fetch throws", async () => {
+    it("falls back on-device when fetch throws", async () => {
       init({
         storage: { apiKey: "eak_good" },
         fetchImpl: async () => {
@@ -902,9 +933,9 @@ describe("background.testConnection", () => {
 
       const result = await mod.sanitizePrompt("anything");
 
-      expect(result).toEqual({
-        error: "Network error: ECONNREFUSED 127.0.0.1:443",
-      });
+      expect(result.local).toBe(true);
+      expect(result.localReason).toBe("unavailable");
+      expect(result.serverError).toBe("Network error: ECONNREFUSED 127.0.0.1:443");
     });
   });
 

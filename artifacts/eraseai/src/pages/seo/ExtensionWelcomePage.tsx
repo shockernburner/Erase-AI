@@ -7,13 +7,12 @@ const BASE = import.meta.env.BASE_URL;
 
 /**
  * Opened by the extension right after install (extension/src/growth.js). The
- * firewall cannot scan anything until an API key is saved in the popup, so
- * this page exists to get a new user from "installed" to "protected" in a
- * minute — the biggest drop-off in the extension funnel.
+ * extension protects on-device from the first prompt; this page converts that
+ * into a connected account (full scanning, history, dashboard) in a minute.
  */
 export default function ExtensionWelcomePage() {
   useSeoMeta({
-    title: "Welcome to EraseAI Firewall — finish setup in 1 minute",
+    title: "Welcome to EraseAI Firewall — you're protected",
     description: "Create your free EraseAI account, add your API key to the extension, and start blocking secrets and personal data before they reach ChatGPT, Claude and Gemini.",
     url: "https://eraseai.ai/ai-firewall/welcome",
   });
@@ -54,11 +53,11 @@ export default function ExtensionWelcomePage() {
         Extension installed
       </div>
       <h1 className="text-4xl sm:text-5xl font-display font-extrabold tracking-tight text-foreground leading-tight mb-4">
-        One minute to finish setup
+        You're protected. One minute to unlock the rest.
       </h1>
       <p className="text-lg text-muted-foreground leading-relaxed mb-10">
-        EraseAI Firewall checks your prompts and attachments before they reach ChatGPT, Claude or Gemini. It needs an
-        API key from your EraseAI account to start scanning.
+        EraseAI Firewall is already checking your prompts on this device before they reach ChatGPT, Claude or Gemini.
+        Connect a free EraseAI account for full scanning, scan history and your dashboard.
       </p>
 
       <ol className="space-y-4 mb-12">
@@ -88,9 +87,10 @@ export default function ExtensionWelcomePage() {
 
       <div className="p-5 rounded-2xl border border-border/30 bg-card/30 text-sm text-muted-foreground leading-relaxed">
         <h2 className="text-base font-bold text-foreground mb-2">What happens to your text</h2>
-        The extension only runs on the AI sites it protects. Message text is checked by the EraseAI API over HTTPS;
-        your scan history keeps the first 500 characters of each scan with keys, tokens and passwords masked. Images are
-        read with OCR inside your browser and never uploaded. Details in the{" "}
+        The extension only runs on the AI sites it protects. Until you add an API key, every check runs on this device
+        and nothing is sent. With a key, message text is checked by the EraseAI API over HTTPS and your scan history keeps
+        the first 500 characters of each scan with keys, tokens and passwords masked. Images are always read with OCR
+        inside your browser and never uploaded. Details in the{" "}
         <a href={`${BASE}privacy`} className="text-primary hover:underline">privacy policy</a>.
       </div>
     </SeoPage>

@@ -1,0 +1,643 @@
+// GENERATED FILE — do not edit.
+// Built from artifacts/api-server/src/lib/dev/{secrets-source.mjs,safety-source.mjs,sanitize-source.mjs}
+// by scripts/src/build-extension-local-scanner.mjs. Regenerate after changing
+// any server detection rule; the extension tests fail while this is stale.
+//
+// On-device copy of the server's prompt checks, exposed as
+// globalThis.EraseAILocalScanner for the service worker (importScripts).
+(function (root) {
+  "use strict";
+  const modules = {};
+  modules["secrets-source.mjs"] = (function () {
+    // Detection patterns for credentials/secrets in user prompts.
+    // Min lengths are short on purpose so casually-typed test inputs trip too.
+
+    const SECRET_PATTERNS = [
+      { type: "aws_access_key", pattern: /\b(AKIA[0-9A-Z]{16})\b/g, label: "AWS Access Key" },
+      { type: "aws_secret_key", pattern: /\b([A-Za-z0-9/+=]{40})\b/g, label: "AWS Secret Key" },
+      { type: "generic_api_key", pattern: /\b(api[_-]?key|apikey)\s*[:=]\s*["']?([A-Za-z0-9_\-]{8,})/gi, label: "API Key assignment" },
+      { type: "generic_secret", pattern: /\b(secret|token|password|passwd|pwd)\s*[:=]\s*["']?([A-Za-z0-9_\-!@#$%^&*]{4,})/gi, label: "Secret/Token assignment" },
+      { type: "bearer_token", pattern: /Bearer\s+[A-Za-z0-9_\-\.]{4,}/gi, label: "Bearer Token" },
+      { type: "jwt", pattern: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_\-]{10,}/g, label: "JWT Token" },
+      { type: "database_url", pattern: /(postgres(ql)?|mysql|mongodb(\+srv)?|redis):\/\/[^\s'"]+/gi, label: "Database Connection URL" },
+      { type: "private_key", pattern: /-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----/g, label: "Private Key" },
+      { type: "github_token", pattern: /\b(ghp_[A-Za-z0-9]{4,}|github_pat_[A-Za-z0-9_]{4,})/g, label: "GitHub Token" },
+      { type: "slack_token", pattern: /\b(xoxb-|xoxp-|xoxo-)[A-Za-z0-9\-]{8,}/g, label: "Slack Token" },
+      { type: "stripe_key", pattern: /\b(sk_live_|pk_live_|sk_test_|pk_test_)[A-Za-z0-9]{8,}/g, label: "Stripe Key" },
+      { type: "openai_key", pattern: /\bsk-[A-Za-z0-9]{4,}/g, label: "OpenAI API Key" },
+      { type: "env_variable", pattern: /process\.env\.[A-Z_]{2,}/g, label: "Environment Variable Reference" },
+      { type: "ip_address", pattern: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, label: "IP Address" },
+      { type: "email", pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, label: "Email Address" },
+      { type: "ssh_key", pattern: /ssh-(rsa|ed25519|dss)\s+[A-Za-z0-9+/=]{40,}/g, label: "SSH Key" },
+    ];
+
+    function detectSecrets(text) {
+      const matches = [];
+      const seen = new Set();
+
+      for (const { type, pattern, label } of SECRET_PATTERNS) {
+        const re = new RegExp(pattern.source, pattern.flags);
+        let m;
+        while ((m = re.exec(text)) !== null) {
+          const key = `${type}:${m.index}:${m[0].length}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            matches.push({
+              type,
+              pattern: label,
+              match: m[0],
+              start: m.index,
+              end: m.index + m[0].length,
+            });
+          }
+        }
+      }
+
+      return matches;
+    }
+
+    function maskSecret(value) {
+      if (value.length <= 8) return "***";
+      return value.substring(0, 4) + "*".repeat(Math.min(value.length - 8, 20)) + value.substring(value.length - 4);
+    }
+
+    return { SECRET_PATTERNS, detectSecrets, maskSecret };
+  })();
+
+  modules["safety-source.mjs"] = (function ({ detectSecrets }) {
+    // Safety analyzer for user prompts. Patterns intentionally err toward
+    // catching casually-typed sensitive content over false-negatives, but
+    // are paired with lightweight context validators so prose like
+    // "internal combustion engine", "ISBN 9781234567897", or
+    // "the 3 Mile Trail" doesn't trip the warning panel.
+
+
+    // --- shared helpers used by the casually-typed pattern validators ---
+
+    // Luhn checksum for unseparated 13–19 digit runs. Real card numbers
+    // pass; random ids, timestamps, and ISBN-13 codes statistically don't.
+    function luhnValid(digits) {
+      if (digits.length < 13 || digits.length > 19) return false;
+      let sum = 0;
+      let alt = false;
+      for (let i = digits.length - 1; i >= 0; i--) {
+        const n = digits.charCodeAt(i) - 48;
+        if (n < 0 || n > 9) return false;
+        let v = n;
+        if (alt) {
+          v *= 2;
+          if (v > 9) v -= 9;
+        }
+        sum += v;
+        alt = !alt;
+      }
+      return sum % 10 === 0;
+    }
+
+    const CARD_CONTEXT_RE = /\b(?:card|credit|debit|visa|mastercard|master\s*card|amex|american\s+express|discover|cvv|cvc|expir(?:y|es|ation)|cc\b|billing|charge|payment\s+(?:method|info|details))\b/i;
+
+    function hasCardContext(text, start, end) {
+      const before = text.slice(Math.max(0, start - 40), start);
+      const after = text.slice(end, end + 40);
+      return CARD_CONTEXT_RE.test(before) || CARD_CONTEXT_RE.test(after);
+    }
+
+    const ADDRESS_BEFORE_RE = /\b(?:live[sd]?|residing|reside[sd]?|address(?:es)?|ship(?:ping|ped|s)?|deliver(?:y|ed|ies|s)?|mail(?:ed|ing|s|\s+(?:to|at))?|located|residence|apartment|apt\.?|suite|ste\.?|unit|po\s*box|moving|moved|sent|drop\s*(?:off|ped)|home\s+(?:address|is\s+at)|located\s+at|find\s+me\s+at)\b/i;
+    const US_STATE_OR_ZIP_RE = /^[\s,.]{0,3}(?:[A-Z][a-zA-Z]+(?:[\s,]+[A-Z][a-zA-Z]+){0,2}[\s,]+)?(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)\b|^[\s,.]{0,3}\d{5}(?:-\d{4})?\b/;
+
+    function hasAddressContext(text, start, end) {
+      const before = text.slice(Math.max(0, start - 60), start);
+      const after = text.slice(end, end + 60);
+      if (ADDRESS_BEFORE_RE.test(before)) return true;
+      if (US_STATE_OR_ZIP_RE.test(after)) return true;
+      return false;
+    }
+
+    // --- pattern definitions ---
+
+    const PII_PATTERNS = [
+      { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, severity: "high", detail: "Email address found in prompt" },
+      // Phone numbers: either separated (dash/dot/space between every block)
+      // or a clean 10-digit / 11-digit-with-1 run. Avoids matching pure
+      // 12-13 digit timestamps or ISBNs that incidentally contain a
+      // valid 3-3-4 split.
+      { pattern: /\b(?:\+?\d{1,3}[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b/g, severity: "high", detail: "Phone number found in prompt" },
+      { pattern: /\b(?:\+?1[-.\s]?)?\d{10}\b/g, severity: "high", detail: "Phone number found in prompt" },
+      { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, severity: "high", detail: "SSN-like pattern found" },
+      { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, severity: "high", detail: "Credit card number found" },
+    ];
+
+    // Contextual / casually-typed PII shapes (added v1.3.3).
+    const CASUAL_PII_PATTERNS = [
+      {
+        pattern: /\b(?:password|passwd|pwd|passcode|pin)\s*(?:is|=|:)\s*\S+/gi,
+        severity: "high",
+        detail: "Password or PIN appears to be disclosed in plain text",
+      },
+      {
+        pattern: /\b(?:bank\s+account|account|acct|acc)\s*(?:number|num|no|#)?\s*(?:is|=|:)?\s*\d{4,}/gi,
+        severity: "high",
+        detail: "Bank/account number appears to be disclosed",
+      },
+      {
+        pattern: /\b(?:social\s*security(?:\s*number|\s*#)?|ssn|national\s+id|tax\s+id|tin)\s*(?:is|=|:|#)?\s*[\d\s\-]{4,}/gi,
+        severity: "high",
+        detail: "Government identification number (SSN / tax ID / national ID) disclosed",
+      },
+      {
+        pattern: /\b\d{3}\s\d{2}\s\d{4}\b/g,
+        severity: "high",
+        detail: "SSN-like pattern (space-separated) found",
+      },
+      {
+        pattern: /\b(?:dob|d\.?o\.?b\.?|date\s+of\s+birth|birth\s*date|birthday|born(?:\s+on)?)\s*(?:is|=|:|on)?\s*\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}\b/gi,
+        severity: "medium",
+        detail: "Date of birth appears in the prompt",
+      },
+      {
+        // Street number + 1-4 Title-Case words + street-type suffix.
+        // Tightened (task #115): requires either an address-context word
+        // before the candidate (live, ship, mail, address, apartment, …)
+        // or a US state code / ZIP after it. Otherwise prose like
+        // "the 3 Mile Trail near the visitor center" won't fire.
+        pattern: /\b\d{1,6}\s+[A-Z][A-Za-z0-9.'-]*(?:\s+[A-Z][A-Za-z0-9.'-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|Pl|Place|Way|Hwy|Highway|Pkwy|Parkway|Terrace|Trail|Sq|Square)\b\.?/g,
+        severity: "medium",
+        detail: "Residential / street address pattern found",
+        validate: (text, m) => hasAddressContext(text, m.start, m.end),
+      },
+      {
+        // 13–19 digit run for cards without separators (covers Amex 15, 19-digit).
+        // Tightened (task #115): only flag if Luhn checksum passes (as real
+        // card numbers do) or there's a card-related context word nearby.
+        // Otherwise unix-ms timestamps and ISBN-13s would all fire.
+        pattern: /\b\d{13,19}\b/g,
+        severity: "high",
+        detail: "Long digit run that looks like a credit card number",
+        validate: (text, m) => luhnValid(m.match) || hasCardContext(text, m.start, m.end),
+      },
+      {
+        // Names must be Title Case so prose like "my name is Jane and the …" doesn't trip.
+        pattern: /\b(?:[Mm]y\s+(?:full\s+|legal\s+)?name\s+is|[Ii]\s+am)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]?\.?)?\s+[A-Z][a-z]+\b/g,
+        severity: "medium",
+        detail: "Full personal name disclosed in the prompt",
+      },
+    ];
+
+    // Casually-typed credential disclosures (added task #172).
+    // Real users type "my api key is hunter2" / "the prod token is xyz" /
+    // "credentials: admin / hunter2" rather than the strict `key=value` shape
+    // the existing generic_api_key / generic_secret regex requires. Without
+    // these the firewall lets natural-language credential leaks through.
+    //
+    // Pattern shape mirrors the established casual rules: a fixed credential
+    // noun phrase, then an explicit assignment-style connector (is | are | =
+    // | :), then a value. We require the connector + value so prose like
+    // "I forgot my api key" / "what's an api key?" / "the api is slow" /
+    // "the API key parameter accepts a string" stays clean.
+    //
+    // Additionally, when the connector is the natural-language "is"/"are"
+    // (which is high false-positive surface — "api key is required",
+    // "token is valid", "credentials are strong"), the value must also look
+    // credential-shaped: contain a digit / underscore / dash / special char,
+    // or be mixed-case. A pure-letter dictionary word is treated as prose.
+    // Explicit assignment connectors (= or :) stay permissive because they
+    // are very rarely used in natural prose for these nouns.
+    //
+    // Pushed into the "secret_exposure" category in analyzePromptSafety()
+    // so the existing suggestion text ("Remove or mask all secrets…") fires
+    // without any new suggestion plumbing. Multi-word matches take priority
+    // over single-word ones via overlap dedupe so "api token is X" produces
+    // exactly one issue.
+    const CASUAL_SECRET_PATTERNS = [
+      {
+        // Multi-word credential nouns: "api key", "api token", "access key",
+        // "secret key", "client secret", "bearer token", "refresh token",
+        // "auth token". Separator between the two words is space, hyphen,
+        // or underscore so "api_key is X" and "api-token = X" both fire.
+        pattern: /\b(?:api[_\s-]?(?:key|token)|access[_\s-]?key|secret[_\s-]?key|client[_\s-]?secret|bearer[_\s-]?token|refresh[_\s-]?token|auth[_\s-]?token)\s*(?:is|are|=|:)\s*["']?\S{4,}/gi,
+        severity: "high",
+        detail: "Credential disclosed in plain text (api/access/secret/auth/refresh/bearer)",
+      },
+      {
+        // Single-word nouns "secret" / "token" / "credentials" — same shape,
+        // entropy guard handles the wider false-positive surface.
+        pattern: /\b(?:credentials?|secret|token)\s*(?:is|are|=|:)\s*["']?\S{4,}/gi,
+        severity: "high",
+        detail: "Credential disclosed in plain text (secret/token/credentials)",
+      },
+    ];
+
+    // Parse a casual-secret regex match into its connector + value parts so
+    // the entropy guard below can decide whether the value looks like a real
+    // credential or just continuing prose.
+    function parseCasualSecretMatch(matchStr) {
+      // The original regex (above) already anchors the connector after the
+      // credential noun. Here we re-extract it: prefer the symbolic
+      // connectors (= / :) which are non-word chars and therefore have no
+      // \b around them; fall back to whole-word "is" / "are" so we don't
+      // accidentally match the "is" inside another word.
+      const sym = /([=:])\s*["']?(\S+)/.exec(matchStr);
+      if (sym) return { connector: sym[1], value: sym[2].replace(/["']$/, "") };
+      const word = /\b(is|are)\b\s*["']?(\S+)/i.exec(matchStr);
+      if (word) return { connector: word[1].toLowerCase(), value: word[2].replace(/["']$/, "") };
+      return null;
+    }
+
+    // Common-prose words that follow an "is"/"are" connector after a
+    // credential noun WITHOUT being a credential disclosure. Used as a
+    // targeted denylist so we don't over-suppress true positives like
+    // "the secret is qwerty" or "my api key is abcdefgh" — those are real
+    // alphabetic credential values that the firewall is supposed to catch.
+    const CASUAL_SECRET_PROSE_DENYLIST = new Set([
+      "required", "optional", "valid", "invalid", "public", "private",
+      "strong", "weak", "expired", "missing", "broken", "correct",
+      "incorrect", "configured", "unconfigured", "set", "unset",
+      "present", "absent", "available", "unavailable", "important",
+      "needed", "mandatory", "ready", "working", "secure", "insecure",
+      "encrypted", "decrypted", "hidden", "exposed", "leaked", "rotated",
+      "active", "inactive", "enabled", "disabled", "empty", "blank",
+      "null", "undefined", "good", "bad", "fine", "okay",
+    ]);
+
+    // Heuristic for natural-language ("is"/"are") connectors only —
+    // explicit `=`/`:` connectors skip this check because they are very
+    // rarely used in prose for these nouns. We strip surrounding quotes /
+    // brackets and trailing sentence punctuation first so values like
+    // "valid." / "optional," / "public!" normalize to "valid" / "optional"
+    // / "public" before the prose check.
+    //
+    // Acceptance rules (after normalization):
+    //   1. <4 chars → reject (matches the regex's own \S{4,} floor).
+    //   2. Has digit / underscore / dash / special char → accept.
+    //   3. Pure-letter, lowercase-form is in the prose denylist → reject.
+    //   4. Title Case single word ("Required", "Paris") → reject.
+    //   5. Otherwise (e.g. "abcdefgh", "qwerty", "plaintext", "Hunter2",
+    //      "GoCubsGo") → accept.
+    function looksLikeCredentialValue(value) {
+      const v = value
+        .replace(/^["'`(\[<{]+/, "")
+        .replace(/["'`)\]>}.,;:!?]+$/, "");
+      if (v.length < 4) return false;
+      if (/[\d_\-!@#$%^&*+/=]/.test(v)) return true;
+      if (CASUAL_SECRET_PROSE_DENYLIST.has(v.toLowerCase())) return false;
+      if (/^[A-Z][a-z]+$/.test(v)) return false;
+      return true;
+    }
+
+    // Walk CASUAL_SECRET_PATTERNS and yield validated {start,end,match,parsed}
+    // entries with overlapping matches deduped (longer/multi-word wins).
+    // Shared by issue collection (pushCasualSecretIssues) and the storage-side
+    // value masker (maskCasualSecretsInText) so both stay in lock-step with
+    // the entropy / prose-denylist rules.
+    function collectCasualSecretMatches(text) {
+      const candidates = [];
+      for (const cfg of CASUAL_SECRET_PATTERNS) {
+        for (const m of findMatches(text, cfg.pattern)) {
+          const parsed = parseCasualSecretMatch(m.match);
+          if (!parsed) continue;
+          if (parsed.connector === "is" || parsed.connector === "are") {
+            if (!looksLikeCredentialValue(parsed.value)) continue;
+          }
+          candidates.push({
+            start: m.start,
+            end: m.end,
+            match: m.match,
+            severity: cfg.severity,
+            detail: cfg.detail,
+            parsed,
+          });
+        }
+      }
+      candidates.sort(
+        (a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start),
+      );
+      const kept = [];
+      let lastEnd = -1;
+      for (const c of candidates) {
+        if (c.start < lastEnd) continue;
+        kept.push(c);
+        lastEnd = c.end;
+      }
+      return kept;
+    }
+
+    // Storage-side helper (task #173). Replaces the disclosed credential
+    // VALUE with `***` while leaving the surrounding noun phrase intact, so
+    // the redacted scan history reads "my api key is ***" instead of
+    // persisting the raw secret. The noun phrase is intentionally preserved
+    // so users browsing their own scan history can still tell what kind of
+    // disclosure was caught.
+    function maskCasualSecretsInText(text) {
+      const matches = collectCasualSecretMatches(text);
+      if (matches.length === 0) return text;
+      const spans = [];
+      for (const c of matches) {
+        // Locate the value substring inside the original match span. We
+        // search from the right so a value that incidentally repeats text
+        // earlier in the noun phrase still resolves to the trailing copy.
+        const idxInMatch = c.match.lastIndexOf(c.parsed.value);
+        if (idxInMatch < 0) continue;
+        const valueStart = c.start + idxInMatch;
+        const valueEnd = valueStart + c.parsed.value.length;
+        spans.push({ start: valueStart, end: valueEnd });
+      }
+      spans.sort((a, b) => a.start - b.start);
+      let out = "";
+      let cursor = 0;
+      for (const s of spans) {
+        if (s.start < cursor) continue;
+        out += text.slice(cursor, s.start) + "***";
+        cursor = s.end;
+      }
+      out += text.slice(cursor);
+      return out;
+    }
+
+    function pushCasualSecretIssues(text, issues) {
+      // collectCasualSecretMatches() already validates + dedupes overlaps
+      // (multi-word noun phrases win over single-word ones), so we can just
+      // map straight into the issue shape.
+      for (const c of collectCasualSecretMatches(text)) {
+        issues.push({
+          category: "secret_exposure",
+          severity: c.severity,
+          detail: c.detail,
+          match: c.match,
+          start: c.start,
+          end: c.end,
+        });
+      }
+    }
+
+    const PROPRIETARY_PATTERNS = [
+      // "internal" alone matches lots of harmless prose ("internal combustion
+      // engine", "internal monologue", "internal organs"). Require a
+      // business/technical follower so we keep flagging real leakage like
+      // "internal API", "internal docs", "internal wiki" without warning on
+      // every middle-school biology question.
+      { pattern: /\binternal\s+(?:api|use|only|tool|team|doc(?:s|ument(?:s|ation)?)?|server|service|endpoint|repo(?:sitory)?|wiki|notes?|memo|spec(?:s|ification)?|infrastructure|systems?|policy|policies|process(?:es)?|roadmap|review|metric)s?\b/gi, severity: "medium", detail: "Confidentiality marker found" },
+      { pattern: /\b(proprietary|confidential|trade\s*secret)\b/gi, severity: "medium", detail: "Confidentiality marker found" },
+      { pattern: /\b(TODO|FIXME|HACK|XXX)\b.*(?:password|secret|key|token)/gi, severity: "high", detail: "Code comment exposing sensitive context" },
+      { pattern: /\/(api|internal|admin|private)\/[a-z0-9/_-]+/gi, severity: "low", detail: "Internal API path exposed" },
+      { pattern: /\b(?:SELECT|INSERT|UPDATE|DELETE)\s+.*\s+(?:FROM|INTO|SET)\s+\w+/gi, severity: "medium", detail: "Raw SQL query with schema details" },
+      { pattern: /(?:function|const|let|var|class)\s+[a-zA-Z_$][\w$]*\s*(?:=|\(|{)/g, severity: "low", detail: "Source code with named functions/variables" },
+    ];
+
+    const TOXICITY_PATTERNS = [
+      { pattern: /\b(ignore\s+previous\s+instructions|disregard\s+above|forget\s+everything)\b/gi, severity: "high", detail: "Prompt injection attempt detected" },
+      { pattern: /\b(jailbreak|bypass\s+filter|ignore\s+safety|override\s+rules)\b/gi, severity: "high", detail: "Safety bypass attempt" },
+      { pattern: /\b(system\s*prompt|you\s+are\s+now|act\s+as\s+if|pretend\s+to\s+be)\b/gi, severity: "medium", detail: "Role manipulation attempt" },
+    ];
+
+    function findMatches(text, pattern) {
+      const results = [];
+      const re = new RegExp(pattern.source, pattern.flags);
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        results.push({ match: m[0], start: m.index, end: m.index + m[0].length });
+      }
+      return results;
+    }
+
+    // Any detected issue caps the score below SAFE_THRESHOLD so the overlay
+    // renders a warning panel rather than the brief "All clear" auto-send.
+    const SAFE_THRESHOLD = 70;
+    const DETECTED_SCORE_CAP = SAFE_THRESHOLD - 5;
+
+    function pushPatternIssues(text, patterns, category, issues) {
+      for (const cfg of patterns) {
+        const { pattern, severity, detail, validate } = cfg;
+        for (const m of findMatches(text, pattern)) {
+          if (validate && !validate(text, m)) continue;
+          issues.push({
+            category,
+            severity,
+            detail,
+            match: m.match,
+            start: m.start,
+            end: m.end,
+          });
+        }
+      }
+    }
+
+    function analyzePromptSafety(text) {
+      const issues = [];
+
+      const secrets = detectSecrets(text);
+      for (const s of secrets) {
+        const severity = ["jwt", "private_key", "database_url", "aws_secret_key"].includes(s.type) ? "critical" : "high";
+        issues.push({
+          category: "secret_exposure",
+          severity,
+          detail: `${s.pattern}: detected in input`,
+          match: s.match,
+          start: s.start,
+          end: s.end,
+        });
+      }
+
+      pushPatternIssues(text, PII_PATTERNS, "pii", issues);
+      pushPatternIssues(text, CASUAL_PII_PATTERNS, "pii", issues);
+      pushCasualSecretIssues(text, issues);
+      pushPatternIssues(text, PROPRIETARY_PATTERNS, "proprietary_logic", issues);
+      pushPatternIssues(text, TOXICITY_PATTERNS, "toxicity", issues);
+
+      let riskScore = 100;
+      for (const issue of issues) {
+        switch (issue.severity) {
+          case "critical": riskScore -= 30; break;
+          case "high": riskScore -= 20; break;
+          case "medium": riskScore -= 10; break;
+          case "low": riskScore -= 5; break;
+        }
+      }
+      if (issues.length > 0) {
+        riskScore = Math.min(riskScore, DETECTED_SCORE_CAP);
+      }
+      riskScore = Math.max(0, riskScore);
+
+      const level = riskScore >= SAFE_THRESHOLD ? "safe" : riskScore >= 40 ? "caution" : "danger";
+
+      const categoryCounts = {};
+      for (const issue of issues) {
+        categoryCounts[issue.category] = (categoryCounts[issue.category] || 0) + 1;
+      }
+
+      let summary;
+      if (issues.length === 0) {
+        summary = "No issues detected. This prompt appears safe to send to AI systems.";
+      } else {
+        const parts = Object.entries(categoryCounts).map(([cat, count]) => `${count} ${cat.replace(/_/g, " ")}`);
+        summary = `Found ${issues.length} issue${issues.length > 1 ? "s" : ""}: ${parts.join(", ")}.`;
+      }
+
+      const suggestions = [];
+      const seenCategories = new Set();
+      for (const issue of issues) {
+        if (seenCategories.has(issue.category)) continue;
+        seenCategories.add(issue.category);
+
+        switch (issue.category) {
+          case "secret_exposure":
+            suggestions.push({
+              category: "secret_exposure",
+              action: "Remove or mask all secrets before sending to AI",
+              detail: "Use environment variables instead of hardcoded secrets. Run the Sanitize function to automatically mask detected credentials.",
+            });
+            suggestions.push({
+              category: "secret_exposure",
+              action: "Use .env files and secret managers",
+              detail: "Store API keys, tokens, and database URLs in environment variables or a secret manager (AWS Secrets Manager, HashiCorp Vault). Never paste them into AI prompts.",
+            });
+            break;
+          case "pii":
+            suggestions.push({
+              category: "pii",
+              action: "Redact personal information before sharing with AI",
+              detail: "Replace real emails, phone numbers, SSNs, addresses, dates of birth, and credit card numbers with placeholder values like user@example.com or 555-0100.",
+            });
+            suggestions.push({
+              category: "pii",
+              action: "Use synthetic data for AI-assisted development",
+              detail: "Generate fake but realistic test data instead of using real personal information in prompts.",
+            });
+            break;
+          case "proprietary_logic":
+            suggestions.push({
+              category: "proprietary_logic",
+              action: "Abstract proprietary code before sharing",
+              detail: "Rename internal functions, classes, and API endpoints to generic names. Remove business-specific logic and keep only the pattern you need help with.",
+            });
+            suggestions.push({
+              category: "proprietary_logic",
+              action: "Strip internal comments and SQL schemas",
+              detail: "Remove TODO/FIXME comments with sensitive context, and replace real table/column names in SQL queries with generic equivalents.",
+            });
+            break;
+          case "toxicity":
+            suggestions.push({
+              category: "toxicity",
+              action: "Remove prompt injection patterns",
+              detail: "Detected language that attempts to override AI safety instructions. Remove phrases like 'ignore previous instructions' or 'act as if' to ensure safe AI interaction.",
+            });
+            suggestions.push({
+              category: "toxicity",
+              action: "Use structured prompts instead of role manipulation",
+              detail: "Instead of trying to bypass AI safety filters, use clear, structured prompts that describe your actual need. This produces better results and avoids account flags.",
+            });
+            break;
+        }
+      }
+
+      return { riskScore, level, issues, suggestions, summary };
+    }
+
+    return { maskCasualSecretsInText, analyzePromptSafety };
+  })(modules["secrets-source.mjs"]);
+
+  modules["sanitize-source.mjs"] = (function ({ detectSecrets, maskSecret }) {
+    // Prompt sanitizer for /api/dev/sanitize. Plain JS (no TypeScript) so that
+    // node:test can load it directly and the browser extension can reuse the same
+    // rules on-device (extension/scripts/build-local-scanner.mjs). Types live in
+    // ./sanitize-source.d.mts; ./sanitize.ts re-exports with those types.
+
+
+    const FUNCTION_NAME_PATTERN = /(?:function|const|let|var)\s+([a-zA-Z_$][\w$]*)\s*(?:=\s*(?:async\s*)?\(|[(={])/g;
+    const CLASS_NAME_PATTERN = /class\s+([a-zA-Z_$][\w$]*)/g;
+
+    const PII_REPLACEMENTS = [
+      { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[EMAIL_REDACTED]" },
+      { pattern: /\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: "[PHONE_REDACTED]" },
+      { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[SSN_REDACTED]" },
+      { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[CARD_REDACTED]" },
+      { pattern: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, replacement: "[IP_REDACTED]" },
+    ];
+
+    function sanitizeText(text, issues) {
+      void issues;
+      const changes = [];
+      let result = text;
+      let offset = 0;
+
+      const secrets = detectSecrets(text);
+      const secretsByPosition = secrets.sort((a, b) => a.start - b.start);
+
+      for (const secret of secretsByPosition) {
+        const masked = maskSecret(secret.match);
+        const adjustedStart = secret.start + offset;
+        const adjustedEnd = secret.end + offset;
+        result = result.substring(0, adjustedStart) + masked + result.substring(adjustedEnd);
+        changes.push({
+          category: "secret_exposure",
+          original: secret.match,
+          replacement: masked,
+          start: secret.start,
+          end: secret.end,
+        });
+        offset += masked.length - secret.match.length;
+      }
+
+      for (const { pattern, replacement } of PII_REPLACEMENTS) {
+        const re = new RegExp(pattern.source, pattern.flags);
+        let m;
+        const piiMatches = [];
+        while ((m = re.exec(text)) !== null) {
+          const match = m;
+          const alreadyCovered = secrets.some((s) =>
+            match.index >= s.start && match.index + match[0].length <= s.end
+          );
+          if (!alreadyCovered) {
+            piiMatches.push({ match: match[0], start: match.index, end: match.index + match[0].length });
+          }
+        }
+
+        for (const pii of piiMatches) {
+          result = result.replace(pii.match, replacement);
+          changes.push({
+            category: "pii",
+            original: pii.match,
+            replacement,
+            start: pii.start,
+            end: pii.end,
+          });
+        }
+      }
+
+      let funcCounter = 1;
+      result = result.replace(FUNCTION_NAME_PATTERN, (full, name) => {
+        const abstractName = `func_${funcCounter++}`;
+        changes.push({
+          category: "proprietary_logic",
+          original: name,
+          replacement: abstractName,
+          start: 0,
+          end: 0,
+        });
+        return full.replace(name, abstractName);
+      });
+
+      let classCounter = 1;
+      result = result.replace(CLASS_NAME_PATTERN, (full, name) => {
+        const abstractName = `Class_${classCounter++}`;
+        changes.push({
+          category: "proprietary_logic",
+          original: name,
+          replacement: abstractName,
+          start: 0,
+          end: 0,
+        });
+        return full.replace(name, abstractName);
+      });
+
+      return { sanitized: result, changes };
+    }
+
+    return { sanitizeText };
+  })(modules["secrets-source.mjs"]);
+
+  root.EraseAILocalScanner = {
+    analyzePromptSafety: modules["safety-source.mjs"].analyzePromptSafety,
+    sanitizeText: modules["sanitize-source.mjs"].sanitizeText,
+  };
+})(typeof self !== "undefined" ? self : globalThis);

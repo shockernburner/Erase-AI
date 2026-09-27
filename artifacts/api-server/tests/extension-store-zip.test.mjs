@@ -126,6 +126,16 @@ describe("packExtensionZip → store upload zip strips manifest.json `key`", () 
     assert.equal(names.some((n) => n.endsWith("Thumbs.db")), false);
   });
 
+  test("store zip ships no dev dependencies, tests or listing docs", () => {
+    const names = storeZip.getEntries().map((e) => e.entryName);
+    for (const dev of [/(^|\/)node_modules\//, /(^|\/)tests\//, /(^|\/)package\.json$/, /(^|\/)vitest\.config\.js$/, /(^|\/)STORE_LISTING\.md$/]) {
+      assert.equal(names.some((n) => dev.test(n)), false, `store zip contains ${dev}`);
+    }
+    // The on-device scanner and growth hooks the service worker imports must ship.
+    assert.ok(names.includes("src/local-scanner.js"), "src/local-scanner.js missing from store zip");
+    assert.ok(names.includes("src/growth.js"), "src/growth.js missing from store zip");
+  });
+
   test("manual-install zip KEEPS the `key` field (so dev unpacked still resolves to the pinned ID)", () => {
     const entry = manualZip.getEntry("extension/manifest.json");
     assert.ok(entry, "manual zip should nest manifest under extension/");

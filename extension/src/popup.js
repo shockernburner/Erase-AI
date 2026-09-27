@@ -168,7 +168,7 @@ function renderDiagnosis(result) {
   } else if (result.state === "no_key") {
     setDiagState("no_key");
     renderDiagTitle("Add your API key");
-    diagDetail.textContent = "The EraseAI server is reachable. Enter an API key below, or grab one from your dashboard.";
+    diagDetail.textContent = "Basic protection is on: prompts are checked on this device. Add an API key for full scanning, attachments history and your dashboard.";
     addDiagButton("Get my API key", "primary", openCanonicalKeysDashboard);
   } else if (result.state === "invalid_key") {
     setDiagState("invalid_key");
