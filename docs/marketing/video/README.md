@@ -6,6 +6,7 @@ Scripts that cut the Chrome extension demo videos from raw screen recordings.
 |---|---|
 | `build_video.py` | `EraseAI Firewall - Chrome demo.mp4` — 1920×1080, ~68 s, for the Chrome Web Store listing / YouTube |
 | `build_social.py` | `EraseAI Firewall - social 20s (16x9).mp4` and `(1x1).mp4` — ~20 s cuts for Reddit/Medium/YouTube and LinkedIn/X |
+| `build_store_assets.py` | `EraseAI store assets/` — five 1280×800 screenshots, 440×280 small promo tile, 1400×560 marquee (24-bit PNG, no alpha) for the Chrome Web Store listing |
 
 Each shot is a crop of the recording (so the EraseAI panels are readable at
 1080p) with a caption bar under it; title/end cards are rendered stills; music
@@ -38,6 +39,7 @@ from `~/Desktop` and write the finished videos there too:
 cd docs/marketing/video
 python3 build_video.py      # full demo
 python3 build_social.py     # 20 s cuts, both aspect ratios
+python3 build_store_assets.py  # store screenshots and promo tiles
 ```
 
 Intermediate clips go to `build/` (gitignored).
