@@ -45,15 +45,12 @@ WHY
 Pasting a log, a config file or a customer email into an AI chat is the fastest way to leak a credential or personal data. Once it is sent, you cannot take it back. EraseAI Firewall checks every message at the moment you press Send, so a mistake gets caught instead of shipped.
 
 WHAT IT CATCHES
-• Cloud and API credentials: AWS keys, OpenAI/Anthropic keys, GitHub and Slack tokens, Stripe keys, JWTs, private keys, database connection strings
-• Passwords and "my password is…" style disclosures
-• Personal data: emails, phone numbers, card numbers, US Social Security and other national ID numbers
+• Access keys and tokens for cloud services, developer tools and payment platforms, plus private keys and database connection strings
+• Passwords, including "my password is…" style disclosures
+• Personal data such as email addresses, phone numbers, card numbers and national ID numbers
 
 IT SCANS ATTACHMENTS TOO
-• PDFs, Word documents, spreadsheets and slide decks
-• Screenshots and photos of documents, read with on-device OCR (the image is not uploaded)
-• Text, CSV, JSON, logs and code files — with a one-click "Download clean copy" you can re-attach
-• ZIP and TAR archives, file by file
+Documents, spreadsheets, slide decks, PDFs, plain-text and code files, and archives are checked file by file. Screenshots and photos are read with on-device OCR, so the image is never uploaded. For text files you get a one-click clean copy to re-attach.
 
 HOW IT WORKS
 1. Type or paste into ChatGPT, Claude, Gemini or Replit as usual.
@@ -79,6 +76,14 @@ Install it and it starts checking prompts on your device right away, no account 
 
 Made by Vantward Solutions Pte. Ltd. — https://eraseai.ai/ai-firewall
 ```
+
+**Do not list brands or products in the description** (for example cloud
+providers, AI vendors, developer tools or token formats). Version 1.4.4 was
+rejected on 2026-09-28 for "excessive keywords" (Spam and Placement, reference
+Yellow Argon) because this section named AWS, OpenAI, Anthropic, GitHub, Slack,
+Stripe and JWTs. Describe categories instead. Naming the AI sites the
+extension runs on (ChatGPT, Claude, Gemini, Replit) is fine; that is where it
+works, not a keyword list.
 
 Keep the "YOUR DATA" section in sync with the server's behaviour
 (`artifacts/api-server/src/lib/dev/store-redact-source.mjs`) and the
