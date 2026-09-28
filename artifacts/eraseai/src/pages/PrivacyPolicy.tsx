@@ -47,7 +47,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground mt-3">
               <li>Email: director@vantward.com</li>
-              <li>WhatsApp: +852 9057 6851</li>
+              <li>WhatsApp: +65 8243 0739</li>
               <li>Address: 68 Circular Road #02-01, Singapore 049422</li>
             </ul>
           </section>
@@ -238,7 +238,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
               <strong className="text-foreground">Vantward Solutions Pte. Ltd.</strong><br />
               68 Circular Road #02-01, Singapore 049422<br />
               Registration No. 202606980C<br />
-              Email: director@vantward.com | WhatsApp: +852 9057 6851
+              Email: director@vantward.com | WhatsApp: +65 8243 0739
             </p>
           </section>
         </div>

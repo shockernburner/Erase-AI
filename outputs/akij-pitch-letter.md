@@ -4,7 +4,7 @@
 
 **VANTWARD SOLUTIONS PTE. LTD.**
 68 Circular Road, #02-01, Singapore 049422
-**W** +852 9057 6851 | **E** director@vantward.com
+**W** +65 8243 0739 | **E** director@vantward.com
 Reg. No. 202606980C
 
 ---

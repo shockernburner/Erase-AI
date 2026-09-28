@@ -669,9 +669,9 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 </div>
               </div>
               <div className="mt-5 space-y-3 text-sm text-muted-foreground">
-                <a href="https://wa.me/85290576851" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-foreground">
+                <a href="https://wa.me/6582430739" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-foreground">
                   <MessageCircle className="w-4 h-4 text-green-500" />
-                  +852 9057 6851
+                  +65 8243 0739
                 </a>
                 <a href="mailto:director@vantward.com" className="flex items-center gap-2 hover:text-foreground">
                   <Mail className="w-4 h-4 text-primary" />

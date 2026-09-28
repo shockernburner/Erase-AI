@@ -109,7 +109,7 @@ function Letterhead() {
             <div>Singapore 049422</div>
             <div style={{ marginTop: 4 }}>
               <span style={{ color: "#162a47", fontWeight: 600 }}>W</span>{" "}
-              +852 9057 6851
+              +65 8243 0739
             </div>
             <div>
               <span style={{ color: "#162a47", fontWeight: 600 }}>E</span>{" "}
@@ -185,7 +185,7 @@ function LetterheadClean() {
         <div style={{ textAlign: "right", fontSize: 10, color: "#555", lineHeight: 1.7, fontFamily: "'Inter', 'Helvetica Neue', sans-serif", paddingTop: 8 }}>
           <div>68 Circular Road, #02-01</div>
           <div>Singapore 049422</div>
-          <div style={{ marginTop: 4 }}><span style={{ color: "#162a47", fontWeight: 600 }}>W</span> +852 9057 6851</div>
+          <div style={{ marginTop: 4 }}><span style={{ color: "#162a47", fontWeight: 600 }}>W</span> +65 8243 0739</div>
           <div><span style={{ color: "#162a47", fontWeight: 600 }}>E</span> director@vantward.com</div>
           <div style={{ marginTop: 4, color: "#999", fontSize: 9 }}>Reg. No. 202606980C</div>
         </div>
@@ -327,7 +327,7 @@ function PitchAkij() {
             <div>Singapore 049422</div>
             <div style={{ marginTop: 4 }}>
               <span style={{ color: "#162a47", fontWeight: 600 }}>W</span>{" "}
-              +852 9057 6851
+              +65 8243 0739
             </div>
             <div>
               <span style={{ color: "#162a47", fontWeight: 600 }}>E</span>{" "}

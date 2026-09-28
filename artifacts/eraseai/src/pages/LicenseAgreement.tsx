@@ -151,7 +151,7 @@ export default function LicenseAgreement({ onBack, onViewTerms }: { onBack: () =
               <strong className="text-foreground">Vantward Solutions Pte. Ltd.</strong><br />
               68 Circular Road #02-01, Singapore 049422<br />
               Registration No. 202606980C<br />
-              Email: director@vantward.com | WhatsApp: +852 9057 6851
+              Email: director@vantward.com | WhatsApp: +65 8243 0739
             </p>
           </section>
         </div>

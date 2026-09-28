@@ -459,7 +459,7 @@ export default function LandingPage({
           <p className="text-muted-foreground mb-8">{t("landing.contactSubtitle")}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <a
-              href="https://wa.me/85290576851"
+              href="https://wa.me/6582430739"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-6 py-4 rounded-xl border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all"

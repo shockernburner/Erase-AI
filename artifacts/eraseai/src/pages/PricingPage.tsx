@@ -493,11 +493,11 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                     <p className="text-sm font-mono text-foreground">director@vantward.com</p>
                   </div>
                 </a>
-                <a href="https://wa.me/85290576851" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/20 p-4 transition-colors hover:bg-muted/30">
+                <a href="https://wa.me/6582430739" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/20 p-4 transition-colors hover:bg-muted/30">
                   <MessageCircle className="h-5 w-5 shrink-0 text-green-500" />
                   <div>
                     <p className="mb-0.5 text-xs text-muted-foreground">WhatsApp</p>
-                    <p className="text-sm font-mono text-foreground">+852 9057 6851</p>
+                    <p className="text-sm font-mono text-foreground">+65 8243 0739</p>
                   </div>
                 </a>
               </div>

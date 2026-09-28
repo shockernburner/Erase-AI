@@ -639,7 +639,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           </h3>
           <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
             <a
-              href="https://wa.me/85290576851"
+              href="https://wa.me/6582430739"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-6 py-4 rounded-xl border border-green-500/30 bg-green-500/5 hover:bg-green-500/10 transition-all"
@@ -647,7 +647,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
               <MessageCircle className="w-6 h-6 text-green-500" />
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">WhatsApp</p>
-                <p className="text-sm font-semibold text-foreground">+852 9057 6851</p>
+                <p className="text-sm font-semibold text-foreground">+65 8243 0739</p>
               </div>
             </a>
             <a

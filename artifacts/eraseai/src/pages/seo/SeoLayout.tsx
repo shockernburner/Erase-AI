@@ -71,13 +71,13 @@ export function SeoFooter() {
             <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Contact</h4>
             <div className="space-y-3">
               <a
-                href="https://wa.me/85290576851"
+                href="https://wa.me/6582430739"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-green-400 transition-colors"
               >
                 <MessageCircle className="w-4 h-4 text-green-500" />
-                +852 9057 6851
+                +65 8243 0739
               </a>
               <a
                 href="mailto:director@vantward.com"

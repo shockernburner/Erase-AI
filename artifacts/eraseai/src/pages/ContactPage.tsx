@@ -89,12 +89,12 @@ export default function ContactPage({ onBack }: { onBack: () => void }) {
                 <div>
                   <p className="text-sm font-medium text-foreground">{t("contact.whatsapp")}</p>
                   <a
-                    href="https://wa.me/85290576851"
+                    href="https://wa.me/6582430739"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-green-400 hover:text-green-300 transition-colors"
                   >
-                    +852 9057 6851
+                    +65 8243 0739
                   </a>
                 </div>
               </div>
