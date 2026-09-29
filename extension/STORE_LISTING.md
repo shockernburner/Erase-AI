@@ -39,49 +39,47 @@ sentences are what search and the listing preview show — keep the value
 proposition and the search terms there.
 
 ```
-EraseAI Firewall catches API keys, passwords, card numbers, emails and customer data in your prompt and your attachments before you hit Send in ChatGPT, Claude or Gemini. Redact it with one click, send anyway, or cancel, and keep your company's secrets out of AI chats.
+EraseAI Firewall checks what you are about to send to an AI chat and stops secrets and personal data before they leave your browser. When it finds something sensitive, you decide whether to redact it, send anyway, or cancel.
 
 WHY
-Pasting a log, a config file or a customer email into an AI chat is the fastest way to leak a credential or personal data. Once it is sent, you cannot take it back. EraseAI Firewall checks every message at the moment you press Send, so a mistake gets caught instead of shipped.
+Pasting a log, a config file or a customer email into an AI chat is an easy way to leak a credential or someone's personal details. Once it is sent, you cannot take it back. EraseAI Firewall checks each message at the moment you press Send, so a mistake gets caught instead of shipped.
 
-WHAT IT CATCHES
-• Access keys and tokens for cloud services, developer tools and payment platforms, plus private keys and database connection strings
-• Passwords, including "my password is…" style disclosures
-• Personal data such as email addresses, phone numbers, card numbers and national ID numbers
+WHAT IT LOOKS FOR
+It recognises common access key and token formats, passwords written into a message, and personal information such as contact details and payment card numbers.
 
-IT SCANS ATTACHMENTS TOO
-Documents, spreadsheets, slide decks, PDFs, plain-text and code files, and archives are checked file by file. Screenshots and photos are read with on-device OCR, so the image is never uploaded. For text files you get a one-click clean copy to re-attach.
+ATTACHMENTS
+Files you attach are checked too. Text inside images is read on your device, so the image itself is never uploaded.
 
 HOW IT WORKS
-1. Type or paste into ChatGPT, Claude, Gemini or Replit as usual.
+1. Write or paste your message as usual.
 2. Press Send. EraseAI Firewall checks the message and any attached files first.
-3. If something sensitive is found, you see exactly what and where, and choose: Sanitize & Send (replace it with placeholders), Send Anyway, or Cancel.
-Clean messages go through without interruption.
+3. If something sensitive is found, it shows you what and where. Choose Sanitize & Send to replace it with placeholders, Send Anyway, or Cancel.
+Messages with nothing sensitive go through without interruption.
 
-WORKS ON
-ChatGPT (chatgpt.com, including Work mode), Claude (claude.ai), Gemini (gemini.google.com) and Replit.
+WHERE IT WORKS
+ChatGPT, Claude, Gemini and Replit in your browser.
 
 YOUR DATA
-• The extension only runs on the AI sites listed above.
-• Without an account, every check runs on your device and nothing is sent anywhere.
-• With an account, message text is checked by the EraseAI API over HTTPS. Your scan history keeps the first 500 characters of each scan, with keys, tokens, passwords and connection strings masked, so you can review it in your dashboard.
-• Images are read with OCR inside your browser; the image itself is never uploaded.
-• We never sell your data or use it to train models. Privacy policy: https://eraseai.ai/privacy
+The extension runs only on the sites above. Without an account, every check happens on your device and nothing is sent anywhere. With an account, message text is checked by the EraseAI API over HTTPS, and your scan history keeps a short excerpt of each scan, with secrets masked, so you can review it in your dashboard. We never sell your data or use it to train models. Privacy policy: https://eraseai.ai/privacy
 
 FOR TEAMS
-Security and IT teams use EraseAI Firewall to cut "shadow AI" data leaks without banning AI tools. Team plans, an admin dashboard and an API are available at https://eraseai.ai.
+Security and IT teams use EraseAI Firewall to reduce data leaks to AI tools without banning them. Team plans are available at https://eraseai.ai.
 
 GETTING STARTED
-Install it and it starts checking prompts on your device right away, no account needed. For full scanning, history and your dashboard, create a free account at eraseai.ai and paste your API key into the extension popup.
+It starts working as soon as it is installed, with no account needed. For account features, create a free account at eraseai.ai and paste your API key into the extension popup.
 
-Made by Vantward Solutions Pte. Ltd. — https://eraseai.ai/ai-firewall
+Made by Vantward Solutions Pte. Ltd.
 ```
 
 **Do not list brands or products in the description** (for example cloud
 providers, AI vendors, developer tools or token formats). Version 1.4.4 was
 rejected on 2026-09-28 for "excessive keywords" (Spam and Placement, reference
 Yellow Argon) because this section named AWS, OpenAI, Anthropic, GitHub, Slack,
-Stripe and JWTs. Describe categories instead. Naming the AI sites the
+Stripe and JWTs. It was rejected again on 2026-09-29 for the attachment
+sentence ("Documents, spreadsheets, slide decks, PDFs, plain-text and code
+files, and archives…"): the reviewer treats **any** long comma list of file
+types or data types as keyword stuffing. Write in prose, keep lists to two or
+three items, and don't enumerate formats. Naming the AI sites the
 extension runs on (ChatGPT, Claude, Gemini, Replit) is fine; that is where it
 works, not a keyword list.
 
