@@ -240,7 +240,7 @@ Happy to set you up with a Pro account for testing, answer technical questions, 
 |---|---|
 | 0 | Confirm 1.4.4 is live; screenshots and video uploaded to the listing |
 | 1 | Show HN (Tue–Thu, ~8–9 AM ET), stay in the thread all day |
-| 2 | LinkedIn founder post + X thread |
+| 2 | LinkedIn article + share post (`linkedin-article.md`) + X thread |
 | 3–4 | Reddit (one sub per day, following each sub's rules) |
 | 7 | Product Hunt |
 | 8 | Indie Hackers build story |

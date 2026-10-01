@@ -5,6 +5,7 @@ Outputs (24-bit PNG, no alpha, as the store requires) into
   screenshot-1..5.png   1280x800
   promo-small.png       440x280
   promo-marquee.png     1400x560
+  linkedin-cover.png    1920x1080 (LinkedIn article cover)
 
 Screenshots put a headline and three points on the left and a tall crop of the
 real EraseAI panel on the right, so the panel text stays readable (a full-width
@@ -150,6 +151,32 @@ def promo_marquee():
     im.save(os.path.join(OUT, "promo-marquee.png"))
 
 
+def linkedin_cover():
+    """1920x1080 cover image for the LinkedIn launch article."""
+    W, H, SPLIT = 1920, 1080, 860
+    im = Image.new("RGB", (W, H), bv.BG)
+    d = ImageDraw.Draw(im)
+    shot = frame("REC2", 108.0).crop((865, 235, 865 + 1210, 235 + 1100))
+    rw = W - SPLIT
+    shot = shot.resize((rw, round(1100 * rw / 1210)), Image.LANCZOS)
+    top = max(0, (shot.height - H) // 2)
+    im.paste(shot.crop((0, top, rw, top + H)), (SPLIT, max(0, (H - shot.height) // 2)))
+    for i in range(6):
+        d.line([(SPLIT - 6 + i, 0), (SPLIT - 6 + i, H)], fill=bv.ACCENT_A if i < 3 else bv.ACCENT_B)
+    brand(im, d, 90, 110, 72, 40)
+    y = 330
+    for line in ["Your team is pasting", "secrets into AI chats."]:
+        d.text((90, y), line, font=bv.font(bv.BOLD, 68), fill="white")
+        y += 86
+    y += 40
+    for line in ["EraseAI Firewall catches keys, passwords and", "personal data before you press Send."]:
+        d.text((90, y), line, font=bv.font(bv.REG, 34), fill=bv.MUTED)
+        y += 48
+    d.text((90, H - 170), "ChatGPT  ·  Claude  ·  Gemini", font=bv.font(bv.BOLD, 36), fill=PURPLE)
+    d.text((90, H - 115), "Free on the Chrome Web Store", font=bv.font(bv.REG, 30), fill=(226, 232, 240))
+    im.save(os.path.join(OUT, "linkedin-cover.png"))
+
+
 def main():
     missing = [p for p in (bv.REC1, bv.REC2) if not os.path.exists(p)]
     if missing:
@@ -159,6 +186,7 @@ def main():
         screenshot(*spec)
     promo_small()
     promo_marquee()
+    linkedin_cover()
     for f in sorted(os.listdir(OUT)):
         with Image.open(os.path.join(OUT, f)) as im:
             print(f"{f}: {im.size[0]}x{im.size[1]} {im.mode}")
