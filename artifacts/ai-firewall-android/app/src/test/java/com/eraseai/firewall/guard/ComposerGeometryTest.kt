@@ -3,6 +3,7 @@ package com.eraseai.firewall.guard
 import android.graphics.Rect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,5 +78,76 @@ class ComposerGeometryTest {
     // Gboard floating pill: narrow and mid-screen.
     assertFalse(ComposerGeometry.isDockedIme(Rect(20, 860, 170, 1550), 1080, 2400))
     assertFalse(ComposerGeometry.isDockedIme(Rect(), 1080, 2400))
+  }
+
+  @Test
+  fun `floating keyboard pieces are not a docked keyboard`() {
+    // Emulator, 1080x2400, floating keyboard toolbar: the IME window's touchable area is the
+    // pill plus a strip along the bottom edge. Their bounding box (0,863)-(1080,2400) looked
+    // docked and parked the band at y=737..863 while send sat at 2179..2305.
+    val pieces = listOf(Rect(21, 863, 169, 1553), Rect(0, 2337, 1080, 2400))
+    assertNull(ComposerGeometry.dockedImeTop(pieces, 1080, 2400))
+    // Pre-Android 13 only the bounding box is known; it is too tall to be one keyboard.
+    assertNull(ComposerGeometry.dockedImeTop(listOf(Rect(0, 863, 1080, 2400)), 1080, 2400))
+
+    val sendRow = Rect(32, 2179, 1048, 2305)
+    val imeTop = ComposerGeometry.dockedImeTop(pieces, 1080, 2400)
+    assertEquals(sendRow, ComposerGeometry.clampAboveIme(sendRow, imeTop))
+  }
+
+  @Test
+  fun `docked keyboard piece gives its top edge`() {
+    assertEquals(1500, ComposerGeometry.dockedImeTop(listOf(Rect(0, 1500, 1080, 2400)), 1080, 2400))
+    // An IME that claims the whole screen is not evidence of where the composer sits.
+    assertNull(ComposerGeometry.dockedImeTop(listOf(Rect(0, 0, 1080, 2400)), 1080, 2400))
+    assertNull(ComposerGeometry.dockedImeTop(emptyList(), 1080, 2400))
+  }
+
+  @Test
+  fun `keyboard transition covers the whole path send can travel`() {
+    // Claude, docked keyboard: send row above the keyboard at 1344..1470. After Cancel the
+    // keyboard returns and send travels up from the bottom band (2164..2400) to that row.
+    val raised = Rect(0, 1344, 1080, 1470)
+    val bottom = Rect(0, 2164, 1080, 2400)
+    assertEquals(
+      Rect(0, 1344, 1080, 2400),
+      CurtainGeometry.transitionSpan(bottom, raised, 1080, 2400, inTransition = true),
+    )
+    // Outside a transition the measured band is used as is, so typing is not blocked.
+    assertEquals(bottom, CurtainGeometry.transitionSpan(bottom, raised, 1080, 2400, inTransition = false))
+    // No raised band seen yet: still runs to the bottom from the measured top.
+    assertEquals(
+      Rect(0, 1344, 1080, 2400),
+      CurtainGeometry.transitionSpan(raised, Rect(), 1080, 2400, inTransition = true),
+    )
+  }
+
+  @Test
+  fun `anchor box waits where send lands when the keyboard changes state`() {
+    val band = Rect(0, 1344, 1080, 1470)
+    // Claude on 1080x2400, keyboard open, send at 940..1010 x 1360..1450.
+    val raisedSend = Rect(940, 1360, 1010, 1450)
+    val closedSend = Rect(940, 2190, 1010, 2260)
+
+    // Closed position already seen: park over it.
+    assertEquals(
+      Rect(932, 2182, 1018, 2268),
+      CurtainGeometry.anchorBox(true, raisedSend, closedSend, Rect(), band, 1080, 2400, padPx = 8),
+    )
+    // Not seen yet: send's footprint dropped to the bottom, clear of letters and backspace.
+    val estimated = CurtainGeometry.anchorBox(true, raisedSend, Rect(), Rect(), band, 1080, 2400, padPx = 8)!!
+    assertEquals(2400, estimated.bottom)
+    assertTrue(estimated.top > 2100)
+    assertTrue(estimated.left > 900)
+
+    // Keyboard closed: park over the last above-keyboard position, never a guess.
+    val bottomBand = Rect(0, 2164, 1080, 2400)
+    assertEquals(
+      Rect(932, 1352, 1018, 1458),
+      CurtainGeometry.anchorBox(false, closedSend, closedSend, raisedSend, bottomBand, 1080, 2400, padPx = 8),
+    )
+    assertNull(CurtainGeometry.anchorBox(false, closedSend, closedSend, Rect(), bottomBand, 1080, 2400, padPx = 8))
+    // Already under the band (floating keyboard, send never moves): no second box.
+    assertNull(CurtainGeometry.anchorBox(false, closedSend, closedSend, Rect(940, 2190, 1010, 2260), bottomBand, 1080, 2400, padPx = 8))
   }
 }

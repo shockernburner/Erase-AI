@@ -8,16 +8,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityWindowInfo
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.LinearLayout
@@ -49,6 +52,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private lateinit var scanApi: ScanApi
   private lateinit var sessionStore: MobileSessionStore
   private lateinit var guestTrial: GuestTrial
+  private var lastImeShown = false
+  private var repinRequested = false
   private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
   private val handler = Handler(Looper.getMainLooper())
   private var previewRunnable: Runnable? = null
@@ -69,6 +74,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private var curtainPackage: String? = null
 
   /** Risky text found while typing, awaiting a user decision. */
+  /** A risky draft the user walked away from, and where its curtain stood. */
+  private data class HeldDraft(val risk: PendingRisk, val area: Rect)
+
   private data class PendingRisk(
     val text: String,
     val scan: LocalRiskScanner.LocalScan,
@@ -80,6 +88,14 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   private var pendingRisk: PendingRisk? = null
   private var riskSeenAt = 0L
+  /** Per app: drafts still held when the user left, re-covered the moment they return. */
+  private val heldDrafts = mutableMapOf<String, HeldDraft>()
+  /** Per app: where the curtain last stood, for covering before the composer is re-measured. */
+  private val lastZones = mutableMapOf<String, Rect>()
+  /** When a held prompt first read clean, or 0; see [holdThroughTransient]. */
+  private var cleanSince = 0L
+  /** Composer row of the current evaluation looked like the whole screen; never release on it. */
+  private var implausibleRead = false
 
   /** Text the user explicitly approved for sending; re-gating it would trap them in a loop. */
   private var decidedText: String? = null
@@ -100,7 +116,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
         AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS or
         AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
         AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-      notificationTimeout = 250
+      // Events of one type are batched for this long. At 250 ms the last keystroke of a paste
+      // reached the guard ~260 ms late, which was most of the gap before send was covered.
+      notificationTimeout = 50
     }
     GuardHealth.onServiceConnected()
     // A (re)bind — after an app update, a crash or the user re-enabling the service — can land
@@ -131,9 +149,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     GuardHealth.onEvent()
     if (event?.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
+      val imeShown = windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+      if (imeShown != lastImeShown) {
+        lastImeShown = imeShown
+        // Keyboard appearing or leaving moves send across the screen; cover the whole path
+        // until the new row has been measured.
+        if (pendingRisk != null && !gateInProgress) curtain.beginTransition()
+      }
       // The IME window appearing or leaving moves the composer, and hosts do not reliably
       // raise a content change for it — the band has to follow from this event instead.
-      curtainPackage?.takeIf { pendingRisk != null && !gateInProgress }?.let { repinCurtainKeepingGuard(it, "windows-changed") }
+      curtainPackage?.takeIf { pendingRisk != null && !gateInProgress }?.let { requestRepin(it) }
       return
     }
     val packageName = event?.packageName?.toString() ?: return
@@ -159,7 +184,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
       // ChatGPT) will accept a send tap in that gap, which is the "fast send gets through"
       // failure: the last character of a paste is what makes the prompt risky, and send is
       // tappable immediately after.
-      AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+      // The event's own text is scanned at once (cheap, no host query) so a risky paste is
+      // covered on this event; the full composer lookup, which queries the host and can stall
+      // for hundreds of ms, is debounced so it does not run on every keystroke.
+      AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> {
+        if (!gateInProgress && !curtain.isShowing) {
+          curtainPackage = packageName
+          coverFromEventText(packageName, event, SystemClock.uptimeMillis())
+        }
+        scheduleComposerEvaluation(packageName, event)
+      }
       AccessibilityEvent.TYPE_VIEW_FOCUSED -> evaluateComposer(packageName, event)
       AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
       AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> scheduleComposerEvaluation(packageName, event)
@@ -168,6 +202,17 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   override fun onKeyEvent(event: KeyEvent): Boolean {
     if (event.action != KeyEvent.ACTION_DOWN) return false
+    if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+      // Back with the keyboard up drops send to the bottom of the screen at once, while the
+      // windows-changed event for the keyboard leaving arrived up to 1.7 s later in testing.
+      // Cover the whole path now; never consume Back.
+      val pkg = curtainPackage
+      if (pkg != null && pendingRisk != null && curtain.isShowing && !gateInProgress) {
+        curtain.beginTransition()
+        repinCurtainKeepingGuard(pkg, "back-key")
+      }
+      return false
+    }
     if (event.keyCode != KeyEvent.KEYCODE_ENTER && event.keyCode != KeyEvent.KEYCODE_NUMPAD_ENTER) return false
     if (gateInProgress) return true
 
@@ -191,7 +236,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (gateInProgress) {
       val target = ComposerLocator.locate(this, pkg) ?: return
       val level = pendingRisk?.level ?: "high"
-      curtain.show(target.submitZone, level, pkg, target.submitZoneMode, guardActive = true) {
+      curtain.show(target.submitZone, level, pkg, target.submitZoneMode, guardActive = true, sendBounds = target.sendBounds()) {
         openGateFromCurtain(pkg)
       }
       return
@@ -264,7 +309,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
    */
   private fun evaluateComposer(packageName: String, event: AccessibilityEvent? = null) {
     if (gateInProgress) return
+    val startedAt = SystemClock.uptimeMillis()
     curtainPackage = packageName
+    implausibleRead = false
+    if (!curtain.isShowing) coverFromEventText(packageName, event, startedAt)
 
     val target = ComposerLocator.locate(this, packageName)
     if (target == null) {
@@ -275,6 +323,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
     activeNode = target.editable
     pendingSendNode = target.sendNode
+    implausibleRead = target.actionRow.height() > resources.displayMetrics.heightPixels * MAX_COMPOSER_ROW_FRACTION
 
     val text = ComposerTextExtractor.bestText(target.editable, target.text, event)
       .take(MAX_SCAN_TEXT_LENGTH)
@@ -307,20 +356,38 @@ class AiGuardAccessibilityService : AccessibilityService() {
     val pending = PendingRisk(text, local, unscanned)
     pendingRisk = pending
     riskSeenAt = System.currentTimeMillis()
+    cleanSince = 0L
+    // Cover send first. The curtain is what stops a tap; arming the Strict VPN does a
+    // synchronous prefs commit and a service call, and every millisecond spent there before
+    // the overlay is mounted is a window in which a fast tap on send still reaches the app.
+    val wasShowing = curtain.isShowing
+    lastZones[packageName] = Rect(target.submitZone)
+    curtain.show(
+      target.submitZone,
+      pending.level,
+      packageName,
+      target.submitZoneMode,
+      guardActive = true,
+      sendBounds = target.sendBounds(),
+    ) {
+      openGateFromCurtain(packageName)
+    }
+    if (!wasShowing) {
+      GuardLog.event("curtain.latency", packageName, "ms=${SystemClock.uptimeMillis() - startedAt}")
+    }
+    GuardStateStore.setArmed(packageName)
     protectedAppsStore.saveLastScanSummary(
       if (local.shouldWarn) local.summary() else "Unscanned attachment held",
       pending.level,
     )
-    // Arm Strict VPN before mounting the curtain so egress starts while the overlay blocks send.
-    GuardStateStore.setArmed(packageName)
-    curtain.show(target.submitZone, pending.level, packageName, target.submitZoneMode, guardActive = true) {
-      openGateFromCurtain(packageName)
-    }
     startRepinTicker(packageName)
 
     GuardLog.risk(packageName, pending.level, local.riskScore, local.findings.size + unscanned.size)
     if (hasText) maybePreviewApiScan(packageName, text)
   }
+
+  private fun ComposerLocator.ComposerTarget.sendBounds(): Rect? =
+    sendNode?.let { node -> Rect().also { node.getBoundsInScreen(it) } }?.takeIf { !it.isEmpty }
 
   private fun attachmentsIn(target: ComposerLocator.ComposerTarget): List<AttachmentHint> =
     AttachmentHints.extract(
@@ -334,12 +401,86 @@ class AiGuardAccessibilityService : AccessibilityService() {
    * really been cleared or edited clean, the band must come down, or the user is left with a
    * send control they can never reach again.
    */
+  /**
+   * Whether to keep a held prompt covered despite this clean, empty or missing read.
+   *
+   * One read is not enough to release. A host mid-re-layout can expose a different node for a
+   * single pass: on an emulator Claude reported the whole screen as the composer, with text that
+   * did not include the key, and that one clean read dropped the curtain for 0.7 s with the key
+   * still in the box. The old guard only held within 1.5 s of the last risky read, so after any
+   * idle pause it let that through. Now a release needs the prompt to read clean on two passes at
+   * least [CLEAN_CONFIRM_MS] apart, and a read whose row is not a plausible composer never
+   * releases at all.
+   */
   private fun holdThroughTransient(packageName: String, reason: String): Boolean {
     if (pendingRisk == null) return false
-    if (System.currentTimeMillis() - riskSeenAt > TRANSIENT_HOLD_MS) return false
-    GuardLog.curtain("hold", packageName, reason)
-    scheduleComposerEvaluation(packageName)
+    val now = System.currentTimeMillis()
+    if (cleanSince == 0L) cleanSince = now
+    val recentRisk = now - riskSeenAt <= TRANSIENT_HOLD_MS
+    val confirmedClean = now - cleanSince >= CLEAN_CONFIRM_MS
+    if (!implausibleRead && !recentRisk && confirmedClean) return false
+    GuardLog.curtain("hold", packageName, if (implausibleRead) "$reason implausible-row" else reason)
+    handler.removeCallbacks(confirmCleanRunnable)
+    handler.postDelayed(confirmCleanRunnable, CLEAN_CONFIRM_MS)
     return true
+  }
+
+  /**
+   * Covers send from the text-changed event alone, before the composer lookup.
+   *
+   * The lookup queries the host app and stalls while the host is busy: 200-700 ms per keystroke
+   * on an emulator, 4.5 s while an app was still starting. The event already carries the new
+   * text, so a risky paste is covered at once, at the curtain's last position in this app or
+   * just above the keyboard; the lookup that follows moves it onto the measured row. This path
+   * can only raise the curtain: a clean result here changes nothing.
+   */
+  private fun coverFromEventText(packageName: String, event: AccessibilityEvent?, startedAt: Long) {
+    if (event?.eventType != AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED || event.isPassword) return
+    val quick = event.text?.joinToString("")?.take(MAX_SCAN_TEXT_LENGTH) ?: return
+    if (quick.length < MIN_SCAN_LENGTH || quick == decidedText) return
+    val scan = LocalRiskScanner.scan(quick)
+    if (!scan.shouldWarn) return
+    pendingRisk = PendingRisk(quick, scan)
+    riskSeenAt = System.currentTimeMillis()
+    cleanSince = 0L
+    curtain.show(lastZones[packageName] ?: provisionalZone(), scan.level, packageName, "fast", guardActive = true) {
+      openGateFromCurtain(packageName)
+    }
+    GuardLog.event("curtain.fast", packageName, "ms=${SystemClock.uptimeMillis() - startedAt}")
+  }
+
+  /** Just above a docked keyboard, or the bottom band; needs nothing from the host app. */
+  private fun provisionalZone(): Rect {
+    val dm = resources.displayMetrics
+    val band = ComposerGeometry.bandHeightPx(dm.heightPixels)
+    val imeTop = ComposerLocator.dockedKeyboardTop(this)
+    return if (imeTop != null) {
+      Rect(0, (imeTop - band).coerceAtLeast(0), dm.widthPixels, imeTop)
+    } else {
+      Rect(0, dm.heightPixels - band, dm.widthPixels, dm.heightPixels)
+    }
+  }
+
+  /** Back in an app whose draft was held when the user left: cover it before re-measuring. */
+  private fun restoreHeldDraft(packageName: String) {
+    val held = heldDrafts[packageName] ?: return
+    if (curtain.isShowing || gateInProgress) return
+    curtainPackage = packageName
+    pendingRisk = held.risk
+    riskSeenAt = System.currentTimeMillis()
+    cleanSince = 0L
+    val area = if (held.area.isEmpty) provisionalZone() else held.area
+    curtain.show(area, held.risk.level, packageName, "restored", guardActive = true) {
+      openGateFromCurtain(packageName)
+    }
+    GuardLog.event("curtain.restored", packageName)
+    startRepinTicker(packageName)
+    scheduleComposerEvaluation(packageName)
+  }
+
+  /** Re-reads a held prompt once the confirmation window has passed, even if the host is quiet. */
+  private val confirmCleanRunnable = Runnable {
+    curtainPackage?.let { pkg -> if (pendingRisk != null) evaluateComposer(pkg) }
   }
 
   private fun openGateFromCurtain(packageName: String) {
@@ -349,7 +490,10 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   private fun releaseCurtain(reason: String) {
+    if (reason != "left-protected-app") curtainPackage?.let { heldDrafts.remove(it) }
     pendingRisk = null
+    cleanSince = 0L
+    handler.removeCallbacks(confirmCleanRunnable)
     GuardStateStore.setArmed(null)
     curtain.hide(curtainPackage, reason)
   }
@@ -773,6 +917,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
       addView(container)
     }
     val flags = if (modal) {
+      // Must stay focusable: a non-focusable full-screen accessibility overlay is refused by
+      // the window manager (BadTokenException), which killed the service and dropped the curtain.
       WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
         WindowManager.LayoutParams.FLAG_DIM_BEHIND
     } else {
@@ -788,8 +934,15 @@ class AiGuardAccessibilityService : AccessibilityService() {
       gravity = Gravity.CENTER
       if (modal) dimAmount = 0.55f
     }
-    getSystemService(WindowManager::class.java).addView(scroll, params)
-    overlayView = scroll
+    // A refused window must never take the service down with it: the curtain is still mounted
+    // and still blocking send, and a crash would remove it and leave send exposed.
+    runCatching { getSystemService(WindowManager::class.java).addView(scroll, params) }
+      .onSuccess { overlayView = scroll }
+      .onFailure {
+        GuardLog.warn("gate.overlay.failed", overlayPackageName, "error=${it.javaClass.simpleName}")
+        // Leave the curtain armed and tappable so the next tap can try the gate again.
+        if (modal) gateInProgress = false
+      }
   }
 
   private fun sanitizeAndMaybeSend(promptOnly: Boolean, findings: List<ScanFinding>) {
@@ -895,6 +1048,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
     gateInProgress = false
     removeOverlay()
     GuardStateStore.setArmed(packageName)
+    // The gate closed the keyboard; it comes back now and carries send up through the screen
+    // faster than the band can be re-measured.
+    curtain.beginTransition()
     // Re-pin immediately — a debounced pass after keyboard hide left send exposed below the band.
     repinCurtainKeepingGuard(packageName, "after-cancel")
     // The keyboard usually comes back a beat after Cancel and lifts the composer above the band
@@ -902,12 +1058,38 @@ class AiGuardAccessibilityService : AccessibilityService() {
     startRepinTicker(packageName)
   }
 
+  /**
+   * One re-measure for any number of window changes queued behind it. Window changes arrive in
+   * bursts (every frame of a keyboard animation), each lookup queries the host and took up to
+   * 570 ms on an emulator, and running one per event saturated the main thread: a cleared
+   * draft stayed covered for 4.4 s because the release check could not run.
+   */
+  private fun requestRepin(packageName: String) {
+    if (repinRequested) return
+    repinRequested = true
+    handler.post {
+      repinRequested = false
+      repinCurtainKeepingGuard(packageName, "windows-changed")
+    }
+  }
+
   private fun repinCurtainKeepingGuard(packageName: String, reason: String) {
     val pending = pendingRisk ?: return
-    val target = ComposerLocator.locate(this, packageName) ?: return
+    val lookupStarted = SystemClock.uptimeMillis()
+    val target = ComposerLocator.locate(this, packageName)
+    val lookupMs = SystemClock.uptimeMillis() - lookupStarted
+    if (lookupMs > SLOW_LOOKUP_MS) GuardLog.event("composer.slow-lookup", packageName, "ms=$lookupMs reason=$reason")
+    if (target == null) return
     activeNode = target.editable
     pendingSendNode = target.sendNode
-    curtain.show(target.submitZone, pending.level, packageName, target.submitZoneMode, guardActive = true) {
+    curtain.show(
+      target.submitZone,
+      pending.level,
+      packageName,
+      target.submitZoneMode,
+      guardActive = true,
+      sendBounds = target.sendBounds(),
+    ) {
       openGateFromCurtain(packageName)
     }
     if (reason != "tick") GuardLog.curtain("repin", packageName, reason)
@@ -937,7 +1119,12 @@ class AiGuardAccessibilityService : AccessibilityService() {
   private fun handleForegroundChange(packageName: String) {
     if (!protectedAppsStore.isFirewallEnabled()) return
     if (protectedAppsStore.isProtected(packageName)) {
+      // Switching straight from one AI app to another is still leaving the first: its gate and
+      // curtain stayed over the second app, covering its screen and offering to "send" a
+      // prompt that was no longer in front.
+      activeProtectedPackage?.takeIf { it != packageName }?.let { leaveProtectedApp(it, packageName) }
       activeProtectedPackage = packageName
+      restoreHeldDraft(packageName)
       maybePromptEraseAiKeyboard(packageName)
       return
     }
@@ -947,8 +1134,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
     // all raise window-state events without the user leaving the AI app. Treating those as an
     // exit dropped the curtain over a risky draft that was still one tap from send.
     if (isTransientSurface(packageName)) return
-    GuardLog.event("foreground.left", left, "next=$packageName")
+    leaveProtectedApp(left, packageName)
     activeProtectedPackage = null
+  }
+
+  private fun leaveProtectedApp(left: String, next: String) {
+    GuardLog.event("foreground.left", left, "next=$next")
+    // Window events arrive late and out of order: "left ChatGPT" can land after Claude has
+    // already put up its own curtain. Only the app that owns the curtain may take it down.
+    if (curtainPackage != null && curtainPackage != left) return
+    pendingRisk?.let { held -> heldDrafts[left] = HeldDraft(held, curtain.currentArea()) }
     releaseCurtain("left-protected-app")
     GuardStateStore.setArmed(null)
     if (gateInProgress) {
@@ -975,6 +1170,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     gateInProgress = false
     removeOverlay()
     pendingRisk = null
+    curtainPackage?.let { heldDrafts.remove(it) }
     GuardStateStore.setArmed(null)
     curtain.hide(curtainPackage, "gate-finished")
     lastTextHashByPackage.clear()
@@ -1058,7 +1254,15 @@ class AiGuardAccessibilityService : AccessibilityService() {
 
   companion object {
     private const val PREVIEW_DEBOUNCE_MS = 50L
-    private const val TRANSIENT_HOLD_MS = 1_500L
+    // Shorter than it was (1.5 s): a release now also needs two clean reads CLEAN_CONFIRM_MS
+    // apart and never happens on an implausible read, so this only has to ride out a re-render.
+    private const val TRANSIENT_HOLD_MS = 600L
+    /** A held prompt must read clean this long before the curtain comes down. */
+    private const val CLEAN_CONFIRM_MS = 400L
+    /** Composer lookups slower than this are logged: they stall every other guard reaction. */
+    private const val SLOW_LOOKUP_MS = 150L
+    /** A composer row taller than this share of the screen is a mis-read, not a composer. */
+    private const val MAX_COMPOSER_ROW_FRACTION = 0.6f
     private const val REPIN_TICK_MS = 200L
     private const val COMPOSER_BURST_INTERVAL_MS = 120L
     private const val COMPOSER_BURST_PASSES = 4

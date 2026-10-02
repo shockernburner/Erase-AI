@@ -2,6 +2,9 @@ package com.eraseai.firewall.guard
 
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
+import android.graphics.Region
+import android.graphics.RegionIterator
+import android.os.Build
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 
@@ -31,10 +34,18 @@ object ComposerLocator {
     val text: String,
   )
 
+  /** Last keyboard top written to the log, so the log shows each change once. */
+  private var lastLoggedImeTop: Int? = -1
+  private var lastLoggedImePieces: String? = null
+
   fun locate(service: AccessibilityService, packageName: String): ComposerTarget? {
     val dm = service.resources.displayMetrics
     val roots = candidateRoots(service, packageName)
     val imeTop = imeWindowTop(service)
+    if (imeTop != lastLoggedImeTop) {
+      lastLoggedImeTop = imeTop
+      GuardLog.event("ime.top", packageName, "top=${imeTop ?: "none"}")
+    }
     var fallback: ComposerTarget? = null
 
     roots.forEach { root ->
@@ -102,14 +113,38 @@ object ComposerLocator {
    * Top edge of the visible keyboard, straight from the window manager. Unlike node bounds it
    * is never stale, so it is the one reliable signal for where the composer row must now sit.
    */
+  /** Top of a docked keyboard from the window manager alone; never queries the host app. */
+  fun dockedKeyboardTop(service: AccessibilityService): Int? = imeWindowTop(service)
+
   private fun imeWindowTop(service: AccessibilityService): Int? = runCatching {
     val dm = service.resources.displayMetrics
-    service.windows
-      .firstOrNull { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
-      ?.let { window -> Rect().also { window.getBoundsInScreen(it) } }
-      ?.takeIf { ComposerGeometry.isDockedIme(it, dm.widthPixels, dm.heightPixels) }
-      ?.top
+    val window = service.windows.firstOrNull { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+      ?: return@runCatching null
+    val pieces = imePieces(window)
+    val signature = pieces.joinToString(";") { it.toShortString() }
+    if (signature != lastLoggedImePieces) {
+      lastLoggedImePieces = signature
+      GuardLog.event("ime.pieces", null, signature)
+    }
+    ComposerGeometry.dockedImeTop(pieces, dm.widthPixels, dm.heightPixels)
   }.getOrNull()
+
+  /**
+   * The keyboard's touchable area as separate rectangles. Before Android 13 only the bounding
+   * box is available; [ComposerGeometry.dockedImeTop] rejects the over-tall box a floating
+   * keyboard produces there.
+   */
+  private fun imePieces(window: AccessibilityWindowInfo): List<Rect> {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      val region = Region().also { window.getRegionInScreen(it) }
+      val pieces = mutableListOf<Rect>()
+      val iterator = RegionIterator(region)
+      val rect = Rect()
+      while (iterator.next(rect)) pieces += Rect(rect)
+      if (pieces.isNotEmpty()) return pieces
+    }
+    return listOf(Rect().also { window.getBoundsInScreen(it) })
+  }
 
   private fun candidateRoots(
     service: AccessibilityService,

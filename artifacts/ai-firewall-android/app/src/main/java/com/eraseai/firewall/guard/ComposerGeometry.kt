@@ -66,6 +66,31 @@ object ComposerGeometry {
       bounds.width() >= screenWidth * 0.9f &&
       bounds.bottom >= screenHeight * 0.9f
 
+  /** Smallest share of the screen a docked keyboard takes; a gesture/nav strip is far less. */
+  private const val MIN_DOCKED_IME_FRACTION = 0.15f
+
+  /** Largest share a docked keyboard plausibly takes; anything taller is not one keyboard. */
+  private const val MAX_DOCKED_IME_FRACTION = 0.6f
+
+  /**
+   * Top of a keyboard docked across the bottom, from the pieces of the IME window's touchable
+   * area, or null when no keyboard is docked.
+   *
+   * The window's bounding box is not enough. A floating keyboard reports its pill plus a thin
+   * strip along the bottom edge, and the box around those two is full-width and reaches the
+   * bottom, so it passed [isDockedIme]. The band was then lifted onto the pill's top edge,
+   * mid-screen, leaving send uncovered. Judging each piece on its own avoids that, and the
+   * height limits reject the thin strip and an IME that claims the whole screen.
+   */
+  fun dockedImeTop(pieces: List<Rect>, screenWidth: Int, screenHeight: Int): Int? =
+    pieces
+      .filter { piece ->
+        isDockedIme(piece, screenWidth, screenHeight) &&
+          piece.height() >= screenHeight * MIN_DOCKED_IME_FRACTION &&
+          piece.height() <= screenHeight * MAX_DOCKED_IME_FRACTION
+      }
+      .minOfOrNull { it.top }
+
   /**
    * A composer can never sit under a visible keyboard. When the measured zone overlaps the IME
    * window the measurement is stale, so lift the zone to rest directly on the keyboard's top.
