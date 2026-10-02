@@ -18,23 +18,32 @@ class GuestTrialTest {
   }
 
   @Test
-  fun `active for fourteen days then expired`() {
+  fun `active for the offered days then expired`() {
+    assertEquals(21, GuestTrial.DAYS)
     assertTrue(GuestTrial.isActive(start, start))
-    assertEquals(14, GuestTrial.daysLeft(start, start))
-    assertEquals(14, GuestTrial.daysLeft(start, start + hour))
-    assertEquals(7, GuestTrial.daysLeft(start, start + 7 * day))
-    assertEquals(1, GuestTrial.daysLeft(start, start + 14 * day - hour))
-    assertTrue(GuestTrial.isActive(start, start + 14 * day - 1))
+    assertEquals(21, GuestTrial.daysLeft(start, start))
+    assertEquals(21, GuestTrial.daysLeft(start, start + hour))
+    assertEquals(14, GuestTrial.daysLeft(start, start + 7 * day))
+    assertEquals(1, GuestTrial.daysLeft(start, start + 21 * day - hour))
+    assertTrue(GuestTrial.isActive(start, start + 21 * day - 1))
 
-    assertFalse(GuestTrial.isActive(start, start + 14 * day))
-    assertTrue(GuestTrial.isExpired(start, start + 14 * day))
+    assertFalse(GuestTrial.isActive(start, start + 21 * day))
+    assertTrue(GuestTrial.isExpired(start, start + 21 * day))
     assertEquals(0, GuestTrial.daysLeft(start, start + 30 * day))
+  }
+
+  @Test
+  fun `a trial keeps the length it started with`() {
+    // Started under a 21-day offer; a later release offering 7 days must not end it on day 8.
+    assertTrue(GuestTrial.isActive(start, start + 8 * day, days = 21))
+    assertEquals(13, GuestTrial.daysLeft(start, start + 8 * day, days = 21))
+    assertTrue(GuestTrial.isExpired(start, start + 8 * day, days = 7))
   }
 
   @Test
   fun `clock set backwards keeps the trial active without adding days`() {
     assertTrue(GuestTrial.isActive(start, start - day))
     assertFalse(GuestTrial.isExpired(start, start - day))
-    assertEquals(14, GuestTrial.daysLeft(start, start - day))
+    assertEquals(21, GuestTrial.daysLeft(start, start - day))
   }
 }

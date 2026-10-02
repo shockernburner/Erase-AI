@@ -932,7 +932,7 @@ private fun LoginScreen(
       item { BrandSectionLabel("Or sign in") }
     } else if (guestTrialEnded) {
       item {
-        BrandErrorBanner("Your ${GuestTrial.DAYS} days without an account have ended. Create a free account or sign in to turn the firewall back on.")
+        BrandErrorBanner("Your free trial without an account has ended. Create a free account or sign in to turn the firewall back on.")
       }
     }
     item { BrandField(email, { email = it }, "Email", singleLine = true) }
@@ -1022,7 +1022,7 @@ private fun DashboardScreen(
         title = if (protectionActive) "Protection active" else "Protection incomplete",
         body = when {
           guestEnded ->
-            "Your ${GuestTrial.DAYS} days without an account have ended, so EraseAI is not checking anything. " +
+            "Your free trial without an account has ended, so EraseAI is not checking anything. " +
               "Create a free account or sign in to turn it back on."
           !accessibilityEnabled -> "Accessibility is off — EraseAI cannot intercept Send yet."
           serviceStalled ->
