@@ -1,106 +1,146 @@
-# EraseAI Firewall — Closed testing instructions
+# EraseAI Firewall for Android: tester guide
 
-**For testers only.** Use **synthetic/fake data** — never real customer data, real API keys, or real passwords.
+Thank you for helping test EraseAI Firewall. It takes about **10 minutes to
+set up**, then a minute or two now and then over **14 days**.
 
-**App:** EraseAI Firewall · **Package:** `com.eraseai.firewall`  
-**Support:** director@vantward.com
+**What the app does:** when you're about to send something in the ChatGPT,
+Claude or Gemini apps, it checks for API keys, passwords and personal data,
+and lets you redact it, send anyway, or cancel before anything is sent.
 
----
+> **Use fake data only.** Never test with real passwords, real keys or real
+> customer information. Examples you can copy are in step 4.
 
-## 1. Install (must be from Play)
-
-1. Open the **closed testing opt-in link** we sent you (Google Play).
-2. Tap **Install** / **Update** — do **not** sideload an APK from email.
-3. Open **EraseAI Firewall** once installed.
-
----
-
-## 2. Account
-
-1. **Sign up** or **sign in** with your EraseAI account.
-2. Confirm you see the dashboard (7-day trial is normal for new accounts).
+**Questions or stuck?** Email director@vantward.com
 
 ---
 
-## 3. Enable protection (required)
+## Why 14 days matters
 
-1. In the app: **Protected apps** → enable **ChatGPT**, **Gemini**, and/or **Claude** (install at least one AI app first).
-2. **Settings → Accessibility → EraseAI Firewall** → turn **ON**.
-3. Confirm Android shows the Accessibility permission prompt — you must accept for the send gate to work.
-
-**Optional (stronger typing protection):**  
-Settings → **On-screen keyboard** → enable **EraseAI Keyboard**, then select it when typing in an AI app.
-
----
-
-## 4. What to test (15–20 minutes)
-
-### A. Send gate (main test)
-
-Open **ChatGPT** or **Gemini**, type something **fake but sensitive**, for example:
-
-- `My AWS key is AKIAIOSFODNN7EXAMPLE`
-- `Customer email: test@example.com, SSN 123-45-6789`
-
-Tap **Send**.
-
-**Expected:** A colored bar covers the bottom/send area. Tap it → **Cancel**, **Sanitize & Send**, or **Send Anyway** (depending on risk). The message should **not** reach the AI until you choose.
-
-Also try:
-
-- **Safe text** (e.g. `hello world`) → should send normally, no curtain.
-- **Cancel** on the gate → text returns to composer, nothing sent.
-
-### B. Manual scan
-
-In EraseAI app → **Manual scan** → paste fake sensitive text → run scan → see results.
-
-### C. Subscription (optional)
-
-If we asked you to test billing: **Trial & Subscription** → subscribe (test account) → confirm plan updates. Manage via **Google Play subscriptions**, not the website.
+Google only lets a new app go public after **at least 12 testers have stayed
+opted in for 14 days in a row**. If you uninstall or leave the test early, the
+count can drop below 12 and the 14 days start again. Please keep the app
+installed until we say the test is done. You don't need to use it every day,
+but opening it now and then helps, because Google also looks at whether
+testers actually used the app.
 
 ---
 
-## 5. Report back (copy this template)
+## 1. Join the test (2 minutes)
 
-Send to **director@vantward.com**:
+1. Join the tester group with the Google account you use on your phone:
+   **<Google Group link>**
+2. Open the opt-in link on the same account and tap **Become a tester**:
+   **<Play opt-in link>**
+3. Install **EraseAI Firewall** from the Google Play link on that page. It
+   can take a few minutes after opting in before Play shows it.
+
+Install from Google Play only. Please don't install an APK from anywhere
+else.
+
+## 2. Sign in
+
+Open EraseAI Firewall and sign up or sign in. New accounts start with a free
+7-day trial; you won't be charged.
+
+## 3. Turn on protection (5 minutes)
+
+You'll need at least one of ChatGPT, Claude or Gemini installed.
+
+1. In EraseAI: **Protected apps** → switch on the AI apps you have.
+2. Android **Settings → Accessibility → EraseAI Firewall** → turn it **on**
+   and accept the prompt.
+
+**Why Accessibility?** It's how EraseAI sees the AI app's text box and Send
+button, so it can step in before a message is sent. It only reads text in
+the AI apps you switched on above and ignores everything else. It skips
+password fields, and it doesn't read your screen in other apps.
+
+**Optional extras** (try them if you're curious, see step 5):
+
+| Feature | What it does | Permission it asks for |
+|---|---|---|
+| EraseAI Keyboard | Checks text as you type in AI apps | Android keyboard setting |
+| Strict network gate | While a risky message is waiting for your decision, blocks the AI app's internet so it can't be sent in the background | VPN (local only: nothing is routed to a server or decrypted) and notifications |
+| EraseAI Safe | A safe place to attach files from | None |
+
+## 4. The main test (5 minutes)
+
+Open ChatGPT, Claude or Gemini and type one of these, **without sending yet**:
 
 ```
-Device: [e.g. Samsung Galaxy S23, Android 14]
-AI apps tested: [ChatGPT / Gemini / Claude]
-EraseAI version: [from Play → App info, e.g. 1.0.0]
-Accessibility ON: [yes/no]
-EraseAI Keyboard used: [yes/no / not tried]
-
-Send gate:
-- Risky prompt blocked before AI saw it: [yes/no]
-- Curtain covered Send button: [yes/no]
-- Cancel worked: [yes/no]
-- Any send leak (AI replied before you allowed): [yes/no — describe]
-
-Issues / confusing UX:
-[free text]
-
-Crash? [yes/no — steps to reproduce]
+My AWS key is AKIAIOSFODNN7EXAMPLE
+```
+```
+Customer email: test@example.com, card 4111 1111 1111 1111
 ```
 
+(These are official example values, not real ones.)
+
+**What should happen:** a red bar saying **"EraseAI blocked send · tap to
+review"** appears over the Send area. Tap it, and choose:
+
+- **Sanitize & Send**: the message is sent with the sensitive part masked
+- **Send Anyway**: the message is sent as you typed it
+- **Cancel**: nothing is sent
+
+Then check two more things:
+
+- Type something harmless, like `hello, what's the weather like on Mars?`.
+  It should send normally with no red bar.
+- Try sending a risky message by pressing Enter or tapping Send quickly. It
+  should never reach the AI before you choose.
+
+## 5. Over the 14 days
+
+- **Days 2–14:** use your AI apps as normal. Once or twice, paste a fake key
+  or email to make sure the red bar still appears.
+- **Around day 7 (optional):** try one extra:
+  - **EraseAI Keyboard:** Android **Settings → System → Keyboard → On-screen
+    keyboard** → turn on **EraseAI Keyboard**, then pick it while typing in
+    an AI app.
+  - **Strict network gate:** EraseAI **Settings → Strict network gate** →
+    on. Accept the notification and VPN prompts. Next time the red bar
+    appears, you'll see a key icon in the status bar and a notification
+    saying "EraseAI is blocking AI app network". Both disappear once you
+    choose.
+  - **EraseAI Safe:** share a file (a PDF or photo with fake data) to **Save
+    to EraseAI Safe**. Then in ChatGPT, Claude or Gemini, tap attach →
+    browse files → **EraseAI Safe**, and attach the safe copy.
+- **Day 14:** send us your feedback (step 6). Then you're done. Thank you!
+
+## 6. Send feedback
+
+Email **director@vantward.com** with whatever you can fill in. Short is fine.
+
+```
+Phone and Android version: (e.g. Pixel 8, Android 15)
+AI apps tested: ChatGPT / Claude / Gemini
+Red bar appeared for the fake key: yes / no
+Anything sent before you chose: yes / no (what happened?)
+Harmless messages sent normally: yes / no
+Extras tried: keyboard / strict gate / Safe / none
+Anything confusing, slow or broken:
+Crashes (what were you doing?):
+Would you keep using it? Why or why not?
+```
+
+Screenshots or screen recordings help a lot, but only with fake data on
+screen.
+
 ---
 
-## 6. Do not test with
-
-- Real company secrets, API keys, or customer PII  
-- Screenshots containing real data in public posts  
-- Expecting full file attachment scanning inside ChatGPT (chips may show “unscanned” — that is expected)
-
----
-
-## 7. Troubleshooting
+## Troubleshooting
 
 | Problem | Try |
-|---------|-----|
-| Nothing happens on Send | Accessibility OFF? Re-enable. Hard-close and reopen the AI app. |
-| Old behavior after update | Uninstall → reinstall from Play closed link. |
-| “Network” error on scan | Check internet; sign out/in. |
-| Subscribe doesn’t upgrade plan | Email us — Play billing may need a backend check. |
+|---|---|
+| Play says the app isn't available | Check you joined the group and opted in with the **same** Google account as your phone. Wait 10 minutes and try again. |
+| No red bar on a fake key | Check Accessibility is still on for EraseAI (Android sometimes turns it off after an update). Close and reopen the AI app. |
+| Red bar doesn't go away | Tap it and choose Cancel, Sanitize & Send or Send Anyway. |
+| AI app has no internet | The Strict network gate is holding a message. Tap the red bar and choose. If it stays stuck, turn the gate off in EraseAI Settings and email us. |
+| EraseAI says another VPN is active | The Strict network gate can't run alongside another VPN. Turn one of them off. |
 
-Thank you — your feedback directly shapes the 1.0 public launch.
+## What we don't do
+
+EraseAI never sees your passwords (password fields are skipped). The
+Strict network gate blocks traffic on your phone; it doesn't inspect,
+store or forward it. Privacy policy: https://eraseai.ai/privacy
