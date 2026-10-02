@@ -916,7 +916,7 @@ private fun LoginScreen(
     if (guestTrialAvailable) {
       item {
         BrandPrimaryButton(
-          text = "Try free for 7 days, no account",
+          text = "Try free for ${GuestTrial.DAYS} days, no account",
           onClick = onTryWithoutAccount,
           enabled = !loading,
           icon = Icons.Default.Shield,
@@ -924,7 +924,7 @@ private fun LoginScreen(
       }
       item {
         Text(
-          "Checks run on this phone. Create an account any time to keep protection after 7 days and add server scanning and history.",
+          "Checks run on this phone. Create an account any time to keep protection after ${GuestTrial.DAYS} days and add server scanning and history.",
           style = MaterialTheme.typography.bodySmall,
           color = BrandMutedForeground,
         )
@@ -932,7 +932,7 @@ private fun LoginScreen(
       item { BrandSectionLabel("Or sign in") }
     } else if (guestTrialEnded) {
       item {
-        BrandErrorBanner("Your 7 days without an account have ended. Create a free account or sign in to turn the firewall back on.")
+        BrandErrorBanner("Your ${GuestTrial.DAYS} days without an account have ended. Create a free account or sign in to turn the firewall back on.")
       }
     }
     item { BrandField(email, { email = it }, "Email", singleLine = true) }
@@ -1022,7 +1022,7 @@ private fun DashboardScreen(
         title = if (protectionActive) "Protection active" else "Protection incomplete",
         body = when {
           guestEnded ->
-            "Your 7 days without an account have ended, so EraseAI is not checking anything. " +
+            "Your ${GuestTrial.DAYS} days without an account have ended, so EraseAI is not checking anything. " +
               "Create a free account or sign in to turn it back on."
           !accessibilityEnabled -> "Accessibility is off — EraseAI cannot intercept Send yet."
           serviceStalled ->

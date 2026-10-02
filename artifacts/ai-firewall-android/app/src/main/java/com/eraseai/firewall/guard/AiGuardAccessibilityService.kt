@@ -141,7 +141,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     scanApi = ScanApi(ApiClient(sessionStore))
   }
 
-  /** A guest whose seven days are up gets no gate until they sign in; the app says so. */
+  /** A guest whose free days are up gets no gate until they sign in; the app says so. */
   private fun guestTrialEnded(): Boolean =
     // The plain-prefs check first: it is cheap, and true only for an expired guest.
     guestTrial.isExpired() && sessionStore.getToken().isNullOrBlank()

@@ -3,9 +3,9 @@ package com.eraseai.firewall.data
 import android.content.Context
 
 /**
- * Seven days of on-device protection without an account, so people can see the firewall work
+ * [DAYS] days of on-device protection without an account, so people can see the firewall work
  * before signing up. Kept apart from [MobileSessionStore] on purpose: signing out clears the
- * session, and that must not hand a guest a fresh seven days.
+ * session, and that must not hand a guest a fresh trial.
  */
 class GuestTrial(context: Context) {
   private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -26,7 +26,9 @@ class GuestTrial(context: Context) {
   fun daysLeft(now: Long = System.currentTimeMillis()): Int = daysLeft(startedAt(), now)
 
   companion object {
-    const val DURATION_MS = 7L * 24 * 60 * 60 * 1000
+    /** Long enough to cover Google Play's 14-day closed test without testers signing up. */
+    const val DAYS = 14
+    const val DURATION_MS = DAYS * 24L * 60 * 60 * 1000
     private const val DAY_MS = 24L * 60 * 60 * 1000
     private const val PREFS = "eraseai_guest_trial"
     private const val STARTED_AT_KEY = "started_at"

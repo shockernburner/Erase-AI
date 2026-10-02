@@ -39,8 +39,8 @@ else.
 
 ## 2. Open the app
 
-Open EraseAI Firewall and tap **Try free for 7 days, no account**. Checks run
-on your phone, nothing to sign up for. (You can create an account any time;
+Open EraseAI Firewall and tap **Try free for 14 days, no account**. Checks run
+on your phone, nothing to sign up for, and 14 days covers the whole test. (You can create an account any time;
 new accounts also start with a free 7-day trial and you won't be charged.)
 
 Using version 1.0.2 or older? It asks you to sign up first. Update from Play
