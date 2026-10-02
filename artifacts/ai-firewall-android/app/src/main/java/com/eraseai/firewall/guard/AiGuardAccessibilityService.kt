@@ -28,6 +28,7 @@ import com.eraseai.firewall.MainActivity
 import com.eraseai.firewall.ime.ImeGuardHelper
 import com.eraseai.firewall.data.ApiClient
 import com.eraseai.firewall.data.ApiError
+import com.eraseai.firewall.data.GuestTrial
 import com.eraseai.firewall.data.MobileSessionStore
 import com.eraseai.firewall.data.PieceScanSummary
 import com.eraseai.firewall.data.ProtectedAppsStore
@@ -46,6 +47,8 @@ import java.security.MessageDigest
 class AiGuardAccessibilityService : AccessibilityService() {
   private lateinit var protectedAppsStore: ProtectedAppsStore
   private lateinit var scanApi: ScanApi
+  private lateinit var sessionStore: MobileSessionStore
+  private lateinit var guestTrial: GuestTrial
   private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
   private val handler = Handler(Looper.getMainLooper())
   private var previewRunnable: Runnable? = null
@@ -104,7 +107,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     // while a risky draft is already sitting in the composer. No event will announce it, so
     // gate whatever is in front of the user now instead of waiting for the next keystroke.
     rootInActiveWindow?.packageName?.toString()
-      ?.takeIf { !shouldSkipSystemSurface(it) && protectedAppsStore.isProtected(it) }
+      ?.takeIf { !shouldSkipSystemSurface(it) && protectedAppsStore.isProtected(it) && !guestTrialEnded() }
       ?.let { pkg ->
         activeProtectedPackage = pkg
         evaluateComposer(pkg)
@@ -114,10 +117,16 @@ class AiGuardAccessibilityService : AccessibilityService() {
   override fun onCreate() {
     super.onCreate()
     GuardStateStore.init(this)
-    val sessionStore = MobileSessionStore(this)
+    sessionStore = MobileSessionStore(this)
+    guestTrial = GuestTrial(this)
     protectedAppsStore = ProtectedAppsStore(this)
     scanApi = ScanApi(ApiClient(sessionStore))
   }
+
+  /** A guest whose seven days are up gets no gate until they sign in; the app says so. */
+  private fun guestTrialEnded(): Boolean =
+    // The plain-prefs check first: it is cheap, and true only for an expired guest.
+    guestTrial.isExpired() && sessionStore.getToken().isNullOrBlank()
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     GuardHealth.onEvent()
@@ -134,6 +143,7 @@ class AiGuardAccessibilityService : AccessibilityService() {
     if (shouldSkipSystemSurface(packageName)) return
     if (!protectedAppsStore.isProtected(packageName)) return
     if (!protectedAppsStore.isFirewallEnabled()) return
+    if (guestTrialEnded()) return
 
     when (event.eventType) {
       AccessibilityEvent.TYPE_VIEW_CLICKED -> {

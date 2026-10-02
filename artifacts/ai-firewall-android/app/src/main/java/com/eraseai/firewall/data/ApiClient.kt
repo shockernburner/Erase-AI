@@ -13,7 +13,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 sealed class ApiError(message: String) : Exception(message) {
-  class Unauthorized : ApiError("Please sign in again.")
+  class Unauthorized(message: String = "Please sign in again.") : ApiError(message)
   class UpgradeRequired(message: String) : ApiError(message)
   class NotFound(message: String) : ApiError(message)
   class Network(message: String) : ApiError(message)
@@ -21,6 +21,16 @@ sealed class ApiError(message: String) : Exception(message) {
 }
 
 class ApiClient(private val sessionStore: MobileSessionStore) {
+  /**
+   * Without a session the server would only answer 401, so an account-only call fails here
+   * instead of putting a guest's prompt text on the network for nothing.
+   */
+  private fun requireSession() {
+    if (sessionStore.getToken().isNullOrBlank()) {
+      throw ApiError.Unauthorized("Create a free account or sign in to use this.")
+    }
+  }
+
   private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
   private val client = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
@@ -37,6 +47,7 @@ class ApiClient(private val sessionStore: MobileSessionStore) {
 
   suspend fun uploadMultipart(path: String, fileName: String, bytes: ByteArray, mimeType: String = "application/octet-stream"): JSONObject =
     withContext(Dispatchers.IO) {
+      requireSession()
       val requestBuilder = Request.Builder()
         .url("${BuildConfig.API_BASE_URL}$path")
         .header("Accept", "application/json")
@@ -80,6 +91,7 @@ class ApiClient(private val sessionStore: MobileSessionStore) {
 
   suspend fun downloadToFile(path: String, destination: java.io.File): Result<Unit> = runCatching {
     withContext(Dispatchers.IO) {
+      requireSession()
       val requestBuilder = Request.Builder()
         .url("${BuildConfig.API_BASE_URL}$path")
         .header("Accept", "*/*")
@@ -99,6 +111,7 @@ class ApiClient(private val sessionStore: MobileSessionStore) {
     body: JSONObject?,
     includeAuth: Boolean = true,
   ): JSONObject = withContext(Dispatchers.IO) {
+    if (includeAuth) requireSession()
     val requestBuilder = Request.Builder()
       .url("${BuildConfig.API_BASE_URL}$path")
       .header("Accept", "application/json")

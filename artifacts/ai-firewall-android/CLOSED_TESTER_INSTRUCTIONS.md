@@ -10,7 +10,7 @@ and lets you redact it, send anyway, or cancel before anything is sent.
 > **Use fake data only.** Never test with real passwords, real keys or real
 > customer information. Examples you can copy are in step 4.
 
-**Questions or stuck?** Email director@vantward.com
+**Questions or stuck?** Email founder@eraseai.ai
 
 ---
 
@@ -28,19 +28,23 @@ testers actually used the app.
 ## 1. Join the test (2 minutes)
 
 1. Join the tester group with the Google account you use on your phone:
-   **<Google Group link>**
+ *https://groups.google.com/g/eraseai-closed-testers*
 2. Open the opt-in link on the same account and tap **Become a tester**:
-   **<Play opt-in link>**
+   *https://play.google.com/store/apps/details?id=com.eraseai.firewall*
 3. Install **EraseAI Firewall** from the Google Play link on that page. It
    can take a few minutes after opting in before Play shows it.
 
 Install from Google Play only. Please don't install an APK from anywhere
 else.
 
-## 2. Sign in
+## 2. Open the app
 
-Open EraseAI Firewall and sign up or sign in. New accounts start with a free
-7-day trial; you won't be charged.
+Open EraseAI Firewall and tap **Try free for 7 days, no account**. Checks run
+on your phone, nothing to sign up for. (You can create an account any time;
+new accounts also start with a free 7-day trial and you won't be charged.)
+
+Using version 1.0.2 or older? It asks you to sign up first. Update from Play
+to get the no-account option.
 
 ## 3. Turn on protection (5 minutes)
 
@@ -110,7 +114,7 @@ Then check two more things:
 
 ## 6. Send feedback
 
-Email **director@vantward.com** with whatever you can fill in. Short is fine.
+Email **founder@eraseai.ai** with whatever you can fill in. Short is fine.
 
 ```
 Phone and Android version: (e.g. Pixel 8, Android 15)
@@ -127,7 +131,6 @@ Would you keep using it? Why or why not?
 Screenshots or screen recordings help a lot, but only with fake data on
 screen.
 
----
 
 ## Troubleshooting
 

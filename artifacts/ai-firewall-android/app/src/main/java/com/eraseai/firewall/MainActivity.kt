@@ -82,6 +82,7 @@ import com.eraseai.firewall.data.DatasetApi
 import com.eraseai.firewall.data.DatasetUploadResult
 import com.eraseai.firewall.data.EntitlementRepository
 import com.eraseai.firewall.data.EntitlementState
+import com.eraseai.firewall.data.GuestTrial
 import com.eraseai.firewall.data.HistoryRepository
 import com.eraseai.firewall.data.MobileSessionStore
 import com.eraseai.firewall.data.PlayProduct
@@ -95,6 +96,7 @@ import com.eraseai.firewall.data.loadInstalledApps
 import com.eraseai.firewall.guard.GuardHealth
 import com.eraseai.firewall.safe.SafeActivity
 import com.eraseai.firewall.guard.GuardStateStore
+import com.eraseai.firewall.guard.LocalRiskScanner
 import com.eraseai.firewall.ime.ImeGuardHelper
 import com.eraseai.firewall.ui.BrandCard
 import com.eraseai.firewall.ui.BrandChipButton
@@ -121,8 +123,6 @@ import kotlinx.coroutines.launch
 
 private const val MAX_SCAN_TEXT_LENGTH = 5000
 private const val SPLASH_MIN_MS = 1800L
-private const val INTERNAL_RELEASE_NOTES =
-  "0.3.0: geometry submit band, EraseAI Keyboard IME firewall, optional Strict network gate (VPN blackhole while risky prompt held)."
 
 private enum class Screen {
   Splash, Login, Dashboard, Subscription, AccessibilityGuide, KeyboardGuide, ProtectedApps,
@@ -189,9 +189,11 @@ private fun EraseAIFirewallApp(
   val entitlementRepo = remember { EntitlementRepository(apiClient) }
   val historyRepo = remember { HistoryRepository(apiClient) }
   val protectedStore = remember { ProtectedAppsStore(context) }
+  val guestTrial = remember { GuestTrial(context) }
 
   var screen by remember { mutableStateOf(Screen.Splash) }
   var entitlement by remember { mutableStateOf<EntitlementState?>(null) }
+  var signedIn by remember { mutableStateOf(!sessionStore.getToken().isNullOrBlank()) }
   var loading by remember { mutableStateOf(false) }
   var error by remember { mutableStateOf<String?>(null) }
   var apps by remember { mutableStateOf(loadInstalledApps(context)) }
@@ -379,6 +381,7 @@ private fun EraseAIFirewallApp(
   }
 
   fun refreshEntitlement() {
+    if (!signedIn) return
     scope.launch {
       loading = true
       error = null
@@ -463,7 +466,7 @@ private fun EraseAIFirewallApp(
       if (event == Lifecycle.Event.ON_RESUME) {
         refreshAccessibility()
         GuardStateStore.refreshEgressGate()
-        if (!sessionStore.getToken().isNullOrBlank()) refreshEntitlement()
+        refreshEntitlement()
       }
     }
     lifecycleOwner?.lifecycle?.addObserver(observer)
@@ -473,8 +476,8 @@ private fun EraseAIFirewallApp(
   LaunchedEffect(Unit) {
     val started = System.currentTimeMillis()
     loadPlayProducts()
-    val next = if (sessionStore.getToken().isNullOrBlank()) {
-      Screen.Login
+    val next = if (!signedIn) {
+      if (guestTrial.hasStarted()) Screen.Dashboard else Screen.Login
     } else {
       refreshEntitlement()
       refreshBackendStatus()
@@ -495,7 +498,7 @@ private fun EraseAIFirewallApp(
   LaunchedEffect(initialSharedText) {
     if (!initialSharedText.isNullOrBlank()) {
       manualText = initialSharedText.take(MAX_SCAN_TEXT_LENGTH)
-      if (!sessionStore.getToken().isNullOrBlank() && screen != Screen.Splash) {
+      if ((signedIn || guestTrial.hasStarted()) && screen != Screen.Splash) {
         screen = Screen.ManualScan
       }
       onSharedTextConsumed()
@@ -516,7 +519,8 @@ private fun EraseAIFirewallApp(
             )
           },
           navigationIcon = {
-            if (screen !in setOf(Screen.Login, Screen.Dashboard)) {
+            val atRoot = screen == Screen.Dashboard || (screen == Screen.Login && !guestTrial.hasStarted())
+            if (!atRoot) {
               IconButton(onClick = { screen = Screen.Dashboard }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
               }
@@ -538,11 +542,23 @@ private fun EraseAIFirewallApp(
     ) {
       when (screen) {
         Screen.Splash -> BrandedSplashScreen()
-        Screen.Login -> LoginScreen(loading, error, onLogin = { email, password ->
+        Screen.Login -> LoginScreen(
+          loading = loading,
+          error = error,
+          guestTrialAvailable = !guestTrial.hasStarted(),
+          guestTrialEnded = guestTrial.isExpired(),
+          onTryWithoutAccount = {
+            guestTrial.start()
+            error = null
+            refreshAccessibility()
+            screen = Screen.Dashboard
+          },
+          onLogin = { email, password ->
           scope.launch {
             loading = true
             error = null
             authApi.login(email, password).onSuccess {
+              signedIn = true
               refreshEntitlement()
               refreshBackendStatus()
               loadPlayProducts()
@@ -559,6 +575,7 @@ private fun EraseAIFirewallApp(
             loading = true
             error = null
             authApi.signup(email, password, null, null).onSuccess {
+              signedIn = true
               refreshEntitlement()
               refreshBackendStatus()
               loadPlayProducts()
@@ -572,6 +589,8 @@ private fun EraseAIFirewallApp(
         })
         Screen.Dashboard -> DashboardScreen(
           entitlement = entitlement,
+          guestDaysLeft = if (signedIn) null else guestTrial.daysLeft(),
+          onCreateAccount = { screen = Screen.Login },
           loading = loading,
           accessibilityEnabled = accessibilityEnabled,
           accessibilityStatus = accessibilityStatus,
@@ -601,7 +620,7 @@ private fun EraseAIFirewallApp(
           onManual = { screen = Screen.ManualScan },
           onDatasetSanitizer = { screen = Screen.DatasetSanitizer },
           onSafeFiles = { context.startActivity(Intent(context, SafeActivity::class.java)) },
-          onBilling = { screen = Screen.Subscription },
+          onBilling = { screen = if (signedIn) Screen.Subscription else Screen.Login },
           onHistory = {
             scope.launch {
               loading = true
@@ -691,7 +710,15 @@ private fun EraseAIFirewallApp(
               redactedText = null
               val scanText = manualText.take(MAX_SCAN_TEXT_LENGTH)
               manualText = scanText
-              if (attachmentPieces.isEmpty()) {
+              if (!signedIn) {
+                // Guests get the on-device rules, the same ones that run in the AI apps.
+                val local = LocalRiskScanner.scan(scanText)
+                scanResult = local.toScanResult(scanText)
+                multiScanResult = null
+                protectedStore.saveLastScanSummary(local.summary(), local.level)
+                if (local.findings.isNotEmpty()) redactedText = LocalRiskScanner.redact(scanText)
+                if (attachmentPieces.isNotEmpty()) error = "Attachments are scanned with an account. The text above was checked on this phone."
+              } else if (attachmentPieces.isEmpty()) {
                 scanApi.scan(scanText, source = "android_share_or_manual").onSuccess { result ->
                   scanResult = result
                   multiScanResult = null
@@ -754,16 +781,19 @@ private fun EraseAIFirewallApp(
             startStrictEgressFlow()
           },
           onReconnectStrictEgress = { startStrictEgressFlow() },
-          onBilling = { screen = Screen.Subscription },
+          onBilling = { screen = if (signedIn) Screen.Subscription else Screen.Login },
           onDiagnostics = {
             refreshBackendStatus()
             screen = Screen.Diagnostics
           },
           onPrivacy = { screen = Screen.Privacy },
           onOpenPrivacyPolicy = { openUrl(context, BuildConfig.PRIVACY_URL) },
+          signedIn = signedIn,
+          onSignIn = { screen = Screen.Login },
           onLogout = {
             scope.launch {
               authApi.logout()
+              signedIn = false
               entitlement = null
               scanResult = null
               redactedText = null
@@ -863,11 +893,15 @@ private fun EraseAIFirewallApp(
 private fun LoginScreen(
   loading: Boolean,
   error: String?,
+  guestTrialAvailable: Boolean,
+  guestTrialEnded: Boolean,
+  onTryWithoutAccount: () -> Unit,
   onLogin: (String, String) -> Unit,
   onSignup: (String, String) -> Unit,
 ) {
   var email by remember { mutableStateOf("") }
   var password by remember { mutableStateOf("") }
+  val canSignIn = !loading && email.isNotBlank() && password.isNotBlank()
   LazyColumn(
     modifier = Modifier.fillMaxSize(),
     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
@@ -876,8 +910,30 @@ private fun LoginScreen(
     item {
       BrandHero(
         title = "AI Firewall for your phone",
-        subtitle = "EraseAI checks prompts and shared uploads before they reach ChatGPT, Gemini, Claude, Copilot, Perplexity, and other AI apps. Sign up for a 7-day trial, then subscribe through Google Play.",
+        subtitle = "EraseAI checks what you're about to send in ChatGPT, Gemini, Claude and other AI apps, and stops API keys, passwords and personal data before they leave your phone.",
       )
+    }
+    if (guestTrialAvailable) {
+      item {
+        BrandPrimaryButton(
+          text = "Try free for 7 days, no account",
+          onClick = onTryWithoutAccount,
+          enabled = !loading,
+          icon = Icons.Default.Shield,
+        )
+      }
+      item {
+        Text(
+          "Checks run on this phone. Create an account any time to keep protection after 7 days and add server scanning and history.",
+          style = MaterialTheme.typography.bodySmall,
+          color = BrandMutedForeground,
+        )
+      }
+      item { BrandSectionLabel("Or sign in") }
+    } else if (guestTrialEnded) {
+      item {
+        BrandErrorBanner("Your 7 days without an account have ended. Create a free account or sign in to turn the firewall back on.")
+      }
     }
     item { BrandField(email, { email = it }, "Email", singleLine = true) }
     item {
@@ -891,12 +947,12 @@ private fun LoginScreen(
     }
     if (error != null) item { BrandErrorBanner(error) }
     item {
-      BrandPrimaryButton(
-        text = if (loading) "Signing in…" else "Sign In",
-        onClick = { onLogin(email.trim(), password) },
-        enabled = !loading && email.isNotBlank() && password.isNotBlank(),
-        icon = Icons.Default.Lock,
-      )
+      val label = if (loading) "Signing in…" else "Sign In"
+      if (guestTrialAvailable) {
+        BrandSecondaryButton(label, { onLogin(email.trim(), password) }, enabled = canSignIn, icon = Icons.Default.Lock)
+      } else {
+        BrandPrimaryButton(label, { onLogin(email.trim(), password) }, enabled = canSignIn, icon = Icons.Default.Lock)
+      }
     }
     item {
       BrandSecondaryButton(
@@ -911,6 +967,9 @@ private fun LoginScreen(
 @Composable
 private fun DashboardScreen(
   entitlement: EntitlementState?,
+  /** Days left of the no-account trial; null when signed in, 0 once it has ended. */
+  guestDaysLeft: Int?,
+  onCreateAccount: () -> Unit,
   loading: Boolean,
   accessibilityEnabled: Boolean,
   accessibilityStatus: GuardHealth.AccessibilityStatus,
@@ -935,8 +994,9 @@ private fun DashboardScreen(
 ) {
   val serviceRunning = accessibilityStatus == GuardHealth.AccessibilityStatus.ACTIVE
   val serviceStalled = accessibilityStatus == GuardHealth.AccessibilityStatus.STALLED
-  val protectionActive = firewallEnabled && serviceRunning && protectedAppsCount > 0
-  val canUseFirewall = entitlement?.androidFirewall != false
+  val guestEnded = guestDaysLeft == 0
+  val protectionActive = firewallEnabled && serviceRunning && protectedAppsCount > 0 && !guestEnded
+  val canUseFirewall = entitlement?.androidFirewall != false && !guestEnded
   val canUseAccessibility = entitlement?.accessibilityFirewall != false
 
   LazyColumn(
@@ -961,6 +1021,9 @@ private fun DashboardScreen(
       BrandStatusBanner(
         title = if (protectionActive) "Protection active" else "Protection incomplete",
         body = when {
+          guestEnded ->
+            "Your 7 days without an account have ended, so EraseAI is not checking anything. " +
+              "Create a free account or sign in to turn it back on."
           !accessibilityEnabled -> "Accessibility is off — EraseAI cannot intercept Send yet."
           serviceStalled ->
             "Accessibility is switched on, but Android stopped the EraseAI service, so nothing " +
@@ -973,6 +1036,23 @@ private fun DashboardScreen(
         },
         active = protectionActive,
       )
+    }
+    if (guestDaysLeft != null && !guestEnded) {
+      item {
+        BrandCard {
+          Text(
+            "No account · $guestDaysLeft ${if (guestDaysLeft == 1) "day" else "days"} left",
+            style = MaterialTheme.typography.titleMedium,
+          )
+          Text(
+            "Protection runs on this phone. Create a free account to keep it after the trial, and add server scanning, attachment scanning and history.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BrandMutedForeground,
+          )
+          Spacer(modifier = Modifier.height(8.dp))
+          BrandSecondaryButton("Create account or sign in", onCreateAccount)
+        }
+      }
     }
 
     item {
@@ -989,12 +1069,16 @@ private fun DashboardScreen(
     item {
       BrandStatRow(
         "Apps" to protectedAppsCount.toString(),
-        "Plan" to (entitlement?.subscriptionLabel ?: if (loading) "Loading…" else "Unknown"),
+        "Plan" to when {
+          guestEnded -> "Trial ended"
+          guestDaysLeft != null -> "No account"
+          else -> entitlement?.subscriptionLabel ?: if (loading) "Loading…" else "Unknown"
+        },
       )
     }
     item {
       BrandStatRow(
-        "Scans" to scansUsed(entitlement),
+        "Scans" to if (guestDaysLeft != null) "On device" else scansUsed(entitlement),
         "Mode" to if (keyboardSelected) "IME primary" else "Curtain fallback",
       )
     }
@@ -1024,7 +1108,7 @@ private fun DashboardScreen(
             }
           }
           Switch(
-            checked = firewallEnabled && accessibilityEnabled,
+            checked = firewallEnabled && accessibilityEnabled && !guestEnded,
             enabled = canUseFirewall,
             onCheckedChange = { desired ->
               if (desired && !accessibilityEnabled) {
@@ -1052,6 +1136,11 @@ private fun DashboardScreen(
 
     item {
       when {
+        guestEnded -> BrandPrimaryButton(
+          text = "Create account or sign in",
+          onClick = onCreateAccount,
+          icon = Icons.Default.Lock,
+        )
         !accessibilityEnabled -> BrandPrimaryButton(
           text = "Enable EraseAI Firewall",
           onClick = onEnable,
@@ -1505,6 +1594,8 @@ private fun SettingsScreen(
   onDiagnostics: () -> Unit,
   onPrivacy: () -> Unit,
   onOpenPrivacyPolicy: () -> Unit,
+  signedIn: Boolean,
+  onSignIn: () -> Unit,
   onLogout: () -> Unit,
 ) {
   LazyColumn(
@@ -1558,17 +1649,13 @@ private fun SettingsScreen(
         Text(webBase, style = MaterialTheme.typography.bodySmall)
       }
     }
-    item {
-      BrandCard {
-        Text("Internal notes", style = MaterialTheme.typography.labelMedium, color = BrandMutedForeground)
-        Text(INTERNAL_RELEASE_NOTES, style = MaterialTheme.typography.bodySmall)
-      }
-    }
     item { BrandSecondaryButton("Trial & Subscription", onBilling) }
     item { BrandSecondaryButton("Diagnostics", onDiagnostics) }
     item { BrandSecondaryButton("Privacy Explanation", onPrivacy) }
     item { BrandSecondaryButton("Open Privacy Policy", onOpenPrivacyPolicy) }
-    item { BrandPrimaryButton("Sign Out", onLogout) }
+    item {
+      if (signedIn) BrandPrimaryButton("Sign Out", onLogout) else BrandPrimaryButton("Sign in or create account", onSignIn)
+    }
   }
 }
 
@@ -1654,7 +1741,7 @@ private fun Screen.title(): String = when (this) {
 }
 
 private fun Throwable.safeMessage(): String = when (this) {
-  is ApiError.Unauthorized -> "Please sign in again."
+  is ApiError.Unauthorized -> message ?: "Please sign in again."
   is ApiError.UpgradeRequired -> message ?: "Upgrade required."
   is ApiError.NotFound -> message ?: "Not found."
   is ApiError.Network -> message ?: "Network unavailable."
