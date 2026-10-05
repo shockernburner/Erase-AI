@@ -34,6 +34,9 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ContactPage from "@/pages/ContactPage";
 import DeleteProfilePage from "@/pages/DeleteProfilePage";
 import StatusPage from "@/pages/StatusPage";
+import OrganizationPage from "@/pages/OrganizationPage";
+import JoinOrganization from "@/pages/JoinOrganization";
+import { capturePendingInvite } from "@/lib/orgInvite";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -55,7 +58,7 @@ function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => voi
   const plans = [
     { id: "personal", nameKey: "plan.personal", price: "$5", icon: <Shield className="w-5 h-5" />, showUnit: true },
     { id: "pro", nameKey: "plan.pro", price: "$19", icon: <Crown className="w-5 h-5" />, showUnit: true },
-    { id: "business", nameKey: "plan.business", price: "$99", icon: <Briefcase className="w-5 h-5" />, showUnit: true },
+    { id: "business", nameKey: "plan.business", price: "$9", icon: <Briefcase className="w-5 h-5" />, showUnit: true },
     { id: "enterprise", nameKey: "plan.enterprise", price: "", icon: <Building2 className="w-5 h-5" />, showUnit: false },
   ];
 
@@ -94,7 +97,7 @@ function TrialExpiredModal({ onChoosePlan, onLogout }: { onChoosePlan: () => voi
               {p.showUnit ? (
                 <>
                   <span className="text-lg font-bold text-foreground">{p.price}</span>
-                  <span className="text-xs text-muted-foreground">{t("pricing.month")}</span>
+                  <span className="text-xs text-muted-foreground">{p.id === "business" ? t("pricing.personMonth", { defaultValue: "/person/month" }) : t("pricing.month")}</span>
                 </>
               ) : (
                 <span className="text-lg font-bold text-foreground">{t("pricing.customPricing")}</span>
@@ -266,13 +269,15 @@ function AuthGate() {
       return "checkout-success";
     }
     const viewParam = params.get("view");
-    const allowedDeepLinks: AppView[] = ["developer", "datasetSanitizer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub", "getStarted", "firewallSetup", "apiSetup"];
+    const allowedDeepLinks: AppView[] = ["developer", "datasetSanitizer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub", "getStarted", "firewallSetup", "apiSetup", "organization"];
     if (viewParam && (allowedDeepLinks as string[]).includes(viewParam)) {
       return viewParam as AppView;
     }
     return "home";
   });
   const [initialViewSet, setInitialViewSet] = useState(false);
+  // Token from an /org/join?token=… invite link, kept until accepted or dismissed.
+  const [pendingInvite, setPendingInvite] = useState<string | null>(() => capturePendingInvite());
   const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -317,6 +322,21 @@ function AuthGate() {
         </div>
       </div>
     );
+  }
+
+  const finishInvite = (joined: boolean) => {
+    setPendingInvite(null);
+    if (joined) {
+      // Reload so the session picks up the organization's plan.
+      const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+      window.location.assign(`${base}/?view=organization`);
+    }
+  };
+
+  // Joining needs the terms accepted, so signed-in users who haven't yet go
+  // through the normal terms modal first and land here afterwards.
+  if (pendingInvite && (!isAuthenticated || termsAccepted === true)) {
+    return <JoinOrganization token={pendingInvite} onDone={finishInvite} />;
   }
 
   if (!isAuthenticated) {
@@ -446,6 +466,9 @@ function AuthGate() {
       break;
     case "contact":
       inner = <ContactPage onBack={() => setView("home")} />;
+      break;
+    case "organization":
+      inner = <OrganizationPage onContact={() => setView("contact")} />;
       break;
     default:
       inner = <DatasetSanitizer onNavigatePricing={() => setView("pricing")} />;

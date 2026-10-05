@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Globe,
   Rocket,
+  Building2,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -55,7 +56,8 @@ export type AppView =
   | "terms"
   | "license"
   | "privacy"
-  | "contact";
+  | "contact"
+  | "organization";
 
 const SIDEBAR_KEY = "eraseai.sidebarOpen";
 const ADMIN_EMAIL = "firdous.mahmood26@gmail.com";
@@ -211,6 +213,8 @@ export function AppShell({
   const isOwner = user?.email === ADMIN_EMAIL;
   const plan = user?.planType || "free";
   const isPaidDev = plan === "pro" || plan === "business" || plan === "enterprise";
+  // Team/Enterprise plans come from an organization (or a platform admin).
+  const isOrgPlan = plan === "business" || plan === "enterprise";
 
   useEffect(() => {
     try {
@@ -229,6 +233,14 @@ export function AppShell({
         { id: "getStarted", labelKey: "appShell.getStarted", icon: <Rocket className="w-4 h-4" />, match: ["getStarted", "firewallSetup", "apiSetup"] },
       ],
     },
+    ...(isOrgPlan
+      ? [{
+          label: t("appShell.groupOrganization", { defaultValue: "Organization" }),
+          items: [
+            { id: "organization" as AppView, labelKey: "appShell.organization", icon: <Building2 className="w-4 h-4" />, match: ["organization"] as AppView[] },
+          ],
+        }]
+      : []),
     {
       label: t("appShell.groupPersonal", { defaultValue: "Personal" }),
       items: [
@@ -271,7 +283,7 @@ export function AppShell({
         { id: "contact", labelKey: "nav.contact", icon: <Phone className="w-4 h-4" />, match: ["contact"] },
       ],
     },
-  ], [t, isPaidDev]);
+  ], [t, isPaidDev, isOrgPlan]);
 
   const adminGroup = useMemo<{ label: string; items: NavItem[] } | null>(() => {
     if (!isAdmin) return null;

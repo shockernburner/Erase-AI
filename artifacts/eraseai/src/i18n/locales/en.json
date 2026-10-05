@@ -1514,6 +1514,8 @@
     "errorMsg": "Failed to send message. Please try again or email us directly."
   },
   "appShell": {
+    "organization": "Organization",
+    "groupOrganization": "Organization",
     "account": "Account",
     "collapse": "Collapse",
     "expand": "Expand",

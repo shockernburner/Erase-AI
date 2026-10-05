@@ -10,6 +10,7 @@ import {
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { AdminOrganizations } from "@/components/AdminOrganizations";
 
 interface Stats {
   visits: { today: number; week: number; allTime: number };
@@ -710,6 +711,8 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                 <p className="text-sm text-muted-foreground/50 py-6 text-center">{t("admin.noApiUsage")}</p>
               )}
             </motion.div>
+
+            <AdminOrganizations />
 
             <motion.div
               initial={{ opacity: 0, y: 10 }}

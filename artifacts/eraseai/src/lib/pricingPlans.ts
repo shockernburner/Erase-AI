@@ -113,9 +113,9 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     forOrg: [
       { text: "Company rules everyone follows, e.g. keys always blocked, no 'Send anyway'", soon: true },
-      { text: "Admin dashboard: what was caught, by whom, in which AI app" },
+      { text: "Admin dashboard: what was caught, by person" },
       { text: "Audit log export as evidence for ISO 27001, SOC 2 and GDPR", soon: true },
-      { text: "Add and remove people; seats and history stay with the company", soon: true },
+      { text: "Add and remove people with invite links; seats stay with the company" },
       { text: "One invoice for the team", soon: true },
       { text: "API: 20 keys, 100,000 requests a month, shared" },
       { text: "Priority support" },
