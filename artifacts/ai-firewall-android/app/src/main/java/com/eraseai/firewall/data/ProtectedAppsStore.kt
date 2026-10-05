@@ -21,12 +21,7 @@ class ProtectedAppsStore(context: Context) {
   fun setSelectedPackages(packages: Set<String>) {
     // Gemini ships as either the Gemini app or inside Google Search — keep both in sync.
     val normalized = packages.toMutableSet()
-    if ("com.google.android.apps.bard" in normalized) {
-      normalized += "com.google.android.googlequicksearchbox"
-    }
-    if ("com.google.android.googlequicksearchbox" in normalized) {
-      normalized += "com.google.android.apps.bard"
-    }
+    if (normalized.any { it in GEMINI_PACKAGES }) normalized += GEMINI_PACKAGES
     prefs.edit().putStringSet(PROTECTED_APPS_KEY, normalized).apply()
   }
 
@@ -115,6 +110,22 @@ class ProtectedAppsStore(context: Context) {
   }
 
   companion object {
+    /**
+     * Gemini runs as its own app on some phones and inside the Google app on others, so the two
+     * are protected or unprotected together.
+     */
+    val GEMINI_PACKAGES = setOf("com.google.android.apps.bard", "com.google.android.googlequicksearchbox")
+
+    /**
+     * The selection after the user taps [packageName]. Tapping either Gemini package switches
+     * both: switching one alone was undone by the pairing in [setSelectedPackages], so neither
+     * "Gemini" nor "Google" could ever be unchecked.
+     */
+    fun toggled(selected: Set<String>, packageName: String): Set<String> {
+      val group = if (packageName in GEMINI_PACKAGES) GEMINI_PACKAGES else setOf(packageName)
+      return if (packageName in selected) selected - group else selected + group
+    }
+
     private const val FIREWALL_ENABLED_KEY = "firewall_enabled"
     private const val PROTECTED_APPS_KEY = "protected_apps"
     private const val LAST_SCAN_KEY = "last_scan_summary"

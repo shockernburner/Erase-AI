@@ -678,11 +678,7 @@ private fun EraseAIFirewallApp(
           },
         )
         Screen.ProtectedApps -> ProtectedAppsScreen(apps, selectedPackages) { packageName ->
-          selectedPackages = if (selectedPackages.contains(packageName)) {
-            selectedPackages - packageName
-          } else {
-            selectedPackages + packageName
-          }
+          selectedPackages = ProtectedAppsStore.toggled(selectedPackages, packageName)
           protectedStore.setSelectedPackages(selectedPackages)
           selectedPackages = protectedStore.getSelectedPackages()
           scope.launch { protectedStore.pushToBackend(apiClient) }
@@ -1427,7 +1423,7 @@ private fun ProtectedAppsScreen(
     item {
       BrandHero(
         title = "Protected Apps",
-        subtitle = "Select AI or coding apps to protect. Suggested LLM apps are listed first. For Gemini, enable both “Gemini” and “Google” if both appear.",
+        subtitle = "Select AI or coding apps to protect. Suggested LLM apps are listed first. Gemini runs inside the Google app on many phones, so “Gemini” and “Google” switch on and off together.",
       )
     }
     items(apps) { app ->
