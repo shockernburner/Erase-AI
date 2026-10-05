@@ -116,7 +116,7 @@ export const PRICING_TIERS: PricingTier[] = [
       { text: "Audit log export as evidence for ISO 27001, SOC 2 and GDPR", soon: true },
       { text: "Add and remove people with invite links; seats stay with the company" },
       { text: "One invoice for the team; change seats any time" },
-      { text: "Managed rollout: IT installs EraseAI on every Chrome browser (Google Admin, Intune) and people join with their work email" },
+      { text: "Managed rollout: IT installs EraseAI on every Chrome browser (Google Admin, Intune) and people join with their work email", soon: true },
       { text: "Managed rollout on Android phones (managed Google Play)", soon: true },
       { text: "API: 20 keys, 100,000 requests a month, shared" },
       { text: "Priority support" },
@@ -137,7 +137,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     forOrg: [
       { text: "Any number of people, priced for your organization" },
-      { text: "Managed rollout on every Chrome browser (Google Admin, Intune)" },
+      { text: "Managed rollout on every Chrome browser (Google Admin, Intune)", soon: true },
       { text: "Managed rollout on Android phones (managed Google Play)", soon: true },
       { text: "Single sign-on (SAML, Google, Microsoft) and automatic user provisioning (SCIM)", soon: true },
       { text: "Company-wide policies and custom detection rules", soon: true },
@@ -163,7 +163,7 @@ export const PRICING_COMPARISON: string[][] = [
   ["API requests a month", "No", "No", "10,000", "100,000", "Custom"],
   ["Admin dashboard", "No", "No", "No", "Yes", "Yes"],
   ["Company rules and audit export", "No", "No", "No", "Coming soon", "Coming soon"],
-  ["Managed rollout (Chrome)", "No", "No", "No", "Yes", "Yes"],
+  ["Managed rollout (Chrome)", "No", "No", "No", "Coming soon", "Coming soon"],
   ["SSO and SIEM", "No", "No", "No", "No", "Coming soon"],
 ];
 

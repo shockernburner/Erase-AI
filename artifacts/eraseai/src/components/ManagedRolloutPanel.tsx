@@ -97,6 +97,10 @@ export function ManagedRolloutPanel() {
           </span>
         )}
       </div>
+      <p className="mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400">
+        Update coming soon: the Chrome extension and Android app updates that read this policy are on their way. You can
+        set your domains and token now; devices start enrolling once the updates are out.
+      </p>
       <p className="text-xs text-muted-foreground mb-4">
         For IT: install EraseAI on everyone's Chrome and Android phone from Google Admin, Microsoft Intune or your phone
         management tool. Anyone with a work email on your domains joins automatically and takes a seat; no invite links or
@@ -193,7 +197,7 @@ export function ManagedRolloutPanel() {
             </p>
             <CopyBlock label="Enrollment token" text={created.token} />
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p className="text-sm text-foreground">4. Android (managed Google Play / any EMM) · with the next app release</p>
+              <p className="text-sm text-foreground">4. Android (managed Google Play / any EMM) · update coming soon</p>
               <p>
                 Approve <code className="text-foreground">{created.android.packageName}</code> and set this managed
                 configuration. People sign in once with their work email and join automatically.
