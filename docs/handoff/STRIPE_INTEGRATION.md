@@ -39,10 +39,27 @@ Plans/prices are seeded into Stripe by
 |-----------|---------------|---------|---------|
 | Personal  | `personal`    | $5      | $54     |
 | Developer | `pro`         | $19     | $205    |
-| Team      | `business`    | $99     | $1069   |
+| Team      | `business`    | $9 a person | $96 a person |
 
-> Annual = round(monthly × 12 × 0.9). Backend plan ids remain `personal` /
-> `pro` / `business` (display names differ).
+> Personal/Developer annual = round(monthly × 12 × 0.9). Team is per person:
+> one subscription per organization with quantity = seats (3 to 10). Backend
+> plan ids remain `personal` / `pro` / `business` (display names differ).
+> The seed archives active prices that no longer match (e.g. the old $99 Team).
+
+## Team (organization) billing
+
+- `POST /api/billing/team/checkout` `{ orgName, seats, billingPeriod, returnUrl }`
+  — Checkout with the per-seat price and `quantity = seats`. Metadata
+  `kind=team`, `owner_user_id`, `org_name` (no `user_id`, so the per-user
+  reconcile ignores it). A new Stripe customer is created per team.
+- `GET /api/billing/checkout-status` creates the organization on payment
+  (buyer = active owner); the webhook reconcile (`lib/billing/team.ts`) does
+  the same if the buyer never returns, and keeps seats/status in step
+  (canceled/unpaid → organization suspended).
+- `GET /api/org/billing`, `PATCH /api/org/billing/seats` (owner; prorated),
+  `POST /api/org/billing/portal` (owner; Stripe billing portal for invoices,
+  card, cancel). **Save the portal settings once** in Stripe Dashboard →
+  Settings → Billing → Customer portal, or the portal link fails.
 
 Run the seed (after Stripe is connected):
 

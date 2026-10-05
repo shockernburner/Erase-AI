@@ -134,8 +134,9 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     ...tier,
     price: tier.monthlyPrice < 0 ? "Contact us for pricing" : `$${tier.monthlyPrice}`,
     priceUnit: tier.monthlyPrice > 0 ? (tier.perPerson ? "/person/month" : "/month") : "",
-    // Organizations (Team, Enterprise) talk to us first; individuals sign up.
-    action: tier.id === "business" || tier.id === "enterprise" ? contactSales : scrollToSignUp,
+    // Enterprise talks to us first; everyone else (Team included) signs up and
+    // buys from the in-app pricing page.
+    action: tier.id === "enterprise" ? contactSales : scrollToSignUp,
   }));
   const comparisonRows = PRICING_COMPARISON;
 

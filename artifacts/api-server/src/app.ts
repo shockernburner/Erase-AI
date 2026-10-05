@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { getStripeSync } from "./lib/stripe";
 import { createStripeWebhookHandler } from "./lib/billing/webhook-source.mjs";
 import { reconcileRecentSubscriptions } from "./lib/billing/reconcile";
+import { reconcileTeamSubscriptions } from "./lib/billing/team";
 
 const app: Express = express();
 
@@ -52,7 +53,12 @@ app.post(
   express.raw({ type: "application/json" }),
   createStripeWebhookHandler({
     getSync: getStripeSync,
-    reconcile: reconcileRecentSubscriptions,
+    // Personal/Developer plans onto users, then Team subscriptions onto
+    // organizations; one failing doesn't stop the other.
+    reconcile: async () => {
+      const results = await Promise.allSettled([reconcileRecentSubscriptions(), reconcileTeamSubscriptions()]);
+      for (const r of results) if (r.status === "rejected") logger.error({ err: r.reason }, "Subscription reconcile failed");
+    },
     logger,
   }),
 );

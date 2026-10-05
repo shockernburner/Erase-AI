@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Building2, Users, UserPlus, Copy, Check, Loader2, Activity, Link2, Trash2, LogOut, AlertTriangle,
+  CreditCard,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
 import { ORG_PLAN_NAMES, ORG_ROLE_NAMES, inviteUrl, orgApi } from "@/lib/orgInvite";
@@ -62,6 +63,127 @@ function CopyLink({ url }: { url: string }) {
         {copied ? "Copied" : "Copy"}
       </Button>
     </div>
+  );
+}
+
+interface BillingInfo {
+  billedBy: "stripe" | "invoice";
+  seats: number;
+  seatsUsed: number;
+  minSeats?: number;
+  maxSeats?: number;
+  billingPeriod?: "monthly" | "annual";
+  seatPriceCents?: number;
+  totalCents?: number;
+  subscriptionStatus?: string | null;
+  currentPeriodEnd?: string | null;
+  canManage: boolean;
+}
+
+// Seats and payment for self-serve Team organizations. Owners change seats
+// (Stripe prorates) and open Stripe's portal for invoices, card and cancelling.
+function BillingPanel({ onChanged, onContact }: { onChanged: () => void; onContact: () => void }) {
+  const [info, setInfo] = useState<BillingInfo | null>(null);
+  const [seats, setSeats] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    orgApi<BillingInfo>("GET", "/org/billing")
+      .then((b) => {
+        setInfo(b);
+        setSeats(b.seats);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (!info) return error ? <p className="text-sm text-destructive">{error}</p> : null;
+
+  const dollars = (cents?: number) => `$${((cents ?? 0) / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const per = info.billingPeriod === "annual" ? "a year" : "a month";
+
+  const saveSeats = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await orgApi("PATCH", "/org/billing/seats", { seats });
+      load();
+      onChanged();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openPortal = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await orgApi<{ url: string }>("POST", "/org/billing/portal", {
+        returnUrl: `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/?view=organization`,
+      });
+      window.location.href = r.url;
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className={panel}>
+      <div className="flex items-center gap-2 mb-3">
+        <CreditCard className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">Billing</h2>
+      </div>
+      {info.billedBy === "invoice" ? (
+        <p className="text-sm text-muted-foreground">
+          {info.seats} seats, billed by invoice. To change seats or get invoices,{" "}
+          <button className="underline" onClick={onContact}>contact us</button>.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {info.seats} seats × {dollars(info.seatPriceCents)} = <span className="text-foreground font-semibold">{dollars(info.totalCents)} {per}</span>
+            {info.currentPeriodEnd && <> · renews {new Date(info.currentPeriodEnd).toLocaleDateString()}</>}
+            {info.subscriptionStatus && info.subscriptionStatus !== "active" && (
+              <span className="ml-2 text-yellow-400">({info.subscriptionStatus.replace(/_/g, " ")})</span>
+            )}
+          </p>
+          {info.canManage ? (
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-xs text-muted-foreground">
+                Seats ({info.minSeats} to {info.maxSeats}; {info.seatsUsed} in use)
+                <div className="mt-1 flex gap-2">
+                  <Input
+                    type="number"
+                    min={Math.max(info.minSeats ?? 3, info.seatsUsed)}
+                    max={info.maxSeats}
+                    value={seats}
+                    onChange={(e) => setSeats(Number(e.target.value))}
+                    className="w-24 py-2"
+                  />
+                  <Button size="sm" variant="secondary" isLoading={busy} disabled={seats === info.seats} onClick={saveSeats}>
+                    Change seats
+                  </Button>
+                </div>
+              </label>
+              <Button size="sm" variant="outline" disabled={busy} onClick={openPortal}>
+                Invoices, card and cancelling
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Only owners can change seats or payment.</p>
+          )}
+          <p className="text-xs text-muted-foreground">Adding seats is charged pro rata on your next invoice; removing them credits it.</p>
+        </div>
+      )}
+      {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+    </section>
   );
 }
 
@@ -305,7 +427,8 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
           </form>
           {seatsFull && (
             <p className="mt-3 text-xs text-yellow-400">
-              All seats are in use. Remove someone, or <button className="underline" onClick={onContact}>contact us</button> to add seats.
+              All seats are in use. Remove someone, or add seats under Billing below (if you pay by invoice,{" "}
+              <button className="underline" onClick={onContact}>contact us</button>).
             </p>
           )}
         </section>
@@ -379,6 +502,8 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
           })}
         </ul>
       </section>
+
+      {me.canManage && <BillingPanel onChanged={load} onContact={onContact} />}
 
       {me.canManage && <ActivityPanel />}
     </div>

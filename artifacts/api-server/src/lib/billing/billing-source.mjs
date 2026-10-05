@@ -27,9 +27,8 @@ export const PLAN_PRICING = {
 
 // Plans anyone can buy for themselves through self-serve Stripe checkout.
 // `free` needs no checkout and `enterprise` is sales-assisted (contact us for
-// pricing). Team is sold through sales too until organization billing exists
-// (seats paid by the organization, members joining it): a self-serve Team
-// purchase today would be one account that cannot add its people.
+// pricing). Team is bought for an organization through its own checkout
+// (routes/team-billing.ts, team-source.mjs), not this one.
 export const VALID_CHECKOUT_PLANS = ["personal", "pro"];
 
 // Plans a completed Checkout Session may promote a user to. Includes Team so

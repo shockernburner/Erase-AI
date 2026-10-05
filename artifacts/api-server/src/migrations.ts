@@ -338,6 +338,16 @@ async function ensureOrganizationTables() {
         CONSTRAINT organization_members_status_valid CHECK (status IN ('invited', 'active', 'removed'))
       )
     `);
+    // Self-serve Team billing columns.
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR`);
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR`);
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(30)`);
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS billing_period VARCHAR(10)`);
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ`);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS organizations_stripe_subscription_id_unique
+        ON organizations(stripe_subscription_id)
+    `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_org_members_org ON organization_members(org_id)`);
     await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_org_members_invite_token ON organization_members(invite_token_hash)`);
     await db.execute(sql`

@@ -8,10 +8,15 @@ import { getUncachableStripeClient } from "./stripeClient";
  * what's missing. The backend (`/api/billing/checkout`) resolves the price id
  * from the synced `stripe.*` schema using these same metadata tags.
  *
- * Prices mirror the live plans exactly (annual = round(monthly * 12 * 0.9)):
+ * Prices mirror the live plans (Personal and Developer: annual =
+ * round(monthly * 12 * 0.9)); Team is per person, bought with quantity = seats:
  *   Personal  $5/mo   $54/yr
  *   Developer $19/mo  $205/yr
- *   Team      $99/mo  $1069/yr
+ *   Team      $9/mo   $96/yr   a person (3 to 10 people)
+ *
+ * Active prices on a product that no longer match (e.g. the old flat $99 Team
+ * price) are archived, so checkout can never pick them. Existing subscribers
+ * on an archived price keep it; archiving only stops new purchases.
  *
  * Run with: pnpm --filter @workspace/scripts run seed-stripe
  */
@@ -41,9 +46,9 @@ const PLANS: PlanSeed[] = [
   {
     plan: "business",
     name: "EraseAI Team",
-    description: "Shared policies, admin dashboard, and audit logs for teams.",
-    monthly: 9900,
-    annual: 106900,
+    description: "Per person, paid by the organization: admin dashboard, invite links and activity by person.",
+    monthly: 900,
+    annual: 9600,
   },
 ];
 
@@ -82,6 +87,19 @@ async function seed() {
       { billing_period: "monthly", amount: spec.monthly, interval: "month" },
       { billing_period: "annual", amount: spec.annual, interval: "year" },
     ];
+
+    for (const stale of existingPrices.data) {
+      const wanted = periods.some(
+        (p) =>
+          stale.metadata?.billing_period === p.billing_period &&
+          stale.unit_amount === p.amount &&
+          stale.recurring?.interval === p.interval,
+      );
+      if (!wanted) {
+        await stripe.prices.update(stale.id, { active: false });
+        console.log(`  Archived old price ${stale.id} (${((stale.unit_amount ?? 0) / 100).toFixed(2)} ${stale.currency})`);
+      }
+    }
 
     for (const p of periods) {
       const match = existingPrices.data.find(

@@ -12,6 +12,8 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<"checking" | "success" | "failed">("checking");
   const [activatedPlan, setActivatedPlan] = useState<string>("pro");
+  // Set when a Team purchase created an organization; Continue goes there.
+  const [teamOrg, setTeamOrg] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [pollKey, setPollKey] = useState(0);
 
@@ -35,6 +37,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
           if (statusData.status === "succeeded") {
             sessionStorage.removeItem("eraseai_checkout_intent");
             setActivatedPlan(statusData.planType || "pro");
+            setTeamOrg(Boolean(statusData.organizationId));
             setStatus("success");
             return true;
           }
@@ -87,6 +90,10 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
   }, [checkPlan, pollKey]);
 
   const handleContinue = () => {
+    if (teamOrg) {
+      window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/?view=organization`);
+      return;
+    }
     window.location.reload();
   };
 

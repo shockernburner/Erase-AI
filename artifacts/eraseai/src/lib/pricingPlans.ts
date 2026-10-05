@@ -104,7 +104,6 @@ export const PRICING_TIERS: PricingTier[] = [
     perPerson: true,
     annualMonthlyPrice: 8,
     seats: "3 to 10 people",
-    contactSales: true,
     description: "Small companies and teams",
     paidBy: "Paid by your organization",
     forYou: [
@@ -116,11 +115,11 @@ export const PRICING_TIERS: PricingTier[] = [
       { text: "Admin dashboard: what was caught, by person" },
       { text: "Audit log export as evidence for ISO 27001, SOC 2 and GDPR", soon: true },
       { text: "Add and remove people with invite links; seats stay with the company" },
-      { text: "One invoice for the team", soon: true },
+      { text: "One invoice for the team; change seats any time" },
       { text: "API: 20 keys, 100,000 requests a month, shared" },
       { text: "Priority support" },
     ],
-    cta: "Contact us",
+    cta: "Buy Team",
     highlight: false,
   },
   {

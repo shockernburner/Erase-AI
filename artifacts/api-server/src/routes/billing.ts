@@ -19,6 +19,8 @@ import {
 } from "../lib/billing/billing-source.mjs";
 import { getActiveMembership } from "../lib/org";
 import { effectivePlan } from "../lib/org/org-source.mjs";
+import { evaluateTeamCheckout } from "../lib/billing/team-source.mjs";
+import { ensureTeamOrg } from "../lib/billing/team";
 
 const router: IRouter = Router();
 
@@ -147,7 +149,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
         perSeat: true,
         minSeats: PLAN_PRICING.business.minSeats,
         maxSeats: PLAN_PRICING.business.maxSeats,
-        selfServe: false,
+        selfServe: true,
         features: [
           "Per person: $9 a month, or $8 a month billed yearly; 3 to 10 people",
           "Paid by your organization; members get Enterprise-level protection",
@@ -287,6 +289,22 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ["subscription"],
     });
+
+    // Team purchases create the organization (buyer as owner) on payment.
+    if (session.metadata?.kind === "team") {
+      const team = evaluateTeamCheckout(session, req.user!.id);
+      if (team.kind === "denied") {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+      if (team.kind === "succeeded") {
+        const organizationId = await ensureTeamOrg({ ...team, ownerUserId: req.user!.id });
+        res.json({ status: "succeeded", planType: "business", organizationId });
+        return;
+      }
+      res.json({ status: team.kind });
+      return;
+    }
 
     const now = new Date();
     const decision = evaluateCheckoutStatus(session, req.user!.id, now);

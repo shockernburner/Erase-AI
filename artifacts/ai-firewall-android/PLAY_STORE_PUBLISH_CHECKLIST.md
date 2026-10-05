@@ -375,6 +375,16 @@ Complete [REAL_DEVICE_QA_MATRIX.md](./REAL_DEVICE_QA_MATRIX.md):
       them.
 - [ ] Play Console: `eraseai_personal_monthly` and `eraseai_personal_annual`
       active and priced to match the web (\$5 / \$54); Android offers Personal only.
+- [ ] **Login screen: "Forgot password?"** link under the password field that
+      opens `https://eraseai.ai` in the browser, where the log-in form has
+      "Forgot password?" (POST `/api/auth/forgot-password` emails a one-time
+      link to `/reset-password`). No new API needed.
+- [ ] **Login screen: "Continue with Google"** (decide first). The web flow
+      (`/api/auth/google`) sets a browser cookie, so the app can't reuse it as
+      is. Options: Credential Manager on the phone + a new
+      `POST /api/mobile-auth/google` that verifies the Google ID token
+      against `GOOGLE_CLIENT_ID` and returns a mobile session token; or leave
+      Google to the web and keep email sign-in on Android.
 
 ### 9.2 Create production release
 

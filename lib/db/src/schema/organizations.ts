@@ -22,6 +22,14 @@ export const organizationsTable = pgTable("organizations", {
   seatLimit: integer("seat_limit").notNull().default(10),
   status: varchar("status", { length: 20 }).$type<"active" | "suspended">().notNull().default("active"),
   createdBy: varchar("created_by").references(() => usersTable.id, { onDelete: "set null" }),
+  // Self-serve Team billing (Stripe, one subscription per organization with
+  // quantity = seats). NULL for organizations billed by invoice (created by a
+  // platform admin).
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id").unique(),
+  subscriptionStatus: varchar("subscription_status", { length: 30 }),
+  billingPeriod: varchar("billing_period", { length: 10 }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

@@ -82,7 +82,7 @@ export function validateInvite({ actorRole, role, seatsUsed, seatLimit }) {
     return {
       ok: false,
       status: 409,
-      error: `All ${seatLimit} seats are in use. Remove someone or contact us to add seats.`,
+      error: `All ${seatLimit} seats are in use. Remove someone, or add seats (Billing on the Organization page).`,
     };
   }
   return { ok: true, role: r };

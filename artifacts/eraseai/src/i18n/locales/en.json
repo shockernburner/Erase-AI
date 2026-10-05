@@ -620,7 +620,7 @@
     "welcomePro": "Welcome to Developer!",
     "proActive": "Your Developer plan is now active. You now have API access, 10,000 scans per month, webhooks, and developer logs.",
     "welcomeBusiness": "Welcome to Team!",
-    "businessActive": "Your Team plan is now active. You now have shared policies, admin controls, audit logs, and team-wide browser firewall protection.",
+    "businessActive": "Your organization is set up and you're its owner. Invite your people from the Organization page; each one gets the Team plan when they join.",
     "welcomePersonal": "Welcome to EraseAI Personal!",
     "personalActive": "Your EraseAI Personal plan is now active. Enjoy unlimited text analyses, AI rewriting, and trend monitoring.",
     "continueDashboard": "Continue to Dashboard",

@@ -16,6 +16,7 @@ import devRouter from "./dev";
 import extensionRouter from "./extension";
 import mobileRouter from "./mobile";
 import orgRouter from "./org";
+import teamBillingRouter from "./team-billing";
 import passwordResetRouter from "./password-reset";
 
 // Routes that must remain reachable even when the logged-in user has not yet
@@ -59,6 +60,7 @@ router.use("/datasets", datasetsRouter);
 router.use("/billing", billingRouter);
 router.use(feedbackRouter);
 router.use(orgRouter);
+router.use(teamBillingRouter);
 router.use(adminRouter);
 router.use("/developer", developerRouter);
 router.use("/v1", v1Router);

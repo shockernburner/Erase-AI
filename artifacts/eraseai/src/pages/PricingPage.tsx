@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { PlanFeatureSections } from "@/components/PlanFeatureSections";
+import { TeamCheckoutDialog } from "@/components/TeamCheckoutDialog";
 import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor, type PricingTierId } from "@/lib/pricingPlans";
 
 interface PricingPageProps {
@@ -49,6 +50,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showTeamCheckout, setShowTeamCheckout] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
 
@@ -192,7 +194,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             const isCurrentPlan = currentPlan === tier.id;
             const isDowngrade = tierIndex(tier.id) < tierIndex(currentPlan);
             const isUpgrade = tierIndex(tier.id) > tierIndex(currentPlan);
-            const canCheckout = !tier.contactSales && (tier.id === "personal" || tier.id === "pro");
+            const canCheckout = !tier.contactSales && (tier.id === "personal" || tier.id === "pro" || tier.id === "business");
             const unit = tier.perPerson ? "/person/month" : "/month";
 
             return (
@@ -268,7 +270,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   </div>
                 ) : isUpgrade && canCheckout ? (
                   <Button
-                    onClick={() => handleCheckout(tier.id)}
+                    onClick={() => (tier.id === "business" ? setShowTeamCheckout(true) : handleCheckout(tier.id))}
                     disabled={checkoutLoading !== null}
                     className={`w-full gap-2 py-5 font-bold ${tier.highlight ? "bg-gradient-to-r from-primary to-cyan-400 text-black hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)]" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                   >
@@ -380,6 +382,14 @@ export default function PricingPage({ onBack }: PricingPageProps) {
               </div>
             </motion.div>
           </motion.div>
+        )}
+
+        {showTeamCheckout && (
+          <TeamCheckoutDialog
+            billingPeriod={billingPeriod}
+            onClose={() => setShowTeamCheckout(false)}
+            onContact={() => { setShowTeamCheckout(false); setShowContact(true); }}
+          />
         )}
 
         {showContact && (
