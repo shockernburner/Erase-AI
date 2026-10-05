@@ -63,6 +63,8 @@ export function buildTeamCheckoutParams({ priceId, customerId, returnUrl, userId
     success_url: `${returnUrl}${sep}checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${returnUrl}${sep}checkout=cancel`,
     allow_promotion_codes: true,
+    // A 100%-off code makes the total $0; then Stripe doesn't ask for a card.
+    payment_method_collection: "if_required",
     metadata,
     subscription_data: { metadata },
   };

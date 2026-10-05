@@ -52,6 +52,8 @@ describe("buildTeamCheckoutParams", () => {
     assert.deepEqual(params.line_items, [{ price: "price_seat", quantity: 4 }]);
     assert.equal(params.mode, "subscription");
     assert.equal(params.success_url, "https://eraseai.ai/?x=1&checkout=success&session_id={CHECKOUT_SESSION_ID}");
+    assert.equal(params.payment_method_collection, "if_required");
+    assert.equal(params.allow_promotion_codes, true);
   });
   test("team metadata, and no user_id so the personal reconcile ignores it", () => {
     assert.equal(params.subscription_data.metadata.kind, "team");

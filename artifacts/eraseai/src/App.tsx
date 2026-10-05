@@ -38,6 +38,7 @@ import OrganizationPage from "@/pages/OrganizationPage";
 import JoinOrganization from "@/pages/JoinOrganization";
 import ResetPassword from "@/pages/ResetPassword";
 import { capturePendingInvite } from "@/lib/orgInvite";
+import { peekPricingFocus, planIdFromParam, setPricingFocus } from "@/lib/products";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -270,6 +271,13 @@ function AuthGate() {
       return "checkout-success";
     }
     const viewParam = params.get("view");
+    // ?plan=team (or /pricing?plan=personal from the extension) opens pricing
+    // with that plan selected.
+    const planParam = planIdFromParam(params.get("plan"));
+    if (planParam) setPricingFocus(planParam);
+    if (viewParam === "pricing" || /\/pricing\/?$/.test(window.location.pathname)) {
+      return "pricing";
+    }
     const allowedDeepLinks: AppView[] = ["developer", "datasetSanitizer", "firewallDocs", "publishingChecklist", "firewallHub", "docsHub", "blogsHub", "getStarted", "firewallSetup", "apiSetup", "organization"];
     if (viewParam && (allowedDeepLinks as string[]).includes(viewParam)) {
       return viewParam as AppView;
@@ -286,9 +294,11 @@ function AuthGate() {
     if (
       params.get("checkout") === "success" ||
       params.get("admin") === "true" ||
-      params.get("view")
+      params.get("view") ||
+      params.get("plan") ||
+      /\/pricing\/?$/.test(window.location.pathname)
     ) {
-      window.history.replaceState({}, "", window.location.pathname);
+      window.history.replaceState({}, "", window.location.pathname.replace(/\/pricing\/?$/, "/"));
     }
   }, []);
 
@@ -296,7 +306,8 @@ function AuthGate() {
     if (isAuthenticated && user && !initialViewSet && view === "home") {
       const params = new URLSearchParams(window.location.search);
       if (!params.get("admin") && !params.get("checkout")) {
-        setView(getDefaultViewForPlan(user.planType));
+        // A plan picked on the homepage before signing up opens pricing.
+        setView(peekPricingFocus() ? "pricing" : getDefaultViewForPlan(user.planType));
       }
       setInitialViewSet(true);
     }
@@ -388,9 +399,6 @@ function AuthGate() {
     return <CheckoutSuccess onDone={() => setView("home")} />;
   }
 
-  if (effectiveView === "pricing") {
-    return <PricingPage onBack={() => setView("home")} />;
-  }
 
   // Pages rendered inside the AppShell.
   let inner: ReactElement;
@@ -468,6 +476,9 @@ function AuthGate() {
     case "contact":
       inner = <ContactPage onBack={() => setView("home")} />;
       break;
+    case "pricing":
+      inner = <PricingPage onBack={() => setView("home")} embedded />;
+      break;
     case "organization":
       inner = <OrganizationPage onContact={() => setView("contact")} />;
       break;
@@ -485,7 +496,7 @@ function AuthGate() {
           onViewLicense={() => setView("license")}
         />
       )}
-      {trialExpired && !isLegalView && (
+      {trialExpired && !isLegalView && effectiveView !== "pricing" && (
         <TrialExpiredModal onChoosePlan={() => setView("pricing")} onLogout={logout} />
       )}
     </AppShell>

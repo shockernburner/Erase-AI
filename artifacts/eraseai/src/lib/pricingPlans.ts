@@ -107,8 +107,8 @@ export const PRICING_TIERS: PricingTier[] = [
     description: "Small companies and teams",
     paidBy: "Paid by your organization",
     forYou: [
-      { text: "Everything in Personal on Chrome and Android, paid for by your organization" },
-      { text: "Enterprise-level protection; no personal subscription needed" },
+      { text: "Chrome extension and Android app with full protection: install, sign in with your work email, pay nothing yourself" },
+      { text: "Everything in Personal (one-click Sanitize, attachment and screenshot scanning, history)" },
     ],
     forOrg: [
       { text: "Company rules everyone follows, e.g. keys always blocked, no 'Send anyway'", soon: true },
@@ -132,8 +132,8 @@ export const PRICING_TIERS: PricingTier[] = [
     description: "Banks, law firms, healthcare, government and large companies",
     paidBy: "Paid by your organization",
     forYou: [
-      { text: "Everything in Team, set up for you by your IT team" },
-      { text: "Sign in with your company account" },
+      { text: "Chrome extension and Android app with full protection: sign in with your work email, pay nothing yourself" },
+      { text: "Everything in Team; your IT team can install it for you" },
     ],
     forOrg: [
       { text: "Any number of people, priced for your organization" },
@@ -142,7 +142,7 @@ export const PRICING_TIERS: PricingTier[] = [
       { text: "Single sign-on (SAML, Google, Microsoft) and automatic user provisioning (SCIM)", soon: true },
       { text: "Company-wide policies and custom detection rules", soon: true },
       { text: "Send events to your security tools (SIEM: Splunk, Microsoft Sentinel)", soon: true },
-      { text: "Compliance reporting and audit" },
+      { text: "Compliance reporting and audit", soon: true },
       { text: "Private deployment, on-premises or in your own cloud" },
       { text: "Data residency and custom retention" },
       { text: "Dataset governance and machine unlearning" },
@@ -157,9 +157,10 @@ export const PRICING_COMPARISON: string[][] = [
   ["Price", "$0", "$5 a month", "$19 a month", "$9 a person a month", "Contact us"],
   ["People", "1", "1", "1", "3 to 10", "Any number"],
   ["Who pays", "No one", "You", "You", "Your organization", "Your organization"],
+  ["How people get it", "Install the extension", "Subscribe", "Subscribe", "Invite link; sign in with work email", "Invite link or IT rollout; work email"],
   ["Chrome checks", "Unlimited", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
-  ["One-click Sanitize & attachments", "No", "Yes", "Yes", "Yes", "Yes"],
-  ["Android protection", "Trial", "Yes", "Yes", "Yes", "Yes"],
+  ["One-click Sanitize & attachments", "No", "Yes", "Yes", "Yes, every member", "Yes, every member"],
+  ["Android app", "7-day trial", "Yes", "Yes", "Yes, every member", "Yes, every member"],
   ["API requests a month", "No", "No", "10,000", "100,000", "Custom"],
   ["Admin dashboard", "No", "No", "No", "Yes", "Yes"],
   ["Company rules and audit export", "No", "No", "No", "Coming soon", "Coming soon"],

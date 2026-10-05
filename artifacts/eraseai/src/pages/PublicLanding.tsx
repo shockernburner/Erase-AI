@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Search,
   Shield,
+  Smartphone,
   Mail,
   LogIn,
   ScanSearch,
@@ -29,11 +30,22 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
 import { useSeoMeta } from "@/pages/seo/useSeoMeta";
 import { chromeStoreLink } from "@/lib/extensionStore";
+import { ANDROID_PLAY_URL, ORG_COVERAGE_STEPS, peekPricingFocus, setPricingFocus } from "@/lib/products";
+import type { PricingTierId } from "@/lib/pricingPlans";
 
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Plan picked before signing up; after sign-up the app opens pricing on it.
+  const [chosenPlan, setChosenPlan] = useState<PricingTierId | null>(() => peekPricingFocus());
+
+  // eraseai.ai/pricing (e.g. the extension's upgrade link) lands on pricing.
+  useEffect(() => {
+    if (/\/pricing\/?$/.test(window.location.pathname)) {
+      setTimeout(() => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" }), 300);
+    }
+  }, []);
 
   useSeoMeta({
     title: "EraseAI — AI Firewall for ChatGPT, Claude, Gemini & LLM Apps",
@@ -102,29 +114,39 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
 
   const modes = [
     {
-      title: "Browser Firewall",
-      description: "For people and teams using ChatGPT, Claude, Gemini, and other AI tools.",
-      cta: "Install Browser Firewall",
+      title: "Chrome extension",
+      description: "Checks every message and attachment before it reaches ChatGPT, Claude or Gemini. Free on your device, no limit.",
+      cta: "Add to Chrome",
       icon: <Shield className="w-6 h-6" />,
       action: () => window.open(chromeStoreLink("landing-modes"), "_blank", "noopener,noreferrer"),
     },
     {
-      title: "Developer API",
-      description: "For builders who want to scan AI inputs and outputs before or after LLM calls.",
-      cta: "Get API Key",
-      icon: <Code2 className="w-6 h-6" />,
-      action: () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" }),
+      title: "Android app",
+      description: "Checks what you're about to send in AI apps on your phone. 7-day free trial; included in every paid plan.",
+      cta: "Get it on Google Play",
+      icon: <Smartphone className="w-6 h-6" />,
+      action: () => window.open(ANDROID_PLAY_URL, "_blank", "noopener,noreferrer"),
     },
     {
-      title: "Enterprise Control Center",
-      description: "For organizations needing policies, audit logs, team controls, and compliance.",
-      cta: "Contact us for pricing",
+      title: "Firewall for teams and enterprise",
+      description: "Your organization pays; every member is covered on Chrome and Android by signing in with their work email.",
+      cta: "See Team and Enterprise",
       icon: <Building2 className="w-6 h-6" />,
+      action: () => document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" }),
+    },
+    {
+      title: "API for your apps",
+      description: "Scan AI inputs and outputs in your own product, scripts and pipelines before or after LLM calls.",
+      cta: "Get an API key",
+      icon: <Code2 className="w-6 h-6" />,
       action: () => {
-        window.location.href = `${baseUrl}contact`;
+        setPricingFocus("pro");
+        setChosenPlan("pro");
+        scrollToSignUp();
       },
     },
   ];
+
 
   const contactSales = () => {
     window.location.href = `${baseUrl}contact`;
@@ -136,7 +158,16 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     priceUnit: tier.monthlyPrice > 0 ? (tier.perPerson ? "/person/month" : "/month") : "",
     // Enterprise talks to us first; everyone else (Team included) signs up and
     // buys from the in-app pricing page.
-    action: tier.id === "enterprise" ? contactSales : scrollToSignUp,
+    action:
+      tier.id === "enterprise"
+        ? contactSales
+        : () => {
+            if (tier.id !== "free") {
+              setPricingFocus(tier.id);
+              setChosenPlan(tier.id);
+            }
+            scrollToSignUp();
+          },
   }));
   const comparisonRows = PRICING_COMPARISON;
 
@@ -379,10 +410,10 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           <section className="mb-24">
             <div className="mb-8 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">Choose your mode</p>
-              <h2 className="mt-3 text-3xl font-display font-bold text-foreground">One product. Three clear ways to use it.</h2>
+              <h2 className="mt-3 text-3xl font-display font-bold text-foreground">One AI firewall, wherever your people use AI.</h2>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {modes.map((mode) => (
                 <div key={mode.title} className="flex h-full flex-col rounded-3xl border border-border/40 bg-card/50 p-6">
                   <div className="mb-4 inline-flex w-fit rounded-2xl border border-primary/20 bg-primary/10 p-3 text-primary">
@@ -406,7 +437,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
             <div className="mb-8 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">Pricing</p>
               <h2 className="mt-3 text-3xl font-display font-bold text-foreground">Simple pricing for AI firewall protection.</h2>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">Free to start. Personal and Developer are for people paying for themselves. When your organization pays, everyone on Team or Enterprise gets Enterprise-level protection.</p>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">Free to start. Personal and Developer are for people paying for themselves. When your organization pays (Team or Enterprise), every member gets the Chrome extension and the Android app with full protection by signing in with their work email, and pays nothing.</p>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-5">
@@ -444,6 +475,18 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               ))}
             </div>
 
+            <div className="mt-10 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-6">
+              <h3 className="text-xl font-semibold text-foreground">How Team and Enterprise work</h3>
+              <ol className="mt-4 grid gap-3 md:grid-cols-3">
+                {ORG_COVERAGE_STEPS.map((step, i) => (
+                  <li key={step} className="flex gap-3 rounded-2xl border border-border/40 bg-card/50 p-4 text-sm text-foreground/90">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300">{i + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+
             <div className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-6">
               <h3 className="text-xl font-semibold text-foreground">Why Team instead of a Personal plan for each person?</h3>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -466,7 +509,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               </div>
             </div>
 
-            <div className="mt-10 overflow-hidden rounded-3xl border border-border/40 bg-card/50">
+            <div className="mt-10 overflow-x-auto rounded-3xl border border-border/40 bg-card/50">
+              <div className="min-w-[820px]">
               <div className="grid grid-cols-6 border-b border-border/40 bg-background/60 text-sm font-semibold text-foreground">
                 <div className="px-4 py-4">Compare</div>
                 <div className="px-4 py-4">Free</div>
@@ -484,6 +528,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                   ))}
                 </div>
               ))}
+              </div>
             </div>
           </section>
 
@@ -541,16 +586,16 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           <section className="mb-24">
             <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">Enterprise controls</p>
-                <h2 className="mt-3 text-3xl font-display font-bold text-foreground">Central policy controls for teams that need more than a browser extension.</h2>
-                <p className="mt-4 text-base leading-7 text-muted-foreground">Enterprise Control Center gives security and compliance teams policy management, team controls, audit logs, and reporting. Advanced governance stays here instead of dominating the homepage.</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">For organizations</p>
+                <h2 className="mt-3 text-3xl font-display font-bold text-foreground">Your organization pays; your people are covered on Chrome and Android.</h2>
+                <p className="mt-4 text-base leading-7 text-muted-foreground">Buy Team seats online (3 to 10 people) or talk to us about Enterprise. Owners invite people by email and see what was caught, by person. Members install the extension and the app and sign in with their work email. Company rules, audit export and IT rollout are on the way.</p>
               </div>
               <div className="rounded-3xl border border-border/40 bg-card/50 p-6">
                 <h3 className="text-lg font-semibold text-foreground">Data Removal & Governance</h3>
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">For enterprise teams that need dataset governance, deletion workflows, version history, audit trails, and advanced machine unlearning support.</p>
                 <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2"><Check className="mt-0.5 w-4 h-4 text-primary" />Shared policies, admin controls, and audit logs</li>
-                  <li className="flex items-start gap-2"><Check className="mt-0.5 w-4 h-4 text-primary" />Compliance reporting and private deployment options</li>
+                  <li className="flex items-start gap-2"><Check className="mt-0.5 w-4 h-4 text-primary" />Admin dashboard by person; company rules and audit export coming soon</li>
+                  <li className="flex items-start gap-2"><Check className="mt-0.5 w-4 h-4 text-primary" />Private deployment, data residency and an SLA</li>
                   <li className="flex items-start gap-2"><Check className="mt-0.5 w-4 h-4 text-primary" />Dataset governance, deletion workflows, and enterprise support</li>
                 </ul>
                 <button
@@ -587,10 +632,16 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                 <h2 className="mt-3 text-2xl font-display font-bold text-foreground">Start protecting AI prompts and files.</h2>
                 <p className="mt-3 text-sm leading-7 text-muted-foreground">Use the browser firewall, try prompt scanning, or get your API key from the same account.</p>
               </div>
-              <div className="mb-5 flex items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
-                <LogIn className="w-3.5 h-3.5" />
-                Start free trial — 7 days, no credit card
-              </div>
+              {chosenPlan ? (
+                <div className="mb-5 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-center text-xs font-semibold text-primary">
+                  You picked {({ personal: "Personal", pro: "API for your apps (Developer)", business: "Team", enterprise: "Enterprise", free: "Free" } as const)[chosenPlan]}. Create your account (or log in) and we'll take you to checkout.
+                </div>
+              ) : (
+                <div className="mb-5 flex items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary">
+                  <LogIn className="w-3.5 h-3.5" />
+                  Start free trial — 7 days, no credit card
+                </div>
+              )}
               <AuthForm />
               <p className="mt-5 text-center text-xs text-muted-foreground/60">© 2026 EraseAI — AI firewall and AI data leak prevention for teams using modern LLM tools.</p>
             </div>
@@ -626,7 +677,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
               <div className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <button onClick={() => scrollTo("#product")} className="block hover:text-foreground">Browser Firewall</button>
                 <button onClick={() => scrollTo("#developer-api")} className="block hover:text-foreground">Developer API</button>
-                <button onClick={() => scrollTo("#pricing")} className="block hover:text-foreground">Enterprise Control Center</button>
+                <button onClick={() => scrollTo("#pricing")} className="block hover:text-foreground">Team and Enterprise</button>
               </div>
             </div>
 

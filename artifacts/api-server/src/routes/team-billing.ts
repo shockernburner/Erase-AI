@@ -5,6 +5,7 @@ import { getUncachableStripeClient } from "../lib/stripe";
 import { logger } from "../lib/logger";
 import { getActiveMembership } from "../lib/org";
 import { applyTeamOrgFields, countSeatsInUse } from "../lib/billing/team";
+import { createTeamVoucher, ensureCatalog } from "../lib/billing/stripe-setup";
 import {
   TEAM_MAX_SEATS,
   TEAM_MIN_SEATS,
@@ -228,6 +229,51 @@ router.post("/org/billing/portal", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error({ err }, "Billing portal session failed");
     res.status(502).json({ error: "Billing portal is unavailable right now. Please try again." });
+  }
+});
+
+// --- Platform admin: Stripe setup on the live connection ---------------------
+
+function requirePlatformAdmin(req: Request, res: Response): boolean {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Authentication required" });
+    return false;
+  }
+  if (req.user.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return false;
+  }
+  return true;
+}
+
+router.post("/admin/billing/setup-prices", async (req: Request, res: Response) => {
+  if (!requirePlatformAdmin(req, res)) return;
+  try {
+    res.json({ ok: true, log: await ensureCatalog() });
+  } catch (err) {
+    logger.error({ err }, "Stripe catalog setup failed");
+    res.status(502).json({ error: `Stripe setup failed: ${(err as Error).message}` });
+  }
+});
+
+router.post("/admin/billing/team-voucher", async (req: Request, res: Response) => {
+  if (!requirePlatformAdmin(req, res)) return;
+  const body = (req.body ?? {}) as { code?: unknown; maxRedemptions?: unknown };
+  const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
+  if (!/^[A-Z0-9]{4,40}$/.test(code)) {
+    res.status(400).json({ error: "Use 4 to 40 letters and digits, e.g. FOUNDERTEAM" });
+    return;
+  }
+  const max = Number(body.maxRedemptions ?? 3);
+  if (!Number.isInteger(max) || max < 1 || max > 100) {
+    res.status(400).json({ error: "Uses must be 1 to 100" });
+    return;
+  }
+  try {
+    res.json({ ok: true, ...(await createTeamVoucher({ code, maxRedemptions: max })) });
+  } catch (err) {
+    logger.error({ err }, "Team voucher creation failed");
+    res.status(502).json({ error: `Couldn't create the code: ${(err as Error).message}` });
   }
 });
 

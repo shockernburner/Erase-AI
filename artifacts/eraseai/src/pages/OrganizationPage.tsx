@@ -2,10 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Building2, Users, UserPlus, Copy, Check, Loader2, Activity, Link2, Trash2, LogOut, AlertTriangle,
   CreditCard,
+  Chrome,
+  Smartphone,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
 import { ORG_PLAN_NAMES, ORG_ROLE_NAMES, inviteUrl, orgApi } from "@/lib/orgInvite";
 import { ManagedRolloutPanel } from "@/components/ManagedRolloutPanel";
+import { chromeStoreLink } from "@/lib/extensionStore";
+import { ANDROID_PLAY_URL } from "@/lib/products";
 
 type Role = "owner" | "admin" | "member";
 
@@ -392,6 +396,25 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
 
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
+      <section className={panel}>
+        <div className="flex items-center gap-2 mb-1">
+          <Smartphone className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Get protected</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-3">
+          {org.name} pays for everyone here. Install both and sign in with your work email; Chrome and Android are covered
+          and nobody pays for a personal plan.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href={chromeStoreLink("org-page")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+            <Chrome className="w-4 h-4" /> Add to Chrome
+          </a>
+          <a href={ANDROID_PLAY_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-border/50 px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/30">
+            <Smartphone className="w-4 h-4" /> Get it on Google Play
+          </a>
+        </div>
+      </section>
+
       {me.canManage && (
         <section className={panel}>
           <div className="flex items-center gap-2 mb-1">
@@ -399,8 +422,9 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
             <h2 className="text-lg font-semibold text-foreground">Invite someone</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            You get a link to send them yourself (email, chat). They sign in with the same email address to join.
-            Pending invites take a seat until they're cancelled.
+            You get a link to send them yourself (email, chat). They open it, sign in with that email, then install the
+            Chrome extension and the Android app; both are covered and they pay nothing. Pending invites take a seat until
+            they're cancelled.
           </p>
           <form onSubmit={invite} className="flex flex-col sm:flex-row gap-2">
             <Input

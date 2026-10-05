@@ -26,6 +26,9 @@ import {
   Globe,
   Rocket,
   Building2,
+  Home,
+  Download,
+  Users,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
@@ -226,51 +229,45 @@ export function AppShell({
     setMobileOpen(false);
   }, [view]);
 
+  // Firewall first; organization and plans next; developer and other tools
+  // after; legal last.
   const groups = useMemo<{ label: string; items: NavItem[] }[]>(() => [
     {
       label: t("appShell.groupStart", { defaultValue: "Start" }),
       items: [
-        { id: "getStarted", labelKey: "appShell.getStarted", icon: <Rocket className="w-4 h-4" />, match: ["getStarted", "firewallSetup", "apiSetup"] },
-      ],
-    },
-    ...(isOrgPlan
-      ? [{
-          label: t("appShell.groupOrganization", { defaultValue: "Organization" }),
-          items: [
-            { id: "organization" as AppView, labelKey: "appShell.organization", icon: <Building2 className="w-4 h-4" />, match: ["organization"] as AppView[] },
-          ],
-        }]
-      : []),
-    {
-      label: t("appShell.groupPersonal", { defaultValue: "Personal" }),
-      items: [
-        { id: "personal", labelKey: "nav.personalMode", icon: <User className="w-4 h-4" />, match: ["personal"] },
+        { id: "getStarted", labelKey: "appShell.home", icon: <Home className="w-4 h-4" />, match: ["getStarted"] },
       ],
     },
     {
       label: t("appShell.groupFirewall", { defaultValue: "Firewall" }),
       items: [
-        { id: "firewallHub", labelKey: "appShell.firewallHub", icon: <Shield className="w-4 h-4" />, match: ["firewallHub", "firewallDocs", "publishingChecklist"] },
-        ...(isPaidDev
-          ? [{ id: "developer" as AppView, labelKey: "appShell.devKeys", icon: <LayoutDashboard className="w-4 h-4" />, match: ["developer"] as AppView[] }]
+        { id: "firewallSetup", labelKey: "appShell.installFirewall", icon: <Shield className="w-4 h-4" />, match: ["firewallSetup"] },
+        { id: "firewallHub", labelKey: "appShell.firewallDownloads", icon: <Download className="w-4 h-4" />, match: ["firewallHub", "firewallDocs", "publishingChecklist"] },
+      ],
+    },
+    {
+      label: t("appShell.groupPlans", { defaultValue: "Plans" }),
+      items: [
+        ...(isOrgPlan
+          ? [{ id: "organization" as AppView, labelKey: "appShell.organization", icon: <Building2 className="w-4 h-4" />, match: ["organization"] as AppView[] }]
           : []),
+        { id: "pricing" as AppView, labelKey: "appShell.plansPricing", icon: <Users className="w-4 h-4" />, match: ["pricing"] as AppView[] },
       ],
     },
     {
-      label: t("appShell.groupSanitizers", { defaultValue: "Dataset Sanitizers" }),
+      label: t("appShell.groupDevelopers", { defaultValue: "Developers" }),
       items: [
-        { id: "datasetSanitizer", labelKey: "appShell.sanitizerHome", icon: <Database className="w-4 h-4" />, match: ["datasetSanitizer"] },
-      ],
-    },
-    {
-      label: t("appShell.groupDocs", { defaultValue: "Documentation" }),
-      items: [
+        ...(isPaidDev
+          ? [{ id: "developer" as AppView, labelKey: "appShell.devKeys", icon: <LayoutDashboard className="w-4 h-4" />, match: ["developer", "apiSetup"] as AppView[] }]
+          : []),
         { id: "docsHub", labelKey: "appShell.docsHub", icon: <Book className="w-4 h-4" />, match: ["docsHub", "docs", "devMode", "certifications"] },
       ],
     },
     {
-      label: t("appShell.groupBlogs", { defaultValue: "Blogs" }),
+      label: t("appShell.groupMoreTools", { defaultValue: "More tools" }),
       items: [
+        { id: "personal", labelKey: "nav.personalMode", icon: <User className="w-4 h-4" />, match: ["personal"] },
+        { id: "datasetSanitizer", labelKey: "appShell.sanitizerHome", icon: <Database className="w-4 h-4" />, match: ["datasetSanitizer"] },
         { id: "blogsHub", labelKey: "appShell.blogsHub", icon: <Newspaper className="w-4 h-4" />, match: ["blogsHub"] },
       ],
     },

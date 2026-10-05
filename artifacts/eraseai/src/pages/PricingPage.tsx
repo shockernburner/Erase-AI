@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   AlertTriangle,
@@ -19,10 +19,13 @@ import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { PlanFeatureSections } from "@/components/PlanFeatureSections";
 import { TeamCheckoutDialog } from "@/components/TeamCheckoutDialog";
+import { ORG_COVERAGE_STEPS, takePricingFocus } from "@/lib/products";
 import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor, type PricingTierId } from "@/lib/pricingPlans";
 
 interface PricingPageProps {
   onBack: () => void;
+  /** Inside the app shell: no own back button, language picker or logo. */
+  embedded?: boolean;
 }
 
 interface PlanDetails {
@@ -43,7 +46,7 @@ function tierIndex(id: TierId): number {
 }
 
 
-export default function PricingPage({ onBack }: PricingPageProps) {
+export default function PricingPage({ onBack, embedded = false }: PricingPageProps) {
   const { user } = useAuth();
   const currentPlan = (user?.planType || "free") as TierId;
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
@@ -51,6 +54,24 @@ export default function PricingPage({ onBack }: PricingPageProps) {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [showTeamCheckout, setShowTeamCheckout] = useState(false);
+  // Plan picked elsewhere (home page, homepage before sign-up, extension);
+  // the comparison table opens with it selected.
+  const [focusPlan] = useState<TierId | null>(() => takePricingFocus());
+  const [selected, setSelected] = useState<TierId>(() => focusPlan ?? (currentPlan === "free" ? "personal" : currentPlan));
+  const compareRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!focusPlan) return;
+    const t = setTimeout(() => compareRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+    return () => clearTimeout(t);
+  }, [focusPlan]);
+
+  // One place that knows how each plan is bought.
+  const startPlan = (id: TierId) => {
+    if (id === "business") setShowTeamCheckout(true);
+    else if (id === "enterprise") setShowContact(true);
+    else if (id === "personal" || id === "pro") handleCheckout(id);
+  };
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [planDetails, setPlanDetails] = useState<PlanDetails | null>(null);
 
@@ -141,18 +162,22 @@ export default function PricingPage({ onBack }: PricingPageProps) {
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 lg:px-8">
-        <div className="mb-3 flex justify-end">
-          <LanguageSelector />
-        </div>
+        {!embedded && (
+          <div className="mb-3 flex justify-end">
+            <LanguageSelector />
+          </div>
+        )}
 
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-          <button onClick={onBack} className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
+          {!embedded && (
+            <button onClick={onBack} className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+          )}
 
           <div className="text-center">
-            <div className="mb-4 flex items-center justify-center gap-3">
+            <div className={`mb-4 items-center justify-center gap-3 ${embedded ? "hidden" : "flex"}`}>
               <div className="rounded-xl bg-primary p-2 text-primary-foreground shadow-[0_0_20px_rgba(6,182,212,0.45)]">
                 <ShieldX className="w-7 h-7" />
               </div>
@@ -162,7 +187,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground">Pricing for AI firewall protection</h2>
             <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-              EraseAI stops sensitive data from leaking into AI tools. Who pays decides your plan: Personal and Developer are for people paying for themselves; when your organization pays, you are on Team or Enterprise.
+              EraseAI stops sensitive data from leaking into AI tools. Who pays decides your plan: Personal and Developer are for people paying for themselves. When your organization pays (Team or Enterprise), every member gets the Chrome extension and the Android app with full protection by signing in with their work email, and pays nothing.
             </p>
           </div>
         </motion.div>
@@ -270,7 +295,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   </div>
                 ) : isUpgrade && canCheckout ? (
                   <Button
-                    onClick={() => (tier.id === "business" ? setShowTeamCheckout(true) : handleCheckout(tier.id))}
+                    onClick={() => startPlan(tier.id)}
                     disabled={checkoutLoading !== null}
                     className={`w-full gap-2 py-5 font-bold ${tier.highlight ? "bg-gradient-to-r from-primary to-cyan-400 text-black hover:from-primary/90 hover:to-cyan-400/90 shadow-[0_0_20px_rgba(6,182,212,0.4)]" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                   >
@@ -303,25 +328,104 @@ export default function PricingPage({ onBack }: PricingPageProps) {
           })}
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-10 overflow-hidden rounded-3xl border border-border/50 bg-card/50 backdrop-blur-md">
-          <div className="grid grid-cols-6 border-b border-border/40 bg-background/60 text-sm font-semibold text-foreground">
-            <div className="px-4 py-4">Compare</div>
-            <div className="px-4 py-4">Free</div>
-            <div className="px-4 py-4">Personal</div>
-            <div className="px-4 py-4">Developer</div>
-            <div className="px-4 py-4">Team</div>
-            <div className="px-4 py-4">Enterprise</div>
-          </div>
-          {comparisonRows.map((row) => (
-            <div key={row[0]} className="grid grid-cols-6 border-b border-border/30 last:border-b-0 text-sm">
-              {row.map((cell, index) => (
-                <div key={`${row[0]}-${index}`} className={`px-4 py-4 ${index === 0 ? "font-medium text-foreground" : "text-muted-foreground"}`}>
-                  {cell}
+        <div ref={compareRef} className="mt-12 scroll-mt-6">
+          <h3 className="mb-1 text-xl font-bold text-foreground">Compare plans</h3>
+          <p className="mb-4 text-sm text-muted-foreground">Pick a column to see how it works and get started.</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="overflow-x-auto rounded-3xl border border-border/50 bg-card/50 backdrop-blur-md">
+            <table className="w-full min-w-[820px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border/40 bg-background/60">
+                  <th className="w-[20%] px-4 py-4 text-left font-semibold text-foreground">Compare</th>
+                  {TIER_ORDER.map((id) => {
+                    const tier = tiers.find((t) => t.id === id)!;
+                    const on = selected === id;
+                    return (
+                      <th key={id} className={`px-2 py-3 text-left ${on ? "bg-primary/15" : ""}`}>
+                        <button
+                          type="button"
+                          onClick={() => setSelected(id)}
+                          aria-pressed={on}
+                          className={`w-full rounded-lg px-2 py-1.5 text-left font-semibold transition-colors ${on ? "text-primary" : "text-foreground hover:bg-muted/30"}`}
+                        >
+                          {tier.name}
+                          {currentPlan === id && <span className="ml-1.5 text-[10px] font-bold uppercase text-muted-foreground">yours</span>}
+                        </button>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row[0]} className="border-b border-border/30 last:border-b-0">
+                    {row.map((cell, index) => {
+                      const id = index > 0 ? TIER_ORDER[index - 1] : null;
+                      return (
+                        <td
+                          key={`${row[0]}-${index}`}
+                          onClick={id ? () => setSelected(id) : undefined}
+                          className={`px-4 py-3 align-top ${index === 0 ? "font-medium text-foreground" : "cursor-pointer text-muted-foreground"} ${id && selected === id ? "bg-primary/10 text-foreground" : ""}`}
+                        >
+                          {cell}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </motion.div>
+
+          {(() => {
+            const tier = tiers.find((t) => t.id === selected)!;
+            const isOrg = selected === "business" || selected === "enterprise";
+            const price =
+              tier.monthlyPrice < 0
+                ? "Contact us for pricing"
+                : tier.monthlyPrice === 0
+                  ? "Free"
+                  : billingPeriod === "annual" && tier.annualMonthlyPrice != null
+                    ? `$${tier.annualMonthlyPrice} ${tier.perPerson ? "a person " : ""}a month, billed yearly`
+                    : `$${tier.monthlyPrice} ${tier.perPerson ? "a person " : ""}a month`;
+            return (
+              <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/5 p-5">
+                <div className="flex flex-wrap items-start gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-bold text-foreground">{tier.name}</p>
+                    <p className="text-sm text-muted-foreground">{tier.description} · {price}{tier.seats ? ` · ${tier.seats}` : ""}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">{tier.paidBy}</p>
+                    {isOrg && (
+                      <ol className="mt-3 space-y-1.5 text-sm text-foreground/90">
+                        {ORG_COVERAGE_STEPS.map((step, i) => (
+                          <li key={step} className="flex gap-2">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">{i + 1}</span>
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                  <div className="w-full sm:w-auto">
+                    {currentPlan === selected ? (
+                      <div className="rounded-xl border border-border/30 bg-muted/30 px-5 py-3 text-center text-sm font-semibold text-muted-foreground">Your current plan</div>
+                    ) : selected === "free" ? (
+                      <div className="px-2 py-3 text-sm text-muted-foreground">Free needs no checkout: install the extension.</div>
+                    ) : (
+                      <Button
+                        onClick={() => startPlan(selected)}
+                        disabled={checkoutLoading !== null}
+                        className="w-full gap-2 bg-gradient-to-r from-primary to-cyan-400 px-6 py-4 font-bold text-black sm:w-auto"
+                      >
+                        {checkoutLoading === selected ? <Loader2 className="w-4 h-4 animate-spin" /> : selected === "enterprise" ? <Mail className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
+                        {tier.cta}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          ))}
-        </motion.div>
+              </div>
+            );
+          })()}
+        </div>
 
         {currentPlan !== "free" && planDetails && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-10 rounded-3xl border border-border/50 bg-card/50 p-6 backdrop-blur-md">
@@ -397,9 +501,9 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(event) => event.stopPropagation()} className="mx-4 w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl">
               <div className="mb-4 flex items-center gap-3">
                 <Building2 className="w-6 h-6 text-primary" />
-                <h3 className="text-xl font-bold text-foreground">Team and Enterprise</h3>
+                <h3 className="text-xl font-bold text-foreground">Enterprise and larger teams</h3>
               </div>
-              <p className="mb-6 text-sm text-muted-foreground">Team ($9 a person a month, 3 to 10 people) and Enterprise (priced for your organization) are set up with you, so your people join your organization's plan. Contact the EraseAI team to get started.</p>
+              <p className="mb-6 text-sm text-muted-foreground">Enterprise is priced for your organization, and teams of more than 10 are set up with you. Your organization pays; your people sign in with their work email and are covered on Chrome and Android. Contact the EraseAI team to get started.</p>
               <div className="mb-6 space-y-3">
                 <a href="mailto:director@vantward.com" className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/20 p-4 transition-colors hover:bg-muted/30">
                   <Mail className="h-5 w-5 shrink-0 text-primary" />

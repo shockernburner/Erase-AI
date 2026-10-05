@@ -89,7 +89,8 @@ export default function JoinOrganization({ token, onDone }: { token: string; onD
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                This invite is for <span className="text-foreground font-medium">{preview.email}</span>. Your organization pays for your plan, so you don't need a subscription of your own.
+                This invite is for <span className="text-foreground font-medium">{preview.email}</span>. Your organization pays for your plan:
+                after joining, install the Chrome extension and the Android app and sign in with this email. You pay nothing.
               </p>
               {!preview.organization.active && (
                 <p className="text-sm text-destructive">This organization is not active right now. Ask your admin.</p>

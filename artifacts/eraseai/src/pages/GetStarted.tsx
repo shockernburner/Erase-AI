@@ -1,201 +1,282 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
-  Shield,
-  Database,
-  Code2,
   ArrowRight,
-  Lock,
-  Clock,
-  Sparkles,
+  BookOpen,
+  Building2,
+  Check,
+  Chrome,
+  Code2,
+  Database,
+  Download,
   LayoutDashboard,
-  BarChart3,
+  Shield,
+  Smartphone,
+  Sparkles,
   User,
+  Users,
 } from "lucide-react";
 import type { AppView } from "@/components/AppShell";
+import { chromeStoreLink } from "@/lib/extensionStore";
+import { ANDROID_PLAY_URL, EXTENSION_ZIP_URL, ORG_COVERAGE_SUMMARY, setPricingFocus } from "@/lib/products";
+import type { PricingTierId } from "@/lib/pricingPlans";
 
-const API_ELIGIBLE_PLANS = ["pro", "business", "enterprise"];
+// Signed-in home. EraseAI is an AI firewall first: install protection on
+// Chrome and Android, see the plans (with organization plans explained), and
+// find the other tools underneath.
 
-function ProductCard({
-  icon,
-  iconClass,
-  title,
-  desc,
-  timeBadge,
-  cta,
-  onClick,
-  locked,
-  lockedNote,
-  delay,
-  testId,
-}: {
-  icon: React.ReactNode;
-  iconClass: string;
-  title: string;
-  desc: string;
-  timeBadge: string;
-  cta: string;
-  onClick: () => void;
-  locked?: boolean;
-  lockedNote?: string;
-  delay: number;
-  testId: string;
-}) {
+const PLAN_NAMES: Record<string, string> = {
+  free: "Free",
+  personal: "Personal",
+  pro: "Developer",
+  business: "Team",
+  enterprise: "Enterprise",
+};
+
+interface PlanInfo {
+  organization: { name: string; role: string; plan: string } | null;
+}
+
+const card = "rounded-2xl border border-border/40 bg-card/60 p-6";
+
+function StoreButton({ href, icon, children, primary }: { href: string; icon: React.ReactNode; children: React.ReactNode; primary?: boolean }) {
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      onClick={onClick}
-      data-testid={testId}
-      className={`group relative flex flex-col text-left bg-card/60 border rounded-2xl p-6 transition-all ${
-        locked
-          ? "border-border/30 opacity-80 hover:border-yellow-500/40"
-          : "border-border/40 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)]"
+    <a
+      href={href}
+      target={href.startsWith("http") ? "_blank" : undefined}
+      rel="noopener noreferrer"
+      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
+        primary ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border/50 text-foreground hover:bg-muted/30"
       }`}
     >
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${iconClass}`}>
-        {icon}
-      </div>
-
-      <h3 className="text-lg font-bold text-foreground mb-1.5">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">{desc}</p>
-
-      <div className="flex items-center gap-2 mb-4">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/30 text-muted-foreground text-xs font-medium">
-          <Clock className="w-3 h-3" />
-          {timeBadge}
-        </span>
-        {locked && lockedNote && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/15 text-yellow-400 text-xs font-semibold">
-            <Lock className="w-3 h-3" />
-            {lockedNote}
-          </span>
-        )}
-      </div>
-
-      <span
-        className={`inline-flex items-center gap-2 text-sm font-bold transition-all ${
-          locked ? "text-yellow-400" : "text-primary group-hover:gap-3"
-        }`}
-      >
-        {cta}
-        <ArrowRight className="w-4 h-4" />
-      </span>
-    </motion.button>
+      {icon}
+      {children}
+    </a>
   );
 }
 
+const OFFERS: {
+  id: PricingTierId;
+  icon: React.ReactNode;
+  iconClass: string;
+  title: string;
+  price: string;
+  paidBy: string;
+  summary: string;
+}[] = [
+  {
+    id: "personal",
+    icon: <User className="h-5 w-5" />,
+    iconClass: "bg-cyan-500/15 text-cyan-400",
+    title: "Personal",
+    price: "$5 a month",
+    paidBy: "You pay for yourself",
+    summary: "Full protection on Chrome and Android: one-click Sanitize, attachment and screenshot scanning, history.",
+  },
+  {
+    id: "pro",
+    icon: <Code2 className="h-5 w-5" />,
+    iconClass: "bg-violet-500/15 text-violet-400",
+    title: "API for your apps",
+    price: "$19 a month",
+    paidBy: "You pay for yourself",
+    summary: "Add the same checks to your own product, scripts and pipelines: 10,000 API requests a month, webhooks, logs.",
+  },
+  {
+    id: "business",
+    icon: <Users className="h-5 w-5" />,
+    iconClass: "bg-emerald-500/15 text-emerald-400",
+    title: "Firewall for teams",
+    price: "$9 a person a month · 3 to 10 people",
+    paidBy: "Your organization pays",
+    summary: "Buy seats and invite your people. Each one is covered on Chrome and Android with their work email. Admin dashboard by person.",
+  },
+  {
+    id: "enterprise",
+    icon: <Building2 className="h-5 w-5" />,
+    iconClass: "bg-amber-500/15 text-amber-400",
+    title: "Firewall for enterprise",
+    price: "Contact us for pricing",
+    paidBy: "Your organization pays",
+    summary: "Any number of people, rollout by your IT team, private deployment, data residency and an SLA.",
+  },
+];
+
 export default function GetStarted({ onNavigate }: { onNavigate: (v: AppView) => void }) {
-  const { t } = useTranslation();
   const { user } = useAuth();
-
   const plan = user?.planType || "free";
-  const apiEligible = API_ELIGIBLE_PLANS.includes(plan);
-  const analyticsEligible = plan === "business" || plan === "enterprise";
+  const [info, setInfo] = useState<PlanInfo | null>(null);
 
-  const firstName = user?.firstName;
+  useEffect(() => {
+    if (plan === "free") return;
+    fetch("/api/billing/plan", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setInfo(d))
+      .catch(() => {});
+  }, [plan]);
+
+  const org = info?.organization ?? null;
+  const apiEligible = plan === "pro" || plan === "business" || plan === "enterprise";
+
+  const openPlan = (id: PricingTierId) => {
+    setPricingFocus(id);
+    onNavigate("pricing");
+  };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 md:pt-16 pb-16">
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-10 md:mb-12"
-      >
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-4">
-          <Sparkles className="w-3.5 h-3.5" />
-          {firstName
-            ? t("getStarted.welcomeName", { name: firstName })
-            : t("getStarted.welcome")}
+    <div className="mx-auto max-w-5xl px-4 pb-16 pt-8 sm:px-6 md:pt-12 lg:px-8">
+      <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+          <Sparkles className="h-3.5 w-3.5" />
+          {user?.firstName ? `Welcome, ${user.firstName}` : "Welcome to EraseAI"}
         </div>
-        <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
-          {t("getStarted.title")}
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
-          {t("getStarted.subtitle")}
+        <h1 className="mb-2 text-3xl font-display font-bold text-foreground md:text-4xl">Keep sensitive data out of AI tools</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+          EraseAI checks every message and file before it reaches ChatGPT, Claude or Gemini, and stops passwords, API keys,
+          card numbers and personal data on the way out.
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="rounded-full bg-muted/30 px-3 py-1 text-foreground">
+            Your plan: <b>{PLAN_NAMES[plan] ?? plan}</b>
+            {org && <> · paid by {org.name}</>}
+          </span>
+          {org ? (
+            <button onClick={() => onNavigate("organization")} className="inline-flex items-center gap-1 text-primary hover:underline">
+              Your organization <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button onClick={() => onNavigate("pricing")} className="inline-flex items-center gap-1 text-primary hover:underline">
+              Compare plans <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </motion.header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mb-10">
-        <ProductCard
-          icon={<Shield className="w-6 h-6" />}
-          iconClass="bg-red-500/15 text-red-400 border border-red-500/30"
-          title={t("getStarted.firewall.title")}
-          desc={t("getStarted.firewall.desc")}
-          timeBadge={t("getStarted.firewall.time")}
-          cta={t("getStarted.firewall.cta")}
-          onClick={() => onNavigate("firewallSetup")}
-          delay={0.05}
-          testId="get-started-firewall"
-        />
-        <ProductCard
-          icon={<Database className="w-6 h-6" />}
-          iconClass="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-          title={t("getStarted.sanitizer.title")}
-          desc={t("getStarted.sanitizer.desc")}
-          timeBadge={t("getStarted.sanitizer.time")}
-          cta={t("getStarted.sanitizer.cta")}
-          onClick={() => onNavigate("datasetSanitizer")}
-          delay={0.1}
-          testId="get-started-sanitizer"
-        />
-        <ProductCard
-          icon={<Code2 className="w-6 h-6" />}
-          iconClass="bg-violet-500/15 text-violet-400 border border-violet-500/30"
-          title={t("getStarted.api.title")}
-          desc={t("getStarted.api.desc")}
-          timeBadge={t("getStarted.api.time")}
-          cta={apiEligible ? t("getStarted.api.cta") : t("getStarted.api.upgradeCta")}
-          onClick={() => onNavigate(apiEligible ? "apiSetup" : "pricing")}
-          locked={!apiEligible}
-          lockedNote={t("getStarted.api.lockedNote")}
-          delay={0.15}
-          testId="get-started-api"
-        />
-      </div>
+      <section className="mb-10">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">1 · Install protection</h2>
+        {org && (
+          <p className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
+            {org.name} covers you. Install both and sign in with <b>{user?.email}</b>; there's nothing to pay.
+          </p>
+        )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className={card}>
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/15 text-red-400">
+                <Shield className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Chrome extension</h3>
+                <p className="text-xs text-muted-foreground">ChatGPT, Claude, Gemini · free checks, no limit</p>
+              </div>
+            </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Checks each message and attachment before you send it, shows what it found, and removes it with one click.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <StoreButton href={chromeStoreLink("app-home")} icon={<Chrome className="h-4 w-4" />} primary>
+                Add to Chrome
+              </StoreButton>
+              <StoreButton href={EXTENSION_ZIP_URL} icon={<Download className="h-4 w-4" />}>
+                Download .zip
+              </StoreButton>
+              <button onClick={() => onNavigate("firewallSetup")} className="px-2 text-sm text-primary hover:underline">
+                Setup guide
+              </button>
+            </div>
+          </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.25 }}
-        className="border-t border-border/30 pt-6"
-      >
-        <p className="text-xs text-muted-foreground/70 font-semibold uppercase tracking-wider mb-3">
-          {t("getStarted.shortcuts")}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => onNavigate("personal")}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-card/60 border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-            data-testid="get-started-shortcut-personal"
-          >
-            <User className="w-4 h-4" />
-            {t("getStarted.shortcutPersonal")}
-          </button>
-          {apiEligible && (
-            <button
-              onClick={() => onNavigate("developer")}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-card/60 border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-              data-testid="get-started-shortcut-developer"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              {t("getStarted.shortcutDeveloper")}
-            </button>
-          )}
-          {analyticsEligible && (
-            <button
-              onClick={() => onNavigate("analytics")}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-card/60 border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-              data-testid="get-started-shortcut-analytics"
-            >
-              <BarChart3 className="w-4 h-4" />
-              {t("getStarted.shortcutAnalytics")}
-            </button>
-          )}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={card}>
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
+                <Smartphone className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Android app</h3>
+                <p className="text-xs text-muted-foreground">AI apps on your phone · 7-day free trial</p>
+              </div>
+            </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Checks what you're about to send in ChatGPT, Gemini, Claude and other AI apps on your phone. Sign in with this
+              account to use your plan.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <StoreButton href={ANDROID_PLAY_URL} icon={<Smartphone className="h-4 w-4" />} primary>
+                Get it on Google Play
+              </StoreButton>
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
+      </section>
+
+      <section className="mb-10">
+        <div className="mb-3 flex items-baseline gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">2 · Plans</h2>
+          <button onClick={() => onNavigate("pricing")} className="text-xs text-primary hover:underline">Full comparison</button>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {OFFERS.map((o, i) => {
+            const mine = plan === o.id;
+            return (
+              <motion.button
+                key={o.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12 + i * 0.04 }}
+                onClick={() => openPlan(o.id)}
+                className={`group flex flex-col rounded-2xl border bg-card/60 p-5 text-left transition-all hover:border-primary/50 hover:shadow-[0_0_24px_rgba(6,182,212,0.12)] ${
+                  mine ? "border-primary/60" : "border-border/40"
+                }`}
+              >
+                <div className="mb-2 flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${o.iconClass}`}>{o.icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-foreground">{o.title}</p>
+                    <p className="text-xs text-muted-foreground">{o.price}</p>
+                  </div>
+                  {mine && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                      <Check className="h-3 w-3" /> Your plan
+                    </span>
+                  )}
+                </div>
+                <p className="mb-3 flex-1 text-sm text-muted-foreground">{o.summary}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground/60">{o.paidBy}</span>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
+                    Compare and choose <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+        <p className="mt-3 rounded-xl border border-border/30 bg-muted/10 px-4 py-3 text-sm text-muted-foreground">
+          <b className="text-foreground">Team and Enterprise:</b> {ORG_COVERAGE_SUMMARY}
+        </p>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">More tools</h2>
+        <div className="flex flex-wrap gap-2">
+          {[
+            ...(apiEligible ? [{ v: "developer" as AppView, icon: <LayoutDashboard className="h-4 w-4" />, label: "API keys and usage" }] : []),
+            { v: "docsHub" as AppView, icon: <BookOpen className="h-4 w-4" />, label: "Documentation and API" },
+            { v: "datasetSanitizer" as AppView, icon: <Database className="h-4 w-4" />, label: "Dataset Sanitizer (CSV, JSON)" },
+            { v: "personal" as AppView, icon: <User className="h-4 w-4" />, label: "Personal Mode (check and rewrite text)" },
+          ].map((tool) => (
+            <button
+              key={tool.v}
+              onClick={() => onNavigate(tool.v)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border/30 bg-card/60 px-3.5 py-2 text-sm text-muted-foreground transition-all hover:border-primary/40 hover:text-foreground"
+            >
+              {tool.icon}
+              {tool.label}
+            </button>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

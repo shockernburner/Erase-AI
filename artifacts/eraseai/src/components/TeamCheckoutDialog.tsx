@@ -121,7 +121,8 @@ export function TeamCheckoutDialog({
             <span className="font-bold text-foreground">${total} {period === "monthly" ? "a month" : "a year"}</span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            After paying you're the owner. Invite your people with links from the Organization page, and change seats any time.
+            After paying you're the owner. Invite your people from the Organization page; each person installs the Chrome
+            extension and the Android app and signs in with their work email. They pay nothing. Change seats any time.
           </p>
         </div>
 

@@ -14,7 +14,7 @@
     "logOut": "Log out",
     "developer": "Developer",
     "analytics": "Analytics",
-    "personalMode": "EraseAI Personal",
+    "personalMode": "Personal Mode (text tools)",
     "socialPosts": "Social Posts",
     "apiDocs": "API Docs",
     "devMode": "Developer Mode",
@@ -1514,6 +1514,13 @@
     "errorMsg": "Failed to send message. Please try again or email us directly."
   },
   "appShell": {
+    "home": "Home",
+    "installFirewall": "Install the firewall",
+    "firewallDownloads": "Downloads and keys",
+    "plansPricing": "Plans and pricing",
+    "groupPlans": "Plans",
+    "groupDevelopers": "Developers",
+    "groupMoreTools": "More tools",
     "organization": "Organization",
     "groupOrganization": "Organization",
     "account": "Account",
