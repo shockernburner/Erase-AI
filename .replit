@@ -111,7 +111,6 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-AIRWALLEX_ENV = "production"
 
 [nix]
 channel = "stable-25_05"
