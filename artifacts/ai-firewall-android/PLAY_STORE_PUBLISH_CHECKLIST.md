@@ -360,6 +360,16 @@ Complete [REAL_DEVICE_QA_MATRIX.md](./REAL_DEVICE_QA_MATRIX.md):
 - [ ] Subscription products active in all launch countries
 - [ ] Production API + Play service account verified with a real or license-tester purchase
 - [ ] Support channel staffed for launch week
+- [ ] **Protected-apps sync is "latest change wins", not a union.** Today
+      `ProtectedAppsStore.mergeFromBackend` unions the phone's list with the
+      server's on every launch, so for signed-in users an app they unchecked comes
+      back if the save failed, and never stays off when a second device still has
+      it. Record when the user last changed the selection on the phone, compare it
+      with the server's `updated_at`, and take whichever is newer. App-only change;
+      the server already stores the per-user list and `updated_at`. Guests are
+      unaffected (no sync).
+- [ ] Decide the production no-account trial length (`GuestTrial.DAYS`, 21 days
+      for the closed test). Existing guests keep the length they started with.
 
 ### 9.2 Create production release
 
