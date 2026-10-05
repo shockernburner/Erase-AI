@@ -30,19 +30,19 @@ const PLANS = [
   },
   {
     name: "Team",
-    price: "$99",
-    unit: "/mo",
+    price: "$9",
+    unit: "/person/mo · 3–10 people",
     paidBy: "Paid by the organization",
     you: ["Enterprise-level protection, no personal plan"],
-    org: ["Up to 10 people, one bill", "Admin dashboard of what was caught"],
+    org: ["Company rules everyone follows", "Admin dashboard of what was caught", "Audit log, one invoice"],
   },
   {
     name: "Enterprise",
     price: "Contact us",
     unit: "for pricing",
     paidBy: "Paid by the organization",
-    you: ["Everything in Team"],
-    org: ["Managed rollout, SSO, policies", "Private deployment, SLA"],
+    you: ["Everything in Team", "Company sign-in (SSO)"],
+    org: ["Managed rollout to every device", "SIEM, custom rules, data residency", "Private deployment, DPA, SLA"],
   },
 ];
 
@@ -56,7 +56,7 @@ export default function PricingSlide() {
           Individuals pay for themselves. Organizations pay for everyone.
         </h2>
         <p className="font-body text-[1.3vw] text-muted mb-[4vh] max-w-[70vw]">
-          When an organization pays, its people get Enterprise-level protection.
+          When an organization pays, its people get Enterprise-level protection; Team adds the control and proof that ten Personal plans can't.
         </p>
         <div className="flex gap-[1.2vw] max-w-[86vw]">
           {PLANS.map((plan) => (

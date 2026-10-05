@@ -192,7 +192,8 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             const isCurrentPlan = currentPlan === tier.id;
             const isDowngrade = tierIndex(tier.id) < tierIndex(currentPlan);
             const isUpgrade = tierIndex(tier.id) > tierIndex(currentPlan);
-            const canCheckout = tier.id === "personal" || tier.id === "pro" || tier.id === "business";
+            const canCheckout = !tier.contactSales && (tier.id === "personal" || tier.id === "pro");
+            const unit = tier.perPerson ? "/person/month" : "/month";
 
             return (
               <motion.div
@@ -226,10 +227,22 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   {tier.monthlyPrice > 0 && billingPeriod === "monthly" && (
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-extrabold text-foreground">${tier.monthlyPrice}</span>
-                      <span className="text-sm text-muted-foreground">/month</span>
+                      <span className="text-sm text-muted-foreground">{unit}</span>
                     </div>
                   )}
-                  {tier.monthlyPrice > 0 && billingPeriod === "annual" && (
+                  {tier.annualMonthlyPrice != null && billingPeriod === "annual" && (
+                    <div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-extrabold text-foreground">${tier.annualMonthlyPrice}</span>
+                        <span className="text-sm text-muted-foreground">{unit}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-primary">
+                        Billed yearly: ${tier.annualMonthlyPrice * 12} a person
+                      </p>
+                    </div>
+                  )}
+                  {tier.seats && <p className="mt-1 text-xs font-semibold text-foreground/80">{tier.seats}</p>}
+                  {tier.monthlyPrice > 0 && tier.annualMonthlyPrice == null && billingPeriod === "annual" && (
                     <div>
                       <div className="flex items-baseline gap-1">
                         <span className="text-4xl font-extrabold text-foreground">${annualPriceFor(tier.monthlyPrice)}</span>
@@ -271,7 +284,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                       </>
                     )}
                   </Button>
-                ) : tier.id === "enterprise" && !isDowngrade ? (
+                ) : tier.contactSales && !isDowngrade ? (
                   <Button onClick={() => setShowContact(true)} variant="outline" className="w-full gap-2 border-border/50 py-5 hover:bg-muted/30">
                     <Mail className="w-4 h-4" />
                     {tier.cta}
@@ -374,9 +387,9 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(event) => event.stopPropagation()} className="mx-4 w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl">
               <div className="mb-4 flex items-center gap-3">
                 <Building2 className="w-6 h-6 text-primary" />
-                <h3 className="text-xl font-bold text-foreground">Enterprise pricing</h3>
+                <h3 className="text-xl font-bold text-foreground">Team and Enterprise</h3>
               </div>
-              <p className="mb-6 text-sm text-muted-foreground">Enterprise is priced for your organization: number of people, rollout, security and support needs. Contact the EraseAI team for a quote.</p>
+              <p className="mb-6 text-sm text-muted-foreground">Team ($9 a person a month, 3 to 10 people) and Enterprise (priced for your organization) are set up with you, so your people join your organization's plan. Contact the EraseAI team to get started.</p>
               <div className="mb-6 space-y-3">
                 <a href="mailto:director@vantward.com" className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/20 p-4 transition-colors hover:bg-muted/30">
                   <Mail className="h-5 w-5 shrink-0 text-primary" />

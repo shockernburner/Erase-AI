@@ -16,16 +16,26 @@ export function annualPrice(monthly) {
   return Math.round(monthly * 12 * ANNUAL_DISCOUNT);
 }
 
+// Team ("business") is priced per person, paid by the organization: $9 a
+// person a month, or $8 a person a month billed yearly ($96), for 3 to 10
+// people. Must match the website (eraseai src/lib/pricingPlans.ts).
 export const PLAN_PRICING = {
   personal: { monthly: 5, annual: annualPrice(5), currency: "USD" },
   pro: { monthly: 19, annual: annualPrice(19), currency: "USD" },
-  business: { monthly: 99, annual: annualPrice(99), currency: "USD" },
+  business: { monthly: 9, annual: 96, currency: "USD", perSeat: true, minSeats: 3, maxSeats: 10 },
 };
 
-// Backend plan ids that map to a paid, self-serve Stripe checkout. `free`
-// needs no checkout and `enterprise` is sales-assisted (Book Demo), so neither
-// appears here.
-export const VALID_CHECKOUT_PLANS = ["personal", "pro", "business"];
+// Plans anyone can buy for themselves through self-serve Stripe checkout.
+// `free` needs no checkout and `enterprise` is sales-assisted (contact us for
+// pricing). Team is sold through sales too until organization billing exists
+// (seats paid by the organization, members joining it): a self-serve Team
+// purchase today would be one account that cannot add its people.
+export const VALID_CHECKOUT_PLANS = ["personal", "pro"];
+
+// Plans a completed Checkout Session may promote a user to. Includes Team so
+// a Team session started before Team moved to sales still lands on Team
+// instead of falling back to Developer.
+export const PROMOTABLE_PLANS = ["personal", "pro", "business"];
 
 export function isValidBillingPeriod(value) {
   return value === "monthly" || value === "annual";
@@ -104,7 +114,7 @@ export function buildCheckoutSessionParams({
 // the three checkoutable plans are honoured; anything else falls back to
 // "pro" (matching the route's historical default).
 export function resolveTargetPlan(rawPlan) {
-  return isValidCheckoutPlan(rawPlan) ? rawPlan : "pro";
+  return typeof rawPlan === "string" && PROMOTABLE_PLANS.includes(rawPlan) ? rawPlan : "pro";
 }
 
 // Decide what /checkout-status should do with a retrieved Checkout Session.

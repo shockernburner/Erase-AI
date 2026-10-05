@@ -167,15 +167,16 @@
     "uptime": "Disponibilidad",
     "pricingFreeF3": "Prueba gratuita de la app de Android",
     "pricingTierBusiness": "Equipo",
-    "pricingBusinessF1": "Cada miembro protegido, pagado por la organización",
-    "pricingBusinessF2": "Hasta 10 personas en una sola factura",
-    "pricingBusinessF3": "Panel de administración con lo detectado",
-    "pricingCtaBusiness": "Proteger a mi equipo",
+    "pricingBusinessF1": "Reglas de empresa para todos",
+    "pricingBusinessF2": "Panel de administración con lo detectado",
+    "pricingBusinessF3": "De 3 a 10 personas, 8 $ con pago anual",
+    "pricingCtaBusiness": "Contáctanos",
     "pricingPaidByFree": "Sin pago",
     "pricingPaidByPersonal": "Lo pagas tú",
     "pricingPaidByPro": "Lo pagas tú",
     "pricingPaidByBusiness": "Lo paga tu organización",
-    "pricingPaidByEnterprise": "Lo paga tu organización"
+    "pricingPaidByEnterprise": "Lo paga tu organización",
+    "pricingPerPersonMonth": "/persona/mes"
   },
   "home": {
     "userInitial": "U",

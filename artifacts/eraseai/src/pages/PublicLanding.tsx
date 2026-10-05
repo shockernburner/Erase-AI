@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { PlanFeatureSections } from "@/components/PlanFeatureSections";
-import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor } from "@/lib/pricingPlans";
+import { PRICING_COMPARISON, PRICING_TIERS, TEAM_REASONS, annualPriceFor } from "@/lib/pricingPlans";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
 import { useSeoMeta } from "@/pages/seo/useSeoMeta";
@@ -132,8 +132,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   const scrollToSignUp = () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
   const pricingPlans = PRICING_TIERS.map((tier) => ({
     ...tier,
-    price:
-      tier.monthlyPrice < 0 ? "Contact us for pricing" : tier.monthlyPrice === 0 ? "$0" : `$${tier.monthlyPrice}/month`,
+    price: tier.monthlyPrice < 0 ? "Contact us for pricing" : `$${tier.monthlyPrice}`,
+    priceUnit: tier.monthlyPrice > 0 ? (tier.perPerson ? "/person/month" : "/month") : "",
     // Organizations (Team, Enterprise) talk to us first; individuals sign up.
     action: tier.id === "business" || tier.id === "enterprise" ? contactSales : scrollToSignUp,
   }));
@@ -418,10 +418,18 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                     <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
                     {plan.highlight && <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">Popular</span>}
                   </div>
-                  <p className={`font-display font-bold text-foreground ${plan.monthlyPrice < 0 ? "text-2xl" : "text-3xl"}`}>{plan.price}</p>
+                  <p className={`font-display font-bold text-foreground ${plan.monthlyPrice < 0 ? "text-2xl" : "text-3xl"}`}>
+                    {plan.price}
+                    {plan.priceUnit && <span className="ml-1 text-sm font-normal text-muted-foreground">{plan.priceUnit}</span>}
+                  </p>
                   {plan.monthlyPrice > 0 && (
-                    <p className="mt-1 text-xs text-muted-foreground">or ${annualPriceFor(plan.monthlyPrice)}/year (save 10%)</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {plan.annualMonthlyPrice != null
+                        ? `or $${plan.annualMonthlyPrice}/person/month billed yearly`
+                        : `or $${annualPriceFor(plan.monthlyPrice)}/year (save 10%)`}
+                    </p>
                   )}
+                  {plan.seats && <p className="mt-1 text-xs font-semibold text-foreground/80">{plan.seats}</p>}
                   <p className="mt-2 text-sm font-medium text-primary">{plan.description}</p>
                   <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{plan.paidBy}</p>
                   <PlanFeatureSections tier={plan} className="mt-5 flex-1" />
@@ -433,6 +441,28 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                   </button>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-6">
+              <h3 className="text-xl font-semibold text-foreground">Why Team instead of a Personal plan for each person?</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Ten Personal plans cost $50 a month and protect each person just as well. Team ($9 a person) is what your organization pays for control and proof:
+              </p>
+              <div className="mt-5 grid gap-4 md:grid-cols-5">
+                {TEAM_REASONS.map((reason) => (
+                  <div key={reason.title} className="rounded-2xl border border-border/40 bg-card/50 p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      {reason.title}
+                      {reason.soon && (
+                        <span className="ml-1.5 whitespace-nowrap rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+                          Coming soon
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">{reason.text}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="mt-10 overflow-hidden rounded-3xl border border-border/40 bg-card/50">

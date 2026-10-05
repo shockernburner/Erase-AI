@@ -167,15 +167,16 @@
     "uptime": "Disponibilité",
     "pricingFreeF3": "Essai gratuit de l'app Android",
     "pricingTierBusiness": "Équipe",
-    "pricingBusinessF1": "Chaque membre protégé, payé par l'organisation",
-    "pricingBusinessF2": "Jusqu'à 10 personnes sur une seule facture",
-    "pricingBusinessF3": "Tableau de bord admin des détections",
-    "pricingCtaBusiness": "Protéger mon équipe",
+    "pricingBusinessF1": "Des règles d'entreprise pour tous",
+    "pricingBusinessF2": "Tableau de bord admin des détections",
+    "pricingBusinessF3": "De 3 à 10 personnes, 8 $ en annuel",
+    "pricingCtaBusiness": "Nous contacter",
     "pricingPaidByFree": "Sans paiement",
     "pricingPaidByPersonal": "Payé par vous",
     "pricingPaidByPro": "Payé par vous",
     "pricingPaidByBusiness": "Payé par votre organisation",
-    "pricingPaidByEnterprise": "Payé par votre organisation"
+    "pricingPaidByEnterprise": "Payé par votre organisation",
+    "pricingPerPersonMonth": "/personne/mois"
   },
   "home": {
     "userInitial": "U",

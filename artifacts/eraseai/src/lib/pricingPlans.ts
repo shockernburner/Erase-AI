@@ -18,8 +18,16 @@ export interface PricingFeature {
 export interface PricingTier {
   id: PricingTierId;
   name: string;
-  /** 0 = free, -1 = contact us for pricing. */
+  /** 0 = free, -1 = contact us for pricing. Per person when `perPerson`. */
   monthlyPrice: number;
+  /** Priced per person (Team). */
+  perPerson?: boolean;
+  /** Monthly price per person when billed yearly, if not the standard 10% off. */
+  annualMonthlyPrice?: number;
+  /** e.g. "3 to 10 people". */
+  seats?: string;
+  /** Sold through sales, not self-serve checkout. */
+  contactSales?: boolean;
   description: string;
   paidBy: string;
   forYou: PricingFeature[];
@@ -92,44 +100,51 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: "business",
     name: "Team",
-    monthlyPrice: 99,
-    description: "Small companies, up to 10 people",
+    monthlyPrice: 9,
+    perPerson: true,
+    annualMonthlyPrice: 8,
+    seats: "3 to 10 people",
+    contactSales: true,
+    description: "Small companies and teams",
     paidBy: "Paid by your organization",
     forYou: [
-      { text: "Enterprise-level protection on Chrome and Android, paid for by your organization" },
-      { text: "Everything in Personal, with no personal subscription" },
+      { text: "Everything in Personal on Chrome and Android, paid for by your organization" },
+      { text: "Enterprise-level protection; no personal subscription needed" },
     ],
     forOrg: [
-      { text: "One bill for up to 10 people" },
-      { text: "Extra people: $8 each a month", soon: true },
-      { text: "Invite and remove members", soon: true },
-      { text: "Admin dashboard: what was caught across the team" },
-      { text: "Team-wide rules, e.g. always block keys", soon: true },
-      { text: "Audit log export", soon: true },
-      { text: "API: 20 keys, 100,000 requests a month" },
+      { text: "Company rules everyone follows, e.g. keys always blocked, no 'Send anyway'", soon: true },
+      { text: "Admin dashboard: what was caught, by whom, in which AI app" },
+      { text: "Audit log export as evidence for ISO 27001, SOC 2 and GDPR", soon: true },
+      { text: "Add and remove people; seats and history stay with the company", soon: true },
+      { text: "One invoice for the team", soon: true },
+      { text: "API: 20 keys, 100,000 requests a month, shared" },
       { text: "Priority support" },
     ],
-    cta: "Secure my team",
+    cta: "Contact us",
     highlight: false,
   },
   {
     id: "enterprise",
     name: "Enterprise",
     monthlyPrice: -1,
+    contactSales: true,
     description: "Banks, law firms, healthcare, government and large companies",
     paidBy: "Paid by your organization",
     forYou: [
-      { text: "Enterprise-level protection on Chrome and Android, set up by your IT team" },
-      { text: "Everything in Team" },
+      { text: "Everything in Team, set up for you by your IT team" },
+      { text: "Sign in with your company account" },
     ],
     forOrg: [
-      { text: "Managed rollout: IT installs and configures EraseAI on every browser and phone", soon: true },
-      { text: "Single sign-on (SSO) and user provisioning", soon: true },
-      { text: "Company policies and custom detection rules", soon: true },
+      { text: "Any number of people, priced for your organization" },
+      { text: "Managed rollout: IT installs and configures EraseAI on every browser (Google Admin, Intune) and phone", soon: true },
+      { text: "Single sign-on (SAML, Google, Microsoft) and automatic user provisioning (SCIM)", soon: true },
+      { text: "Company-wide policies and custom detection rules", soon: true },
+      { text: "Send events to your security tools (SIEM: Splunk, Microsoft Sentinel)", soon: true },
       { text: "Compliance reporting and audit" },
-      { text: "Private deployment, on-premises or in your cloud" },
+      { text: "Private deployment, on-premises or in your own cloud" },
+      { text: "Data residency and custom retention" },
       { text: "Dataset governance and machine unlearning" },
-      { text: "Data processing agreement, dedicated support and SLA" },
+      { text: "Data processing agreement, security review support, dedicated account manager and SLA" },
     ],
     cta: "Contact us for pricing",
     highlight: false,
@@ -137,11 +152,27 @@ export const PRICING_TIERS: PricingTier[] = [
 ];
 
 export const PRICING_COMPARISON: string[][] = [
+  ["Price", "$0", "$5 a month", "$19 a month", "$9 a person a month", "Contact us"],
+  ["People", "1", "1", "1", "3 to 10", "Any number"],
   ["Who pays", "No one", "You", "You", "Your organization", "Your organization"],
   ["Chrome checks", "Unlimited", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
   ["One-click Sanitize & attachments", "No", "Yes", "Yes", "Yes", "Yes"],
   ["Android protection", "Trial", "Yes", "Yes", "Yes", "Yes"],
   ["API requests a month", "No", "No", "10,000", "100,000", "Custom"],
-  ["Admin dashboard and team rules", "No", "No", "No", "Yes", "Yes"],
-  ["Managed rollout, SSO", "No", "No", "No", "No", "Yes"],
+  ["Admin dashboard", "No", "No", "No", "Yes", "Yes"],
+  ["Company rules and audit export", "No", "No", "No", "Coming soon", "Coming soon"],
+  ["Managed rollout, SSO, SIEM", "No", "No", "No", "No", "Coming soon"],
 ];
+
+/**
+ * Why an organization pays for Team rather than letting people buy Personal.
+ * Protection per person is the same; the organization pays for control and proof.
+ */
+export const TEAM_REASONS: { title: string; text: string; soon?: boolean }[] = [
+  { title: "Control", text: "Company rules everyone follows. On Personal, each person can switch protection off or always press Send anyway.", soon: true },
+  { title: "Visibility", text: "An admin dashboard of what was caught across the team, by person and AI app. Personal histories are private to each person." },
+  { title: "Evidence", text: "An audit log to show auditors and customers for ISO 27001, SOC 2 and GDPR.", soon: true },
+  { title: "People leaving", text: "Remove someone and their seat and history stay with the company, instead of leaving with their personal account.", soon: true },
+  { title: "One invoice", text: "One bill for the team instead of a card charge and an expense claim per person.", soon: true },
+];
+

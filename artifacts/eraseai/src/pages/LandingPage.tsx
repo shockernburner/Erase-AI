@@ -405,7 +405,7 @@ export default function LandingPage({
               },
               {
                 key: "business",
-                price: "$99",
+                price: "$9",
                 icon: Users,
                 features: ["pricingBusinessF1", "pricingBusinessF2", "pricingBusinessF3"],
                 highlight: false,
@@ -432,7 +432,9 @@ export default function LandingPage({
                   {price ? (
                     <>
                       {price}
-                      <span className="text-sm font-normal text-muted-foreground">{t("pricing.month")}</span>
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {key === "business" ? t("landing.pricingPerPersonMonth") : t("pricing.month")}
+                      </span>
                     </>
                   ) : (
                     <span className="text-base">{t("pricing.customPricing")}</span>

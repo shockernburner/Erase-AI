@@ -167,15 +167,16 @@
     "uptime": "稼働率",
     "pricingFreeF3": "Androidアプリの無料トライアル",
     "pricingTierBusiness": "チーム",
-    "pricingBusinessF1": "組織の負担で全メンバーを保護",
-    "pricingBusinessF2": "最大10名を1つの請求で",
-    "pricingBusinessF3": "検出内容を確認できる管理ダッシュボード",
-    "pricingCtaBusiness": "チームを保護する",
+    "pricingBusinessF1": "全員に適用される会社のルール",
+    "pricingBusinessF2": "検出内容を確認できる管理ダッシュボード",
+    "pricingBusinessF3": "3〜10名、年払いなら8ドル",
+    "pricingCtaBusiness": "お問い合わせ",
     "pricingPaidByFree": "支払い不要",
     "pricingPaidByPersonal": "ご自身で支払い",
     "pricingPaidByPro": "ご自身で支払い",
     "pricingPaidByBusiness": "組織が支払い",
-    "pricingPaidByEnterprise": "組織が支払い"
+    "pricingPaidByEnterprise": "組織が支払い",
+    "pricingPerPersonMonth": "/人/月"
   },
   "home": {
     "userInitial": "ユ",

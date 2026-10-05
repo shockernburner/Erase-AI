@@ -167,15 +167,16 @@
     "uptime": "正常运行时间",
     "pricingFreeF3": "Android 应用免费试用",
     "pricingTierBusiness": "团队",
-    "pricingBusinessF1": "由组织付费，保护每位成员",
-    "pricingBusinessF2": "最多 10 人，统一账单",
-    "pricingBusinessF3": "查看检测结果的管理仪表板",
-    "pricingCtaBusiness": "保护我的团队",
+    "pricingBusinessF1": "全员遵循的公司规则",
+    "pricingBusinessF2": "查看检测结果的管理仪表板",
+    "pricingBusinessF3": "3 至 10 人，按年付费每人 8 美元",
+    "pricingCtaBusiness": "联系我们",
     "pricingPaidByFree": "无需付费",
     "pricingPaidByPersonal": "由您本人付费",
     "pricingPaidByPro": "由您本人付费",
     "pricingPaidByBusiness": "由您的组织付费",
-    "pricingPaidByEnterprise": "由您的组织付费"
+    "pricingPaidByEnterprise": "由您的组织付费",
+    "pricingPerPersonMonth": "/人/月"
   },
   "home": {
     "userInitial": "用",

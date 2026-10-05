@@ -6,11 +6,17 @@ export interface PlanPricing {
   monthly: number;
   annual: number;
   currency: string;
+  /** Priced per person (Team); monthly/annual are per person. */
+  perSeat?: boolean;
+  minSeats?: number;
+  maxSeats?: number;
 }
 
 export const PLAN_PRICING: Record<string, PlanPricing>;
 
 export const VALID_CHECKOUT_PLANS: readonly string[];
+
+export const PROMOTABLE_PLANS: readonly string[];
 
 export type BillingPeriod = "monthly" | "annual";
 

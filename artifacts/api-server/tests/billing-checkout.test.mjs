@@ -40,8 +40,9 @@ import { createStripeWebhookHandler } from "../src/lib/billing/webhook-source.mj
 // ---------------------------------------------------------------------------
 
 describe("plan pricing + checkoutable plans", () => {
-  test("only personal/pro/business are self-serve checkoutable (not free/enterprise)", () => {
-    assert.deepEqual([...VALID_CHECKOUT_PLANS], ["personal", "pro", "business"]);
+  test("only personal/pro are self-serve checkoutable (Team and Enterprise go through sales)", () => {
+    assert.deepEqual([...VALID_CHECKOUT_PLANS], ["personal", "pro"]);
+    assert.ok(!VALID_CHECKOUT_PLANS.includes("business"));
     assert.ok(!VALID_CHECKOUT_PLANS.includes("free"));
     assert.ok(!VALID_CHECKOUT_PLANS.includes("enterprise"));
   });
@@ -50,13 +51,18 @@ describe("plan pricing + checkoutable plans", () => {
     assert.equal(ANNUAL_DISCOUNT, 0.9);
     assert.equal(annualPrice(5), 54); // 5*12*0.9 = 54
     assert.equal(annualPrice(19), 205); // 19*12*0.9 = 205.2 -> 205
-    assert.equal(annualPrice(99), 1069); // 99*12*0.9 = 1069.2 -> 1069
+    assert.equal(annualPrice(99), 1069); // 99*12*0.9 = 1069.2 -> 1069 (helper only)
   });
 
   test("PLAN_PRICING has the expected monthly figures", () => {
     assert.equal(PLAN_PRICING.personal.monthly, 5);
     assert.equal(PLAN_PRICING.pro.monthly, 19);
-    assert.equal(PLAN_PRICING.business.monthly, 99);
+    // Team: per person, $9 a month or $8 a month billed yearly, 3 to 10 people.
+    assert.equal(PLAN_PRICING.business.monthly, 9);
+    assert.equal(PLAN_PRICING.business.annual, 96);
+    assert.equal(PLAN_PRICING.business.perSeat, true);
+    assert.equal(PLAN_PRICING.business.minSeats, 3);
+    assert.equal(PLAN_PRICING.business.maxSeats, 10);
   });
 
   test("isValidCheckoutPlan / isValidBillingPeriod guards", () => {
@@ -70,7 +76,16 @@ describe("plan pricing + checkoutable plans", () => {
 });
 
 describe("validateCheckoutRequest", () => {
-  for (const plan of ["personal", "pro", "business"]) {
+  test("rejects self-serve Team checkout until organization billing exists", () => {
+    const r = validateCheckoutRequest({
+      plan: "business",
+      billingPeriod: "monthly",
+      returnUrl: "https://app.example.com/billing",
+    });
+    assert.equal(r.ok, false);
+  });
+
+  for (const plan of ["personal", "pro"]) {
     test(`accepts plan=${plan} with a valid returnUrl`, () => {
       const r = validateCheckoutRequest({
         plan,
@@ -443,7 +458,7 @@ describe("POST /api/billing/checkout — over HTTP", () => {
   };
   const findPriceId = async (plan, period) => PRICE_IDS[plan]?.[period] ?? null;
 
-  for (const plan of ["personal", "pro", "business"]) {
+  for (const plan of ["personal", "pro"]) {
     test(`plan=${plan} returns a session URL and uses the matching price id`, async () => {
       const priceMap = {};
       const stripe = makeFakeStripe({ priceMap });

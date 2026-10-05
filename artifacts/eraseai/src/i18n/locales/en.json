@@ -167,15 +167,16 @@
     "uptime": "Uptime",
     "pricingFreeF3": "Android app free trial",
     "pricingTierBusiness": "Team",
-    "pricingBusinessF1": "Every member protected, paid by the organization",
-    "pricingBusinessF2": "Up to 10 people on one bill",
-    "pricingBusinessF3": "Admin dashboard of what was caught",
-    "pricingCtaBusiness": "Secure my team",
+    "pricingBusinessF1": "Company rules everyone follows",
+    "pricingBusinessF2": "Admin dashboard of what was caught",
+    "pricingBusinessF3": "3 to 10 people, $8 billed yearly",
+    "pricingCtaBusiness": "Contact us",
     "pricingPaidByFree": "No payment",
     "pricingPaidByPersonal": "Paid by you",
     "pricingPaidByPro": "Paid by you",
     "pricingPaidByBusiness": "Paid by your organization",
-    "pricingPaidByEnterprise": "Paid by your organization"
+    "pricingPaidByEnterprise": "Paid by your organization",
+    "pricingPerPersonMonth": "/person/month"
   },
   "home": {
     "userInitial": "U",

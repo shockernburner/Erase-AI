@@ -51,11 +51,11 @@ export default function BusinessModelSlide() {
                 团队版
               </p>
               <p className="font-mono font-bold text-accent text-[3.2vw] leading-none mb-[2.5vh]">
-                $99<span className="text-[1.6vw] text-muted">/月</span>
+                $9<span className="text-[1.6vw] text-muted">/人/月</span>
               </p>
             </div>
             <p className="text-muted text-[1.45vw] leading-relaxed">
-              组织付费：最多 10 人享受企业级保护。
+              组织付费：3–10 人，公司规则、管理仪表板、审计。
             </p>
           </div>
           <div className="flex flex-col justify-between bg-panel/40 border border-line rounded-[0.8vw] p-[2vw]">
@@ -68,7 +68,7 @@ export default function BusinessModelSlide() {
               </p>
             </div>
             <p className="text-muted text-[1.45vw] leading-relaxed">
-              组织付费：集中部署、SAML 单点登录、审计、私有部署。
+              组织付费：集中部署、单点登录、SIEM、私有部署、SLA。
             </p>
           </div>
         </div>

@@ -26,13 +26,13 @@ export default function BusinessModelSlide() {
           </div>
           <div className="rounded-[1vw] bg-primary/10 border border-primary/40 p-[1.8vw] flex flex-col">
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.2em] text-primary">Team</span>
-            <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">$99<span className="text-[1.2vw] text-muted font-normal">/mo</span></p>
-            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-text/90">Paid by the organization · up to 10 people get Enterprise-level protection.</p>
+            <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">$9<span className="text-[1.2vw] text-muted font-normal">/person/mo</span></p>
+            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-text/90">Paid by the organization · 3–10 people · company rules, admin dashboard, audit.</p>
           </div>
           <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[1.8vw] flex flex-col">
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.2em] text-muted">Enterprise</span>
             <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">Contact us</p>
-            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">Paid by the organization · managed rollout, SSO, audit, private / VPC.</p>
+            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">Paid by the organization · managed rollout, SSO, SIEM, private / VPC, SLA.</p>
           </div>
         </div>
         <div className="mt-[4vh] flex items-center gap-[2.5vw]">
