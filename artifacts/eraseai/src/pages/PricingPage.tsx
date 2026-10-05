@@ -10,7 +10,6 @@ import {
   Mail,
   MessageCircle,
   Shield,
-  ShieldX,
   Users,
   Zap,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { PlanFeatureSections } from "@/components/PlanFeatureSections";
 import { TeamCheckoutDialog } from "@/components/TeamCheckoutDialog";
 import { ORG_COVERAGE_STEPS, takePricingFocus } from "@/lib/products";
 import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor, type PricingTierId } from "@/lib/pricingPlans";
+import { BrandLogo } from "@/components/BrandLogo";
 
 interface PricingPageProps {
   onBack: () => void;
@@ -178,9 +178,7 @@ export default function PricingPage({ onBack, embedded = false }: PricingPagePro
 
           <div className="text-center">
             <div className={`mb-4 items-center justify-center gap-3 ${embedded ? "hidden" : "flex"}`}>
-              <div className="rounded-xl bg-primary p-2 text-primary-foreground shadow-[0_0_20px_rgba(6,182,212,0.45)]">
-                <ShieldX className="w-7 h-7" />
-              </div>
+              <BrandLogo className="h-11 w-11" />
               <h1 className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-3xl font-display font-extrabold tracking-tight text-transparent">
                 EraseAI
               </h1>

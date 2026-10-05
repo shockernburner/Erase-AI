@@ -10,7 +10,6 @@ import {
   Globe,
   KeyRound,
   Landmark,
-  ShieldX,
   Menu,
   MessageCircle,
   Search,
@@ -32,6 +31,7 @@ import { useSeoMeta } from "@/pages/seo/useSeoMeta";
 import { chromeStoreLink } from "@/lib/extensionStore";
 import { ANDROID_PLAY_URL, ORG_COVERAGE_STEPS, peekPricingFocus, setPricingFocus } from "@/lib/products";
 import type { PricingTierId } from "@/lib/pricingPlans";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
@@ -221,9 +221,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
         >
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-primary p-2 text-primary-foreground shadow-[0_0_24px_rgba(6,182,212,0.45)]">
-                <ShieldX className="w-6 h-6" />
-              </div>
+              <BrandLogo className="h-10 w-10" />
               <div>
                 <p className="text-lg font-display font-bold tracking-tight text-foreground">EraseAI</p>
                 <p className="text-[11px] uppercase tracking-[0.28em] text-primary/80">AI Firewall</p>
@@ -652,9 +650,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.2fr_repeat(3,0.8fr)] lg:px-8">
             <div>
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-primary p-2 text-primary-foreground shadow-[0_0_24px_rgba(6,182,212,0.45)]">
-                  <ShieldX className="w-6 h-6" />
-                </div>
+                <BrandLogo className="h-10 w-10" />
                 <div>
                   <p className="text-lg font-display font-bold text-foreground">EraseAI</p>
                   <p className="text-sm text-muted-foreground">AI firewall for ChatGPT, Claude, Gemini, and LLM apps.</p>

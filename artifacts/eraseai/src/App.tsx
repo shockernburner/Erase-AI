@@ -44,6 +44,7 @@ import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { motion } from "framer-motion";
+import { BrandLogo } from "@/components/BrandLogo";
 
 function isTrialExpiredFrontend(user: { planType?: string; planEndDate?: string | null; role?: string } | null): boolean {
   if (!user) return false;
@@ -188,9 +189,7 @@ function PreviewPage({ mode, onBack }: { mode: PreviewMode; onBack: () => void }
             className="flex items-center justify-between flex-wrap gap-4"
           >
             <div className="flex items-center gap-3">
-              <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-                <ShieldX className="w-6 h-6" />
-              </div>
+              <BrandLogo className="h-10 w-10" />
               <div>
                 <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
                   {t("app.name")}

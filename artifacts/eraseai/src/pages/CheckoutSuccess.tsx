@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Loader2, CheckCircle2, XCircle, ShieldX } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui-elements";
+import { BrandLogo } from "@/components/BrandLogo";
 
 interface CheckoutSuccessProps {
   onDone: () => void;
@@ -116,9 +117,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
           className="bg-card border border-border rounded-2xl p-10 max-w-md w-full text-center shadow-2xl"
         >
           <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-              <ShieldX className="w-6 h-6" />
-            </div>
+            <BrandLogo className="h-10 w-10" />
             <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
               EraseAI
             </span>

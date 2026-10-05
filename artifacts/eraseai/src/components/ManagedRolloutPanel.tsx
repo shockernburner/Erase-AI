@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, MonitorSmartphone } from "lucide-react";
+import { Check, ChevronDown, Copy, MonitorSmartphone } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
 import { orgApi } from "@/lib/orgInvite";
 
@@ -55,6 +55,8 @@ export function ManagedRolloutPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Most teams invite people one by one; this is for IT, so it starts folded.
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(() => {
     orgApi<Deployment>("GET", "/org/deployment")
@@ -88,28 +90,35 @@ export function ManagedRolloutPanel() {
 
   return (
     <section className={panel}>
-      <div className="flex items-center gap-2 mb-1">
+      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 text-left" aria-expanded={open}>
         <MonitorSmartphone className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-semibold text-foreground">Managed rollout</h2>
-        {info.managedBrowsers > 0 && (
-          <span className="ml-auto text-xs text-muted-foreground">
-            {info.managedBrowsers} {info.managedBrowsers === 1 ? "person" : "people"} set up by policy
-          </span>
-        )}
-      </div>
-      <p className="mb-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400">
-        Update coming soon: the Chrome extension and Android app updates that read this policy are on their way. You can
-        set your domains and token now; devices start enrolling once the updates are out.
+        <h2 className="text-lg font-semibold text-foreground">Install for the whole company (IT teams)</h2>
+        <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">Coming soon</span>
+        <ChevronDown className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      <p className="mt-1 text-xs text-muted-foreground">
+        An alternative to inviting people one by one: your IT team installs EraseAI on every company Chrome browser and
+        Android phone, and anyone whose email ends in your company's domain joins on their own. Not needed if you invite
+        people above.
       </p>
-      <p className="text-xs text-muted-foreground mb-4">
-        For IT: install EraseAI on everyone's Chrome and Android phone from Google Admin, Microsoft Intune or your phone
-        management tool. Anyone with a work email on your domains joins automatically and takes a seat; no invite links or
-        API keys needed.
-      </p>
+      {info.managedBrowsers > 0 && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {info.managedBrowsers} {info.managedBrowsers === 1 ? "person" : "people"} set up this way.
+        </p>
+      )}
 
-      <div className="space-y-4">
+      {open && (
+      <div className="mt-4 space-y-4">
+        <p className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400">
+          Update coming soon: the Chrome extension and Android app updates that read this setup are on their way. You can
+          prepare it now; devices start joining once the updates are out.
+        </p>
         <div>
-          <p className="text-sm text-foreground mb-1">1. Work email domains</p>
+          <p className="text-sm text-foreground mb-1">1. Your company's email domains</p>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Just the part after @, e.g. <code className="text-foreground">vantward.com</code>. Anyone with an email there can
+            join without an invite, while you have free seats.
+          </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               value={domains}
@@ -119,7 +128,7 @@ export function ManagedRolloutPanel() {
               }}
               placeholder="company.com, company.co.uk"
               className="sm:flex-1 py-2"
-              aria-label="Work email domains"
+              aria-label="Company email domains"
             />
             <Button
               size="sm"
@@ -209,6 +218,7 @@ export function ManagedRolloutPanel() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
+      )}
     </section>
   );
 }

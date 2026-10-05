@@ -1,5 +1,6 @@
-import { ShieldX, Shield, ArrowRight, MessageCircle, Mail, Chromium } from "lucide-react";
+import { Shield, ArrowRight, MessageCircle, Mail, Chromium } from "lucide-react";
 import { chromeStoreLink } from "@/lib/extensionStore";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -8,9 +9,7 @@ export function SeoNav() {
     <header className="border-b border-border/30 bg-background/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <a href={BASE} className="flex items-center gap-3 group">
-          <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-            <ShieldX className="w-6 h-6" />
-          </div>
+          <BrandLogo className="h-10 w-10" />
           <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
             EraseAI
           </span>
@@ -46,7 +45,7 @@ export function SeoFooter() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <ShieldX className="w-5 h-5 text-primary" />
+              <BrandLogo className="h-6 w-6 rounded-md" />
               <span className="text-lg font-display font-bold text-foreground">EraseAI</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">

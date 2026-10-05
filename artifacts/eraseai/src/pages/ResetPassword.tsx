@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Eye, EyeOff, Lock, ShieldX, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui-elements";
+import { BrandLogo } from "@/components/BrandLogo";
 
 function readToken(): string {
   const token = new URLSearchParams(window.location.search).get("token") ?? "";
@@ -51,9 +52,7 @@ export default function ResetPassword() {
     <div className="min-h-screen w-full flex items-start justify-center bg-background px-4 py-16">
       <div className="max-w-md w-full space-y-6">
         <div className="flex flex-col items-center text-center">
-          <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.5)] mb-4">
-            <ShieldX className="w-8 h-8" />
-          </div>
+          <BrandLogo className="h-14 w-14 mb-4" />
           <h1 className="text-2xl font-display font-bold text-foreground">Choose a new password</h1>
         </div>
 

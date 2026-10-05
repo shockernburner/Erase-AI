@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { ShieldX } from "lucide-react";
 import { motion } from "framer-motion";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -31,9 +31,7 @@ export default function LoginPage() {
           className="relative z-10 max-w-md w-full mx-4"
         >
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.5)] mb-4">
-              <ShieldX className="w-10 h-10" />
-            </div>
+            <BrandLogo className="h-16 w-16 mb-4" />
             <h1 className="text-4xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
               {t("app.name")}
             </h1>

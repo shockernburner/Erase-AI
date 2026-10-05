@@ -5,7 +5,8 @@
       "date": "2026-10-06",
       "changes": [
         "Managed rollout for organizations: when IT sets the EraseAI enrollment token in Chrome policy (Google Admin, Intune), the extension enrolls the person by their work email and turns on their organization's plan, with no API key to paste. The popup shows which organization manages the browser",
-        "If the policy doesn't include the work email, the popup asks for it once"
+        "If the policy doesn't include the work email, the popup asks for it once",
+        "New icon that matches the EraseAI website and Android app"
       ]
     },
     {

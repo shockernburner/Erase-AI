@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
 import {
-  ShieldX,
   Globe,
   LogOut,
   Crown,
@@ -32,6 +31,7 @@ import { FeedbackButton } from "@/components/FeedbackModal";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatasetSanitizer } from "@/pages/DatasetSanitizer";
+import { BrandLogo } from "@/components/BrandLogo";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "adContent" | "docs" | "devMode" | "certifications" | "firewallDocs" | "terms" | "license" | "privacy" | "contact";
 
@@ -570,9 +570,7 @@ export default function Home({ onNavigate }: { onNavigate: (view: AppView) => vo
           className="flex items-center justify-between mb-8 flex-wrap gap-4"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-primary text-primary-foreground p-2.5 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-              <ShieldX className="w-8 h-8" />
-            </div>
+            <BrandLogo className="h-14 w-14" />
             <div>
               <h1 className="text-3xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
                 {t("app.name")}

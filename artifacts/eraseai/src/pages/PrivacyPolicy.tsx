@@ -1,5 +1,6 @@
-import { ArrowLeft, ShieldX } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => void; onViewTerms?: () => void }) {
   const { t } = useTranslation();
@@ -9,9 +10,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
       <header className="border-b border-border/30 bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-              <ShieldX className="w-6 h-6" />
-            </div>
+            <BrandLogo className="h-10 w-10" />
             <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
               {t("app.name")}
             </span>

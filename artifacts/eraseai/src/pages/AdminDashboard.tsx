@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
 import {
-  ShieldX, ArrowLeft, Users, Eye, Star, MessageSquare,
+  ArrowLeft, Users, Eye, Star, MessageSquare,
   Crown, Loader2, ChevronLeft, ChevronRight, TrendingUp,
   BarChart3, RefreshCw, Check, ChevronDown, UserPlus, X,
   Mail, Lock, User as UserIcon, Activity, ShieldCheck,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AdminOrganizations } from "@/components/AdminOrganizations";
 import { AdminStripeSetup } from "@/components/AdminStripeSetup";
+import { BrandLogo } from "@/components/BrandLogo";
 
 interface Stats {
   visits: { today: number; week: number; allTime: number };
@@ -563,9 +564,7 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
               {t("admin.backToDashboard")}
             </Button>
             <div className="flex items-center gap-2">
-              <div className="bg-primary text-primary-foreground p-2 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
-                <ShieldX className="w-6 h-6" />
-              </div>
+              <BrandLogo className="h-10 w-10" />
               <div>
                 <h1 className="text-2xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
                   {t("admin.title")}

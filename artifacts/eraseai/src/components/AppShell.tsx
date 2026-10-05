@@ -3,7 +3,6 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShieldX,
   Menu,
   ChevronLeft,
   ChevronRight,
@@ -33,6 +32,7 @@ import {
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { FeedbackButton } from "@/components/FeedbackModal";
 import { ChangePasswordModal } from "@/components/ChangePasswordModal";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export type AppView =
   | "home"
@@ -305,9 +305,7 @@ export function AppShell({
         onClick={() => onNavigate("home")}
         className="flex items-center gap-2 px-3 py-4 border-b border-border/30 hover:bg-muted/20 transition-colors"
       >
-        <div className="bg-primary text-primary-foreground p-2 rounded-lg shadow-[0_0_12px_rgba(6,182,212,0.4)] shrink-0">
-          <ShieldX className="w-5 h-5" />
-        </div>
+        <BrandLogo className="h-9 w-9" />
         {open && (
           <div className="min-w-0">
             <div className="text-sm font-display font-extrabold tracking-tight text-foreground truncate">

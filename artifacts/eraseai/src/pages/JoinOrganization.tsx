@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
-import { Building2, Loader2, ShieldX, AlertTriangle } from "lucide-react";
+import { Building2, Loader2, AlertTriangle } from "lucide-react";
 import AuthForm from "@/components/AuthForm";
 import { Button } from "@/components/ui-elements";
 import { ORG_PLAN_NAMES, ORG_ROLE_NAMES, clearPendingInvite, orgApi } from "@/lib/orgInvite";
+import { BrandLogo } from "@/components/BrandLogo";
 
 interface InvitePreview {
   organization: { name: string; plan: string; active: boolean };
@@ -57,9 +58,7 @@ export default function JoinOrganization({ token, onDone }: { token: string; onD
     <div className="min-h-screen w-full flex items-start justify-center bg-background px-4 py-16">
       <div className="max-w-md w-full space-y-6">
         <div className="flex flex-col items-center text-center">
-          <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.5)] mb-4">
-            <ShieldX className="w-8 h-8" />
-          </div>
+          <BrandLogo className="h-14 w-14 mb-4" />
           <h1 className="text-2xl font-display font-bold text-foreground">Join your organization on EraseAI</h1>
         </div>
 

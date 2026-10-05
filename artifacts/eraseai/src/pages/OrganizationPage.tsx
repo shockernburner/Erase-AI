@@ -422,9 +422,9 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
             <h2 className="text-lg font-semibold text-foreground">Invite someone</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            You get a link to send them yourself (email, chat). They open it, sign in with that email, then install the
-            Chrome extension and the Android app; both are covered and they pay nothing. Pending invites take a seat until
-            they're cancelled.
+            Enter one person's email and you get a link to send them (email, chat). They open it, sign in with that email,
+            then install the Chrome extension and the Android app; both are covered and they pay nothing. Pending invites
+            take a seat until they're cancelled.
           </p>
           <form onSubmit={invite} className="flex flex-col sm:flex-row gap-2">
             <Input
