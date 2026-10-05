@@ -42,6 +42,17 @@ export const MOBILE_PLAY_PRODUCTS: MobilePlayProduct[] = [
   { product_id: "eraseai_pro_annual", plan: "pro", billing_period: "annual", name: "Developer Annual" },
 ];
 
+/**
+ * What the Android app offers for sale. Android sells Personal only (monthly
+ * and annual); Developer products stay in MOBILE_PLAY_PRODUCTS so existing
+ * purchases still verify, but are no longer offered.
+ */
+export const MOBILE_PLAY_OFFERED_PLANS: InternalPlan[] = ["personal"];
+
+export function offeredPlayProducts(): MobilePlayProduct[] {
+  return MOBILE_PLAY_PRODUCTS.filter((product) => MOBILE_PLAY_OFFERED_PLANS.includes(product.plan));
+}
+
 export function buildMobileHealthPayload(): MobileHealthPayload {
   return {
     ok: true,
@@ -135,7 +146,7 @@ export function buildMobilePlayBilling() {
   return {
     rail: "google_play" as const,
     package_name: ANDROID_PACKAGE_NAME,
-    products: MOBILE_PLAY_PRODUCTS,
+    products: offeredPlayProducts(),
     manage_url: `https://play.google.com/store/account/subscriptions?package=${ANDROID_PACKAGE_NAME}`,
   };
 }

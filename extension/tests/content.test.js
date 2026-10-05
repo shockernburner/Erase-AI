@@ -80,6 +80,7 @@ function makeFakePort({ onPosted } = {}) {
 function makeChromeStub({
   enabled = true,
   apiKey = "eak_test",
+  checkResult = { allowed: true },
   analyzeResult = { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" },
   sanitizeResult = null,
   outcomes = [],
@@ -120,6 +121,7 @@ function makeChromeStub({
         return port;
       }),
       sendMessage: vi.fn((msg, cb) => {
+        if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb(checkResult)); return; }
         if (msg.type === "GET_CONFIG") {
           // Simulate the async hop the real service worker takes.
           queueMicrotask(() => cb({ apiKey, enabled, apiUrl: "https://eraseai.ai" }));
@@ -167,11 +169,8 @@ function loadContentScriptInJsdom(chromeStub) {
 }
 
 async function flushAsync() {
-  // Two microtask flushes — GET_CONFIG callback, then ANALYZE callback.
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  // Enough microtask turns for GET_CONFIG, then BEGIN_CHECK, then ANALYZE.
+  for (let i = 0; i < 6; i++) await Promise.resolve();
 }
 
 function setUpChatGPTDom() {
@@ -584,6 +583,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -705,6 +705,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return savedPort;
           }),
           sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -789,6 +790,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
           // to its terminal error state.
           connect: vi.fn(() => makeFakePort()),
           sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -976,6 +978,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -1077,6 +1080,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -1242,6 +1246,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -1428,5 +1433,63 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
       expect(sanitizeBtn.textContent).toBe("Failed");
       expect(sanitizeBtn.disabled).toBe(false);
     });
+  });
+});
+
+describe("content.js — free checks and no-account checking", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    delete globalThis.chrome;
+    document.body.innerHTML = "";
+  });
+
+  it("checks the message when there is no API key (it used to send it unchecked)", async () => {
+    const ports = [];
+    const chromeStub = makeChromeStub({ apiKey: "", ports });
+    loadContentScriptInJsdom(chromeStub);
+    await flushAsync();
+    const { textarea, sendBtn } = setUpChatGPTDom();
+    await flushAsync();
+    const clicks = vi.fn();
+    sendBtn.addEventListener("click", clicks);
+
+    textarea.value = "my key is AKIAIOSFODNN7EXAMPLE";
+    dispatchEnterOn(textarea);
+    await flushAsync();
+
+    expect(ports.some((p) => p.name === "analyze")).toBe(true);
+    expect(document.getElementById("eraseai-overlay-panel")).not.toBeNull();
+  });
+
+  it("lets the message through unchecked with a subscribe notice once free checks are used up", async () => {
+    const ports = [];
+    const chromeStub = makeChromeStub({
+      ports,
+      checkResult: { paused: true, used: 25, limit: 25, subscribeUrl: "https://eraseai.ai/pricing?plan=personal" },
+    });
+    loadContentScriptInJsdom(chromeStub);
+    await flushAsync();
+    const { textarea, sendBtn } = setUpChatGPTDom();
+    await flushAsync();
+    const clicks = vi.fn();
+    sendBtn.addEventListener("click", clicks);
+
+    textarea.value = "hello there";
+    dispatchEnterOn(textarea);
+    await flushAsync();
+    vi.advanceTimersByTime(100);
+
+    expect(ports.some((p) => p.name === "analyze")).toBe(false);
+    expect(document.getElementById("eraseai-overlay-panel")).toBeNull();
+    const notice = document.getElementById("eraseai-free-limit");
+    expect(notice).not.toBeNull();
+    expect(notice.textContent).toMatch(/25 free EraseAI checks/);
+    expect(notice.querySelector("a").href).toContain("plan=personal");
+    expect(clicks).toHaveBeenCalled();
   });
 });

@@ -93,3 +93,11 @@ describe("free scan routes are gated by requireActivePlan", () => {
     assert.match(personalSource, /router\.post\("\/personal\/analyze",[^)]*requireActivePlan\(\)/);
   });
 });
+
+describe("extension routes are not capped by the monthly API quota", () => {
+  const devSource = readFileSync(new URL("../src/routes/dev.ts", import.meta.url), "utf8");
+
+  test("dev quota chain only tracks usage; Personal is unlimited in the extension", () => {
+    assert.match(devSource, /const quotaChain = \[trackApiUsage\(\)\];/);
+  });
+});

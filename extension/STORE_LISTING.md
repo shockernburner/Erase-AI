@@ -65,8 +65,11 @@ The extension runs only on the sites above. Without an account, every check happ
 FOR TEAMS
 Security and IT teams use EraseAI Firewall to reduce data leaks to AI tools without banning them. Team plans are available at https://eraseai.ai.
 
+PRICING
+Your first 25 checks are free, with no account needed. After that, EraseAI Personal keeps protection on with unlimited checks for $5 a month or $54 a year, and the same subscription covers the EraseAI app for Android. Subscribe at eraseai.ai, then paste your API key into the extension popup.
+
 GETTING STARTED
-It starts working as soon as it is installed, with no account needed. For account features, create a free account at eraseai.ai and paste your API key into the extension popup.
+It starts working as soon as it is installed. The popup shows how many free checks you have left.
 
 Made by Vantward Solutions Pte. Ltd.
 ```

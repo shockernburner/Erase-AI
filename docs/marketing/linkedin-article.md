@@ -28,7 +28,7 @@ Picture a good engineer pasting a config file into ChatGPT to ask why a deployme
 
 Nobody was careless. They were fast. That's how almost every AI data leak happens: not through an attacker, but through a helpful person with a deadline, a clipboard and a chat box that accepts anything.
 
-Today we're launching EraseAI Firewall, a free Chrome extension that catches secrets and personal data at the one moment it still matters: before you press Send.
+Today we're launching EraseAI Firewall, a Chrome extension that catches secrets and personal data at the one moment it still matters: before you press Send.
 
 THE PROBLEM NOBODY OWNS
 
@@ -97,7 +97,7 @@ Policy tells people what not to do. A seatbelt catches them when they do it anyw
 
 TRY IT
 
-EraseAI Firewall is free on the Chrome Web Store and works without an account:
+EraseAI Firewall is on the Chrome Web Store. Your first 25 checks are free with no account, then EraseAI Personal is $5 a month:
 https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp?utm_source=linkedin&utm_medium=article&utm_campaign=launch
 
 Install it, paste a fake key into ChatGPT, and watch it stop.
@@ -119,9 +119,9 @@ Smart people paste secrets into ChatGPT every day. Not carelessly. Just fast.
 
 A config file with a cloud key. A customer export "just to summarise". Once it's sent, you can't take it back.
 
-So we built EraseAI Firewall: a free Chrome extension that checks your prompt and attachments in ChatGPT, Claude and Gemini before you press Send, and lets you redact with one click.
+So we built EraseAI Firewall: a Chrome extension that checks your prompt and attachments in ChatGPT, Claude and Gemini before you press Send, and lets you redact with one click.
 
-→ Works on your device, no account needed
+→ 25 free checks, no account needed, then $5 a month
 → Reads PDFs, Office files and screenshots too
 → You decide: Sanitize & Send, Send Anyway or Cancel
 

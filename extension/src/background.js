@@ -1,7 +1,7 @@
 const API_URL = "https://eraseai.ai";
 
 if (typeof importScripts === "function") {
-  importScripts("growth.js", "local-scanner.js");
+  importScripts("growth.js", "local-scanner.js", "allowance.js");
 }
 
 // --- On-device fallback -----------------------------------------------------
@@ -109,6 +109,103 @@ async function trackOutcomeForReview(outcome) {
 async function setReviewState(review) {
   const state = await loadGrowth();
   await saveGrowth({ ...state, review });
+}
+
+// --- Free-check allowance (see allowance.js) -------------------------------
+
+async function loadAllowance() {
+  const A = self.EraseAIAllowance;
+  const stored = await chrome.storage.local.get([A.STORAGE_KEY]);
+  return A.normalizeState(stored[A.STORAGE_KEY]);
+}
+
+async function saveAllowance(state) {
+  await chrome.storage.local.set({ [self.EraseAIAllowance.STORAGE_KEY]: state });
+}
+
+/** The account's plan for this API key, or null if it could not be read. */
+async function fetchPlan(apiKey) {
+  try {
+    const res = await fetch(`${API_URL}/api/dev/ping`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) return res.status === 401 ? "invalid" : null;
+    const data = await res.json().catch(() => null);
+    return data && data.ok === true && typeof data.plan === "string" ? data.plan : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Re-reads the plan and stores it without touching the check count. */
+async function refreshPlan(apiKey, now = Date.now()) {
+  const plan = await fetchPlan(apiKey);
+  if (plan == null) return loadAllowance(); // unreachable: keep what we knew
+  const latest = await loadAllowance();
+  const next = self.EraseAIAllowance.withPlan(latest, plan, now);
+  await saveAllowance(next);
+  return next;
+}
+
+/**
+ * Called once per send before anything is checked. Free users spend one of
+ * their free checks; paid plans are unlimited; once the free checks are gone
+ * the send is let through unchecked and the page shows a subscribe notice.
+ */
+async function beginCheck() {
+  const A = self.EraseAIAllowance;
+  const config = await getConfig();
+  if (!config.enabled) return { bypass: true };
+  const now = Date.now();
+  const hasKey = Boolean(config.apiKey);
+  let state = await loadAllowance();
+  if (hasKey && !A.planIsFresh(state, now)) {
+    if (state.used >= A.FREE_CHECKS) {
+      // The answer depends on it (they may have just subscribed): wait for it.
+      state = await refreshPlan(config.apiKey, now);
+    } else {
+      // Plenty of free checks left: refresh in the background, never delay the send.
+      refreshPlan(config.apiKey, now).catch(() => {});
+    }
+  }
+  const result = A.decide(state, { hasKey });
+  if (result.state !== state) await saveAllowance(result.state);
+  if (result.decision === "paused") {
+    return {
+      paused: true,
+      used: result.used,
+      limit: result.limit,
+      subscribeUrl: A.subscribeUrl(extensionVersion()),
+      hasKey,
+    };
+  }
+  return { allowed: true, decision: result.decision, used: result.used, remaining: result.remaining };
+}
+
+async function allowanceSummary() {
+  const A = self.EraseAIAllowance;
+  const config = await getConfig();
+  const state = await loadAllowance();
+  const paid = Boolean(config.apiKey) && A.isPaidPlan(state.plan);
+  return {
+    used: Math.min(state.used, A.FREE_CHECKS),
+    limit: A.FREE_CHECKS,
+    plan: state.plan,
+    paid,
+    paused: !paid && state.used >= A.FREE_CHECKS,
+    subscribeUrl: A.subscribeUrl(extensionVersion()),
+  };
+}
+
+if (chrome.storage && chrome.storage.onChanged) {
+  // A different key may belong to a different account: forget its plan.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes.apiKey) return;
+    loadAllowance()
+      .then((state) => saveAllowance({ ...state, plan: null, planCheckedAt: 0 }))
+      .catch(() => {});
+  });
 }
 
 if (chrome.runtime.onInstalled) {
@@ -343,6 +440,12 @@ async function testConnection() {
     }
     const allowedPlans = new Set(["free", "personal", "pro", "business", "enterprise"]);
     const plan = typeof data.plan === "string" && allowedPlans.has(data.plan) ? data.plan : "free";
+    try {
+      const latest = await loadAllowance();
+      await saveAllowance(self.EraseAIAllowance.withPlan(latest, plan, Date.now()));
+    } catch {
+      // best-effort cache
+    }
     const dailyLimit = typeof data.dailyLimit === "number" ? data.dailyLimit : null;
     const dailyRemaining = typeof data.dailyRemaining === "number" ? data.dailyRemaining : null;
     const dailyUsed = typeof data.dailyUsed === "number" ? data.dailyUsed : null;
@@ -666,6 +769,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(() => (url ? chrome.tabs.create({ url }) : null))
       .then(() => sendResponse({ ok: true }))
       .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
+  if (message.type === "BEGIN_CHECK") {
+    beginCheck()
+      .then(sendResponse)
+      // Never leave a send hanging: if the allowance cannot be read, check it.
+      .catch(() => sendResponse({ allowed: true, decision: "error" }));
+    return true;
+  }
+
+  if (message.type === "GET_ALLOWANCE") {
+    allowanceSummary().then(sendResponse).catch(() => sendResponse(null));
     return true;
   }
 

@@ -161,7 +161,7 @@ WHAT WE LEARNED
 
 TRY IT
 
-EraseAI Firewall is free on the Chrome Web Store and works without an account:
+EraseAI Firewall is on the Chrome Web Store. Your first 25 checks are free with no account, then EraseAI Personal is $5 a month:
 https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp?utm_source=medium&utm_medium=article&utm_campaign=launch
 
 Paste a fake key (AKIAIOSFODNN7EXAMPLE is the documented example access key) into ChatGPT and press Send.

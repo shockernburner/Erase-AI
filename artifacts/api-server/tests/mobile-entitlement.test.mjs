@@ -52,6 +52,9 @@ describe("mobile entitlement helpers", () => {
   test("exposes dual billing rails for Android vs web", () => {
     assert.equal(buildMobilePlayBilling().rail, "google_play");
     assert.match(buildMobilePlayBilling().manage_url, /play\.google\.com/);
+    // Android sells Personal only; Developer purchases still resolve for verification.
+    const offered = buildMobilePlayBilling().products.map((p) => p.product_id).sort();
+    assert.deepEqual(offered, ["eraseai_personal_annual", "eraseai_personal_monthly"]);
     assert.deepEqual(buildWebStripeBillingUrls("https://eraseai.ai/"), {
       checkout_url: "https://eraseai.ai/billing",
       manage_url: "https://eraseai.ai/billing",

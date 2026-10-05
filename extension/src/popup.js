@@ -207,6 +207,8 @@ function runDiagnosis() {
     chrome.runtime.sendMessage({ type: "TEST_CONNECTION" }, (response) => {
       const safe = response || { state: "server_unreachable", error: "No response" };
       renderDiagnosis(safe);
+      // The connection test also refreshes the stored plan.
+      if (typeof renderAllowance === "function") renderAllowance();
       resolve(safe);
     });
   });
@@ -382,6 +384,33 @@ function wireReviewUi() {
     if (state.eligible) card.style.display = "block";
   });
 }
+
+// Plan card: free checks left, or the paid plan.
+function renderAllowance() {
+  const status = document.getElementById("plan-status");
+  const button = document.getElementById("subscribe-btn");
+  if (!status || !button) return;
+  chrome.runtime.sendMessage({ type: "GET_ALLOWANCE" }, (a) => {
+    if (chrome.runtime.lastError || !a) {
+      status.textContent = "";
+      return;
+    }
+    if (a.paid) {
+      status.textContent = "EraseAI Personal: unlimited checks.";
+      button.style.display = "none";
+      return;
+    }
+    const left = Math.max(0, a.limit - a.used);
+    status.textContent = a.paused
+      ? `Your ${a.limit} free checks are used up, so messages are not being checked.`
+      : `Free: ${left} of ${a.limit} checks left.`;
+    button.href = a.subscribeUrl;
+    button.target = "_blank";
+    button.rel = "noopener noreferrer";
+    button.style.display = "block";
+  });
+}
+renderAllowance();
 
 saveKeyBtn.addEventListener("click", async () => {
   const key = apiKeyInput.value.trim();

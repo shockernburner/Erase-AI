@@ -1,6 +1,16 @@
 {
   "entries": [
     {
+      "version": "1.5.0",
+      "date": "2026-10-05",
+      "changes": [
+        "Fixed: without an API key the extension let every message through unchecked. It now checks on this device, as the store listing says",
+        "Free use is 25 checks in total (one per message sent, however many files are attached). After that EraseAI stops checking and shows a one-time notice with a Subscribe link; your message is never held back",
+        "EraseAI Personal (monthly or annual, subscribed on eraseai.ai) is unlimited. Connect your account's API key in the popup and the free count no longer applies",
+        "The popup shows how many free checks are left, or that your plan is unlimited"
+      ]
+    },
+    {
       "version": "1.4.4",
       "date": "2026-09-27",
       "changes": [

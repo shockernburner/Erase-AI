@@ -9,7 +9,7 @@ import { redactInputForStorage } from "../lib/dev/store-redact";
 import { hashApiKey, enforceApiKeyTtlAndQuota } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
 import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
-import { trackApiUsage, apiRateLimit } from "../middlewares/rateLimitMiddleware";
+import { trackApiUsage } from "../middlewares/rateLimitMiddleware";
 import { apiKeyBurstLimit, ipBurstLimit } from "../middlewares/burstLimitMiddleware";
 import demoKeyRouter from "./demo-key";
 
@@ -230,9 +230,17 @@ router.use(sessionOrApiKeyAuth);
 // enterprise. No session-based caller (the dashboard) is constrained here;
 // the bucket is keyed by req.apiKeyId, so session callers pass through.
 const burstChain = [apiKeyBurstLimit()];
-// Monthly per-plan quota + audit-log of every API-key request. Both are
-// no-ops when there's no req.apiKeyId (i.e. session-based dashboard calls).
-const quotaChain = [trackApiUsage(), apiRateLimit()];
+// Audit-log of every API-key request (a no-op for session callers).
+//
+// These are the Chrome extension's routes, so the monthly API caps that
+// apply to /v1 (Personal 200, Developer 1,000 ...) are deliberately NOT
+// applied here: Personal is sold as unlimited checking in the extension, and
+// 200 a month ran out within days of normal use, while a free-plan key got
+// "API access not available on this plan" on every send. The free trial is
+// still bounded by requireActivePlan() (7 days) and the 25-scan trial gate
+// below, and every key by the 60/min burst limit. These checks run our own
+// rules, with no per-call vendor cost.
+const quotaChain = [trackApiUsage()];
 
 // Free = 7-day trial with a total budget of 25 scans (not a daily reset).
 const FREE_TRIAL_SCAN_LIMIT = 25;

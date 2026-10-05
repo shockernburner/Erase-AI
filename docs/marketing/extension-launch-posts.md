@@ -20,7 +20,10 @@ anything.
   in the browser) and ZIP/TAR archives.
 - You choose: **Sanitize & Send** (placeholders), **Send Anyway**, or
   **Cancel**.
-- **Works without an account**: checks run on your device with the same
+- **Pricing (from 1.5.0)**: the first 25 checks are free, no account
+  needed; then EraseAI Personal, $5/month or $54/year, unlimited, and the
+  same subscription covers Android. Say "free to try", never "free".
+- **Works without an account** for the free checks: they run on your device with the same
   rules as the EraseAI server. Nothing is sent until you add an API key.
 - With an account: server-side scanning, scan history (first 500 chars,
   secrets masked), team dashboard, API.
@@ -65,7 +68,7 @@ Things you'll probably ask:
 - How does detection work? Pattern rules plus validators (e.g. Luhn for card numbers, context checks so "ISBN 978…" isn't a card). No LLM in the loop. It will miss secrets it has no pattern for, and it will sometimes flag harmless text — both are fixable and we'd like examples.
 - Why an extension and not a proxy? Consumer AI apps pin TLS and personal laptops don't have a corporate proxy. The extension sees the text before it's encrypted.
 
-Free to install; the on-device checks don't need an account. Would love feedback, especially false positives and things it should have caught.
+The first 25 checks are free and need no account; after that it's $5 a month. Would love feedback, especially false positives and things it should have caught.
 
 https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp?utm_source=hackernews&utm_medium=post&utm_campaign=launch
 ```
@@ -145,7 +148,7 @@ We built EraseAI Firewall after watching smart people paste production keys and 
 What it does: when you press Send in ChatGPT, Claude, Gemini or Replit, it checks the message and any attached files. If it finds a key, password, card number or personal data, it shows you exactly what, and you choose: Sanitize & Send, Send Anyway, or Cancel.
 
 What we're proud of:
-• It works the moment it's installed — checks run on your device, no account needed
+• It works the moment it's installed: 25 free checks on your device, no account needed
 • It reads attachments: PDFs, Office files, screenshots (OCR in the browser) and zips
 • It stays out of the way when there's nothing to flag
 
@@ -183,7 +186,7 @@ Your team is pasting things into ChatGPT that shouldn't leave the company.
 
 Not on purpose. A log file with a key in it. A customer email thread. A spreadsheet "just to summarise".
 
-We built EraseAI Firewall to catch that at the moment it happens. It's a free Chrome extension that checks prompts and attachments in ChatGPT, Claude and Gemini before they're sent, and offers to redact API keys, passwords, card numbers and personal data.
+We built EraseAI Firewall to catch that at the moment it happens. It's a Chrome extension (25 free checks, then $5 a month) that checks prompts and attachments in ChatGPT, Claude and Gemini before they're sent, and offers to redact API keys, passwords, card numbers and personal data.
 
 It works on-device without an account, so anyone can try it in a minute. For teams, there's a dashboard and central controls.
 
@@ -197,7 +200,7 @@ If you run security or IT and are dealing with "shadow AI", I'd like to hear how
 ## 6. X / Twitter thread
 
 ```
-1/ We just launched EraseAI Firewall: a free Chrome extension that stops API keys, passwords and personal data before you hit Send in ChatGPT, Claude and Gemini. 🧵
+1/ We just launched EraseAI Firewall: a Chrome extension that stops API keys, passwords and personal data before you hit Send in ChatGPT, Claude and Gemini. 🧵
 
 2/ It checks your prompt AND attachments — PDFs, Office files, screenshots (OCR in your browser), zip files.
 
@@ -222,7 +225,7 @@ Hi <name>,
 I liked your <specific video/issue> on <topic>. We built EraseAI Firewall, a Chrome extension that stops secrets and personal data from being sent to ChatGPT, Claude and Gemini — it checks prompts and attachments at the moment you hit Send.
 
 A few things your audience might find interesting:
-• It works without an account; checks run locally
+• The first 25 checks need no account and run locally
 • It reads attachments, including OCR on screenshots, in the browser
 • Pattern-based and transparent about what it catches
 
