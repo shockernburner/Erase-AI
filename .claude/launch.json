@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "eraseai-web",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd artifacts/eraseai && PORT=5180 BASE_PATH=/ npx vite --config vite.config.ts --port 5180 --strictPort"
+      ],
+      "port": 5180
+    },
+    {
+      "name": "pitch-deck",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd artifacts/pitch-deck && PORT=5181 BASE_PATH=/ npx vite --config vite.config.ts --port 5181 --strictPort"
+      ],
+      "port": 5181
+    }
+  ]
+}
