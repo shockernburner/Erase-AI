@@ -302,6 +302,58 @@ async function ensureContactInquiriesTable() {
   }
 }
 
+async function ensureOrganizationTables() {
+  // Organizations (Team / Enterprise) and their members. Mirrors
+  // lib/db/src/schema/organizations.ts. Idempotent.
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS organizations (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(120) NOT NULL,
+        plan VARCHAR(20) NOT NULL DEFAULT 'business',
+        seat_limit INTEGER NOT NULL DEFAULT 10,
+        status VARCHAR(20) NOT NULL DEFAULT 'active',
+        created_by VARCHAR REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CONSTRAINT organizations_plan_valid CHECK (plan IN ('business', 'enterprise')),
+        CONSTRAINT organizations_status_valid CHECK (status IN ('active', 'suspended')),
+        CONSTRAINT organizations_seat_limit_positive CHECK (seat_limit >= 1)
+      )
+    `);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS organization_members (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        org_id VARCHAR NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+        user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE,
+        email VARCHAR(320) NOT NULL,
+        role VARCHAR(20) NOT NULL DEFAULT 'member',
+        status VARCHAR(20) NOT NULL DEFAULT 'invited',
+        invite_token_hash VARCHAR(64),
+        invited_by VARCHAR REFERENCES users(id) ON DELETE SET NULL,
+        invited_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        joined_at TIMESTAMPTZ,
+        removed_at TIMESTAMPTZ,
+        CONSTRAINT organization_members_role_valid CHECK (role IN ('owner', 'admin', 'member')),
+        CONSTRAINT organization_members_status_valid CHECK (status IN ('invited', 'active', 'removed'))
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_org_members_org ON organization_members(org_id)`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_org_members_invite_token ON organization_members(invite_token_hash)`);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_org_members_one_active_org
+        ON organization_members(user_id) WHERE status = 'active'
+    `);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_org_members_live_email
+        ON organization_members(org_id, email) WHERE status <> 'removed'
+    `);
+    logger.info("Startup migration: organization tables ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: organization tables warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
@@ -317,6 +369,7 @@ export async function runStartupMigrations() {
   await ensureBurstLimitHitsTable();
   await ensureContactInquiriesTable();
   await ensureExtensionUninstallFeedbackTable();
+  await ensureOrganizationTables();
   await ensureDemoUser();
 }
 

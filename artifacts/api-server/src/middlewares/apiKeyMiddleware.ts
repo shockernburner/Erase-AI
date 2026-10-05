@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { db, apiKeysTable, apiUsageTable, usersTable } from "@workspace/db";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { toPlanType } from "./planMiddleware";
+import { resolveEffectivePlan } from "../lib/org";
 import {
   createApiKeyEnforcer,
   type EnforcementResult,
@@ -118,7 +119,7 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
     lastName: user.lastName,
     profileImageUrl: user.profileImageUrl,
     role: user.role as "user" | "admin",
-    planType: toPlanType(user.planType),
+    planType: await resolveEffectivePlan(user.id, toPlanType(user.planType)),
     planStartDate: user.planStartDate?.toISOString() ?? null,
     planEndDate: user.planEndDate?.toISOString() ?? null,
   };

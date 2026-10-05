@@ -17,6 +17,8 @@ import {
   validateCheckoutRequest,
   type BillingPeriod,
 } from "../lib/billing/billing-source.mjs";
+import { getActiveMembership } from "../lib/org";
+import { effectivePlan } from "../lib/org/org-source.mjs";
 
 const router: IRouter = Router();
 
@@ -59,8 +61,17 @@ router.get("/plan", async (req: Request, res: Response) => {
     return;
   }
 
+  // Organization members get the organization's plan; `personalPlanType`
+  // keeps the user's own (Stripe-managed) plan visible for cancellation.
+  const membership = await getActiveMembership(user.id).catch(() => null);
+  const planType = effectivePlan(user.planType || "free", membership);
+
   res.json({
-    planType: user.planType || "free",
+    planType,
+    personalPlanType: user.planType || "free",
+    organization: membership
+      ? { id: membership.orgId, name: membership.orgName, role: membership.role, plan: membership.orgPlan, status: membership.orgStatus }
+      : null,
     subscriptionId: user.subscriptionId,
     subscriptionStatus: user.subscriptionStatus,
     planStartDate: user.planStartDate?.toISOString() || null,
@@ -192,6 +203,14 @@ router.post("/checkout", async (req: Request, res: Response) => {
   }
   const { plan, period } = validated;
   const safeReturnUrl = returnUrl as string;
+
+  const membership = await getActiveMembership(req.user!.id).catch(() => null);
+  if (membership && membership.orgStatus === "active") {
+    res.status(409).json({
+      error: `Your plan is covered by ${membership.orgName}. You don't need to buy one yourself.`,
+    });
+    return;
+  }
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.id));
   if (!user) {

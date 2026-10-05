@@ -1,6 +1,8 @@
 // Route prefixes that bypass session authentication in authMiddleware.
 // /api/mobile/health and /api/billing/pricing are intentionally public so Android
 // can check backend reachability and show plan prices before/during sign-in.
+// /api/org/invite-preview lets the join page name the organization before the
+// invited person signs in (it needs the invite token).
 export const PUBLIC_PREFIXES = [
   "/api/auth/",
   "/api/mobile-auth/",
@@ -14,6 +16,7 @@ export const PUBLIC_PREFIXES = [
   "/api/contact",
   "/api/account/deletion-request",
   "/api/extension/",
+  "/api/org/invite-preview",
 ];
 
 export function isPublicRoute(path: string): boolean {

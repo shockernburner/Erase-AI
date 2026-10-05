@@ -16,6 +16,7 @@ import {
   type SessionData,
 } from "../lib/auth";
 import { toPlanType } from "../middlewares/planMiddleware";
+import { withOrgPlan } from "../lib/org";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -63,7 +64,7 @@ async function createSessionTokenForUser(dbUser: {
   termsVersion?: string | null;
 }) {
   const sessionData: SessionData = {
-    user: buildSessionUser(dbUser),
+    user: await withOrgPlan(buildSessionUser(dbUser)),
   };
 
   const sid = await createSession(sessionData);
@@ -218,7 +219,7 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
         .returning();
 
       const sessionData: SessionData = {
-        user: buildSessionUser(user),
+        user: await withOrgPlan(buildSessionUser(user)),
       };
 
       const sid = await createSession(sessionData);
@@ -367,7 +368,7 @@ router.post("/auth/login", async (req: Request, res: Response) => {
     }
 
     const sessionData: SessionData = {
-      user: buildSessionUser(user),
+      user: await withOrgPlan(buildSessionUser(user)),
     };
 
     const sid = await createSession(sessionData);
@@ -575,7 +576,7 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
         .returning();
     }
 
-    const sessionData: SessionData = { user: buildSessionUser(dbUser) };
+    const sessionData: SessionData = { user: await withOrgPlan(buildSessionUser(dbUser)) };
     const sid = await createSession(sessionData);
     setSessionCookie(res, sid);
     res.redirect("/");
@@ -728,7 +729,7 @@ router.post("/auth/apple/callback", async (req: Request, res: Response) => {
         .returning();
     }
 
-    const sessionData: SessionData = { user: buildSessionUser(dbUser) };
+    const sessionData: SessionData = { user: await withOrgPlan(buildSessionUser(dbUser)) };
     const sid = await createSession(sessionData);
     setSessionCookie(res, sid);
     res.redirect("/");
@@ -750,7 +751,7 @@ router.get("/auth/user", async (req: Request, res: Response) => {
       .from(usersTable)
       .where(eq(usersTable.id, req.user!.id));
 
-    const user = freshUser ? buildSessionUser(freshUser) : req.user!;
+    const user = freshUser ? await withOrgPlan(buildSessionUser(freshUser)) : req.user!;
 
     res.json({ user });
   } catch (err) {
@@ -771,7 +772,7 @@ router.get("/auth/session", async (req: Request, res: Response) => {
       .from(usersTable)
       .where(eq(usersTable.id, req.user!.id));
 
-    const user = freshUser ? buildSessionUser(freshUser) : req.user!;
+    const user = freshUser ? await withOrgPlan(buildSessionUser(freshUser)) : req.user!;
 
     res.json({ user });
   } catch (err) {

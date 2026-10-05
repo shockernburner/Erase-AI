@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { AuthUserPlanType } from "@workspace/api-zod";
+import { resolveEffectivePlan } from "../lib/org";
 
 // Defensive boundary for HTTP/session payloads where the value is just an
 // untyped string (e.g. inbound API key requests, deserialised session data).
@@ -117,8 +118,9 @@ export async function refreshPlanFromDB(req: Request, _res: Response, next: Next
             if (freshUser) {
         // `freshUser.planType` is `PlanType` (= `AuthUserPlanType`) thanks
         // to the DB-level `plan_type_valid` CHECK constraint, so no runtime
-        // narrowing is needed here.
-        req.user.planType = freshUser.planType;
+        // narrowing is needed here. Organization members get the
+        // organization's plan instead.
+        req.user.planType = await resolveEffectivePlan(req.user.id, freshUser.planType);
         if (freshUser.planEndDate) {
           req.user.planEndDate = freshUser.planEndDate.toISOString();
         }

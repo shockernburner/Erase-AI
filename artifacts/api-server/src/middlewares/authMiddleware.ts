@@ -6,6 +6,7 @@ import {
   getSession,
 } from "../lib/auth";
 import { isPublicRoute } from "../lib/publicRoutes";
+import { withOrgPlan } from "../lib/org";
 
 declare global {
   namespace Express {
@@ -60,6 +61,8 @@ export async function authMiddleware(
     return;
   }
 
-  req.user = session.user;
+  // Organization members get the organization's plan (computed per request
+  // so joining or leaving takes effect without signing in again).
+  req.user = await withOrgPlan(session.user);
   next();
 }

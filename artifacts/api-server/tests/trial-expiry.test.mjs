@@ -8,7 +8,8 @@ import { transformSync } from "esbuild";
 // pure trial-expiry logic can be loaded in isolation, exactly as it ships.
 const source = readFileSync(new URL("../src/middlewares/planMiddleware.ts", import.meta.url), "utf8")
   .replace('import { db, usersTable } from "@workspace/db";', "const db = null, usersTable = null;")
-  .replace('import { eq } from "drizzle-orm";', "const eq = null;");
+  .replace('import { eq } from "drizzle-orm";', "const eq = null;")
+  .replace('import { resolveEffectivePlan } from "../lib/org";', "const resolveEffectivePlan = null;");
 
 const transformed = transformSync(source, {
   format: "esm",

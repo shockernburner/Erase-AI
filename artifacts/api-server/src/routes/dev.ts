@@ -12,6 +12,7 @@ import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
 import { trackApiUsage } from "../middlewares/rateLimitMiddleware";
 import { apiKeyBurstLimit, ipBurstLimit } from "../middlewares/burstLimitMiddleware";
 import demoKeyRouter from "./demo-key";
+import { resolveEffectivePlan, withOrgPlan } from "../lib/org";
 
 const router = Router();
 
@@ -84,7 +85,7 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
       lastName: user.lastName,
       profileImageUrl: user.profileImageUrl,
       role: user.role as "user" | "admin",
-      planType: user.planType,
+      planType: await resolveEffectivePlan(user.id, user.planType),
       planStartDate: user.planStartDate?.toISOString() ?? null,
       planEndDate: user.planEndDate?.toISOString() ?? null,
     };
@@ -103,7 +104,7 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
       req.isAuthenticated = function (this: Request) {
         return this.user != null;
       } as Request["isAuthenticated"];
-      req.user = session.user;
+      req.user = await withOrgPlan(session.user);
       return next();
     }
   }
@@ -162,7 +163,7 @@ async function resolvePingAuth(req: Request): Promise<PingAuth> {
     if (!user) {
       return { kind: "error", status: 401, code: "AUTH_USER_NOT_FOUND", error: "API key owner not found" };
     }
-    return { kind: "user", user: { id: user.id, email: user.email, planType: user.planType ?? null } };
+    return { kind: "user", user: { id: user.id, email: user.email, planType: await resolveEffectivePlan(user.id, user.planType) } };
   }
   const sid = getSessionId(req);
   if (sid) {
@@ -171,7 +172,7 @@ async function resolvePingAuth(req: Request): Promise<PingAuth> {
       if (session?.user?.id) {
         const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.user.id));
         if (user) {
-          return { kind: "user", user: { id: user.id, email: user.email, planType: user.planType ?? null } };
+          return { kind: "user", user: { id: user.id, email: user.email, planType: await resolveEffectivePlan(user.id, user.planType) } };
         }
       }
     } catch {

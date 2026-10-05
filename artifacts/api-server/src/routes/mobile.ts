@@ -17,6 +17,7 @@ import {
   trialDaysRemaining,
 } from "../lib/mobileEntitlement";
 import { validatePlayVerifyInput, verifyGooglePlayPurchase } from "../lib/googlePlayBilling";
+import { resolveEffectivePlan } from "../lib/org";
 
 const router: IRouter = Router();
 router.use(refreshPlanFromDB);
@@ -83,6 +84,13 @@ async function countPersonalScans(userId: string): Promise<number> {
 
 async function getFreshUser(userId: string) {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) return user;
+  // Organization members get the organization's plan, and their status
+  // follows the organization rather than any old personal subscription.
+  const plan = await resolveEffectivePlan(user.id, user.planType);
+  if (plan !== user.planType) {
+    return { ...user, planType: plan, subscriptionStatus: "active", planEndDate: null };
+  }
   return user;
 }
 
