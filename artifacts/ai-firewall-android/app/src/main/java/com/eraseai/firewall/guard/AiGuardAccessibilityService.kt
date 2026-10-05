@@ -141,10 +141,11 @@ class AiGuardAccessibilityService : AccessibilityService() {
     scanApi = ScanApi(ApiClient(sessionStore))
   }
 
-  /** A guest whose free days are up gets no gate until they sign in; the app says so. */
-  private fun guestTrialEnded(): Boolean =
-    // The plain-prefs check first: it is cheap, and true only for an expired guest.
-    guestTrial.isExpired() && sessionStore.getToken().isNullOrBlank()
+  /**
+   * Free trial used up (days or messages) without a paid plan: protection pauses until they
+   * subscribe, and the app says so. Plain-prefs reads only, cheap enough for every event.
+   */
+  private fun guestTrialEnded(): Boolean = !guestTrial.protectionAllowed()
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     GuardHealth.onEvent()
@@ -177,6 +178,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
         val source = event.source
         if (source != null && AppSendAdapter.isSendClick(source, packageName)) {
           GuardLog.gate("host-send-observed", packageName, "curtain=${curtain.isShowing}")
+          // A message actually went to the AI app (a clean send, or one released from the gate).
+          guestTrial.recordSend()
         }
         evaluateComposer(packageName, event)
       }
@@ -951,8 +954,9 @@ class AiGuardAccessibilityService : AccessibilityService() {
       scanApi.rewrite(originalText, findings)
         .recoverCatching { err ->
           // An expired session or a dead network must not turn Sanitize into a no-op: the
-          // on-device rules cover the same secrets, so redact locally. Plan gating stays.
-          if (err is ApiError.UpgradeRequired) throw err
+          // on-device rules cover the same secrets, so redact locally. During the free trial a
+          // plan refusal is answered locally too; after it, the refusal stands.
+          if (err is ApiError.UpgradeRequired && !guestTrial.protectionAllowed()) throw err
           GuardLog.warn("sanitize.local-fallback", overlayPackageName, "category=${err.errorCategory()}")
           LocalRiskScanner.redact(originalText).also { redacted ->
             check(LocalRiskScanner.scan(redacted).findings.none { it.type == "PII" }) { "local redaction incomplete" }

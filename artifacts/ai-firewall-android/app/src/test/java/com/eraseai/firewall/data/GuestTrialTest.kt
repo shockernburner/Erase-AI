@@ -46,4 +46,17 @@ class GuestTrialTest {
     assertFalse(GuestTrial.isExpired(start, start - day))
     assertEquals(21, GuestTrial.daysLeft(start, start - day))
   }
+
+  @Test
+  fun `message limit ends the trial when set, and 0 means no limit`() {
+    assertFalse(GuestTrial.sendsExhausted(used = 24, limit = 25))
+    assertTrue(GuestTrial.sendsExhausted(used = 25, limit = 25))
+    assertFalse(GuestTrial.sendsExhausted(used = 10_000, limit = 0))
+  }
+
+  @Test
+  fun `closed-test build settings are 21 days and no message limit`() {
+    assertEquals(21, GuestTrial.DAYS)
+    assertEquals(0, GuestTrial.SENDS)
+  }
 }

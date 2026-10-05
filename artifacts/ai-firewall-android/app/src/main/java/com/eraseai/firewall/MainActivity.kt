@@ -124,6 +124,13 @@ import kotlinx.coroutines.launch
 private const val MAX_SCAN_TEXT_LENGTH = 5000
 private const val SPLASH_MIN_MS = 1800L
 
+/** The free trial as the Dashboard shows it; null for a paid plan. */
+private data class TrialStatus(val daysLeft: Int, val sendsLeft: Int?, val ended: Boolean)
+
+/** "7 days" / "7 days or 25 messages": the offer for a new user. */
+private fun trialOfferText(): String =
+  if (GuestTrial.SENDS > 0) "${GuestTrial.DAYS} days or ${GuestTrial.SENDS} messages" else "${GuestTrial.DAYS} days"
+
 private enum class Screen {
   Splash, Login, Dashboard, Subscription, AccessibilityGuide, KeyboardGuide, ProtectedApps,
   ManualScan, History, Settings, Diagnostics, Privacy, DatasetSanitizer,
@@ -388,6 +395,7 @@ private fun EraseAIFirewallApp(
       entitlementRepo.load()
         .onSuccess {
           entitlement = it
+          guestTrial.setPaid(it.plan != "free")
           protectedStore.saveLastErrorCategory("none")
         }
         .onFailure {
@@ -479,6 +487,7 @@ private fun EraseAIFirewallApp(
     val next = if (!signedIn) {
       if (guestTrial.hasStarted()) Screen.Dashboard else Screen.Login
     } else {
+      guestTrial.start()
       refreshEntitlement()
       refreshBackendStatus()
       val mergedPackages = protectedStore.mergeFromBackend(apiClient).getOrNull()
@@ -559,6 +568,7 @@ private fun EraseAIFirewallApp(
             error = null
             authApi.login(email, password).onSuccess {
               signedIn = true
+              guestTrial.start()
               refreshEntitlement()
               refreshBackendStatus()
               loadPlayProducts()
@@ -576,6 +586,7 @@ private fun EraseAIFirewallApp(
             error = null
             authApi.signup(email, password, null, null).onSuccess {
               signedIn = true
+              guestTrial.start()
               refreshEntitlement()
               refreshBackendStatus()
               loadPlayProducts()
@@ -589,7 +600,12 @@ private fun EraseAIFirewallApp(
         })
         Screen.Dashboard -> DashboardScreen(
           entitlement = entitlement,
-          guestDaysLeft = if (signedIn) null else guestTrial.daysLeft(),
+          trial = if (guestTrial.isPaid()) null else TrialStatus(
+            daysLeft = guestTrial.daysLeft(),
+            sendsLeft = guestTrial.sendsLeft(),
+            ended = guestTrial.isExpired(),
+          ),
+          signedIn = signedIn,
           onCreateAccount = { screen = Screen.Login },
           loading = loading,
           accessibilityEnabled = accessibilityEnabled,
@@ -790,6 +806,7 @@ private fun EraseAIFirewallApp(
             scope.launch {
               authApi.logout()
               signedIn = false
+              guestTrial.setPaid(false)
               entitlement = null
               scanResult = null
               redactedText = null
@@ -912,7 +929,7 @@ private fun LoginScreen(
     if (guestTrialAvailable) {
       item {
         BrandPrimaryButton(
-          text = "Try free for ${GuestTrial.DAYS} days, no account",
+          text = "Try free: ${trialOfferText()}, no account",
           onClick = onTryWithoutAccount,
           enabled = !loading,
           icon = Icons.Default.Shield,
@@ -920,7 +937,7 @@ private fun LoginScreen(
       }
       item {
         Text(
-          "Checks run on this phone. Create an account any time to keep protection after ${GuestTrial.DAYS} days and add server scanning and history.",
+          "Checks run on this phone. After the trial, subscribe to EraseAI Personal to keep protection on.",
           style = MaterialTheme.typography.bodySmall,
           color = BrandMutedForeground,
         )
@@ -928,7 +945,7 @@ private fun LoginScreen(
       item { BrandSectionLabel("Or sign in") }
     } else if (guestTrialEnded) {
       item {
-        BrandErrorBanner("Your free trial without an account has ended. Create a free account or sign in to turn the firewall back on.")
+        BrandErrorBanner("Your free trial has ended. Sign in or create an account, then subscribe to EraseAI Personal to turn the firewall back on.")
       }
     }
     item { BrandField(email, { email = it }, "Email", singleLine = true) }
@@ -963,8 +980,9 @@ private fun LoginScreen(
 @Composable
 private fun DashboardScreen(
   entitlement: EntitlementState?,
-  /** Days left of the no-account trial; null when signed in, 0 once it has ended. */
-  guestDaysLeft: Int?,
+  /** The free trial; null for a paid plan. */
+  trial: TrialStatus?,
+  signedIn: Boolean,
   onCreateAccount: () -> Unit,
   loading: Boolean,
   accessibilityEnabled: Boolean,
@@ -990,7 +1008,7 @@ private fun DashboardScreen(
 ) {
   val serviceRunning = accessibilityStatus == GuardHealth.AccessibilityStatus.ACTIVE
   val serviceStalled = accessibilityStatus == GuardHealth.AccessibilityStatus.STALLED
-  val guestEnded = guestDaysLeft == 0
+  val guestEnded = trial?.ended == true
   val protectionActive = firewallEnabled && serviceRunning && protectedAppsCount > 0 && !guestEnded
   val canUseFirewall = entitlement?.androidFirewall != false && !guestEnded
   val canUseAccessibility = entitlement?.accessibilityFirewall != false
@@ -1018,8 +1036,8 @@ private fun DashboardScreen(
         title = if (protectionActive) "Protection active" else "Protection incomplete",
         body = when {
           guestEnded ->
-            "Your free trial without an account has ended, so EraseAI is not checking anything. " +
-              "Create a free account or sign in to turn it back on."
+            "Your free trial has ended, so EraseAI is not checking anything. " +
+              "Subscribe to EraseAI Personal to turn it back on."
           !accessibilityEnabled -> "Accessibility is off — EraseAI cannot intercept Send yet."
           serviceStalled ->
             "Accessibility is switched on, but Android stopped the EraseAI service, so nothing " +
@@ -1033,20 +1051,27 @@ private fun DashboardScreen(
         active = protectionActive,
       )
     }
-    if (guestDaysLeft != null && !guestEnded) {
+    if (trial != null && !guestEnded) {
       item {
         BrandCard {
+          val days = "${trial.daysLeft} ${if (trial.daysLeft == 1) "day" else "days"} left"
+          val sends = trial.sendsLeft?.let { " · $it ${if (it == 1) "message" else "messages"} left" }.orEmpty()
+          Text("Free trial · $days$sends", style = MaterialTheme.typography.titleMedium)
           Text(
-            "No account · $guestDaysLeft ${if (guestDaysLeft == 1) "day" else "days"} left",
-            style = MaterialTheme.typography.titleMedium,
-          )
-          Text(
-            "Protection runs on this phone. Create a free account to keep it after the trial, and add server scanning, attachment scanning and history.",
+            if (signedIn) {
+              "Subscribe to EraseAI Personal to keep protection on after the trial."
+            } else {
+              "Protection runs on this phone. To keep it after the trial, create an account and subscribe to EraseAI Personal."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = BrandMutedForeground,
           )
           Spacer(modifier = Modifier.height(8.dp))
-          BrandSecondaryButton("Create account or sign in", onCreateAccount)
+          if (signedIn) {
+            BrandSecondaryButton("Subscribe", onBilling)
+          } else {
+            BrandSecondaryButton("Create account or sign in", onCreateAccount)
+          }
         }
       }
     }
@@ -1067,14 +1092,14 @@ private fun DashboardScreen(
         "Apps" to protectedAppsCount.toString(),
         "Plan" to when {
           guestEnded -> "Trial ended"
-          guestDaysLeft != null -> "No account"
+          !signedIn -> "No account"
           else -> entitlement?.subscriptionLabel ?: if (loading) "Loading…" else "Unknown"
         },
       )
     }
     item {
       BrandStatRow(
-        "Scans" to if (guestDaysLeft != null) "On device" else scansUsed(entitlement),
+        "Scans" to if (!signedIn) "On device" else scansUsed(entitlement),
         "Mode" to if (keyboardSelected) "IME primary" else "Curtain fallback",
       )
     }
@@ -1132,6 +1157,11 @@ private fun DashboardScreen(
 
     item {
       when {
+        guestEnded && signedIn -> BrandPrimaryButton(
+          text = "Subscribe to EraseAI Personal",
+          onClick = onBilling,
+          icon = Icons.Default.Lock,
+        )
         guestEnded -> BrandPrimaryButton(
           text = "Create account or sign in",
           onClick = onCreateAccount,

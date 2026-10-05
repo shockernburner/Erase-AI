@@ -368,8 +368,13 @@ Complete [REAL_DEVICE_QA_MATRIX.md](./REAL_DEVICE_QA_MATRIX.md):
       with the server's `updated_at`, and take whichever is newer. App-only change;
       the server already stores the per-user list and `updated_at`. Guests are
       unaffected (no sync).
-- [ ] Decide the production no-account trial length (`GuestTrial.DAYS`, 21 days
-      for the closed test). Existing guests keep the length they started with.
+- [ ] **Switch the free trial to production values** in `gradle.properties`:
+      `freeDays=7` and `freeSends=25` (closed test: 21 / 0). Then build a new
+      release for production; do not promote the closed-test build, which
+      carries the closed-test values. Users who started on the old values keep
+      them.
+- [ ] Play Console: `eraseai_personal_monthly` and `eraseai_personal_annual`
+      active and priced to match the web (\$5 / \$54); Android offers Personal only.
 
 ### 9.2 Create production release
 

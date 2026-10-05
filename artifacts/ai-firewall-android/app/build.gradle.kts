@@ -28,13 +28,16 @@ android {
     applicationId = "com.eraseai.firewall"
     minSdk = 28
     targetSdk = 36
-    versionCode = 35
-    versionName = "1.0.7"
+    versionCode = 36
+    versionName = "1.0.8"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     buildConfigField("String", "API_BASE_URL", "\"https://eraseai.ai/api\"")
     buildConfigField("String", "WEB_BASE_URL", "\"https://eraseai.ai\"")
     buildConfigField("String", "PRIVACY_URL", "\"https://eraseai.ai/privacy\"")
+    // Free trial limits, set in gradle.properties (freeDays / freeSends; 0 sends = no limit).
+    buildConfigField("int", "FREE_DAYS", (project.findProperty("freeDays") ?: "21").toString())
+    buildConfigField("int", "FREE_SENDS", (project.findProperty("freeSends") ?: "0").toString())
     buildConfigField("String", "PLAY_MANAGE_URL", "\"https://play.google.com/store/account/subscriptions?package=com.eraseai.firewall\"")
   }
 
