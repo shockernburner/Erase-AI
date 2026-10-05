@@ -3,10 +3,13 @@
 // (which plans get blocked, which get unlimited, what the response shape
 // looks like at the cap) without booting Express + Postgres.
 
+// Developer API (/v1) requests a month. Must match the pricing pages
+// (eraseai src/lib/pricingPlans.ts): Developer 10,000, Team 100,000. The
+// Chrome extension's /api/dev routes are not capped by this (see dev.ts).
 export const PLAN_REQUEST_LIMITS = {
   personal: 200,
-  pro: 1000,
-  business: 10000,
+  pro: 10000,
+  business: 100000,
   enterprise: -1,
 };
 

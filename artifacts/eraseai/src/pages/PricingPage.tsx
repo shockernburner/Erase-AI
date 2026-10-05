@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import {
   AlertTriangle,
   ArrowLeft,
   Building2,
   Calendar,
-  Check,
   Crown,
   Loader2,
   Mail,
@@ -18,6 +17,8 @@ import {
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { PlanFeatureSections } from "@/components/PlanFeatureSections";
+import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor, type PricingTierId } from "@/lib/pricingPlans";
 
 interface PricingPageProps {
   onBack: () => void;
@@ -31,7 +32,8 @@ interface PlanDetails {
   planEndDate: string | null;
 }
 
-type TierId = "free" | "personal" | "pro" | "business" | "enterprise";
+type TierId = PricingTierId;
+
 
 const TIER_ORDER: TierId[] = ["free", "personal", "pro", "business", "enterprise"];
 
@@ -39,12 +41,6 @@ function tierIndex(id: TierId): number {
   return TIER_ORDER.indexOf(id);
 }
 
-// Must match the backend's annual pricing (billing-source.mjs `annualPrice`):
-// 12 months at a 10% discount, rounded. The figure shown here is informational;
-// Checkout always charges the Stripe price resolved server-side.
-function annualPriceFor(monthly: number): number {
-  return Math.round(monthly * 12 * 0.9);
-}
 
 export default function PricingPage({ onBack }: PricingPageProps) {
   const { user } = useAuth();
@@ -114,116 +110,21 @@ export default function PricingPage({ onBack }: PricingPageProps) {
 
   // TODO: Rename backend plan ids `pro` -> `developer` and `business` -> `team`
   // across billing, analytics, and stored plan metadata once a migration is planned.
-  const tiers = [
-    {
-      id: "free" as TierId,
-      name: "Free Trial",
-      monthlyPrice: 0,
-      icon: <Zap className="w-6 h-6" />,
-      description: "Try EraseAI for 7 days",
-      segment: "Experience the browser firewall catching real leaks before you commit.",
-      features: [
-        "7 days full access",
-        "25 free scans",
-        "Browser firewall",
-        "Basic PII detection",
-        "Manual redaction",
-        "No credit card required",
-      ],
-      cta: "Start Free Trial",
-      highlight: false,
-    },
-    {
-      id: "personal" as TierId,
-      name: "Personal",
-      monthlyPrice: 5,
-      icon: <Shield className="w-6 h-6" />,
-      description: "Individuals, freelancers, students, and consultants",
-      segment: "Protect personal AI chats and files before they leave your browser.",
-      features: [
-        "Browser firewall",
-        "ChatGPT, Claude, Gemini protection",
-        "PII, bank data, and API key detection",
-        "Auto-redaction",
-        "Local history",
-        "Basic risk score",
-      ],
-      cta: "Protect My AI Chats",
-      highlight: false,
-    },
-    {
-      id: "pro" as TierId,
-      name: "Developer",
-      monthlyPrice: 19,
-      icon: <Crown className="w-6 h-6" />,
-      description: "App builders and indie SaaS founders",
-      segment: "Add prompt scanning and AI firewall controls to your own product.",
-      features: [
-        "Everything in Personal",
-        "API access",
-        "10,000 scans/month",
-        "Input/output scanning",
-        "API key and token detection",
-        "Webhooks",
-        "Basic logs",
-        "SDK examples",
-      ],
-      cta: "Get API Key",
-      note: "$5 per extra 10,000 scans",
-      highlight: true,
-    },
-    {
-      id: "business" as TierId,
-      name: "Team",
-      monthlyPrice: 99,
-      icon: <Users className="w-6 h-6" />,
-      description: "Small companies",
-      segment: "Roll out shared AI protection across teams with admin controls.",
-      features: [
-        "10 seats",
-        "Browser firewall for team members",
-        "Shared policies",
-        "Admin dashboard",
-        "Audit logs",
-        "Export logs",
-        "100,000 scans/month",
-        "Priority support",
-      ],
-      cta: "Secure My Team",
-      note: "Extra seats: $8/user/month",
-      highlight: false,
-    },
-    {
-      id: "enterprise" as TierId,
-      name: "Enterprise",
-      monthlyPrice: -1,
-      icon: <Building2 className="w-6 h-6" />,
-      description: "Banks, law firms, healthcare, government, and large companies",
-      segment: "For private deployment, security requirements, and governance workflows.",
-      features: [
-        "SSO",
-        "Custom policies",
-        "Private deployment option",
-        "Compliance reporting",
-        "Dataset governance",
-        "Machine unlearning module",
-        "Dedicated support",
-        "SLA",
-        "On-prem / VPC option",
-      ],
-      cta: "Book Demo",
-      highlight: false,
-    },
-  ];
+  //
+  // Who pays decides the plan: Personal and Developer are paid by one person for
+  // themselves. When an organization pays (Team or Enterprise), its members are
+  // organization users and get Enterprise-level protection, never "Personal".
+  // `soon` marks features not built yet, so the page never sells what does not exist.
+  const tierIcons: Record<TierId, ReactNode> = {
+    free: <Zap className="w-6 h-6" />,
+    personal: <Shield className="w-6 h-6" />,
+    pro: <Crown className="w-6 h-6" />,
+    business: <Users className="w-6 h-6" />,
+    enterprise: <Building2 className="w-6 h-6" />,
+  };
+  const tiers = PRICING_TIERS.map((tier) => ({ ...tier, icon: tierIcons[tier.id] }));
 
-  const comparisonRows = [
-    ["Browser firewall", "Yes", "Yes", "Yes", "Yes", "Yes"],
-    ["Monthly scans", "25", "Unlimited personal use", "10,000", "100,000", "Custom"],
-    ["API access", "No", "No", "Yes", "Yes", "Yes"],
-    ["Team policies", "No", "No", "No", "Yes", "Yes"],
-    ["Audit logs", "No", "No", "Basic", "Yes", "Advanced"],
-    ["Enterprise deployment", "No", "No", "No", "No", "Yes"],
-  ];
+  const comparisonRows = PRICING_COMPARISON;
 
   return (
     <div className="min-h-screen w-full relative">
@@ -259,7 +160,7 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground">Pricing for AI firewall protection</h2>
             <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-              EraseAI stops sensitive data from leaking into AI tools. Choose the browser firewall, API, or enterprise controls that match your rollout stage.
+              EraseAI stops sensitive data from leaking into AI tools. Who pays decides your plan: Personal and Developer are for people paying for themselves; when your organization pays, you are on Team or Enterprise.
             </p>
           </div>
         </motion.div>
@@ -312,8 +213,8 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   <h3 className="text-xl font-bold text-foreground">{tier.name}</h3>
                 </div>
 
-                <p className="mb-2 text-xs font-medium text-primary/80">{tier.description}</p>
-                <p className="mb-4 text-sm text-muted-foreground">{tier.segment}</p>
+                <p className="mb-1 text-xs font-medium text-primary/80">{tier.description}</p>
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tier.paidBy}</p>
 
                 <div className="mb-6">
                   {tier.monthlyPrice === 0 && (
@@ -341,21 +242,12 @@ export default function PricingPage({ onBack }: PricingPageProps) {
                   )}
                   {tier.monthlyPrice < 0 && (
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-foreground">Custom</span>
+                      <span className="text-2xl font-bold text-foreground">Contact us for pricing</span>
                     </div>
                   )}
                 </div>
 
-                <ul className="mb-8 flex-1 space-y-3">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm">
-                      <Check className={`mt-0.5 h-4 w-4 shrink-0 ${tier.highlight ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className="text-foreground/90">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {tier.note && <p className="mb-4 text-xs font-semibold text-primary">{tier.note}</p>}
+                <PlanFeatureSections tier={tier} className="mb-8 flex-1" checkClassName={tier.highlight ? "text-primary" : "text-muted-foreground"} />
 
                 {isCurrentPlan ? (
                   <div className="w-full rounded-xl border border-border/30 bg-muted/30 py-3 text-center text-sm font-semibold text-muted-foreground">
@@ -482,9 +374,9 @@ export default function PricingPage({ onBack }: PricingPageProps) {
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(event) => event.stopPropagation()} className="mx-4 w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-2xl">
               <div className="mb-4 flex items-center gap-3">
                 <Building2 className="w-6 h-6 text-primary" />
-                <h3 className="text-xl font-bold text-foreground">Book Demo</h3>
+                <h3 className="text-xl font-bold text-foreground">Enterprise pricing</h3>
               </div>
-              <p className="mb-6 text-sm text-muted-foreground">Talk to the EraseAI team about private deployment, governance, audit workflows, and enterprise rollout requirements.</p>
+              <p className="mb-6 text-sm text-muted-foreground">Enterprise is priced for your organization: number of people, rollout, security and support needs. Contact the EraseAI team for a quote.</p>
               <div className="mb-6 space-y-3">
                 <a href="mailto:director@vantward.com" className="flex items-center gap-3 rounded-xl border border-border/30 bg-muted/20 p-4 transition-colors hover:bg-muted/30">
                   <Mail className="h-5 w-5 shrink-0 text-primary" />

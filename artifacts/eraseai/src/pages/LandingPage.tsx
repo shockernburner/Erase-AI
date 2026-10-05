@@ -21,6 +21,7 @@ import {
   Crown,
   MessageCircle,
   Mail,
+  Users,
 } from "lucide-react";
 
 type AppView = "home" | "pricing" | "checkout-success" | "admin" | "developer" | "analytics" | "personal" | "social" | "docs" | "devMode" | "certifications" | "firewallDocs";
@@ -374,18 +375,18 @@ export default function LandingPage({
       </SectionWrapper>
 
       <SectionWrapper>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h3 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4 text-center">
             {t("landing.pricingTitle")}
           </h3>
           <p className="text-muted-foreground mb-12 text-center">{t("landing.pricingSubtitle")}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
             {[
               {
                 key: "free",
                 price: "$0",
                 icon: Zap,
-                features: ["pricingFreeF1", "pricingFreeF2"],
+                features: ["pricingFreeF1", "pricingFreeF2", "pricingFreeF3"],
                 highlight: false,
               },
               {
@@ -397,9 +398,16 @@ export default function LandingPage({
               },
               {
                 key: "pro",
-                price: "$20",
+                price: "$19",
                 icon: Crown,
                 features: ["pricingProF1", "pricingProF2", "pricingProF3"],
+                highlight: false,
+              },
+              {
+                key: "business",
+                price: "$99",
+                icon: Users,
+                features: ["pricingBusinessF1", "pricingBusinessF2", "pricingBusinessF3"],
                 highlight: false,
               },
               {
@@ -417,6 +425,9 @@ export default function LandingPage({
               >
                 <Icon className={`w-7 h-7 ${highlight ? "text-primary" : "text-muted-foreground"} mb-3`} />
                 <h4 className="text-lg font-bold text-foreground mb-1">{t(`landing.pricingTier${key.charAt(0).toUpperCase() + key.slice(1)}`)}</h4>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  {t(`landing.pricingPaidBy${key.charAt(0).toUpperCase() + key.slice(1)}`)}
+                </p>
                 <div className="text-2xl font-extrabold text-foreground mb-1">
                   {price ? (
                     <>

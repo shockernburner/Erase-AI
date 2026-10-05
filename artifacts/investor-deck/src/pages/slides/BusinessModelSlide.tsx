@@ -11,28 +11,28 @@ export default function BusinessModelSlide() {
           <span className="font-mono text-[1vw] text-muted">08 / 13</span>
         </div>
         <h2 className="mt-[4.5vh] max-w-[70vw] font-display text-[4.2vw] leading-[1.02] font-bold tracking-tight text-text" style={{ textWrap: "balance" }}>
-          Land free. Monetize Team. Expand Enterprise.
+          Land free. Individuals pay for themselves. Organizations pay for everyone.
         </h2>
         <div className="mt-[5.5vh] grid grid-cols-4 gap-[1.8vw]">
           <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[1.8vw] flex flex-col">
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.2em] text-muted">Trial / Free</span>
             <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">$0</p>
-            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">7-day trial · browser + Android firewall wedge.</p>
+            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">Chrome checks free, no account · Android trial.</p>
           </div>
           <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[1.8vw] flex flex-col">
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.2em] text-muted">Personal</span>
             <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">$5<span className="text-[1.2vw] text-muted font-normal">/mo</span></p>
-            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">Acquisition seat · full individual protection.</p>
+            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">Paid by the individual · one-click Sanitize, attachments, Android.</p>
           </div>
           <div className="rounded-[1vw] bg-primary/10 border border-primary/40 p-[1.8vw] flex flex-col">
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.2em] text-primary">Team</span>
             <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">$99<span className="text-[1.2vw] text-muted font-normal">/mo</span></p>
-            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-text/90">Primary revenue · 10 seats, shared policy, admin.</p>
+            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-text/90">Paid by the organization · up to 10 people get Enterprise-level protection.</p>
           </div>
           <div className="rounded-[1vw] bg-white/[0.03] border border-white/10 p-[1.8vw] flex flex-col">
             <span className="font-mono text-[1.05vw] uppercase tracking-[0.2em] text-muted">Enterprise</span>
-            <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">Custom</p>
-            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">SSO · audit · SIEM · private / VPC.</p>
+            <p className="mt-[1.8vh] font-display text-[2.4vw] font-bold text-text leading-none">Contact us</p>
+            <p className="mt-[2vh] font-body text-[1.25vw] leading-snug text-muted">Paid by the organization · managed rollout, SSO, audit, private / VPC.</p>
           </div>
         </div>
         <div className="mt-[4vh] flex items-center gap-[2.5vw]">
@@ -45,7 +45,7 @@ export default function BusinessModelSlide() {
           </p>
         </div>
         <p className="mt-[3vh] max-w-[72vw] font-body text-[1.45vw] leading-snug text-text/90">
-          Bottom-up install converts into Team seats; Enterprise is the upsell once policy and audit matter.
+          Free installs spread bottom-up; when an organization pays, its people move to Team, then Enterprise once policy and audit matter.
         </p>
       </div>
     </div>

@@ -23,6 +23,8 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { PlanFeatureSections } from "@/components/PlanFeatureSections";
+import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor } from "@/lib/pricingPlans";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
 import { useSeoMeta } from "@/pages/seo/useSeoMeta";
@@ -116,7 +118,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     {
       title: "Enterprise Control Center",
       description: "For organizations needing policies, audit logs, team controls, and compliance.",
-      cta: "Book Demo",
+      cta: "Contact us for pricing",
       icon: <Building2 className="w-6 h-6" />,
       action: () => {
         window.location.href = `${baseUrl}contact`;
@@ -124,106 +126,18 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
     },
   ];
 
-  const pricingPlans = [
-    {
-      name: "Free Trial",
-      price: "$0",
-      audience: "Best for: Trying EraseAI for 7 days",
-      features: [
-        "7 days full access",
-        "25 free scans",
-        "Browser firewall",
-        "Basic PII detection",
-        "Manual redaction",
-        "No credit card required",
-      ],
-      cta: "Start Free Trial",
-      action: () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" }),
-    },
-    {
-      name: "Personal",
-      price: "$5/month",
-      audience: "Best for: Individuals, freelancers, students, and consultants",
-      features: [
-        "Browser firewall",
-        "ChatGPT, Claude, Gemini protection",
-        "PII, bank data, and API key detection",
-        "Auto-redaction",
-        "Local history",
-        "Basic risk score",
-      ],
-      cta: "Protect My AI Chats",
-      action: () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" }),
-    },
-    {
-      name: "Developer",
-      price: "$19/month",
-      audience: "Best for: App builders and indie SaaS founders",
-      features: [
-        "Everything in Personal",
-        "API access",
-        "10,000 scans/month",
-        "Input/output scanning",
-        "API key and token detection",
-        "Webhooks",
-        "Basic logs",
-        "SDK examples",
-      ],
-      cta: "Get API Key",
-      action: () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" }),
-      note: "$5 per extra 10,000 scans",
-      highlight: true,
-    },
-    {
-      name: "Team",
-      price: "$99/month",
-      audience: "Best for: Small companies",
-      features: [
-        "10 seats",
-        "Browser firewall for team members",
-        "Shared policies",
-        "Admin dashboard",
-        "Audit logs",
-        "Export logs",
-        "100,000 scans/month",
-        "Priority support",
-      ],
-      cta: "Secure My Team",
-      action: () => {
-        window.location.href = `${baseUrl}contact`;
-      },
-      note: "Extra seats: $8/user/month",
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      audience: "Best for: Banks, law firms, healthcare, government, and large companies",
-      features: [
-        "SSO",
-        "Custom policies",
-        "Private deployment option",
-        "Compliance reporting",
-        "Dataset governance",
-        "Machine unlearning module",
-        "Dedicated support",
-        "SLA",
-        "On-prem / VPC option",
-      ],
-      cta: "Book Demo",
-      action: () => {
-        window.location.href = `${baseUrl}contact`;
-      },
-    },
-  ];
-
-  const comparisonRows = [
-    ["Browser firewall", "Yes", "Yes", "Yes", "Yes", "Yes"],
-    ["Monthly scans", "25", "Unlimited personal use", "10,000", "100,000", "Custom"],
-    ["API access", "No", "No", "Yes", "Yes", "Yes"],
-    ["Team policies", "No", "No", "No", "Yes", "Yes"],
-    ["Audit logs", "No", "No", "Basic", "Yes", "Advanced"],
-    ["Enterprise deployment", "No", "No", "No", "No", "Yes"],
-  ];
+  const contactSales = () => {
+    window.location.href = `${baseUrl}contact`;
+  };
+  const scrollToSignUp = () => document.getElementById("auth-section")?.scrollIntoView({ behavior: "smooth" });
+  const pricingPlans = PRICING_TIERS.map((tier) => ({
+    ...tier,
+    price:
+      tier.monthlyPrice < 0 ? "Contact us for pricing" : tier.monthlyPrice === 0 ? "$0" : `$${tier.monthlyPrice}/month`,
+    // Organizations (Team, Enterprise) talk to us first; individuals sign up.
+    action: tier.id === "business" || tier.id === "enterprise" ? contactSales : scrollToSignUp,
+  }));
+  const comparisonRows = PRICING_COMPARISON;
 
   const faqs = [
     {
@@ -491,30 +405,26 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
             <div className="mb-8 max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">Pricing</p>
               <h2 className="mt-3 text-3xl font-display font-bold text-foreground">Simple pricing for AI firewall protection.</h2>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">Keep the homepage focused on what buyers need to understand first: who it is for, what it protects, and how to get started.</p>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">Free to start. Personal and Developer are for people paying for themselves. When your organization pays, everyone on Team or Enterprise gets Enterprise-level protection.</p>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-5">
               {pricingPlans.map((plan) => (
                 <div
-                  key={plan.name}
+                  key={plan.id}
                   className={`flex h-full flex-col rounded-3xl border p-6 ${plan.highlight ? "border-primary/40 bg-primary/5 shadow-[0_0_35px_rgba(6,182,212,0.12)]" : "border-border/40 bg-card/50"}`}
                 >
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <h3 className="text-xl font-semibold text-foreground">{plan.name}</h3>
                     {plan.highlight && <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">Popular</span>}
                   </div>
-                  <p className="text-3xl font-display font-bold text-foreground">{plan.price}</p>
-                  <p className="mt-2 text-sm font-medium text-primary">{plan.audience}</p>
-                  <ul className="mt-5 flex-1 space-y-3 text-sm text-muted-foreground">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {plan.note && <p className="mt-5 text-xs font-medium text-primary">{plan.note}</p>}
+                  <p className={`font-display font-bold text-foreground ${plan.monthlyPrice < 0 ? "text-2xl" : "text-3xl"}`}>{plan.price}</p>
+                  {plan.monthlyPrice > 0 && (
+                    <p className="mt-1 text-xs text-muted-foreground">or ${annualPriceFor(plan.monthlyPrice)}/year (save 10%)</p>
+                  )}
+                  <p className="mt-2 text-sm font-medium text-primary">{plan.description}</p>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{plan.paidBy}</p>
+                  <PlanFeatureSections tier={plan} className="mt-5 flex-1" />
                   <button
                     onClick={plan.action}
                     className={`mt-6 rounded-full px-5 py-3 text-sm font-bold transition-all ${plan.highlight ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border/50 bg-card/60 text-foreground hover:bg-card"}`}
@@ -618,7 +528,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                   }}
                   className="mt-6 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90"
                 >
-                  Book Demo
+                  Contact us for pricing
                 </button>
               </div>
             </div>

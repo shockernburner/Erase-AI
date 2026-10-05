@@ -15,7 +15,7 @@ export default function BusinessModelSlide() {
         </div>
 
         <h2 className="font-display font-bold text-text text-[4.4vw] leading-tight mb-[6vh] max-w-[68vw]">
-          从个人切入，向企业扩张
+          个人自己付费，组织为所有人付费
         </h2>
 
         <div className="grid grid-cols-4 gap-[2vw] flex-1 items-stretch">
@@ -29,7 +29,7 @@ export default function BusinessModelSlide() {
               </p>
             </div>
             <p className="text-muted text-[1.45vw] leading-relaxed">
-              面向每位用户的核心防火墙。
+              Chrome 本机检查免费，无需账户；Android 试用。
             </p>
           </div>
           <div className="flex flex-col justify-between bg-panel/40 border border-line rounded-[0.8vw] p-[2vw]">
@@ -42,20 +42,20 @@ export default function BusinessModelSlide() {
               </p>
             </div>
             <p className="text-muted text-[1.45vw] leading-relaxed">
-              单用户的完整保护。
+              个人付费：一键清理、附件检查、Android 保护。
             </p>
           </div>
           <div className="flex flex-col justify-between bg-primary/10 border-2 border-accent rounded-[0.8vw] p-[2vw]">
             <div>
               <p className="text-accent text-[1.6vw] font-bold mb-[1vh]">
-                专业版
+                团队版
               </p>
               <p className="font-mono font-bold text-accent text-[3.2vw] leading-none mb-[2.5vh]">
-                $20<span className="text-[1.6vw] text-muted">/月</span>
+                $99<span className="text-[1.6vw] text-muted">/月</span>
               </p>
             </div>
             <p className="text-muted text-[1.45vw] leading-relaxed">
-              高级检测与策略。
+              组织付费：最多 10 人享受企业级保护。
             </p>
           </div>
           <div className="flex flex-col justify-between bg-panel/40 border border-line rounded-[0.8vw] p-[2vw]">
@@ -64,19 +64,19 @@ export default function BusinessModelSlide() {
                 企业版
               </p>
               <p className="font-mono font-bold text-text text-[3.2vw] leading-none mb-[2.5vh]">
-                定制
+                联系我们
               </p>
             </div>
             <p className="text-muted text-[1.45vw] leading-relaxed">
-              SAML 单点登录、审计日志、管理控制台。
+              组织付费：集中部署、SAML 单点登录、审计、私有部署。
             </p>
           </div>
         </div>
 
         <div className="border-t border-line pt-[3vh] mt-[3vh]">
           <p className="text-text text-[1.9vw] leading-snug">
-            通过浏览器扩展<span className="text-accent">自下而上</span>
-            普及，转化为团队与企业席位。
+            通过免费浏览器扩展<span className="text-accent">自下而上</span>
+            普及；组织付费后，成员升级为团队版与企业版。开发者 API：$19/月。
           </p>
         </div>
       </div>
