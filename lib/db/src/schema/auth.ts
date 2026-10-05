@@ -165,3 +165,19 @@ export const pageVisitsTable = pgTable("page_visits", {
 }, (table) => [
   index("idx_page_visits_created_at").on(table.createdAt),
 ]);
+
+// One-time password reset links. Only the sha256 of the token is stored; the
+// raw token lives in the emailed link. Mirrored by idempotent SQL in
+// artifacts/api-server/src/migrations.ts.
+export const passwordResetTokensTable = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_password_reset_tokens_user_created").on(table.userId, table.createdAt),
+]);
+
+export type PasswordResetToken = typeof passwordResetTokensTable.$inferSelect;

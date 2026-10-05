@@ -354,6 +354,29 @@ async function ensureOrganizationTables() {
   }
 }
 
+async function ensurePasswordResetTokensTable() {
+  // One-time password reset links (sha256 of the token only). Idempotent.
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash VARCHAR(64) NOT NULL UNIQUE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_created
+        ON password_reset_tokens(user_id, created_at)
+    `);
+    logger.info("Startup migration: password_reset_tokens table ensured");
+  } catch (err) {
+    logger.warn({ err }, "Startup migration: password_reset_tokens table warning (non-fatal)");
+  }
+}
+
 export async function runStartupMigrations() {
   await ensureApiKeysTable();
   await ensureApiUsageTable();
@@ -370,6 +393,7 @@ export async function runStartupMigrations() {
   await ensureContactInquiriesTable();
   await ensureExtensionUninstallFeedbackTable();
   await ensureOrganizationTables();
+  await ensurePasswordResetTokensTable();
   await ensureDemoUser();
 }
 

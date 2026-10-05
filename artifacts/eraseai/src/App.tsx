@@ -36,6 +36,7 @@ import DeleteProfilePage from "@/pages/DeleteProfilePage";
 import StatusPage from "@/pages/StatusPage";
 import OrganizationPage from "@/pages/OrganizationPage";
 import JoinOrganization from "@/pages/JoinOrganization";
+import ResetPassword from "@/pages/ResetPassword";
 import { capturePendingInvite } from "@/lib/orgInvite";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
 import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
@@ -526,6 +527,7 @@ function App() {
                 <DeleteProfilePage onBack={() => window.history.back()} />
               </Route>
               <Route path="/status" component={StatusPage} />
+              <Route path="/reset-password" component={ResetPassword} />
               {/* Task #158 — explicit deep-link routes for the public-visitor
                    preview pages. These render BEFORE the catch-all so that
                    /personal, /developer, /dev, /dataset-sanitizer, /enterprise,

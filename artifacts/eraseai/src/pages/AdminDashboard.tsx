@@ -481,6 +481,17 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
     fetchAll(usersPage, fbPage);
   };
 
+  const handleResetLink = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/reset-link`, { method: "POST", credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      window.prompt(`Send this to ${data.email}. It works once and expires in ${data.expiresInMinutes} minutes.`, data.url);
+    } catch (err) {
+      window.alert((err as Error).message);
+    }
+  };
+
   const handleUpdateUser = async (userId: string, updates: { planType?: string; subscriptionStatus?: string | null }) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
@@ -756,7 +767,18 @@ export default function AdminDashboard({ onBack }: { onBack: () => void }) {
                             <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-bold">{t("admin.adminBadge")}</span>
                           )}
                         </td>
-                        <td className="py-3 text-muted-foreground">{u.email || "—"}</td>
+                        <td className="py-3 text-muted-foreground">
+                          {u.email || "—"}
+                          {u.email && u.authProvider !== "system" && (
+                            <button
+                              className="ml-2 text-[11px] text-primary/80 hover:underline"
+                              title="Make a one-time password reset link to send this person"
+                              onClick={() => handleResetLink(u.id)}
+                            >
+                              reset link
+                            </button>
+                          )}
+                        </td>
                         <td className="py-3 text-muted-foreground capitalize">{u.authProvider}</td>
                         <td className="py-3"><PlanSelector user={u} onUpdate={handleUpdateUser} /></td>
                         <td className="py-3">

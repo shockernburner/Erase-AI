@@ -8,7 +8,8 @@ import { Button } from "@/components/ui-elements";
 export default function AuthForm() {
   const { t } = useTranslation();
   const { login, signup } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -48,6 +49,29 @@ export default function AuthForm() {
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || t("login.genericError"));
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      setError(t("login.genericError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = () => {
     window.location.href = "/api/auth/google";
   };
@@ -55,6 +79,57 @@ export default function AuthForm() {
   const handleAppleLogin = () => {
     window.location.href = "/api/auth/apple";
   };
+
+  if (mode === "forgot") {
+    return (
+      <div className="bg-card/50 backdrop-blur-md border border-border/50 rounded-2xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">{t("login.forgotTitle", { defaultValue: "Reset your password" })}</h2>
+        {resetSent ? (
+          <p className="text-sm text-muted-foreground">
+            {t("login.forgotSent", {
+              defaultValue: "If an account exists for {{email}}, we've emailed a link to reset the password. It expires in 30 minutes. Check your spam folder if it doesn't arrive.",
+              email,
+            })}
+          </p>
+        ) : (
+          <form onSubmit={handleForgot} className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {t("login.forgotHint", { defaultValue: "Enter your account's email and we'll send you a link to choose a new password." })}
+            </p>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="email"
+                placeholder={t("login.email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full pl-10 pr-3 py-2.5 bg-muted/20 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
+              />
+            </div>
+            {error && (
+              <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">{error}</p>
+            )}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full gap-2 bg-gradient-to-r from-primary to-cyan-400 text-black font-bold hover:from-primary/90 hover:to-cyan-400/90 py-3"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t("login.forgotSend", { defaultValue: "Send reset link" })}
+            </Button>
+          </form>
+        )}
+        <button
+          type="button"
+          onClick={() => { setMode("login"); setError(null); setResetSent(false); }}
+          className="text-sm text-primary hover:underline"
+        >
+          {t("login.backToLogin", { defaultValue: "Back to log in" })}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card/50 backdrop-blur-md border border-border/50 rounded-2xl p-6 space-y-5">
@@ -151,6 +226,18 @@ export default function AuthForm() {
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
         </div>
+
+        {mode === "login" && (
+          <div className="flex justify-end -mt-1">
+            <button
+              type="button"
+              onClick={() => { setMode("forgot"); setError(null); }}
+              className="text-xs text-primary/90 hover:underline"
+            >
+              {t("login.forgotLink", { defaultValue: "Forgot password?" })}
+            </button>
+          </div>
+        )}
 
         {error && (
           <motion.p
