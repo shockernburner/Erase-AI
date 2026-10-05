@@ -208,7 +208,7 @@ function runDiagnosis() {
       const safe = response || { state: "server_unreachable", error: "No response" };
       renderDiagnosis(safe);
       // The connection test also refreshes the stored plan.
-      if (typeof renderAllowance === "function") renderAllowance();
+      if (typeof renderPlan === "function") renderPlan();
       resolve(safe);
     });
   });
@@ -385,32 +385,29 @@ function wireReviewUi() {
   });
 }
 
-// Plan card: free checks left, or the paid plan.
-function renderAllowance() {
+// Plan card: what the free tier does, or the paid plan.
+function renderPlan() {
   const status = document.getElementById("plan-status");
   const button = document.getElementById("subscribe-btn");
   if (!status || !button) return;
-  chrome.runtime.sendMessage({ type: "GET_ALLOWANCE" }, (a) => {
-    if (chrome.runtime.lastError || !a) {
+  chrome.runtime.sendMessage({ type: "GET_PLAN" }, (p) => {
+    if (chrome.runtime.lastError || !p) {
       status.textContent = "";
       return;
     }
-    if (a.paid) {
-      status.textContent = "EraseAI Personal: unlimited checks.";
+    if (p.paid) {
+      status.textContent = "EraseAI Personal: one-click Sanitize, attachment scanning and the Android app are on.";
       button.style.display = "none";
       return;
     }
-    const left = Math.max(0, a.limit - a.used);
-    status.textContent = a.paused
-      ? `Your ${a.limit} free checks are used up, so messages are not being checked.`
-      : `Free: ${left} of ${a.limit} checks left.`;
-    button.href = a.subscribeUrl;
+    status.textContent = "Free: every message is checked on this device. EraseAI Personal adds one-click Sanitize & Send, attachment and screenshot scanning, history and the Android app.";
+    button.href = p.subscribeUrl;
     button.target = "_blank";
     button.rel = "noopener noreferrer";
     button.style.display = "block";
   });
 }
-renderAllowance();
+renderPlan();
 
 saveKeyBtn.addEventListener("click", async () => {
   const key = apiKeyInput.value.trim();

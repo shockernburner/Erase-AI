@@ -172,6 +172,10 @@
   let platform = null;
   let isIntercepting = false;
   let bypassNext = false;
+  // Set from the background before each check. Free: every prompt is checked and warned
+  // about. Personal adds one-click Sanitize and attachment scanning.
+  let planPaid = false;
+  let subscribeUrl = "https://eraseai.ai/pricing?plan=personal&utm_source=extension";
   let listenersAttached = false;
   let observer = null;
   // Module-scoped so removeOverlay() can cancel it when the overlay is
@@ -1165,8 +1169,9 @@
           || p.partialNotice
         ));
     const showSanitize = promptIsProblem;
-    const sanitizeLabel = hasFileBlocker
-      ? "Sanitize Prompt" : "Sanitize &amp; Send";
+    const sanitizeLabel = !planPaid
+      ? "Sanitize &amp; Send · Personal"
+      : hasFileBlocker ? "Sanitize Prompt" : "Sanitize &amp; Send";
 
     panel.innerHTML = `
       <div class="eraseai-header">
@@ -1227,6 +1232,11 @@
 
     const sanitizeBtn = panel.querySelector("#eraseai-sanitize");
     if (sanitizeBtn) sanitizeBtn.addEventListener("click", () => {
+      if (!planPaid) {
+        // One-click Sanitize is a Personal feature: open the plan; the panel stays up.
+        window.open(subscribeUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
       const btn = panel.querySelector("#eraseai-sanitize");
       btn.disabled = true;
       btn.textContent = "Sanitizing...";
@@ -1573,6 +1583,14 @@
         sizeBytes: (f && f.size) || 0,
         skipReason: null,
       }));
+
+      // Pass 0: attachment scanning is a Personal feature. Free users see each file listed
+      // as not scanned and decide for themselves, rather than it going out silently.
+      if (!planPaid) {
+        for (const p of planned) {
+          p.skipReason = "not scanned — attachment scanning is part of EraseAI Personal, review manually";
+        }
+      }
 
       // Pass 1: file-count ceiling.
       for (let i = MAX_ATTACHED_FILES; i < planned.length; i += 1) {
@@ -1961,14 +1979,8 @@
           triggerSend();
           return;
         }
-        if (check && check.paused) {
-          // Free checks used up: never hold the user's message hostage.
-          showFreeLimitNotice(check);
-          isIntercepting = false;
-          bypassNext = true;
-          triggerSend();
-          return;
-        }
+        planPaid = Boolean(check && check.paid);
+        if (check && check.subscribeUrl) subscribeUrl = check.subscribeUrl;
 
         const { panel } = createOverlayBackdrop();
         const attemptId = newAttemptId();
@@ -1982,41 +1994,6 @@
         });
       });
     });
-  }
-
-  let freeLimitNoticeShown = false;
-
-  // One notice per page load: the send still goes out, unchecked.
-  function showFreeLimitNotice(check) {
-    if (freeLimitNoticeShown || !document.body) return;
-    freeLimitNoticeShown = true;
-    const box = document.createElement("div");
-    box.id = "eraseai-free-limit";
-    box.setAttribute("role", "status");
-    box.style.cssText = [
-      "position:fixed", "left:50%", "bottom:24px", "transform:translateX(-50%)",
-      "z-index:2147483647", "max-width:520px", "padding:14px 16px", "border-radius:12px",
-      "background:#0b1020", "color:#f8fafc", "font:14px/1.45 system-ui,sans-serif",
-      "box-shadow:0 10px 30px rgba(0,0,0,.35)", "display:flex", "gap:12px", "align-items:center",
-    ].join(";");
-    const text = document.createElement("div");
-    text.textContent = `You've used your ${check.limit || 25} free EraseAI checks, so this message was not checked. ` +
-      "Subscribe to EraseAI Personal to keep protection on.";
-    const link = document.createElement("a");
-    link.textContent = "Subscribe";
-    link.href = check.subscribeUrl || "https://eraseai.ai/pricing";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.style.cssText = "background:#38bdf8;color:#0b1020;padding:8px 12px;border-radius:8px;font-weight:600;text-decoration:none;white-space:nowrap";
-    const close = document.createElement("button");
-    close.type = "button";
-    close.textContent = "×";
-    close.setAttribute("aria-label", "Dismiss");
-    close.style.cssText = "background:none;border:0;color:#94a3b8;font-size:20px;cursor:pointer";
-    close.addEventListener("click", () => box.remove());
-    box.append(text, link, close);
-    document.body.appendChild(box);
-    setTimeout(() => box.remove(), 20000);
   }
 
   function handleKeyDown(e) {

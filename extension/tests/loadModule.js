@@ -44,7 +44,7 @@ export function loadBackgroundModule({ chrome, fetch }) {
   };
   vm.runInContext(src, sandbox, { filename: "background.js" });
   return vm.runInContext(
-    "({ getConfig, analyzePrompt, sanitizePrompt, testConnection, reportOutcome, handleInstalled, trackOutcomeForReview, loadGrowth, beginCheck, allowanceSummary })",
+    "({ getConfig, analyzePrompt, sanitizePrompt, testConnection, reportOutcome, handleInstalled, trackOutcomeForReview, loadGrowth, beginCheck, planSummary })",
     sandbox,
   );
 }

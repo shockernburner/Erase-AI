@@ -64,7 +64,7 @@ function makeChromeStub({ enabled = true, apiKey = "eak_test", reply, delayMs = 
         return port;
       }),
       sendMessage: vi.fn((msg, cb) => {
-        if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+        if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
         if (msg.type === "GET_CONFIG") { queueMicrotask(() => cb({ apiKey, enabled })); return; }
         if (msg.type === "OUTCOME") { if (cb) queueMicrotask(() => cb({ ok: true })); return; }
         if (cb) queueMicrotask(() => cb({}));

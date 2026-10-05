@@ -4,10 +4,10 @@
       "version": "1.5.0",
       "date": "2026-10-05",
       "changes": [
-        "Fixed: without an API key the extension let every message through unchecked. It now checks on this device, as the store listing says",
-        "Free use is 25 checks in total (one per message sent, however many files are attached). After that EraseAI stops checking and shows a one-time notice with a Subscribe link; your message is never held back",
-        "EraseAI Personal (monthly or annual, subscribed on eraseai.ai) is unlimited. Connect your account's API key in the popup and the free count no longer applies",
-        "The popup shows how many free checks are left, or that your plan is unlimited"
+        "Fixed: without an API key the extension let every message through unchecked. It now checks every message on this device, as the store listing says",
+        "Free, with no limit and no account: every message is checked on this device, and you see what was found with Cancel or Send Anyway",
+        "EraseAI Personal ($5 a month or $54 a year, on eraseai.ai) adds one-click Sanitize & Send, attachment and screenshot scanning, history and the EraseAI app for Android. On the free plan, Sanitize opens the Personal plan, and attached files are listed as not scanned so you can decide",
+        "The popup shows your plan and what Personal adds"
       ]
     },
     {

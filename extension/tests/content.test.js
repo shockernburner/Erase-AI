@@ -80,7 +80,7 @@ function makeFakePort({ onPosted } = {}) {
 function makeChromeStub({
   enabled = true,
   apiKey = "eak_test",
-  checkResult = { allowed: true },
+  checkResult = { allowed: true, paid: true },
   analyzeResult = { riskScore: 100, level: "safe", issues: [], suggestions: [], summary: "All clear" },
   sanitizeResult = null,
   outcomes = [],
@@ -583,7 +583,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
-            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -705,7 +705,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return savedPort;
           }),
           sendMessage: vi.fn((msg, cb) => {
-            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -790,7 +790,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
           // to its terminal error state.
           connect: vi.fn(() => makeFakePort()),
           sendMessage: vi.fn((msg, cb) => {
-            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -978,7 +978,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
-            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -1080,7 +1080,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
-            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -1246,7 +1246,7 @@ describe("content.js — always-show panel + auto-dismiss confirmation (task #11
             return port;
           }),
           sendMessage: vi.fn((msg, cb) => {
-            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true })); return; }
+            if (msg.type === "BEGIN_CHECK") { queueMicrotask(() => cb({ allowed: true, paid: true })); return; }
             if (msg.type === "GET_CONFIG") {
               queueMicrotask(() =>
                 cb({ apiKey: "eak_test", enabled: true, apiUrl: "https://eraseai.ai" }),
@@ -1466,30 +1466,37 @@ describe("content.js — free checks and no-account checking", () => {
     expect(document.getElementById("eraseai-overlay-panel")).not.toBeNull();
   });
 
-  it("lets the message through unchecked with a subscribe notice once free checks are used up", async () => {
+  it("free plan: Sanitize opens Personal instead of sanitizing, and the panel stays up", async () => {
     const ports = [];
     const chromeStub = makeChromeStub({
       ports,
-      checkResult: { paused: true, used: 25, limit: 25, subscribeUrl: "https://eraseai.ai/pricing?plan=personal" },
+      checkResult: { allowed: true, paid: false, subscribeUrl: "https://eraseai.ai/pricing?plan=personal" },
+      analyzeResult: {
+        riskScore: 20, level: "danger", summary: "AWS key found",
+        issues: [{ type: "secret", severity: "high", description: "AWS Access Key" }], suggestions: [],
+      },
     });
+    const opened = vi.fn();
+    window.open = opened;
     loadContentScriptInJsdom(chromeStub);
     await flushAsync();
-    const { textarea, sendBtn } = setUpChatGPTDom();
+    const { textarea } = setUpChatGPTDom();
     await flushAsync();
-    const clicks = vi.fn();
-    sendBtn.addEventListener("click", clicks);
 
-    textarea.value = "hello there";
+    textarea.value = "my key is AKIAIOSFODNN7EXAMPLE";
     dispatchEnterOn(textarea);
     await flushAsync();
-    vi.advanceTimersByTime(100);
 
-    expect(ports.some((p) => p.name === "analyze")).toBe(false);
-    expect(document.getElementById("eraseai-overlay-panel")).toBeNull();
-    const notice = document.getElementById("eraseai-free-limit");
-    expect(notice).not.toBeNull();
-    expect(notice.textContent).toMatch(/25 free EraseAI checks/);
-    expect(notice.querySelector("a").href).toContain("plan=personal");
-    expect(clicks).toHaveBeenCalled();
+    const btn = document.getElementById("eraseai-sanitize");
+    expect(btn).not.toBeNull();
+    expect(btn.textContent).toMatch(/Personal/);
+    btn.click();
+    await flushAsync();
+    expect(opened).toHaveBeenCalledWith("https://eraseai.ai/pricing?plan=personal", "_blank", "noopener,noreferrer");
+    expect(ports.some((p) => p.name === "sanitize")).toBe(false);
+    expect(document.getElementById("eraseai-overlay-panel")).not.toBeNull();
+    // The free user can still decide.
+    expect(document.getElementById("eraseai-cancel")).not.toBeNull();
+    expect(document.getElementById("eraseai-send-anyway")).not.toBeNull();
   });
 });

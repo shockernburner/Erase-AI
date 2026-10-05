@@ -1,7 +1,7 @@
 const API_URL = "https://eraseai.ai";
 
 if (typeof importScripts === "function") {
-  importScripts("growth.js", "local-scanner.js", "allowance.js");
+  importScripts("growth.js", "local-scanner.js", "plan.js");
 }
 
 // --- On-device fallback -----------------------------------------------------
@@ -111,16 +111,16 @@ async function setReviewState(review) {
   await saveGrowth({ ...state, review });
 }
 
-// --- Free-check allowance (see allowance.js) -------------------------------
+// --- Plan (see plan.js) ---------------------------------------------------
 
-async function loadAllowance() {
-  const A = self.EraseAIAllowance;
-  const stored = await chrome.storage.local.get([A.STORAGE_KEY]);
-  return A.normalizeState(stored[A.STORAGE_KEY]);
+async function loadPlanState() {
+  const P = self.EraseAIPlan;
+  const stored = await chrome.storage.local.get([P.STORAGE_KEY]);
+  return P.normalizeState(stored[P.STORAGE_KEY]);
 }
 
-async function saveAllowance(state) {
-  await chrome.storage.local.set({ [self.EraseAIAllowance.STORAGE_KEY]: state });
+async function savePlanState(state) {
+  await chrome.storage.local.set({ [self.EraseAIPlan.STORAGE_KEY]: state });
 }
 
 /** The account's plan for this API key, or null if it could not be read. */
@@ -138,63 +138,51 @@ async function fetchPlan(apiKey) {
   }
 }
 
-/** Re-reads the plan and stores it without touching the check count. */
+/** Re-reads the plan and stores it. Keeps the last known plan if EraseAI is unreachable. */
 async function refreshPlan(apiKey, now = Date.now()) {
   const plan = await fetchPlan(apiKey);
-  if (plan == null) return loadAllowance(); // unreachable: keep what we knew
-  const latest = await loadAllowance();
-  const next = self.EraseAIAllowance.withPlan(latest, plan, now);
-  await saveAllowance(next);
+  const latest = await loadPlanState();
+  if (plan == null) return latest;
+  const next = self.EraseAIPlan.withPlan(latest, plan, now);
+  await savePlanState(next);
   return next;
 }
 
 /**
- * Called once per send before anything is checked. Free users spend one of
- * their free checks; paid plans are unlimited; once the free checks are gone
- * the send is let through unchecked and the page shows a subscribe notice.
+ * Called once per send before anything is checked. Every send is checked; this
+ * only tells the page whether the paid features (Sanitize, attachments) apply.
  */
 async function beginCheck() {
-  const A = self.EraseAIAllowance;
+  const P = self.EraseAIPlan;
   const config = await getConfig();
   if (!config.enabled) return { bypass: true };
   const now = Date.now();
   const hasKey = Boolean(config.apiKey);
-  let state = await loadAllowance();
-  if (hasKey && !A.planIsFresh(state, now)) {
-    if (state.used >= A.FREE_CHECKS) {
-      // The answer depends on it (they may have just subscribed): wait for it.
+  let state = await loadPlanState();
+  if (hasKey && !P.planIsFresh(state, now)) {
+    if (state.plan == null) {
+      // First send with this key: wait so a subscriber gets their features at once.
       state = await refreshPlan(config.apiKey, now);
     } else {
-      // Plenty of free checks left: refresh in the background, never delay the send.
       refreshPlan(config.apiKey, now).catch(() => {});
     }
   }
-  const result = A.decide(state, { hasKey });
-  if (result.state !== state) await saveAllowance(result.state);
-  if (result.decision === "paused") {
-    return {
-      paused: true,
-      used: result.used,
-      limit: result.limit,
-      subscribeUrl: A.subscribeUrl(extensionVersion()),
-      hasKey,
-    };
-  }
-  return { allowed: true, decision: result.decision, used: result.used, remaining: result.remaining };
+  return {
+    allowed: true,
+    paid: P.hasPaidFeatures(state, { hasKey }),
+    subscribeUrl: P.subscribeUrl(extensionVersion()),
+  };
 }
 
-async function allowanceSummary() {
-  const A = self.EraseAIAllowance;
+async function planSummary() {
+  const P = self.EraseAIPlan;
   const config = await getConfig();
-  const state = await loadAllowance();
-  const paid = Boolean(config.apiKey) && A.isPaidPlan(state.plan);
+  const state = await loadPlanState();
   return {
-    used: Math.min(state.used, A.FREE_CHECKS),
-    limit: A.FREE_CHECKS,
     plan: state.plan,
-    paid,
-    paused: !paid && state.used >= A.FREE_CHECKS,
-    subscribeUrl: A.subscribeUrl(extensionVersion()),
+    paid: P.hasPaidFeatures(state, { hasKey: Boolean(config.apiKey) }),
+    hasKey: Boolean(config.apiKey),
+    subscribeUrl: P.subscribeUrl(extensionVersion(), "popup"),
   };
 }
 
@@ -202,9 +190,7 @@ if (chrome.storage && chrome.storage.onChanged) {
   // A different key may belong to a different account: forget its plan.
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local" || !changes.apiKey) return;
-    loadAllowance()
-      .then((state) => saveAllowance({ ...state, plan: null, planCheckedAt: 0 }))
-      .catch(() => {});
+    savePlanState({ plan: null, planCheckedAt: 0 }).catch(() => {});
   });
 }
 
@@ -441,8 +427,8 @@ async function testConnection() {
     const allowedPlans = new Set(["free", "personal", "pro", "business", "enterprise"]);
     const plan = typeof data.plan === "string" && allowedPlans.has(data.plan) ? data.plan : "free";
     try {
-      const latest = await loadAllowance();
-      await saveAllowance(self.EraseAIAllowance.withPlan(latest, plan, Date.now()));
+      const latest = await loadPlanState();
+      await savePlanState(self.EraseAIPlan.withPlan(latest, plan, Date.now()));
     } catch {
       // best-effort cache
     }
@@ -775,13 +761,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "BEGIN_CHECK") {
     beginCheck()
       .then(sendResponse)
-      // Never leave a send hanging: if the allowance cannot be read, check it.
-      .catch(() => sendResponse({ allowed: true, decision: "error" }));
+      // Never leave a send hanging: if the plan cannot be read, check it as free.
+      .catch(() => sendResponse({ allowed: true, paid: false }));
     return true;
   }
 
-  if (message.type === "GET_ALLOWANCE") {
-    allowanceSummary().then(sendResponse).catch(() => sendResponse(null));
+  if (message.type === "GET_PLAN") {
+    planSummary().then(sendResponse).catch(() => sendResponse(null));
     return true;
   }
 
