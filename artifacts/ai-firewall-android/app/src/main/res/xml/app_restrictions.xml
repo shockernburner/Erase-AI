@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Managed configuration for organizations (managed Google Play / any EMM).
+  IT copies the enrollment token from EraseAI > Organization > Managed rollout.
+  Read by data/ManagedConfig.kt.
+-->
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+  <restriction
+    android:key="enrollment_token"
+    android:title="@string/managed_token_title"
+    android:description="@string/managed_token_description"
+    android:restrictionType="string"
+    android:defaultValue="" />
+  <restriction
+    android:key="user_email"
+    android:title="@string/managed_email_title"
+    android:description="@string/managed_email_description"
+    android:restrictionType="string"
+    android:defaultValue="" />
+</restrictions>

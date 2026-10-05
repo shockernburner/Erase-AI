@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, pgTable, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { check, index, integer, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
 // Organizations (Team / Enterprise). The organization pays, so everyone who
@@ -30,6 +30,13 @@ export const organizationsTable = pgTable("organizations", {
   subscriptionStatus: varchar("subscription_status", { length: 30 }),
   billingPeriod: varchar("billing_period", { length: 10 }),
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  // Managed rollout: IT puts the enrollment token in Chrome / Android policy,
+  // and people whose work email is on one of these domains join on their own.
+  // Only the sha256 of the token is stored; the prefix helps admins tell
+  // tokens apart.
+  allowedDomains: text("allowed_domains"),
+  enrollmentTokenHash: varchar("enrollment_token_hash", { length: 64 }).unique(),
+  enrollmentTokenPrefix: varchar("enrollment_token_prefix", { length: 12 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

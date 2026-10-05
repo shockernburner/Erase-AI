@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
 import { ORG_PLAN_NAMES, ORG_ROLE_NAMES, inviteUrl, orgApi } from "@/lib/orgInvite";
+import { ManagedRolloutPanel } from "@/components/ManagedRolloutPanel";
 
 type Role = "owner" | "admin" | "member";
 
@@ -504,6 +505,8 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
       </section>
 
       {me.canManage && <BillingPanel onChanged={load} onContact={onContact} />}
+
+      {me.canManage && <ManagedRolloutPanel />}
 
       {me.canManage && <ActivityPanel />}
     </div>

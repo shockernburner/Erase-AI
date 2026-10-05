@@ -62,6 +62,10 @@
     android:roundIcon="@drawable/eraseai_logo"
     android:supportsRtl="true"
     android:theme="@style/Theme.EraseAIFirewall">
+    <!-- Managed configuration (enrollment token) for organizations; see data/ManagedConfig.kt. -->
+    <meta-data
+      android:name="android.content.APP_RESTRICTIONS"
+      android:resource="@xml/app_restrictions" />
 
     <activity
       android:name=".MainActivity"

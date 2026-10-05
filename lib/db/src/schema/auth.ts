@@ -91,6 +91,10 @@ export const apiKeysTable = pgTable("api_keys", {
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   requestQuota: integer("request_quota"),
   ipHash: varchar("ip_hash", { length: 32 }),
+  // "full" for keys people create; "managed" for keys issued to a managed
+  // browser by organization enrollment, which may only run firewall checks
+  // (no history, no /v1 API).
+  scope: varchar("scope", { length: 20 }).notNull().default("full"),
 }, (table) => [
   index("idx_api_keys_user_id").on(table.userId),
   index("idx_api_keys_key_hash").on(table.keyHash),

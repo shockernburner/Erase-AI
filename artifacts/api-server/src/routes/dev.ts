@@ -13,6 +13,7 @@ import { trackApiUsage } from "../middlewares/rateLimitMiddleware";
 import { apiKeyBurstLimit, ipBurstLimit } from "../middlewares/burstLimitMiddleware";
 import demoKeyRouter from "./demo-key";
 import { resolveEffectivePlan, withOrgPlan } from "../lib/org";
+import { managedKeyAllows } from "../lib/org/enroll-source.mjs";
 
 const router = Router();
 
@@ -47,6 +48,12 @@ async function sessionOrApiKeyAuth(req: Request, res: Response, next: NextFuncti
 
     if (apiKey.revokedAt) {
       res.status(401).json({ error: "API key has been revoked", code: "AUTH_REVOKED_KEY", meta: buildMeta() });
+      return;
+    }
+
+    // Keys issued by managed rollout only run firewall checks.
+    if (apiKey.scope === "managed" && !managedKeyAllows(req.path)) {
+      res.status(403).json({ error: "This browser is managed by your organization and can only run firewall checks.", code: "MANAGED_KEY_SCOPE", meta: buildMeta() });
       return;
     }
 

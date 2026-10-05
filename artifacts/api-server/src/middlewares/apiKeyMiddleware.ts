@@ -82,6 +82,12 @@ export async function apiKeyAuth(req: Request, res: Response, next: NextFunction
     return;
   }
 
+  // Managed-rollout keys only run Chrome firewall checks, never the /v1 API.
+  if (apiKey.scope === "managed") {
+    res.status(403).json({ error: "This key is managed by your organization and only works in the EraseAI extension." });
+    return;
+  }
+
   // Task #158 — TTL + quota gate (shared with sessionOrApiKeyAuth).
   const enforcement = await enforceApiKeyTtlAndQuota(apiKey, req);
   if (!enforcement.ok) {

@@ -22,6 +22,8 @@ async function ensureApiKeysTable() {
     await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`);
     await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS request_quota INTEGER`);
     await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(32)`);
+    // Managed-rollout keys may only run firewall checks.
+    await db.execute(sql`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS scope VARCHAR(20) NOT NULL DEFAULT 'full'`);
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_api_keys_ip_hash_created
         ON api_keys(ip_hash, created_at)
@@ -344,6 +346,14 @@ async function ensureOrganizationTables() {
     await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(30)`);
     await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS billing_period VARCHAR(10)`);
     await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ`);
+    // Managed rollout columns.
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS allowed_domains TEXT`);
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS enrollment_token_hash VARCHAR(64)`);
+    await db.execute(sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS enrollment_token_prefix VARCHAR(12)`);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS organizations_enrollment_token_hash_unique
+        ON organizations(enrollment_token_hash)
+    `);
     await db.execute(sql`
       CREATE UNIQUE INDEX IF NOT EXISTS organizations_stripe_subscription_id_unique
         ON organizations(stripe_subscription_id)

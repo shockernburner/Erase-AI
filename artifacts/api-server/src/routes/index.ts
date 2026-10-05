@@ -17,6 +17,7 @@ import extensionRouter from "./extension";
 import mobileRouter from "./mobile";
 import orgRouter from "./org";
 import teamBillingRouter from "./team-billing";
+import orgEnrollRouter from "./org-enroll";
 import passwordResetRouter from "./password-reset";
 
 // Routes that must remain reachable even when the logged-in user has not yet
@@ -54,6 +55,9 @@ router.use(contactRouter);
 router.use(accountRouter);
 router.use(extensionRouter);
 router.use("/mobile", mobileRouter);
+// Managed-rollout enrollment is called by managed browsers (no session) and
+// the Android app, so it sits before the terms gate.
+router.use(orgEnrollRouter);
 router.use(requireTermsAcceptance);
 router.use(eraseaiRouter);
 router.use("/datasets", datasetsRouter);

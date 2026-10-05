@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "enrollmentToken": {
+      "title": "EraseAI enrollment token",
+      "description": "From EraseAI > Organization > Managed rollout. Starts with eae_. Enrolls this browser in your organization so nobody has to paste an API key.",
+      "type": "string"
+    },
+    "userEmail": {
+      "title": "Work email (optional)",
+      "description": "The person's work email. If not set, the extension asks for it once. It must be on one of the organization's allowed domains.",
+      "type": "string"
+    }
+  }
+}

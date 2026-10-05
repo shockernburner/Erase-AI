@@ -39,6 +39,19 @@ class AuthApi(
     Unit
   }
 
+  /**
+   * Joins the signed-in person to the organization whose enrollment token IT set in managed
+   * configuration (see ManagedConfig). The server checks the email domain and seats, and answers
+   * the same when they're already a member. Returns the organization's name.
+   */
+  suspend fun enrollInOrganization(enrollmentToken: String): Result<String> = runCatching {
+    val payload = JSONObject()
+      .put("token", enrollmentToken)
+      .put("client", "android")
+    val json = apiClient.post("/org/enroll", payload)
+    json.optJSONObject("organization")?.optString("name").orEmpty()
+  }
+
   suspend fun logout(): Result<Unit> = runCatching {
     runCatching { apiClient.post("/mobile-auth/logout", JSONObject()) }
     sessionStore.clear()

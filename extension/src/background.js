@@ -1,7 +1,7 @@
 const API_URL = "https://eraseai.ai";
 
 if (typeof importScripts === "function") {
-  importScripts("growth.js", "local-scanner.js", "plan.js");
+  importScripts("growth.js", "local-scanner.js", "plan.js", "managed.js");
 }
 
 // --- On-device fallback -----------------------------------------------------
@@ -199,6 +199,102 @@ if (chrome.runtime.onInstalled) {
     handleInstalled(details).catch(() => {});
   });
 }
+
+// --- Managed rollout (see managed.js) ----------------------------------------
+
+async function readManagedPolicy() {
+  try {
+    if (!chrome.storage.managed) return null;
+    return self.EraseAIManaged.readPolicy(await chrome.storage.managed.get(["enrollmentToken", "userEmail"]));
+  } catch {
+    // Not managed, or the browser has no managed storage.
+    return null;
+  }
+}
+
+async function saveManagedState(state) {
+  await chrome.storage.local.set({ [self.EraseAIManaged.STORAGE_KEY]: state });
+}
+
+let managedQueue = Promise.resolve();
+
+/**
+ * Enrolls this browser when IT policy carries an enrollment token. Runs one
+ * at a time, so an email typed in the popup while a sync is running is used
+ * by the next run instead of being dropped (a finished enrollment makes later
+ * runs no-ops).
+ */
+function syncManaged(pendingEmail) {
+  const run = managedQueue.catch(() => {}).then(() => runManagedSync(pendingEmail));
+  managedQueue = run;
+  return run;
+}
+
+async function runManagedSync(pendingEmail) {
+  const M = self.EraseAIManaged;
+  const policy = await readManagedPolicy();
+  const stored = await chrome.storage.local.get([M.STORAGE_KEY, "apiKey"]);
+  const state = M.normalizeState(stored[M.STORAGE_KEY]);
+  const step = M.decide(policy, state, { apiKey: stored.apiKey || "", pendingEmail });
+
+  if (step.action === "none") return state;
+  if (step.action === "release") {
+    await chrome.storage.local.remove(M.STORAGE_KEY);
+    return M.normalizeState(null);
+  }
+  if (step.action === "need_email") {
+    const next = { ...state, needEmail: true, error: null };
+    await saveManagedState(next);
+    return next;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/org/enroll`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: policy.token, email: step.email, client: "chrome" }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.apiKey) {
+      // A wrong or non-work email can be fixed by typing another one.
+      const next = {
+        ...state,
+        email: policy.email ? step.email : null,
+        needEmail: !policy.email && (response.status === 400 || response.status === 403),
+        error: data.error || `Enrollment failed (${response.status}).`,
+      };
+      await saveManagedState(next);
+      return next;
+    }
+    const next = {
+      tokenTag: step.tag,
+      email: data.email || step.email,
+      orgName: data.organization && data.organization.name ? data.organization.name : null,
+      enrolledAt: Date.now(),
+      needEmail: false,
+      error: null,
+    };
+    await chrome.storage.local.set({ apiKey: data.apiKey, [M.STORAGE_KEY]: next });
+    return next;
+  } catch {
+    const next = { ...state, error: "Couldn't reach EraseAI to finish setup. It will try again." };
+    await saveManagedState(next);
+    return next;
+  }
+}
+
+if (chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "managed") syncManaged().catch(() => {});
+  });
+}
+if (chrome.runtime.onStartup) {
+  chrome.runtime.onStartup.addListener(() => {
+    syncManaged().catch(() => {});
+  });
+}
+// Each time the service worker starts, so a failed enrollment retries.
+if (chrome.storage && chrome.storage.managed) syncManaged().catch(() => {});
 
 async function getConfig() {
   const result = await chrome.storage.local.get(["apiKey", "enabled"]);
@@ -768,6 +864,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "GET_PLAN") {
     planSummary().then(sendResponse).catch(() => sendResponse(null));
+    return true;
+  }
+
+  if (message.type === "GET_MANAGED") {
+    chrome.storage.local
+      .get([self.EraseAIManaged.STORAGE_KEY])
+      .then((stored) => sendResponse(self.EraseAIManaged.normalizeState(stored[self.EraseAIManaged.STORAGE_KEY])))
+      .catch(() => sendResponse(null));
+    return true;
+  }
+
+  if (message.type === "MANAGED_ENROLL") {
+    syncManaged(message.email).then(sendResponse).catch(() => sendResponse(null));
     return true;
   }
 

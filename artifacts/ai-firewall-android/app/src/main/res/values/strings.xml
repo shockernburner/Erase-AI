@@ -10,4 +10,8 @@
   <string name="ime_label">EraseAI Keyboard</string>
   <string name="ime_subtype_label">EraseAI Keyboard</string>
   <string name="safe_share_label">Save to EraseAI Safe</string>
+  <string name="managed_token_title">EraseAI enrollment token</string>
+  <string name="managed_token_description">From EraseAI, Organization, Managed rollout. Starts with eae_. People who sign in with a work email on your organization\'s domains join it automatically.</string>
+  <string name="managed_email_title">Work email (optional)</string>
+  <string name="managed_email_description">Fills in the sign-in email for the person using this device.</string>
 </resources>

@@ -396,7 +396,8 @@ function renderPlan() {
       return;
     }
     if (p.paid) {
-      status.textContent = "EraseAI Personal: one-click Sanitize, attachment scanning and the Android app are on.";
+      const names = { personal: "EraseAI Personal", pro: "EraseAI Developer", business: "EraseAI Team", enterprise: "EraseAI Enterprise" };
+      status.textContent = `${names[p.plan] || "EraseAI Personal"}: one-click Sanitize, attachment scanning and the Android app are on.`;
       button.style.display = "none";
       return;
     }
@@ -408,6 +409,49 @@ function renderPlan() {
   });
 }
 renderPlan();
+
+// Managed rollout: when IT policy enrolled this browser, the key belongs to
+// the organization, so the key field is hidden; if the policy carries no
+// work email, ask for it once.
+function renderManaged() {
+  const box = document.getElementById("managed-box");
+  const emailGroup = document.getElementById("managed-email-group");
+  const keyGroup = document.getElementById("api-key-group");
+  if (!box || !emailGroup || !keyGroup) return;
+  chrome.runtime.sendMessage({ type: "GET_MANAGED" }, (m) => {
+    if (chrome.runtime.lastError || !m) return;
+    const enrolled = Boolean(m.enrolledAt && m.tokenTag);
+    keyGroup.style.display = enrolled ? "none" : "";
+    emailGroup.style.display = m.needEmail && !enrolled ? "block" : "none";
+    let text = "";
+    if (enrolled) {
+      text = `Managed by ${m.orgName || "your organization"}${m.email ? ` for ${m.email}` : ""}. Your organization's plan is on.`;
+    } else if (m.needEmail) {
+      text = "Your organization manages this browser. Enter your work email to turn on protection.";
+    }
+    if (m.error && !enrolled) text = text ? `${text} ${m.error}` : m.error;
+    box.textContent = text;
+    box.className = `status-text ${m.error && !enrolled ? "error" : "success"}`;
+    box.style.display = text ? "block" : "none";
+  });
+}
+renderManaged();
+
+const managedEmailBtn = document.getElementById("managed-email-btn");
+if (managedEmailBtn) {
+  managedEmailBtn.addEventListener("click", () => {
+    const input = document.getElementById("managed-email-input");
+    const email = input ? input.value.trim() : "";
+    if (!email) return;
+    managedEmailBtn.disabled = true;
+    chrome.runtime.sendMessage({ type: "MANAGED_ENROLL", email }, () => {
+      void chrome.runtime.lastError;
+      managedEmailBtn.disabled = false;
+      renderManaged();
+      renderPlan();
+    });
+  });
+}
 
 saveKeyBtn.addEventListener("click", async () => {
   const key = apiKeyInput.value.trim();

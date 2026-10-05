@@ -2,13 +2,16 @@
   "manifest_version": 3,
   "name": "EraseAI Firewall: Block Secrets & PII Before ChatGPT, Claude, Gemini",
   "short_name": "EraseAI Firewall",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Stops API keys, passwords, card numbers and personal data before they reach ChatGPT, Claude or Gemini, in prompts and files.",
   "author": "Vantward Solutions Pte. Ltd.",
   "homepage_url": "https://eraseai.ai/ai-firewall",
   "minimum_chrome_version": "88",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA00bDorFa1FB/G1RASS9StGkjjVAbL/4ZVoen214ouPAngQt0e4lT607EDUMAi9f0c0bkw42uAfd2XjreE2c/nMC/14Hkvdd6CPsF0XihqH+rvI7h56hjCRwiB1v+DcbM3whYOCuI4atzBECPtE5KXWz1P1MdsGq6Z1wcmotNPBEOd369m6D8TVmlXnoGcEIdDU4IA26UEHWYTRltG+rvlzgQEaVcWO3XTOWoceWT/ue1UHbXb8v5WIwpZRJsF++lQ2j8+ou0TRduMZ5NXnKgTnLq6OIEI6dY4HJdtAmPHbDid0YwhU0xJEcfysRZZQG+SSma2svjndsTgBs4POvhUwIDAQAB",
   "permissions": ["storage", "activeTab"],
+  "storage": {
+    "managed_schema": "managed_schema.json"
+  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

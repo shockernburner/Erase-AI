@@ -379,6 +379,17 @@ Complete [REAL_DEVICE_QA_MATRIX.md](./REAL_DEVICE_QA_MATRIX.md):
       opens `https://eraseai.ai` in the browser, where the log-in form has
       "Forgot password?" (POST `/api/auth/forgot-password` emails a one-time
       link to `/reset-password`). No new API needed.
+- [ ] **Managed rollout (organizations)** is in the code but has not been
+      built or run on a device yet (written without the Android SDK). Before
+      production: build, then test with Google's **Test DPC** app as the device
+      owner: set managed configuration `enrollment_token` (from EraseAI >
+      Organization > Managed rollout) and `user_email`; open the app, confirm
+      the email is pre-filled, sign in, and check the person shows as a member
+      on the Organization page and the app shows the Team plan. Files:
+      `res/xml/app_restrictions.xml`, `data/ManagedConfig.kt`,
+      `AuthApi.enrollInOrganization`, `enrollIfManaged()` in `MainActivity.kt`.
+      Then remove "Coming soon" from "Managed rollout on Android" in
+      `artifacts/eraseai/src/lib/pricingPlans.ts`.
 - [ ] **Login screen: "Continue with Google"** (decide first). The web flow
       (`/api/auth/google`) sets a browser cookie, so the app can't reuse it as
       is. Options: Credential Manager on the phone + a new

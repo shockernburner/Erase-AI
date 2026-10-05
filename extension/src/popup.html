@@ -459,7 +459,15 @@
 
   <div class="section">
     <div class="section-title">API Key</div>
-    <div class="input-group">
+    <div id="managed-box" class="status-text" style="display:none"></div>
+    <div class="input-group" id="managed-email-group" style="display:none">
+      <label for="managed-email-input">Your work email</label>
+      <div class="input-row">
+        <input type="email" class="input-field" id="managed-email-input" placeholder="you@company.com">
+        <button class="btn btn-primary" id="managed-email-btn">Connect</button>
+      </div>
+    </div>
+    <div class="input-group" id="api-key-group">
       <label>Your EraseAI API Key</label>
       <div class="input-row">
         <input type="password" class="input-field" id="api-key-input" placeholder="eak_xxxxxxxxxxxxxxxx">

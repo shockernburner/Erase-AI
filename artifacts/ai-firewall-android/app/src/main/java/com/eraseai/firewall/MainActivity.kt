@@ -83,6 +83,7 @@ import com.eraseai.firewall.data.DatasetUploadResult
 import com.eraseai.firewall.data.EntitlementRepository
 import com.eraseai.firewall.data.EntitlementState
 import com.eraseai.firewall.data.GuestTrial
+import com.eraseai.firewall.data.ManagedConfig
 import com.eraseai.firewall.data.HistoryRepository
 import com.eraseai.firewall.data.MobileSessionStore
 import com.eraseai.firewall.data.PlayProduct
@@ -197,6 +198,8 @@ private fun EraseAIFirewallApp(
   val historyRepo = remember { HistoryRepository(apiClient) }
   val protectedStore = remember { ProtectedAppsStore(context) }
   val guestTrial = remember { GuestTrial(context) }
+  // Organization enrollment token from managed configuration, if IT set one.
+  val managedPolicy = remember { ManagedConfig.read(context) }
 
   var screen by remember { mutableStateOf(Screen.Splash) }
   var entitlement by remember { mutableStateOf<EntitlementState?>(null) }
@@ -406,6 +409,20 @@ private fun EraseAIFirewallApp(
     }
   }
 
+  // Managed devices: once signed in, join the organization IT enrolled this phone in.
+  fun enrollIfManaged() {
+    val policy = managedPolicy ?: return
+    if (!signedIn || ManagedConfig.isEnrolled(context, policy)) return
+    scope.launch {
+      authApi.enrollInOrganization(policy.enrollmentToken)
+        .onSuccess {
+          ManagedConfig.markEnrolled(context, policy)
+          refreshEntitlement()
+        }
+        .onFailure { error = it.safeMessage() }
+    }
+  }
+
   val playBilling = remember(activity, billingApi, scope) {
     PlayBillingManager(
       activity = activity,
@@ -489,6 +506,7 @@ private fun EraseAIFirewallApp(
     } else {
       guestTrial.start()
       refreshEntitlement()
+      enrollIfManaged()
       refreshBackendStatus()
       val mergedPackages = protectedStore.mergeFromBackend(apiClient).getOrNull()
       if (mergedPackages != null) {
@@ -552,6 +570,7 @@ private fun EraseAIFirewallApp(
       when (screen) {
         Screen.Splash -> BrandedSplashScreen()
         Screen.Login -> LoginScreen(
+          initialEmail = managedPolicy?.userEmail.orEmpty(),
           loading = loading,
           error = error,
           guestTrialAvailable = !guestTrial.hasStarted(),
@@ -570,6 +589,7 @@ private fun EraseAIFirewallApp(
               signedIn = true
               guestTrial.start()
               refreshEntitlement()
+              enrollIfManaged()
               refreshBackendStatus()
               loadPlayProducts()
               refreshAccessibility()
@@ -588,6 +608,7 @@ private fun EraseAIFirewallApp(
               signedIn = true
               guestTrial.start()
               refreshEntitlement()
+              enrollIfManaged()
               refreshBackendStatus()
               loadPlayProducts()
               screen = Screen.Privacy
@@ -805,6 +826,7 @@ private fun EraseAIFirewallApp(
           onLogout = {
             scope.launch {
               authApi.logout()
+              ManagedConfig.clearEnrolled(context)
               signedIn = false
               guestTrial.setPaid(false)
               entitlement = null
@@ -904,6 +926,7 @@ private fun EraseAIFirewallApp(
 
 @Composable
 private fun LoginScreen(
+  initialEmail: String,
   loading: Boolean,
   error: String?,
   guestTrialAvailable: Boolean,
@@ -912,7 +935,7 @@ private fun LoginScreen(
   onLogin: (String, String) -> Unit,
   onSignup: (String, String) -> Unit,
 ) {
-  var email by remember { mutableStateOf("") }
+  var email by remember { mutableStateOf(initialEmail) }
   var password by remember { mutableStateOf("") }
   val canSignIn = !loading && email.isNotBlank() && password.isNotBlank()
   LazyColumn(
