@@ -107,8 +107,9 @@ chmod +x cloud-sql-proxy
 pg_restore --no-owner --no-privileges -d "postgresql://eraseai:PASSWORD@127.0.0.1:6543/eraseai" eraseai.dump
 ```
 
-The server also creates any missing tables on start, so a fresh empty database
-works too.
+Starting from an empty database instead? The core tables (`users`, `scans`…)
+come from the Drizzle schema, not from server startup, so create them once
+before the first start: `DATABASE_URL=... pnpm --filter @workspace/db run push`.
 
 ### 4.3 Secrets
 
@@ -320,8 +321,14 @@ Node doesn't ship Amazon's certificate authority.)
    ```
 
    (Use the host printed in 6.3. Some "already exists" or "extension" notices
-   are harmless. An empty database also works: the server creates its tables
-   on start.)
+   are harmless.)
+
+   Starting empty instead of copying? The core tables (`users`, `scans`…)
+   come from the Drizzle schema, not from server startup. From the same VPC
+   CloudShell, in a clone of the repository: `pnpm install` then
+   `DATABASE_URL="postgresql://...?sslmode=no-verify" pnpm --filter @workspace/db run push`,
+   then redeploy (6.9). Don't do this before a `pg_restore`: the restore
+   expects an empty database.
 
 ### 6.5 Build the container and push it to ECR
 
