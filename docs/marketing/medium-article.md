@@ -5,7 +5,7 @@ security engineers. LinkedIn gets the business story (`linkedin-article.md`);
 this one gets the engineering. Every technical claim matches extension 1.4.4;
 re-check `extension/src/` before editing numbers or behaviour.
 
-- **Cover image:** `~/Desktop/EraseAI store assets/linkedin-cover.png`
+- **Cover image:** `docs/marketing/covers/article-cover.png` (rebuild with `docs/marketing/video/build_cover.py`)
   (Medium crops covers to roughly 16:9, so this works as is).
 - **Inline media:** paste the YouTube link to the demo video after "What it
   does" (Medium embeds it). Optionally add store screenshot 3 (attachments)

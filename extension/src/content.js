@@ -810,7 +810,7 @@
     panel.id = "eraseai-overlay-panel";
     panel.innerHTML = `
       <div class="eraseai-header">
-        <div class="eraseai-logo">E</div>
+        <div class="eraseai-logo" aria-hidden="true"></div>
         <div class="eraseai-header-text">
           <h2>EraseAI Firewall</h2>
           <p>Analyzing your prompt for privacy risks...</p>
@@ -1175,7 +1175,7 @@
 
     panel.innerHTML = `
       <div class="eraseai-header">
-        <div class="eraseai-logo">E</div>
+        <div class="eraseai-logo" aria-hidden="true"></div>
         <div class="eraseai-header-text">
           <h2>EraseAI Firewall</h2>
           <p>Prompt analysis complete</p>
@@ -1362,7 +1362,7 @@
 
     panel.innerHTML = `
       <div class="eraseai-header">
-        <div class="eraseai-logo">E</div>
+        <div class="eraseai-logo" aria-hidden="true"></div>
         <div class="eraseai-header-text">
           <h2>EraseAI Firewall</h2>
           <p>All clear &mdash; sending your prompt</p>
