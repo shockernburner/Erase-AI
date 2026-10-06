@@ -196,6 +196,298 @@ The same container runs on AWS:
 | Custom domain mapping | **Route 53** + certificate from **ACM** (App Runner custom domain does both) |
 | Cloud SQL proxy for restore | `pg_restore` from an EC2 instance or CloudShell in the same VPC |
 
-Steps on AWS mirror section 4: create the RDS database, `pg_restore` the dump,
-store secrets, push the image to ECR, create an App Runner service from it on
-port 8080 with the environment/secrets of section 3, and add the custom domain.
+## 6. AWS: step by step (copy-paste)
+
+Target: **App Runner** (runs the container, HTTPS, autoscaling) + **RDS for
+PostgreSQL 16** (private, in your default VPC) + **Secrets Manager** + **ECR**.
+Region below is Singapore (`ap-southeast-1`); change `REGION` if you prefer.
+
+You need: the AWS CLI v2 logged in as an admin user (`aws configure`, or use
+**AWS CloudShell** in the console, which is already logged in), and Docker on
+your computer for step 6.5.
+
+### 6.1 Variables (run first, in every new terminal)
+
+```bash
+export REGION=ap-southeast-1
+export ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+export APP=eraseai
+export DB_PASSWORD='CHOOSE-A-STRONG-PASSWORD-WITHOUT-@-OR-/'
+export SITE=https://aws.eraseai.ai     # the copy's address; later https://eraseai.ai
+aws configure set region $REGION
+echo "Account $ACCOUNT in $REGION"
+```
+
+**Coming back later in a new terminal?** Run 6.1, then this to look up what
+the earlier steps created:
+
+```bash
+export VPC=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)
+export SUBNETS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC --query 'Subnets[].SubnetId' --output text)
+export PRIVATE_SUBNETS=$(echo $SUBNETS | cut -d' ' -f2-)
+export APP_SG=$(aws ec2 describe-security-groups --filters Name=group-name,Values=$APP-apprunner --query 'SecurityGroups[0].GroupId' --output text)
+export DB_SG=$(aws ec2 describe-security-groups --filters Name=group-name,Values=$APP-db --query 'SecurityGroups[0].GroupId' --output text)
+export DB_HOST=$(aws rds describe-db-instances --db-instance-identifier $APP-db --query 'DBInstances[0].Endpoint.Address' --output text 2>/dev/null)
+export DATABASE_URL="postgresql://eraseai:$DB_PASSWORD@$DB_HOST:5432/eraseai?sslmode=no-verify"
+export VPC_CONNECTOR=$(aws apprunner list-vpc-connectors --query "VpcConnectors[?VpcConnectorName=='$APP-vpc'].VpcConnectorArn | [0]" --output text)
+export SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='$APP'].ServiceArn | [0]" --output text)
+```
+
+### 6.2 Network: security groups in the default VPC
+
+```bash
+export VPC=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)
+export SUBNETS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC --query 'Subnets[].SubnetId' --output text)
+
+# Group for App Runner's connection into the VPC
+export APP_SG=$(aws ec2 create-security-group --group-name $APP-apprunner \
+  --description "EraseAI App Runner" --vpc-id $VPC --query GroupId --output text)
+
+# Group for the database: Postgres only from App Runner and from inside the VPC
+export DB_SG=$(aws ec2 create-security-group --group-name $APP-db \
+  --description "EraseAI database" --vpc-id $VPC --query GroupId --output text)
+aws ec2 authorize-security-group-ingress --group-id $DB_SG --protocol tcp --port 5432 --source-group $APP_SG
+aws ec2 authorize-security-group-ingress --group-id $DB_SG --protocol tcp --port 5432 \
+  --cidr $(aws ec2 describe-vpcs --vpc-ids $VPC --query 'Vpcs[0].CidrBlock' --output text)
+```
+
+**Internet for private parts.** The app reaches the private database through a
+VPC connector, so its outgoing traffic (Stripe, Resend, Google) also goes
+through the VPC. That needs a NAT gateway: the first subnet stays public and
+holds the NAT; the others become private and send internet traffic through it.
+
+```bash
+export PUBLIC_SUBNET=$(echo $SUBNETS | awk '{print $1}')
+export PRIVATE_SUBNETS=$(echo $SUBNETS | cut -d' ' -f2-)
+export EIP=$(aws ec2 allocate-address --domain vpc --query AllocationId --output text)
+export NAT=$(aws ec2 create-nat-gateway --subnet-id $PUBLIC_SUBNET --allocation-id $EIP \
+  --query NatGateway.NatGatewayId --output text)
+aws ec2 wait nat-gateway-available --nat-gateway-ids $NAT
+export RT=$(aws ec2 create-route-table --vpc-id $VPC --query RouteTable.RouteTableId --output text)
+aws ec2 create-route --route-table-id $RT --destination-cidr-block 0.0.0.0/0 --nat-gateway-id $NAT
+for s in $PRIVATE_SUBNETS; do aws ec2 associate-route-table --route-table-id $RT --subnet-id $s; done
+echo "public: $PUBLIC_SUBNET  private: $PRIVATE_SUBNETS"
+```
+
+(Use a fresh account or a VPC with nothing else in it: this makes those
+subnets private. A NAT gateway costs about US$40 a month plus data.)
+
+### 6.3 Database (RDS for PostgreSQL 16)
+
+```bash
+aws rds create-db-subnet-group --db-subnet-group-name $APP-subnets \
+  --db-subnet-group-description "EraseAI" --subnet-ids $SUBNETS
+
+aws rds create-db-instance --db-instance-identifier $APP-db \
+  --engine postgres --engine-version 16 \
+  --db-instance-class db.t4g.small --allocated-storage 20 --storage-type gp3 \
+  --master-username eraseai --master-user-password "$DB_PASSWORD" \
+  --db-name eraseai --db-subnet-group-name $APP-subnets \
+  --vpc-security-group-ids $DB_SG --no-publicly-accessible \
+  --backup-retention-period 7 --storage-encrypted
+
+aws rds wait db-instance-available --db-instance-identifier $APP-db   # ~10 minutes
+export DB_HOST=$(aws rds describe-db-instances --db-instance-identifier $APP-db \
+  --query 'DBInstances[0].Endpoint.Address' --output text)
+export DATABASE_URL="postgresql://eraseai:$DB_PASSWORD@$DB_HOST:5432/eraseai?sslmode=no-verify"
+echo $DATABASE_URL
+```
+
+(`sslmode=no-verify` keeps the connection encrypted; RDS requires TLS and
+Node doesn't ship Amazon's certificate authority.)
+
+### 6.4 Copy the data from Replit
+
+1. **Replit Shell** (production `DATABASE_URL` is in Publishing → Deployment
+   secrets):
+
+   ```bash
+   pg_dump "PASTE-PRODUCTION-DATABASE_URL" --no-owner --no-privileges -Fc -f eraseai.dump
+   ```
+
+   Download `eraseai.dump` from the Files panel.
+
+2. The database is private, so restore from inside the VPC: AWS console →
+   **CloudShell** → Actions → **Create VPC environment** → choose the default
+   VPC, one of the **private** subnets printed in 6.2, security group
+   `eraseai-apprunner`. In that CloudShell tab:
+   Actions → **Upload file** → `eraseai.dump`, then:
+
+   ```bash
+   sudo dnf install -y postgresql16
+   pg_restore --no-owner --no-privileges \
+     -d "postgresql://eraseai:YOUR-DB-PASSWORD@YOUR-DB-HOST:5432/eraseai?sslmode=require" eraseai.dump
+   ```
+
+   (Use the host printed in 6.3. Some "already exists" or "extension" notices
+   are harmless. An empty database also works: the server creates its tables
+   on start.)
+
+### 6.5 Build the container and push it to ECR
+
+On your computer, in a clone of the GitHub repository (`git pull` first):
+
+```bash
+aws ecr create-repository --repository-name $APP --image-scanning-configuration scanOnPush=true
+aws ecr get-login-password | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com
+
+# --platform matters on Apple Silicon Macs: App Runner runs x86_64 only
+docker build --platform linux/amd64 -t $APP .
+docker tag $APP:latest $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$APP:latest
+docker push $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$APP:latest
+```
+
+### 6.6 Secrets
+
+Copy each value from Replit → Publishing → Deployment secrets. For a copy, use
+**Stripe test keys** (see section 3).
+
+```bash
+put() { aws secretsmanager create-secret --name "$APP/$1" --secret-string "$2" --query ARN --output text; }
+put DATABASE_URL "$DATABASE_URL"
+put STRIPE_SECRET_KEY 'sk_test_...'
+put STRIPE_PUBLISHABLE_KEY 'pk_test_...'
+put SESSION_SECRET '...'
+put ADMIN_BOOTSTRAP_PASSWORD '...'
+put GOOGLE_CLIENT_ID '...'
+put GOOGLE_CLIENT_SECRET '...'
+put RESEND_API_KEY '...'
+put GOOGLE_PLAY_SERVICE_ACCOUNT_JSON "$(cat play-service-account.json)"
+```
+
+To change one later: `aws secretsmanager put-secret-value --secret-id eraseai/NAME --secret-string 'new'`,
+then redeploy (6.9).
+
+### 6.7 Roles for App Runner
+
+```bash
+# Lets App Runner pull the image from ECR
+aws iam create-role --role-name $APP-apprunner-ecr --assume-role-policy-document '{
+  "Version":"2012-10-17","Statement":[{"Effect":"Allow",
+  "Principal":{"Service":"build.apprunner.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws iam attach-role-policy --role-name $APP-apprunner-ecr \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+
+# Lets the running app read its secrets
+aws iam create-role --role-name $APP-apprunner-instance --assume-role-policy-document '{
+  "Version":"2012-10-17","Statement":[{"Effect":"Allow",
+  "Principal":{"Service":"tasks.apprunner.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws iam put-role-policy --role-name $APP-apprunner-instance --policy-name read-secrets --policy-document "{
+  \"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",
+  \"Action\":\"secretsmanager:GetSecretValue\",
+  \"Resource\":\"arn:aws:secretsmanager:$REGION:$ACCOUNT:secret:$APP/*\"}]}"
+
+# Connection from App Runner into the VPC (to reach the private database)
+export VPC_CONNECTOR=$(aws apprunner create-vpc-connector --vpc-connector-name $APP-vpc \
+  --subnets $PRIVATE_SUBNETS --security-groups $APP_SG \
+  --query 'VpcConnector.VpcConnectorArn' --output text)
+```
+
+### 6.8 Create the App Runner service
+
+```bash
+sec() { aws secretsmanager describe-secret --secret-id "$APP/$1" --query ARN --output text; }
+cat > apprunner.json <<JSON
+{
+  "ServiceName": "$APP",
+  "SourceConfiguration": {
+    "AuthenticationConfiguration": { "AccessRoleArn": "arn:aws:iam::$ACCOUNT:role/$APP-apprunner-ecr" },
+    "AutoDeploymentsEnabled": false,
+    "ImageRepository": {
+      "ImageIdentifier": "$ACCOUNT.dkr.ecr.$REGION.amazonaws.com/$APP:latest",
+      "ImageRepositoryType": "ECR",
+      "ImageConfiguration": {
+        "Port": "8080",
+        "RuntimeEnvironmentVariables": {
+          "PUBLIC_BASE_URL": "$SITE",
+          "WEB_BASE_URL": "$SITE"
+        },
+        "RuntimeEnvironmentSecrets": {
+          "DATABASE_URL": "$(sec DATABASE_URL)",
+          "STRIPE_SECRET_KEY": "$(sec STRIPE_SECRET_KEY)",
+          "STRIPE_PUBLISHABLE_KEY": "$(sec STRIPE_PUBLISHABLE_KEY)",
+          "SESSION_SECRET": "$(sec SESSION_SECRET)",
+          "ADMIN_BOOTSTRAP_PASSWORD": "$(sec ADMIN_BOOTSTRAP_PASSWORD)",
+          "GOOGLE_CLIENT_ID": "$(sec GOOGLE_CLIENT_ID)",
+          "GOOGLE_CLIENT_SECRET": "$(sec GOOGLE_CLIENT_SECRET)",
+          "RESEND_API_KEY": "$(sec RESEND_API_KEY)",
+          "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON": "$(sec GOOGLE_PLAY_SERVICE_ACCOUNT_JSON)"
+        }
+      }
+    }
+  },
+  "InstanceConfiguration": {
+    "Cpu": "1 vCPU",
+    "Memory": "2 GB",
+    "InstanceRoleArn": "arn:aws:iam::$ACCOUNT:role/$APP-apprunner-instance"
+  },
+  "HealthCheckConfiguration": { "Protocol": "HTTP", "Path": "/api/healthz", "Interval": 10, "Timeout": 5, "HealthyThreshold": 1, "UnhealthyThreshold": 5 },
+  "NetworkConfiguration": {
+    "EgressConfiguration": { "EgressType": "VPC", "VpcConnectorArn": "$VPC_CONNECTOR" }
+  }
+}
+JSON
+export SERVICE_ARN=$(aws apprunner create-service --cli-input-json file://apprunner.json \
+  --query 'Service.ServiceArn' --output text)
+echo "Waiting for the first deploy (~5 minutes)…"
+until [ "$(aws apprunner describe-service --service-arn $SERVICE_ARN --query Service.Status --output text)" != "OPERATION_IN_PROGRESS" ]; do sleep 20; done
+aws apprunner describe-service --service-arn $SERVICE_ARN --query '[Service.Status, Service.ServiceUrl]' --output text
+```
+
+### 6.9 Check it, then redeploy after code changes
+
+```bash
+URL=https://$(aws apprunner describe-service --service-arn $SERVICE_ARN --query Service.ServiceUrl --output text)
+curl -s $URL/api/healthz                 # {"status":"ok"}
+curl -s $URL/api/auth/providers          # {"email":true,"google":true,...}
+```
+
+Open `$URL` in the browser: the site loads and existing accounts can log in.
+Admin dashboard → Stripe setup → **Set up prices** (for the Stripe account
+whose keys you stored).
+
+After each code change: repeat the `docker build/tag/push` of 6.5, then
+
+```bash
+aws apprunner start-deployment --service-arn $SERVICE_ARN
+```
+
+Logs: CloudWatch → Log groups → `/aws/apprunner/eraseai/…/application`.
+
+### 6.10 Your domain
+
+```bash
+aws apprunner associate-custom-domain --service-arn $SERVICE_ARN --domain-name aws.eraseai.ai
+aws apprunner describe-custom-domains --service-arn $SERVICE_ARN \
+  --query 'CustomDomains[0].CertificateValidationRecords' --output table
+```
+
+Add the shown CNAME records (and a CNAME `aws.eraseai.ai` → the service URL)
+at your DNS provider. TLS is issued automatically within about 30 minutes.
+
+Google sign-in on the copy: Google Cloud Console → Credentials → Web client →
+add `https://aws.eraseai.ai/api/auth/google/callback`.
+
+### 6.11 Switching the real site to AWS (when ready)
+
+1. Store the **live** Stripe keys: `put-secret-value` for `eraseai/STRIPE_SECRET_KEY`
+   and `eraseai/STRIPE_PUBLISHABLE_KEY`.
+2. Fresh copy of the data: repeat 6.4 into an empty database (or drop and
+   recreate the `eraseai` database first) right before switching.
+3. `aws apprunner update-service --service-arn $SERVICE_ARN --source-configuration ...`
+   with `PUBLIC_BASE_URL`/`WEB_BASE_URL` set to `https://eraseai.ai` (or edit
+   them in the App Runner console → Configuration), then `associate-custom-domain`
+   for `eraseai.ai` and `www.eraseai.ai`, and move the DNS records.
+4. Stripe → Developers → Webhooks: delete the old Replit endpoint.
+5. Google sign-in: keep `https://eraseai.ai/api/auth/google/callback` (already there).
+6. Keep Replit running a few days, then stop its deployment.
+
+The Chrome extension and the Android app call `https://eraseai.ai/api`, so
+they move with the domain; no app update is needed.
+
+### 6.12 Rough monthly cost (Singapore, before credits)
+
+App Runner 1 vCPU / 2 GB, always on: ~US$50–65 · RDS db.t4g.small + 20 GB:
+~US$35 · NAT gateway: ~US$40 + data · Secrets Manager: ~US$4 · ECR, logs:
+a few dollars. About **US$135 a month**, so $10,000 of credits lasts years at
+this size.
