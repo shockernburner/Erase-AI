@@ -46,7 +46,7 @@ WHAT IT DOES
 
 When you press Send in ChatGPT, Claude, Gemini or Replit, the extension checks your message and every attached file. If nothing is found, the message goes through untouched. If something is found, a panel shows exactly what and where, and you choose:
 
-- Sanitize & Send: sensitive values are replaced with placeholders, so the model only sees the masked version
+- Sanitize & Send (Personal plan): sensitive values are replaced with placeholders, so the model only sees the masked version
 - Send Anyway: you know the context better than a rule does
 - Cancel: go back and fix it yourself
 
@@ -61,13 +61,16 @@ DOM events travel down from the document to the target (capture phase) before bu
 ```js
 // Simplified
 document.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter" || e.shiftKey || !isComposer(e.target)) return;
+  if (e.key !== "Enter" || e.shiftKey) return;
+  if (!isComposer(e.target)) return;
   e.preventDefault();
-  e.stopImmediatePropagation();   // the page never sees this Enter
+  // the page never sees this Enter
+  e.stopImmediatePropagation();
   scanThenMaybeSend();
-}, true);                          // capture phase
+}, true); // capture phase
 
-sendButton.addEventListener("click", interceptSubmission, true);
+sendButton.addEventListener(
+  "click", interceptSubmission, true);
 ```
 
 The hard part isn't the event model, it's the apps. Each one is a single-page app that re-renders its composer constantly, uses a different editor (a plain textarea in one, a rich contenteditable in another), and changes its markup without notice. ChatGPT's Work mode has its own send path. Gemini rebuilds the button. So the extension watches the DOM for new composers and buttons, hooks them as they appear, and has a regression test per site for each send path we've seen break.
@@ -149,7 +152,7 @@ Honest limits, because a security tool that oversells is worse than none:
 
 - It only catches what it has rules for. A secret in a format we don't recognise, or sensitive information that isn't structured (a confidential strategy written in plain English), will get through.
 - Rules produce false positives. That's why Send Anyway exists, and why we treat every false-positive report as a bug.
-- It protects the browser. Desktop and mobile AI apps need a different approach (we're working on Android separately).
+- It protects the browser. Desktop and mobile AI apps need a different approach (phones are covered by the separate EraseAI Android app).
 - It checks what goes into the AI, not what comes out. Reviewing AI-generated code and content before it ships is a separate problem, and just as important.
 
 WHAT WE LEARNED
