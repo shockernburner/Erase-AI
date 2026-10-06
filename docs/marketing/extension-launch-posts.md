@@ -1,12 +1,22 @@
 # EraseAI Firewall — launch post drafts
 
-Drafts for launching the Chrome extension. Every claim here matches the code
-as of extension 1.4.4 — keep it that way; technical audiences check.
+Drafts for launching the Chrome extension and the Android app. Every claim
+here matches the code as of extension 1.6.0 — keep it that way; technical
+audiences check.
 
-**Before posting:** 1.4.4 must be live on the Chrome Web Store (on-device
-protection, welcome page, review prompt). Posting while the store still
-serves 1.4.3 sends people to a version that needs an account before it does
-anything.
+**Before posting (launch gate):**
+
+1. 1.6.0 is live on the Chrome Web Store, not just submitted. The dashboard's
+   "Daily users by item version" should show 1.6.0 appearing. Posting while
+   the store serves 1.4.3 sends people to a version that checks nothing
+   without an account.
+2. The Android app is in production at 100% (not internal testing), so the
+   Play links below open a listing instead of "not found".
+3. The website with the new welcome page and the device-aware hero is
+   deployed. The welcome page is what new installs see first; it walks them
+   through a safe test that the extension blocks.
+4. Install the store version on a clean Chrome profile and run the welcome
+   page's test on ChatGPT, Claude and Gemini once.
 
 ---
 
@@ -46,6 +56,16 @@ Base: `https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpo
 | LinkedIn | `?utm_source=linkedin&utm_medium=post&utm_campaign=launch` |
 | X | `?utm_source=x&utm_medium=post&utm_campaign=launch` |
 | Newsletters / YouTube | `?utm_source=<name>&utm_medium=creator&utm_campaign=launch` |
+
+Android (Play only reads UTM tags inside `referrer`; installs show in Play
+Console → Statistics / Acquisition):
+
+`https://play.google.com/store/apps/details?id=com.eraseai.firewall&referrer=utm_source%3D<channel>%26utm_medium%3Dpost%26utm_campaign%3Dlaunch`
+
+Where a post can carry only one link and readers are on a mix of phones and
+computers (LinkedIn, X), link `https://eraseai.ai/?utm_source=<channel>&utm_medium=post&utm_campaign=launch`
+instead: the home page shows Android visitors the Play button and everyone
+else Add to Chrome.
 
 ---
 
@@ -190,11 +210,11 @@ Not on purpose. A log file with a key in it. A customer email thread. A spreadsh
 
 We built EraseAI Firewall to catch that at the moment it happens. It's a free Chrome extension that checks prompts and attachments in ChatGPT, Claude and Gemini before they're sent, and offers to redact API keys, passwords, card numbers and personal data.
 
-It works on-device without an account, so anyone can try it in a minute. For teams, there's a dashboard and central controls.
+It works on-device without an account, so anyone can try it in a minute. There's an Android app for AI on your phone. For teams, there's a dashboard, and IT can install it on every company browser with no setup for staff.
 
 If you run security or IT and are dealing with "shadow AI", I'd like to hear how you're handling it today.
 
-<link with utm_source=linkedin>
+<eraseai.ai link with utm_source=linkedin>
 
 #AISecurity #DataLossPrevention #ShadowAI
 ```
@@ -210,7 +230,9 @@ If you run security or IT and are dealing with "shadow AI", I'd like to hear how
 
 4/ No account needed. The checks run on your device with the same rules as our server.
 
-5/ Try it and tell us what it gets wrong: <link with utm_source=x>
+5/ On Android too: the EraseAI app checks what you're about to send in AI apps on your phone.
+
+6/ Try it and tell us what it gets wrong: <eraseai.ai link with utm_source=x>
 ```
 
 ## 7. Creator / newsletter outreach
@@ -243,7 +265,7 @@ Happy to set you up with a Pro account for testing, answer technical questions, 
 
 | Day | Channel |
 |---|---|
-| 0 | Confirm 1.4.4 is live; screenshots and video uploaded to the listing |
+| 0 | Launch gate above passes; screenshots and video uploaded to the listing |
 | 1 | Show HN (Tue–Thu, ~8–9 AM ET), stay in the thread all day |
 | 2 | LinkedIn article + share post (`linkedin-article.md`) + X thread |
 | 3–4 | Reddit (one sub per day, following each sub's rules) |

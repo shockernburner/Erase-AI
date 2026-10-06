@@ -29,7 +29,8 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
 import { useSeoMeta } from "@/pages/seo/useSeoMeta";
 import { chromeStoreLink } from "@/lib/extensionStore";
-import { ANDROID_PLAY_URL, ORG_COVERAGE_STEPS, peekPricingFocus, setPricingFocus } from "@/lib/products";
+import { detectInstallTarget, installCtas, playStoreLink } from "@/lib/installTarget";
+import { ORG_COVERAGE_STEPS, peekPricingFocus, setPricingFocus } from "@/lib/products";
 import type { PricingTierId } from "@/lib/pricingPlans";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -57,6 +58,9 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   });
 
   const baseUrl = import.meta.env.BASE_URL;
+  // The hero leads with what this device can install: the app on Android, the extension elsewhere.
+  const [installTarget] = useState(detectInstallTarget);
+  const heroCtas = installCtas(installTarget, "landing-hero");
 
   const navItems = [
     { label: "Product", href: "#product" },
@@ -125,7 +129,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
       description: "Checks what you're about to send in AI apps on your phone. 7-day free trial; included in every paid plan.",
       cta: "Get it on Google Play",
       icon: <Smartphone className="w-6 h-6" />,
-      action: () => window.open(ANDROID_PLAY_URL, "_blank", "noopener,noreferrer"),
+      action: () => window.open(playStoreLink("landing-modes"), "_blank", "noopener,noreferrer"),
     },
     {
       title: "Firewall for teams and enterprise",
@@ -299,21 +303,28 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                   </p>
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                     <a
-                      href={chromeStoreLink("landing-hero")}
+                      href={heroCtas.primary.href}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90"
                     >
-                      Add to Chrome — free
+                      {heroCtas.primary.label}
                       <ArrowRight className="w-4 h-4" />
                     </a>
-                    <button
-                      onClick={() => document.getElementById("developer-api")?.scrollIntoView({ behavior: "smooth" })}
+                    <a
+                      href={heroCtas.secondary.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 rounded-full border border-border/50 bg-card/40 px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-card/70"
                     >
-                      Try Developer API
-                    </button>
+                      {heroCtas.secondary.label}
+                    </a>
                   </div>
+                  {installTarget === "other-mobile" && (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      There's no iPhone app yet. Open eraseai.ai on your computer to add EraseAI to Chrome.
+                    </p>
+                  )}
                   <div className="mt-6 flex flex-wrap gap-3">
                     {[
                       "PII",
