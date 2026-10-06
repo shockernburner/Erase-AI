@@ -1,3 +1,4 @@
+import path from "node:path";
 import express, { type Express } from "express";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
@@ -62,6 +63,21 @@ app.post(
     logger,
   }),
 );
+
+// One-container deployments (Docker on Google Cloud Run, AWS App Runner…):
+// serve the built website from the same server. On Replit the website is a
+// separate static service and WEB_DIST_DIR is unset.
+const webDistDir = process.env.WEB_DIST_DIR;
+if (webDistDir) {
+  const root = path.resolve(webDistDir);
+  app.use(express.static(root, { index: false, maxAge: "1h" }));
+  // Single-page app: every non-API GET falls back to index.html.
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(path.join(root, "index.html"));
+  });
+  logger.info({ root }, "Serving the website from WEB_DIST_DIR");
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

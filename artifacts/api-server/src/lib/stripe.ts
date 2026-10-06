@@ -9,6 +9,16 @@ async function getCredentials(): Promise<{
   publishableKey: string;
   secretKey: string;
 }> {
+  // Outside Replit (Google Cloud, AWS, Docker): plain keys from the
+  // environment / secret manager. On Replit these are unset and the
+  // connector below is used, as before.
+  if (process.env.STRIPE_SECRET_KEY) {
+    return {
+      secretKey: process.env.STRIPE_SECRET_KEY,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? "",
+    };
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? "repl " + process.env.REPL_IDENTITY

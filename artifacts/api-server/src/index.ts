@@ -59,17 +59,21 @@ async function initStripe(): Promise<void> {
     // single bad boot leaves stripe.products/prices empty and checkout returns
     // PRICE_NOT_FOUND until the next restart.
     try {
-      const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
-      if (domain) {
+      // PUBLIC_BASE_URL (e.g. https://eraseai.ai) outside Replit; Replit
+      // provides REPLIT_DOMAINS.
+      const publicBase = process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "");
+      const replitDomain = process.env.REPLIT_DOMAINS?.split(",")[0];
+      const webhookBase = publicBase || (replitDomain ? `https://${replitDomain}` : null);
+      if (webhookBase) {
         const webhookResult = await stripeSync.findOrCreateManagedWebhook(
-          `https://${domain}/api/stripe/webhook`,
+          `${webhookBase}/api/stripe/webhook`,
         );
         logger.info(
           { url: webhookResult?.url ?? "setup complete" },
           "Stripe managed webhook configured",
         );
       } else {
-        logger.warn("REPLIT_DOMAINS not set — skipping managed webhook setup");
+        logger.warn("Neither PUBLIC_BASE_URL nor REPLIT_DOMAINS is set — skipping managed webhook setup");
       }
     } catch (err) {
       logger.error({ err }, "Stripe managed webhook setup failed (continuing to backfill)");

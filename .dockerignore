@@ -1,0 +1,18 @@
+# Build context for the one-container image (see Dockerfile).
+**/node_modules
+**/dist
+**/.vite
+.git
+.local
+.cache
+attached_assets
+outputs
+exports
+deliverables
+marketing-assets
+screenshots
+branding
+docs
+*.txt
+*.csv
+artifacts/ai-firewall-android
