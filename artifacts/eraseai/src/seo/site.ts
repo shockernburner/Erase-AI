@@ -156,7 +156,13 @@ export const ORGANIZATION_LD = {
   name: SITE_NAME,
   url: `${SITE_URL}/`,
   logo: `${SITE_URL}/apple-touch-icon.png`,
-  parentOrganization: { "@type": "Organization", name: "Vantward Solutions Pte. Ltd." },
+  parentOrganization: {
+    "@type": "Organization",
+    "@id": "https://vantward.com/#org",
+    name: "Vantward Solutions Pte. Ltd.",
+    url: "https://vantward.com/",
+    sameAs: ["https://www.linkedin.com/company/vantward-solutions-pte-ltd"],
+  },
   email: "director@vantward.com",
   address: {
     "@type": "PostalAddress",

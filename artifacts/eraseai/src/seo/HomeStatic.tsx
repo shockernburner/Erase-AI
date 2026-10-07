@@ -94,7 +94,8 @@ export function HomeStatic() {
         <h2 className="mt-14 font-display text-2xl font-bold">{s.start.sales}</h2>
         <p className="mt-4 text-white/75">
           Email <a href={`mailto:${CONTACT.email}`} className="text-cyan-300">{CONTACT.email}</a>, WhatsApp {CONTACT.whatsappLabel}, or use the{" "}
-          <a href="/contact" className="text-cyan-300">contact form</a>. {s.start.company}.
+          <a href="/contact" className="text-cyan-300">contact form</a>.{" "}
+          <a href="https://vantward.com/" className="text-cyan-300">{s.start.company}</a>.
         </p>
         <p className="mt-6 flex gap-4 text-sm text-white/50">
           <a href="/privacy">{s.start.privacy}</a>

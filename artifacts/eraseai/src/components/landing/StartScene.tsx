@@ -95,7 +95,7 @@ export function StartScene({ onSignUp, onPlans }: { onSignUp: () => void; onPlan
       </motion.div>
 
       <div className="relative z-10 mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/40">
-        <span>© {new Date().getFullYear()} {t("story.start.company")}</span>
+        <span>© {new Date().getFullYear()} <a href="https://vantward.com/" className="hover:text-white">{t("story.start.company")}</a></span>
         <a href={`${base}privacy`} className="hover:text-white">{t("story.start.privacy")}</a>
         <a href={`${base}terms`} className="hover:text-white">{t("story.start.terms")}</a>
         <a href={`${base}license`} className="hover:text-white">{t("story.start.license")}</a>

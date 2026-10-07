@@ -61,7 +61,7 @@ export default function ContactPage({ onBack }: { onBack: () => void }) {
                 <div>
                   <p className="text-sm font-medium text-foreground">{t("contact.address")}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Vantward Solutions Pte. Ltd.<br />
+                    <a href="https://vantward.com/" className="hover:text-foreground hover:underline">Vantward Solutions Pte. Ltd.</a><br />
                     68 Circular Road #02-01<br />
                     Singapore 049422
                   </p>
