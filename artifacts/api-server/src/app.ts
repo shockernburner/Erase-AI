@@ -71,14 +71,14 @@ app.post(
 const webDistDir = process.env.WEB_DIST_DIR;
 if (webDistDir) {
   const root = path.resolve(webDistDir);
-  // redirect: false so /learn stays /learn instead of becoming /learn/.
-  app.use(express.static(root, { index: false, redirect: false, maxAge: "1h" }));
-  // Prerendered pages live at <path>/index.html (see artifacts/eraseai/scripts/prerender.mjs);
+  app.use(express.static(root, { index: false, maxAge: "1h" }));
+  // Prerendered pages live at _pages/<path>.html (see artifacts/eraseai/scripts/prerender.mjs);
   // anything else is the single-page app's index.html.
+  const pagesDir = path.join(root, "_pages");
   app.get(/^\/(?!api\/).*/, (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
-    const page = path.join(root, req.path, "index.html");
-    const file = page.startsWith(root + path.sep) && fs.existsSync(page) ? page : path.join(root, "index.html");
+    const page = path.join(pagesDir, `${req.path.replace(/\/$/, "")}.html`);
+    const file = page.startsWith(pagesDir + path.sep) && fs.existsSync(page) ? page : path.join(root, "index.html");
     res.sendFile(file);
   });
   logger.info({ root }, "Serving the website from WEB_DIST_DIR");

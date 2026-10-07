@@ -5,7 +5,12 @@
 // pages as duplicates of "/" and crawlers that don't run JavaScript saw an
 // empty page.
 //
-// Output: dist/public/index.html (home) and dist/public/<path>/index.html.
+// Output: dist/public/index.html (home) and dist/public/_pages/<path>.html.
+// The pages are not written to <path>/index.html because Replit's static
+// hosting answers /ai-firewall with a redirect to /ai-firewall/ when that
+// folder exists, and then serves the app's index.html there. Instead,
+// .replit-artifact/artifact.toml rewrites each URL to its _pages file; this
+// script fails the build if a page is missing from that list.
 
 import { build } from "vite";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -65,9 +70,21 @@ function pageHtml(page) {
   return html;
 }
 
+const pageFile = (p) => (p === "/" ? "/index.html" : `/_pages${p}.html`);
+
 const pages = allPages();
+const artifactToml = await readFile(path.join(root, ".replit-artifact/artifact.toml"), "utf8");
+const missing = pages.filter(
+  (p) => p.path !== "/" && !artifactToml.includes(`from = "${p.path}"\nto = "${pageFile(p.path)}"`),
+);
+if (missing.length) {
+  throw new Error(
+    `[prerender] add these rewrites to .replit-artifact/artifact.toml, above the "/*" rewrite:\n` +
+      missing.map((p) => `[[services.production.rewrites]]\nfrom = "${p.path}"\nto = "${pageFile(p.path)}"`).join("\n\n"),
+  );
+}
 for (const page of pages) {
-  const file = page.path === "/" ? path.join(publicDir, "index.html") : path.join(publicDir, page.path.slice(1), "index.html");
+  const file = path.join(publicDir, pageFile(page.path));
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, pageHtml(page));
 }

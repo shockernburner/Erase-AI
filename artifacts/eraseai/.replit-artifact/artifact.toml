@@ -16,6 +16,99 @@ build = [ "pnpm", "--filter", "@workspace/eraseai", "run", "build" ]
 publicDir = "artifacts/eraseai/dist/public"
 serve = "static"
 
+# Prerendered pages (scripts/prerender.mjs checks this list at build time).
+[[services.production.rewrites]]
+from = "/learn"
+to = "/_pages/learn.html"
+
+[[services.production.rewrites]]
+from = "/ai-firewall"
+to = "/_pages/ai-firewall.html"
+
+[[services.production.rewrites]]
+from = "/chatgpt-data-leak"
+to = "/_pages/chatgpt-data-leak.html"
+
+[[services.production.rewrites]]
+from = "/ai-prompt-security"
+to = "/_pages/ai-prompt-security.html"
+
+[[services.production.rewrites]]
+from = "/api-key-protection-ai"
+to = "/_pages/api-key-protection-ai.html"
+
+[[services.production.rewrites]]
+from = "/blog"
+to = "/_pages/blog.html"
+
+[[services.production.rewrites]]
+from = "/blog/api-keys-chatgpt"
+to = "/_pages/blog/api-keys-chatgpt.html"
+
+[[services.production.rewrites]]
+from = "/blog/what-is-ai-firewall"
+to = "/_pages/blog/what-is-ai-firewall.html"
+
+[[services.production.rewrites]]
+from = "/blog/prevent-data-leaks-ai"
+to = "/_pages/blog/prevent-data-leaks-ai.html"
+
+[[services.production.rewrites]]
+from = "/status"
+to = "/_pages/status.html"
+
+[[services.production.rewrites]]
+from = "/contact"
+to = "/_pages/contact.html"
+
+[[services.production.rewrites]]
+from = "/privacy"
+to = "/_pages/privacy.html"
+
+[[services.production.rewrites]]
+from = "/terms"
+to = "/_pages/terms.html"
+
+[[services.production.rewrites]]
+from = "/license"
+to = "/_pages/license.html"
+
+[[services.production.rewrites]]
+from = "/learn/ai-data-loss-prevention"
+to = "/_pages/learn/ai-data-loss-prevention.html"
+
+[[services.production.rewrites]]
+from = "/learn/llm-data-security"
+to = "/_pages/learn/llm-data-security.html"
+
+[[services.production.rewrites]]
+from = "/learn/shadow-ai"
+to = "/_pages/learn/shadow-ai.html"
+
+[[services.production.rewrites]]
+from = "/learn/is-chatgpt-safe-for-work"
+to = "/_pages/learn/is-chatgpt-safe-for-work.html"
+
+[[services.production.rewrites]]
+from = "/learn/pii-redaction-for-ai"
+to = "/_pages/learn/pii-redaction-for-ai.html"
+
+[[services.production.rewrites]]
+from = "/learn/prompt-injection"
+to = "/_pages/learn/prompt-injection.html"
+
+[[services.production.rewrites]]
+from = "/learn/generative-ai-acceptable-use-policy"
+to = "/_pages/learn/generative-ai-acceptable-use-policy.html"
+
+[[services.production.rewrites]]
+from = "/learn/ai-compliance-gdpr-hipaa"
+to = "/_pages/learn/ai-compliance-gdpr-hipaa.html"
+
+[[services.production.rewrites]]
+from = "/learn/ai-security-glossary"
+to = "/_pages/learn/ai-security-glossary.html"
+
 [[services.production.rewrites]]
 from = "/*"
 to = "/index.html"
