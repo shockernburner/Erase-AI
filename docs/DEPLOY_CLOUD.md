@@ -107,8 +107,9 @@ chmod +x cloud-sql-proxy
 pg_restore --no-owner --no-privileges -d "postgresql://eraseai:PASSWORD@127.0.0.1:6543/eraseai" eraseai.dump
 ```
 
-The server also creates any missing tables on start, so a fresh empty database
-works too.
+Starting from an empty database instead? The core tables (`users`, `scans`…)
+come from the Drizzle schema, not from server startup, so create them once
+before the first start: `DATABASE_URL=... pnpm --filter @workspace/db run push`.
 
 ### 4.3 Secrets
 
@@ -320,8 +321,14 @@ Node doesn't ship Amazon's certificate authority.)
    ```
 
    (Use the host printed in 6.3. Some "already exists" or "extension" notices
-   are harmless. An empty database also works: the server creates its tables
-   on start.)
+   are harmless.)
+
+   Starting empty instead of copying? The core tables (`users`, `scans`…)
+   come from the Drizzle schema, not from server startup. From the same VPC
+   CloudShell, in a clone of the repository: `pnpm install` then
+   `DATABASE_URL="postgresql://...?sslmode=no-verify" pnpm --filter @workspace/db run push`,
+   then redeploy (6.9). Don't do this before a `pg_restore`: the restore
+   expects an empty database.
 
 ### 6.5 Build the container and push it to ECR
 
@@ -485,7 +492,34 @@ add `https://aws.eraseai.ai/api/auth/google/callback`.
 The Chrome extension and the Android app call `https://eraseai.ai/api`, so
 they move with the domain; no app update is needed.
 
-### 6.12 Rough monthly cost (Singapore, before credits)
+### 6.12 Pause while idle, resume later
+
+Paused, the copy costs about US$5–10 a month (database storage, secrets, image).
+
+```bash
+# Pause (run 6.1 and the "coming back later" block first)
+aws apprunner pause-service --service-arn $SERVICE_ARN
+aws rds stop-db-instance --db-instance-identifier $APP-db      # AWS restarts it after 7 days; stop it again
+export NAT=$(aws ec2 describe-nat-gateways --filter Name=state,Values=available --query 'NatGateways[0].NatGatewayId' --output text)
+export EIP=$(aws ec2 describe-nat-gateways --nat-gateway-ids $NAT --query 'NatGateways[0].NatGatewayAddresses[0].AllocationId' --output text)
+aws ec2 delete-nat-gateway --nat-gateway-id $NAT
+aws ec2 wait nat-gateway-deleted --nat-gateway-ids $NAT && aws ec2 release-address --allocation-id $EIP
+```
+
+```bash
+# Resume: database, NAT gateway (the private route table already exists), app
+aws rds start-db-instance --db-instance-identifier $APP-db
+export PUBLIC_SUBNET=$(echo $SUBNETS | awk '{print $1}')
+export EIP=$(aws ec2 allocate-address --domain vpc --query AllocationId --output text)
+export NAT=$(aws ec2 create-nat-gateway --subnet-id $PUBLIC_SUBNET --allocation-id $EIP --query NatGateway.NatGatewayId --output text)
+aws ec2 wait nat-gateway-available --nat-gateway-ids $NAT
+export RT=$(aws ec2 describe-route-tables --filters Name=association.subnet-id,Values=$(echo $PRIVATE_SUBNETS | awk '{print $1}') --query 'RouteTables[0].RouteTableId' --output text)
+aws ec2 replace-route --route-table-id $RT --destination-cidr-block 0.0.0.0/0 --nat-gateway-id $NAT
+aws rds wait db-instance-available --db-instance-identifier $APP-db
+aws apprunner resume-service --service-arn $SERVICE_ARN
+```
+
+### 6.13 Rough monthly cost (Singapore, before credits)
 
 App Runner 1 vCPU / 2 GB, always on: ~US$50–65 · RDS db.t4g.small + 20 GB:
 ~US$35 · NAT gateway: ~US$40 + data · Secrets Manager: ~US$4 · ECR, logs:
