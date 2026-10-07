@@ -18,8 +18,9 @@ Update this file when a branch is created, merged or deleted.
    a new package while it is pending: that restarts the review. If it is
    still pending around Oct 12, contact Chrome Web Store support.
 2. Upload 1.6.0 (already in `extension/` on `main`). Same day: Android 1.0.8
-   to production at 20%.
-3. 2–3 days later, if Android vitals are clean: Android to 100%. Merge
+   to production. A first production release can't be staged, so it goes to
+   100% (staged rollouts start with the next update).
+3. 2–3 days later, if Android vitals are clean: merge
    `claude/bold-feynman-5rjicj` and deploy the website.
 4. 1.6.0 approved: start the marketing push (launch gate and order in
    `docs/marketing/extension-launch-posts.md`) and company outreach (free
