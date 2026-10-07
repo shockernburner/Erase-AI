@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AI_GATES, PII_CHIPS, PUBLIC_SINKS } from "./landingData";
 
@@ -16,6 +17,13 @@ function layout(vertical: boolean) {
   return { w: 1000, h: 520, you: { x: 110, y: 260 }, pub: { x: 880, y: 260 }, gates, gateW: 150, gateH: 50 };
 }
 
+/** Rough rendered width of a 12px label; CJK glyphs are about twice as wide. */
+function labelWidth(text: string) {
+  let w = 0;
+  for (const ch of text) w += /[\u2E80-\uFFEF]/.test(ch) ? 12.5 : 7.6;
+  return w;
+}
+
 function route(a: Pt, g: Pt, b: Pt, vertical: boolean) {
   if (vertical) {
     return `M ${a.x} ${a.y} C ${a.x} ${(a.y + g.y) / 2}, ${g.x} ${(a.y + g.y) / 2}, ${g.x} ${g.y} C ${g.x} ${(g.y + b.y) / 2}, ${b.x} ${(g.y + b.y) / 2}, ${b.x} ${b.y}`;
@@ -26,6 +34,7 @@ function route(a: Pt, g: Pt, b: Pt, vertical: boolean) {
 export function LeakFlowScene() {
   const vertical = useIsMobile();
   const reduce = useReducedMotion();
+  const { t } = useTranslation();
   const L = layout(vertical);
   const routes = L.gates.map((g) => route(L.you, g, L.pub, vertical));
 
@@ -39,11 +48,11 @@ export function LeakFlowScene() {
         transition={{ duration: 0.6 }}
         className="relative z-10 mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center font-display text-3xl font-extrabold text-white sm:text-5xl"
       >
-        <span className="text-cyan-300">Your data</span>
+        <span className="text-cyan-300">{t("story.leak.yourData")}</span>
         <span className="text-white/40">→</span>
-        <span>AI</span>
+        <span>{t("story.leak.ai")}</span>
         <span className="text-white/40">→</span>
-        <span className="text-red-400">the world</span>
+        <span className="text-red-400">{t("story.leak.world")}</span>
       </motion.h2>
       <motion.p
         initial={{ opacity: 0 }}
@@ -51,10 +60,10 @@ export function LeakFlowScene() {
         transition={{ delay: 0.3 }}
         className="relative z-10 mb-4 text-center text-sm text-white/60 sm:text-base"
       >
-        AI gates are everywhere. Whatever you send walks through one.
+        {t("story.leak.sub")}
       </motion.p>
 
-      <svg viewBox={`0 0 ${L.w} ${L.h}`} className="relative z-10 h-auto max-h-[62dvh] w-full max-w-5xl" role="img" aria-label="Your personal data flows through AI apps out to logs, training data, search results and breaches">
+      <svg viewBox={`0 0 ${L.w} ${L.h}`} className="relative z-10 h-auto max-h-[62dvh] w-full max-w-5xl" role="img" aria-label={t("story.leak.aria")}>
         <defs>
           <radialGradient id="lf-you" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.5" />
@@ -90,7 +99,7 @@ export function LeakFlowScene() {
         <circle cx={L.you.x} cy={L.you.y - 9} r={9} fill="#22d3ee" />
         <path d={`M ${L.you.x - 16} ${L.you.y + 20} a 16 13 0 0 1 32 0`} fill="#22d3ee" />
         <text x={L.you.x} y={L.you.y + (vertical ? -52 : 62)} textAnchor="middle" className="fill-white font-display" fontSize={vertical ? 20 : 18} fontWeight={700}>
-          You
+          {t("story.leak.you")}
         </text>
 
         {/* AI gates */}
@@ -117,7 +126,7 @@ export function LeakFlowScene() {
           {!reduce && <animateTransform attributeName="transform" type="rotate" from={`0 ${L.pub.x} ${L.pub.y}`} to={`360 ${L.pub.x} ${L.pub.y}`} dur="30s" repeatCount="indefinite" />}
         </g>
         <text x={L.pub.x} y={L.pub.y + (vertical ? 66 : 68)} textAnchor="middle" fill="#fca5a5" fontSize={18} fontWeight={700}>
-          Public
+          {t("story.leak.public")}
         </text>
         {PUBLIC_SINKS.map((s, i) => {
           const p = vertical
@@ -136,17 +145,18 @@ export function LeakFlowScene() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1 + i * 0.2 }}
             >
-              {s}
+              {t(`story.leak.sinks.${s}`)}
             </motion.text>
           );
         })}
 
         {/* Data chips in flight */}
         {!reduce &&
-          PII_CHIPS.map((chip, i) => {
-            const w = chip.length * 7.6 + 18;
+          PII_CHIPS.map((key, i) => {
+            const chip = t(`story.leak.chips.${key}`);
+            const w = labelWidth(chip) + 18;
             return (
-              <g key={chip} opacity={0}>
+              <g key={key} opacity={0}>
                 <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill="#0e2a33" stroke="#22d3ee" strokeOpacity={0.8} />
                 <text x={0} y={4.5} textAnchor="middle" fill="#a5f3fc" fontSize={12} fontWeight={600}>
                   {chip}

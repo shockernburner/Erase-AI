@@ -38,8 +38,8 @@ export const ANDROID_PACKAGE_NAME = "com.eraseai.firewall";
 export const MOBILE_PLAY_PRODUCTS: MobilePlayProduct[] = [
   { product_id: "eraseai_personal_monthly", plan: "personal", billing_period: "monthly", name: "Personal Monthly" },
   { product_id: "eraseai_personal_annual", plan: "personal", billing_period: "annual", name: "Personal Annual" },
-  { product_id: "eraseai_pro_monthly", plan: "pro", billing_period: "monthly", name: "Developer Monthly" },
-  { product_id: "eraseai_pro_annual", plan: "pro", billing_period: "annual", name: "Developer Annual" },
+  { product_id: "eraseai_pro_monthly", plan: "pro", billing_period: "monthly", name: "Pro Monthly" },
+  { product_id: "eraseai_pro_annual", plan: "pro", billing_period: "annual", name: "Pro Annual" },
 ];
 
 /**

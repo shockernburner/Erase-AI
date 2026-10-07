@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, Mail, Mouse } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
@@ -27,25 +28,17 @@ import { CONTACT, LANDING_PLANS } from "@/components/landing/landingData";
 type PreviewMode = "developer" | "enterprise" | "personal" | null;
 
 const SCENES = [
-  { id: "headlines", label: "Headlines", steps: 2 },
-  { id: "leak", label: "The leak", steps: 1 },
-  { id: "now", label: "Why now", steps: 1 },
-  { id: "eraseai", label: "EraseAI", steps: 3 },
-  { id: "plans", label: "Plans", steps: LANDING_PLANS.length },
-  { id: "start", label: "Start", steps: 1 },
+  { id: "headlines", steps: 2 },
+  { id: "leak", steps: 1 },
+  { id: "now", steps: 1 },
+  { id: "eraseai", steps: 3 },
+  { id: "plans", steps: LANDING_PLANS.length },
+  { id: "start", steps: 1 },
 ] as const;
 
 const FRAMES = SCENES.flatMap((s, scene) => Array.from({ length: s.steps }, (_, step) => ({ scene, step })));
 const PLANS_SCENE = SCENES.findIndex((s) => s.id === "plans");
 const firstFrameOf = (scene: number) => FRAMES.findIndex((f) => f.scene === scene);
-
-const PLAN_LABEL: Record<PricingTierId, string> = {
-  free: "Free",
-  personal: "Personal",
-  pro: "Pro (Developer)",
-  business: "Teams",
-  enterprise: "Enterprise",
-};
 
 // Read at load: App rewrites /pricing to / before this page first renders.
 const LANDED_ON_PRICING = typeof window !== "undefined" && /\/pricing\/?$/.test(window.location.pathname);
@@ -60,6 +53,7 @@ function initialFrame(): number {
 
 export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
   const reduce = useReducedMotion();
+  const { t } = useTranslation();
   const [auth, setAuth] = useState<null | "login" | "signup">(null);
   // Plan picked before signing up; after sign-up the app opens checkout on it.
   const [chosenPlan, setChosenPlan] = useState<PricingTierId | null>(() => peekPricingFocus());
@@ -67,7 +61,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   const { index, direction, goTo, step } = useSceneNavigation(FRAMES.length, { initial: startAt, paused: auth !== null });
   const frame = FRAMES[index];
   const scene = SCENES[frame.scene];
-  const base = import.meta.env.BASE_URL;
+  const baseUrl = import.meta.env.BASE_URL;
 
   useSeoMeta({
     title: "EraseAI — Use AI without leaking your data",
@@ -93,7 +87,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   }, []);
 
   const contact = () => {
-    window.location.href = `${base}contact`;
+    window.location.href = `${baseUrl}contact`;
   };
   const openExternal = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
 
@@ -108,15 +102,15 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
       switch (plan.id) {
         case "personal":
           return [
-            { label: "Free Chrome extension", onClick: () => openExternal(chromeStoreLink("landing-plan-personal")) },
-            { label: "Android app", onClick: () => openExternal(ANDROID_PLAY_URL) },
+            { label: t("story.plans.extraChrome"), onClick: () => openExternal(chromeStoreLink("landing-plan-personal")) },
+            { label: t("story.plans.extraAndroid"), onClick: () => openExternal(ANDROID_PLAY_URL) },
           ];
         case "pro":
-          return [{ label: "Try the live preview", onClick: () => onPreview("developer") }];
+          return [{ label: t("story.plans.extraPreview"), onClick: () => onPreview("developer") }];
         case "business":
-          return [{ label: "Preview the admin dashboard", onClick: () => onPreview("enterprise") }];
+          return [{ label: t("story.plans.extraAdmin"), onClick: () => onPreview("enterprise") }];
         case "enterprise":
-          return [{ label: `WhatsApp ${CONTACT.whatsappLabel}`, onClick: () => openExternal(CONTACT.whatsappUrl) }];
+          return [{ label: t("story.plans.extraWhatsapp", { number: CONTACT.whatsappLabel }), onClick: () => openExternal(CONTACT.whatsappUrl) }];
       }
     },
   };
@@ -152,21 +146,21 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
 
       {/* Header */}
       <header className="absolute inset-x-0 top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
-        <button onClick={() => goTo(0)} className="flex items-center gap-2.5" aria-label="EraseAI, back to start">
+        <button onClick={() => goTo(0)} className="flex items-center gap-2.5" aria-label={t("story.nav.home")}>
           <BrandLogo className="h-9 w-9" />
-          <span className="hidden font-display text-lg font-bold tracking-tight min-[380px]:inline">EraseAI</span>
+          <span className="hidden font-display text-lg font-bold tracking-tight sm:inline">EraseAI</span>
         </button>
         <div className="flex items-center gap-2 sm:gap-3">
-          <a href={`${base}contact`} className="hidden items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white sm:flex">
+          <a href={`${baseUrl}contact`} className="hidden items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white sm:flex">
             <Mail className="h-4 w-4" />
-            Contact
+            {t("story.nav.contact")}
           </a>
           <LanguageSelector />
-          <button onClick={() => setAuth("login")} className="rounded-full px-3 py-1.5 text-sm font-semibold text-white/85 hover:text-white">
-            Sign in
+          <button onClick={() => setAuth("login")} className="whitespace-nowrap rounded-full px-2 py-1.5 text-sm font-semibold text-white/85 hover:text-white sm:px-3">
+            {t("story.nav.signIn")}
           </button>
-          <button onClick={() => setAuth("signup")} className="rounded-full bg-cyan-400 px-4 py-1.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">
-            Sign up
+          <button onClick={() => setAuth("signup")} className="whitespace-nowrap rounded-full bg-cyan-400 px-3 py-1.5 text-sm font-bold sm:px-4 text-slate-950 transition hover:bg-cyan-300">
+            {t("story.nav.signUp")}
           </button>
         </div>
       </header>
@@ -183,7 +177,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
             exit="exit"
             transition={{ duration: reduce ? 0.2 : 0.7, ease: [0.2, 0.8, 0.2, 1] }}
             className="absolute inset-0"
-            aria-label={scene.label}
+            aria-label={t(`story.chapters.${scene.id}`)}
           >
             {renderScene()}
           </motion.section>
@@ -202,8 +196,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           >
             <Mouse className="hidden h-5 w-5 sm:block" />
             <motion.span animate={reduce ? undefined : { y: [0, 5, 0] }} transition={{ duration: 1.6, repeat: Infinity }} className="flex items-center gap-1">
-              <span className="sm:hidden">Swipe up</span>
-              <span className="hidden sm:inline">Scroll</span>
+              <span className="sm:hidden">{t("story.swipe")}</span>
+              <span className="hidden sm:inline">{t("story.scroll")}</span>
               <ChevronDown className="h-3.5 w-3.5" />
             </motion.span>
           </motion.div>
@@ -212,16 +206,16 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
 
       {/* Prev / next */}
       <div className="absolute right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-2 sm:flex">
-        <button onClick={() => step(-1)} disabled={index === 0} aria-label="Previous" className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 backdrop-blur transition hover:text-white disabled:opacity-30">
+        <button onClick={() => step(-1)} disabled={index === 0} aria-label={t("story.nav.previous")} className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 backdrop-blur transition hover:text-white disabled:opacity-30">
           <ChevronUp className="h-4 w-4" />
         </button>
-        <button onClick={() => step(1)} disabled={index === FRAMES.length - 1} aria-label="Next" className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 backdrop-blur transition hover:text-white disabled:opacity-30">
+        <button onClick={() => step(1)} disabled={index === FRAMES.length - 1} aria-label={t("story.nav.next")} className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 backdrop-blur transition hover:text-white disabled:opacity-30">
           <ChevronDown className="h-4 w-4" />
         </button>
       </div>
 
       {/* Timeline: chapters like a film scrubber. */}
-      <nav aria-label="Chapters" className="absolute inset-x-0 bottom-0 z-30 px-4 pb-3 pt-2 sm:px-8 sm:pb-4">
+      <nav aria-label={t("story.nav.chapters")} className="absolute inset-x-0 bottom-0 z-30 px-4 pb-3 pt-2 sm:px-8 sm:pb-4">
         <div className="mx-auto flex max-w-4xl gap-1.5 sm:gap-2">
           {SCENES.map((s, si) => {
             const done = si < frame.scene;
@@ -237,7 +231,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
                     current ? "text-white" : "hidden text-white/40 group-hover:text-white/70 sm:block"
                   }`}
                 >
-                  {s.label}
+                  {t(`story.chapters.${s.id}`)}
                 </span>
               </button>
             );
@@ -249,12 +243,12 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
       <Dialog open={auth !== null} onOpenChange={(open) => !open && setAuth(null)}>
         <DialogContent className="max-h-[92dvh] max-w-md overflow-y-auto rounded-3xl border-white/10 bg-[#070c14] p-6 sm:p-8">
           <DialogTitle className="text-center font-display text-2xl font-bold text-white">
-            {auth === "signup" ? "Create your account" : "Welcome back"}
+            {t(auth === "signup" ? "story.auth.signupTitle" : "story.auth.loginTitle")}
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-white/60">
             {chosenPlan && chosenPlan !== "free"
-              ? `You picked ${PLAN_LABEL[chosenPlan]}. Sign up or sign in and we'll take you to checkout.`
-              : "Protect every message you send to AI."}
+              ? t("story.auth.picked", { plan: t(`story.plans.${chosenPlan}.name`) })
+              : t("story.auth.default")}
           </DialogDescription>
           {auth && <AuthForm key={auth} initialMode={auth} />}
         </DialogContent>

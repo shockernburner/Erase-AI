@@ -1,7 +1,8 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ArrowRight, Building2, Check, AppWindow, CodeXml, Smartphone, Users, type LucideIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LANDING_PLANS, type LandingPlan } from "./landingData";
+import { LANDING_PLANS, PLAN_FEATURE_KEYS, type LandingPlan } from "./landingData";
 
 const FACES: Record<LandingPlan["object"], { icons: LucideIcon[]; color: string; glow: string }> = {
   devices: { icons: [AppWindow, Smartphone, AppWindow, Smartphone], color: "from-cyan-400/40 to-sky-700/30", glow: "rgba(34,211,238,0.45)" },
@@ -56,6 +57,14 @@ export interface PlanActions {
 }
 
 function PlanCard({ plan, active, actions }: { plan: LandingPlan; active: boolean; actions: PlanActions }) {
+  const { t } = useTranslation();
+  const k = `story.plans.${plan.id}`;
+  const price = plan.monthly == null ? t("story.plans.custom") : `$${plan.monthly}`;
+  const unit = plan.monthly == null ? "" : t(plan.perPerson ? "story.plans.perPersonMonth" : "story.plans.perMonth");
+  const yearly =
+    plan.monthly == null
+      ? t("story.plans.customNote")
+      : t(plan.yearlyIsMonthly ? "story.plans.yearlyPerPerson" : "story.plans.yearly", { price: plan.yearly });
   return (
     <div
       className={`flex h-full flex-col rounded-3xl border p-5 shadow-[0_30px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:p-6 ${
@@ -64,18 +73,18 @@ function PlanCard({ plan, active, actions }: { plan: LandingPlan; active: boolea
     >
       <Cube kind={plan.object} spinning={active} />
       <div data-scroll-inner className="-mx-1 mt-2 flex-1 overflow-y-auto px-1">
-        <h3 className="font-display text-2xl font-extrabold text-white">{plan.name}</h3>
-        <p className="mt-0.5 text-xs text-cyan-200/80">{plan.tagline}</p>
+        <h3 className="font-display text-2xl font-extrabold text-white">{t(`${k}.name`)}</h3>
+        <p className="mt-0.5 text-xs text-cyan-200/80">{t(`${k}.tagline`)}</p>
         <p className="mt-3 font-display text-4xl font-extrabold text-white">
-          {plan.price}
-          <span className="ml-1 text-sm font-medium text-white/50">{plan.unit}</span>
+          {price}
+          <span className="ml-1 text-sm font-medium text-white/50">{unit}</span>
         </p>
-        {plan.yearly && <p className="text-[11px] text-white/45">{plan.yearly}</p>}
+        <p className="text-[11px] text-white/45">{yearly}</p>
         <ul className="mt-4 space-y-2 text-left text-[13px] leading-snug text-white/80">
-          {plan.features.map((f) => (
+          {PLAN_FEATURE_KEYS.map((f) => (
             <li key={f} className="flex gap-2">
               <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
-              {f}
+              {t(`${k}.${f}`)}
             </li>
           ))}
         </ul>
@@ -85,7 +94,7 @@ function PlanCard({ plan, active, actions }: { plan: LandingPlan; active: boolea
         tabIndex={active ? 0 : -1}
         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
       >
-        Check out
+        {t("story.plans.checkout")}
         <ArrowRight className="h-4 w-4" />
       </button>
       <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
@@ -101,6 +110,7 @@ function PlanCard({ plan, active, actions }: { plan: LandingPlan; active: boolea
 
 export function PlansScene({ step, onSelect, actions }: { step: number; onSelect: (i: number) => void; actions: PlanActions }) {
   const mobile = useIsMobile();
+  const { t } = useTranslation();
   const spacing = mobile ? 210 : 330;
 
   return (
@@ -111,10 +121,10 @@ export function PlansScene({ step, onSelect, actions }: { step: number; onSelect
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 text-center font-display text-3xl font-extrabold text-white sm:text-5xl"
       >
-        Pick your protection.
+        {t("story.plans.title")}
       </motion.h2>
 
-      <div role="tablist" aria-label="Plans" className="relative z-10 mt-4 flex gap-1 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur">
+      <div role="tablist" aria-label={t("story.plans.tabs")} className="relative z-10 mt-4 flex gap-1 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur">
         {LANDING_PLANS.map((p, i) => (
           <button
             key={p.id}
@@ -123,7 +133,7 @@ export function PlansScene({ step, onSelect, actions }: { step: number; onSelect
             onClick={() => onSelect(i)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition sm:px-4 sm:text-sm ${i === step ? "bg-cyan-400 text-slate-950" : "text-white/70 hover:text-white"}`}
           >
-            {p.name}
+            {t(`story.plans.${p.id}.name`)}
           </button>
         ))}
       </div>

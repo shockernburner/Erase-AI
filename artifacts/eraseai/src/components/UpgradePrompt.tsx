@@ -24,7 +24,7 @@ export function UpgradePrompt({ feature, message, onUpgrade, onDismiss }: Upgrad
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground mb-1">
-          {feature} — Developer Feature
+          {feature} — Pro Feature
         </p>
         <p className="text-xs text-muted-foreground mb-3">{message}</p>
         <Button

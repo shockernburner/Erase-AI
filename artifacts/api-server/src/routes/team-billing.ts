@@ -83,7 +83,7 @@ router.post("/billing/team/checkout", async (req: Request, res: Response) => {
     const priceId = await findTeamPriceId(period);
     if (!priceId) {
       logger.error({ period }, "No per-seat Team price in Stripe");
-      res.status(503).json({ error: "Team checkout is not available right now. Contact us and we'll set you up.", code: "PRICE_NOT_FOUND" });
+      res.status(503).json({ error: "Teams/Family checkout is not available right now. Contact us and we'll set you up.", code: "PRICE_NOT_FOUND" });
       return;
     }
     const stripe = await getUncachableStripeClient();

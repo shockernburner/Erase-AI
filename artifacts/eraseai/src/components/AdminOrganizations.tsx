@@ -93,7 +93,7 @@ function OrgDetails({ org, onChanged }: { org: OrgRow; onChanged: () => void }) 
             onChange={(e) => run(async () => { await orgApi("PATCH", `/admin/orgs/${org.id}`, { plan: e.target.value }); })}
             className="mt-1 block rounded-lg border border-border bg-input/50 px-2 py-1.5 text-sm text-foreground"
           >
-            <option value="business">Team</option>
+            <option value="business">Teams/Family</option>
             <option value="enterprise">Enterprise</option>
           </select>
         </label>
@@ -239,7 +239,7 @@ export function AdminOrganizations() {
           <Input required placeholder="Organization name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Input required type="email" placeholder="Owner's email" value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
           <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className="rounded-xl border border-border bg-input/50 px-3 py-3 text-sm text-foreground">
-            <option value="business">Team ($9 a person a month, 3 to 10 people)</option>
+            <option value="business">Teams/Family ($9 a person a month, 3 to 10 people)</option>
             <option value="enterprise">Enterprise</option>
           </select>
           <Input required type="number" min={1} placeholder="Seats" value={form.seatLimit} onChange={(e) => setForm({ ...form, seatLimit: e.target.value })} />

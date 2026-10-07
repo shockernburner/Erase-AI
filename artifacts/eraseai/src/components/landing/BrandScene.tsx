@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Check, SendHorizontal, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -11,11 +12,12 @@ import { BrandLogo } from "@/components/BrandLogo";
 const SPRING = { type: "spring" as const, stiffness: 140, damping: 20 };
 
 function Wordmark({ step }: { step: number }) {
+  const { t } = useTranslation();
   return (
     <LayoutGroup>
       <motion.div layout className="flex flex-wrap items-baseline justify-center font-display font-extrabold leading-none text-white">
         <motion.span layout transition={SPRING} className="text-5xl sm:text-7xl lg:text-8xl">
-          Erase
+          {t("story.brand.erase")}
         </motion.span>
         <AnimatePresence mode="popLayout">
           {step === 1 && (
@@ -28,7 +30,7 @@ function Wordmark({ step }: { step: number }) {
               transition={{ duration: 0.6 }}
               className="mx-3 overflow-hidden whitespace-nowrap text-3xl text-cyan-300 sm:mx-5 sm:text-5xl lg:text-6xl"
             >
-              your leaks before
+              {t("story.brand.middle")}
             </motion.span>
           )}
         </AnimatePresence>
@@ -49,18 +51,19 @@ function Wordmark({ step }: { step: number }) {
   );
 }
 
-const DEMO_TEXT: { text: string; secret?: string }[] = [
-  { text: "Hi, I'm " },
-  { text: "Sarah Lee", secret: "[NAME]" },
-  { text: ". Pay with card " },
-  { text: "4111 1111 1111 1111", secret: "[CARD]" },
-  { text: " and deploy with key " },
-  { text: "sk_live_51H…9xQ", secret: "[API KEY]" },
-];
 
 /** A chat composer: Send is pressed, EraseAI catches it, secrets are wiped, a safe message goes. */
 function SendDemo() {
   const reduce = useReducedMotion();
+  const { t } = useTranslation();
+  const demoText: { text: string; secret?: string }[] = [
+    { text: t("story.brand.demo1") },
+    { text: t("story.brand.demoName"), secret: t("story.brand.tokenName") },
+    { text: t("story.brand.demo2") },
+    { text: "4111 1111 1111 1111", secret: t("story.brand.tokenCard") },
+    { text: t("story.brand.demo3") },
+    { text: "sk_live_51H…9xQ", secret: t("story.brand.tokenKey") },
+  ];
   // 0 typing done · 1 Send pressed (caught) · 2 erased · 3 sent
   const [phase, setPhase] = useState(reduce ? 3 : 0);
   useEffect(() => {
@@ -80,7 +83,7 @@ function SendDemo() {
       />
       <div className="relative rounded-2xl border border-white/10 bg-[#0b1220]/90 p-3 shadow-2xl backdrop-blur sm:p-4">
         <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-widest text-white/40">
-          <span>Message to any AI</span>
+          <span>{t("story.brand.demoLabel")}</span>
           <AnimatePresence mode="wait">
             <motion.span
               key={phase}
@@ -89,15 +92,15 @@ function SendDemo() {
               exit={{ opacity: 0, y: -4 }}
               className={`flex items-center gap-1 font-bold ${phase === 1 ? "text-amber-300" : phase >= 2 ? "text-emerald-300" : "text-white/40"}`}
             >
-              {phase === 1 && <><ShieldCheck className="h-3 w-3" /> EraseAI caught 3 items</>}
-              {phase === 2 && <><ShieldCheck className="h-3 w-3" /> Erased</>}
-              {phase === 3 && <><Check className="h-3 w-3" /> Sent safely</>}
+              {phase === 1 && <><ShieldCheck className="h-3 w-3" /> {t("story.brand.caught")}</>}
+              {phase === 2 && <><ShieldCheck className="h-3 w-3" /> {t("story.brand.erased")}</>}
+              {phase === 3 && <><Check className="h-3 w-3" /> {t("story.brand.sent")}</>}
             </motion.span>
           </AnimatePresence>
         </div>
         <div className="flex items-end gap-2">
           <p className="min-h-[4.5rem] flex-1 text-left text-sm leading-relaxed text-white/90 sm:text-base">
-            {DEMO_TEXT.map((part, i) =>
+            {demoText.map((part, i) =>
               part.secret ? (
                 <span key={i} className="relative inline-block">
                   <AnimatePresence mode="wait" initial={false}>
@@ -148,13 +151,8 @@ function SendDemo() {
   );
 }
 
-const CAPTIONS = [
-  "Erase AI? We are not against AI.",
-  "AI is everywhere. Your private data shouldn't be.",
-  "The eraser at your Send button.",
-];
-
 export function BrandScene({ step }: { step: number }) {
+  const { t } = useTranslation();
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center gap-6 px-4 pb-24 pt-20 text-center sm:gap-8 sm:px-8">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.18),transparent_60%)]" />
@@ -186,7 +184,7 @@ export function BrandScene({ step }: { step: number }) {
           transition={{ duration: 0.45 }}
           className="relative z-10 max-w-2xl text-lg text-white/70 sm:text-2xl"
         >
-          {CAPTIONS[step]}
+          {t(`story.brand.c${step}`)}
         </motion.p>
       </AnimatePresence>
 

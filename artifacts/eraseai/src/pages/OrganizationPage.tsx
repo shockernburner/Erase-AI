@@ -358,10 +358,10 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
             <h1 className="text-lg font-semibold text-foreground">You're not in an organization</h1>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            With Team or Enterprise your organization pays for everyone's protection, and owners can add and remove people
+            With Teams/Family or Enterprise your organization or family pays for everyone's protection, and owners can add and remove people
             and see what was caught, by person. If your company already uses EraseAI, ask your admin for an invite link.
           </p>
-          <Button variant="primary" onClick={onContact}>Contact us about Team</Button>
+          <Button variant="primary" onClick={onContact}>Contact us about Teams/Family</Button>
         </section>
       </div>
     );

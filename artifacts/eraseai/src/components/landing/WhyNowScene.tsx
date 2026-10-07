@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { animate, motion, useReducedMotion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { STATS } from "./landingData";
 
 function Counter({ to, delay }: { to: number; delay: number }) {
@@ -14,6 +15,7 @@ function Counter({ to, delay }: { to: number; delay: number }) {
 }
 
 export function WhyNowScene() {
+  const { t } = useTranslation();
   const R = 54;
   const C = 2 * Math.PI * R;
   return (
@@ -25,13 +27,13 @@ export function WhyNowScene() {
         transition={{ duration: 0.6 }}
         className="relative z-10 mb-8 text-center font-display text-3xl font-extrabold text-white sm:mb-12 sm:text-5xl"
       >
-        Why now? <span className="text-amber-300">It already costs.</span>
+        {t("story.now.title")} <span className="text-amber-300">{t("story.now.titleAccent")}</span>
       </motion.h2>
 
       <div className="relative z-10 grid w-full max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-8">
         {STATS.map((s, i) => (
           <motion.div
-            key={s.label}
+            key={s.key}
             initial={{ opacity: 0, y: 30, rotateY: -25 }}
             animate={{ opacity: 1, y: 0, rotateY: 0 }}
             transition={{ duration: 0.7, delay: 0.15 * i }}
@@ -66,11 +68,11 @@ export function WhyNowScene() {
                 {s.suffix}
               </div>
             </div>
-            <p className="text-sm leading-snug text-white/75 sm:max-w-[14rem] sm:text-base">{s.label}</p>
+            <p className="text-sm leading-snug text-white/75 sm:max-w-[14rem] sm:text-base">{t(`story.now.${s.key}`)}</p>
           </motion.div>
         ))}
       </div>
-      <p className="relative z-10 mt-8 text-[11px] text-white/40">Source: IBM Cost of a Data Breach Report, 2025.</p>
+      <p className="relative z-10 mt-8 text-[11px] text-white/40">{t("story.now.source")}</p>
     </div>
   );
 }

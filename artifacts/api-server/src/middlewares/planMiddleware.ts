@@ -53,7 +53,7 @@ export function requirePersonalOrHigher() {
     const plan = getUserPlan(req);
     if (plan !== "personal" && plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       res.status(403).json({
-        error: "This feature requires a Personal, Developer, Team, or Enterprise plan",
+        error: "This feature requires a Personal, Pro, Teams/Family, or Enterprise plan",
         upgrade: true,
         message: "Upgrade to unlock this feature",
       });
@@ -68,9 +68,9 @@ export function requirePro() {
     const plan = getUserPlan(req);
     if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       res.status(403).json({
-        error: "This feature requires a Developer, Team, or Enterprise plan",
+        error: "This feature requires a Pro, Teams/Family, or Enterprise plan",
         upgrade: true,
-        message: "Upgrade to Developer to unlock this feature",
+        message: "Upgrade to Pro to unlock this feature",
       });
       return;
     }
@@ -83,9 +83,9 @@ export function requireBusiness() {
     const plan = getUserPlan(req);
     if (plan !== "business" && plan !== "enterprise") {
       res.status(403).json({
-        error: "This feature requires a Team or Enterprise plan",
+        error: "This feature requires a Teams/Family or Enterprise plan",
         upgrade: true,
-        message: "Upgrade to Team to unlock this feature",
+        message: "Upgrade to Teams/Family to unlock this feature",
       });
       return;
     }
@@ -158,7 +158,7 @@ export async function enforceRowLimit(req: Request, res: Response, next: NextFun
         rowCount = content.split("\n").filter((l: string) => l.trim()).length - 1;
       }
       if (rowCount > limit) {
-        const nextTier = (plan === "free" || plan === "personal") ? "Developer" : plan === "pro" ? "Team" : "Enterprise";
+        const nextTier = (plan === "free" || plan === "personal") ? "Pro" : plan === "pro" ? "Teams/Family" : "Enterprise";
         res.status(400).json({
           error: `Dataset has ${rowCount} rows, exceeding the ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan limit of ${limit.toLocaleString()}. Upgrade to ${nextTier} for higher limits.`,
           upgrade: true,

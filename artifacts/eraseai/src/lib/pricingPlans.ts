@@ -1,8 +1,8 @@
 // Plans shown on the public homepage and the in-app pricing page. One source so
 // the two pages (and the prices the server charges) cannot drift apart again.
 //
-// Who pays decides the plan: Personal and Developer are paid by one person for
-// themselves. When an organization pays (Team or Enterprise), its members are
+// Who pays decides the plan: Personal and Pro are paid by one person for
+// themselves. When an organization or family pays (Teams/Family or Enterprise), its members are
 // organization users and get Enterprise-level protection, never "Personal".
 // `soon` marks features not built yet, so the site never sells what does not exist.
 // Prices must match the server (api-server billing-source.mjs PLAN_PRICING).
@@ -20,7 +20,7 @@ export interface PricingTier {
   name: string;
   /** 0 = free, -1 = contact us for pricing. Per person when `perPerson`. */
   monthlyPrice: number;
-  /** Priced per person (Team). */
+  /** Priced per person (Teams/Family). */
   perPerson?: boolean;
   /** Monthly price per person when billed yearly, if not the standard 10% off. */
   annualMonthlyPrice?: number;
@@ -72,14 +72,14 @@ export const PRICING_TIERS: PricingTier[] = [
       { text: "AI rewriting of risky text" },
     ],
     forOrg: [
-      { text: "Not for organizations: if your employer pays for you, choose Team or Enterprise" },
+      { text: "Not for organizations: if your employer or family pays for you, choose Teams/Family or Enterprise" },
     ],
     cta: "Protect my AI chats",
     highlight: true,
   },
   {
     id: "pro",
-    name: "Developer",
+    name: "Pro",
     monthlyPrice: 19,
     description: "App builders and indie SaaS founders",
     paidBy: "Paid by you, for you",
@@ -92,36 +92,37 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     forOrg: [
       { text: "Build EraseAI checks into your organization's apps and pipelines" },
-      { text: "One developer seat; the organization's people need Team or Enterprise" },
+      { text: "One developer seat; the organization's people need Teams/Family or Enterprise" },
     ],
     cta: "Get API key",
     highlight: false,
   },
   {
     id: "business",
-    name: "Team",
+    name: "Teams/Family",
     monthlyPrice: 9,
     perPerson: true,
     annualMonthlyPrice: 8,
     seats: "3 to 10 people",
-    description: "Small companies and teams",
-    paidBy: "Paid by your organization",
+    description: "Small companies, teams and families",
+    paidBy: "Paid by your company, or by one person for the family",
     forYou: [
-      { text: "Chrome extension and Android app with full protection: install, sign in with your work email, pay nothing yourself" },
+      { text: "Chrome extension and Android app with full protection: install, sign in with the email you were invited with, pay nothing yourself" },
       { text: "Everything in Personal (one-click Sanitize, attachment and screenshot scanning, history)" },
     ],
     forOrg: [
       { text: "Company rules everyone follows, e.g. keys always blocked, no 'Send anyway'", soon: true },
       { text: "Admin dashboard: what was caught, by person" },
       { text: "Audit log export as evidence for ISO 27001, SOC 2 and GDPR", soon: true },
-      { text: "Add and remove people with invite links; seats stay with the company" },
-      { text: "One invoice for the team; change seats any time" },
+      { text: "Add and remove people with invite links; seats stay with the company or family" },
+      { text: "Family protection: cover your partner, parents and children on their own phones and browsers" },
+      { text: "One invoice for everyone; change seats any time" },
       { text: "Managed rollout: IT installs EraseAI on every Chrome browser (Google Admin, Intune) and people join with their work email", soon: true },
       { text: "Managed rollout on Android phones (managed Google Play)", soon: true },
       { text: "API: 20 keys, 100,000 requests a month, shared" },
       { text: "Priority support" },
     ],
-    cta: "Buy Team",
+    cta: "Buy Teams/Family",
     highlight: false,
   },
   {
@@ -133,7 +134,7 @@ export const PRICING_TIERS: PricingTier[] = [
     paidBy: "Paid by your organization",
     forYou: [
       { text: "Chrome extension and Android app with full protection: sign in with your work email, pay nothing yourself" },
-      { text: "Everything in Team; your IT team can install it for you" },
+      { text: "Everything in Teams/Family; your IT team can install it for you" },
     ],
     forOrg: [
       { text: "Any number of people, priced for your organization" },
@@ -156,8 +157,8 @@ export const PRICING_TIERS: PricingTier[] = [
 export const PRICING_COMPARISON: string[][] = [
   ["Price", "$0", "$5 a month", "$19 a month", "$9 a person a month", "Contact us"],
   ["People", "1", "1", "1", "3 to 10", "Any number"],
-  ["Who pays", "No one", "You", "You", "Your organization", "Your organization"],
-  ["How people get it", "Install the extension", "Subscribe", "Subscribe", "Invite link; sign in with work email", "Invite link or IT rollout; work email"],
+  ["Who pays", "No one", "You", "You", "Your company or family", "Your organization"],
+  ["How people get it", "Install the extension", "Subscribe", "Subscribe", "Invite link; sign in with the invited email", "Invite link or IT rollout; work email"],
   ["Chrome checks", "Unlimited", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
   ["One-click Sanitize & attachments", "No", "Yes", "Yes", "Yes, every member", "Yes, every member"],
   ["Android app", "7-day trial", "Yes", "Yes", "Yes, every member", "Yes, every member"],
@@ -169,7 +170,7 @@ export const PRICING_COMPARISON: string[][] = [
 ];
 
 /**
- * Why an organization pays for Team rather than letting people buy Personal.
+ * Why an organization pays for Teams/Family rather than letting people buy Personal.
  * Protection per person is the same; the organization pays for control and proof.
  */
 export const TEAM_REASONS: { title: string; text: string; soon?: boolean }[] = [
