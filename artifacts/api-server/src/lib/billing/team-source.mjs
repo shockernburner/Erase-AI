@@ -33,7 +33,7 @@ export function validateTeamCheckout({ orgName, seats, billingPeriod, returnUrl 
   if (!name) return { ok: false, status: 400, error: "Organization name is required" };
   if (name.length > 120) return { ok: false, status: 400, error: "Organization name must be at most 120 characters" };
   if (!isValidSeatCount(seats)) {
-    return { ok: false, status: 400, error: `Team is for ${TEAM_MIN_SEATS} to ${TEAM_MAX_SEATS} people. Contact us for more.` };
+    return { ok: false, status: 400, error: `Teams/Family is for ${TEAM_MIN_SEATS} to ${TEAM_MAX_SEATS} people. Contact us for more.` };
   }
   if (typeof returnUrl !== "string" || !/^https?:\/\//.test(returnUrl)) {
     return { ok: false, status: 400, error: "Missing or invalid returnUrl" };
@@ -148,7 +148,7 @@ export function decideTeamReconcile(row, existingOrg) {
 // taking a seat (active members plus pending invites).
 export function validateSeatChange({ seats, seatsUsed }) {
   if (!isValidSeatCount(seats)) {
-    return { ok: false, status: 400, error: `Team is for ${TEAM_MIN_SEATS} to ${TEAM_MAX_SEATS} people. Contact us for more.` };
+    return { ok: false, status: 400, error: `Teams/Family is for ${TEAM_MIN_SEATS} to ${TEAM_MAX_SEATS} people. Contact us for more.` };
   }
   if (seats < seatsUsed) {
     return {

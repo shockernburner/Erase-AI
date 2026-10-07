@@ -396,7 +396,7 @@ function renderPlan() {
       return;
     }
     if (p.paid) {
-      const names = { personal: "EraseAI Personal", pro: "EraseAI Developer", business: "EraseAI Team", enterprise: "EraseAI Enterprise" };
+      const names = { personal: "EraseAI Personal", pro: "EraseAI Pro", business: "EraseAI Teams/Family", enterprise: "EraseAI Enterprise" };
       status.textContent = `${names[p.plan] || "EraseAI Personal"}: one-click Sanitize, attachment scanning and the Android app are on.`;
       button.style.display = "none";
       return;

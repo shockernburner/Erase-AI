@@ -5,10 +5,10 @@ import { Mail, Lock, User, Loader2, Eye, EyeOff, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
-export default function AuthForm() {
+export default function AuthForm({ initialMode = "login" }: { initialMode?: "login" | "signup" } = {}) {
   const { t } = useTranslation();
   const { login, signup } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(initialMode);
   const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

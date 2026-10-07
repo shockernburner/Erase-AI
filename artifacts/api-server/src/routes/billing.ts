@@ -123,7 +123,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
       },
       {
         id: "pro",
-        name: "Developer",
+        name: "Pro",
         price: PLAN_PRICING.pro.monthly,
         monthlyPrice: PLAN_PRICING.pro.monthly,
         annualPrice: PLAN_PRICING.pro.annual,
@@ -140,7 +140,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
       },
       {
         id: "business",
-        name: "Team",
+        name: "Teams/Family",
         price: PLAN_PRICING.business.monthly,
         monthlyPrice: PLAN_PRICING.business.monthly,
         annualPrice: PLAN_PRICING.business.annual,
@@ -173,7 +173,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
         interval: "month",
         features: [
           "Contact us for pricing",
-          "Paid by your organization; everything in Team, any size",
+          "Paid by your organization; everything in Teams/Family, any size",
           "Unlimited rows and API keys",
           "Compliance reporting and private deployment",
           "Dedicated support, SLA and data processing agreement",

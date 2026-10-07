@@ -29,8 +29,8 @@ import type { PricingTierId } from "@/lib/pricingPlans";
 const PLAN_NAMES: Record<string, string> = {
   free: "Free",
   personal: "Personal",
-  pro: "Developer",
-  business: "Team",
+  pro: "Pro",
+  business: "Teams/Family",
   enterprise: "Enterprise",
 };
 
@@ -296,7 +296,7 @@ function FreeHome({ onNavigate }: { onNavigate: (v: AppView) => void }) {
           })}
         </div>
         <p className="mt-3 rounded-xl border border-border/30 bg-muted/10 px-4 py-3 text-sm text-muted-foreground">
-          <b className="text-foreground">Team and Enterprise:</b> {ORG_COVERAGE_SUMMARY}
+          <b className="text-foreground">Teams/Family and Enterprise:</b> {ORG_COVERAGE_SUMMARY}
         </p>
       </section>
 
