@@ -28,7 +28,7 @@ android {
     applicationId = "com.eraseai.firewall"
     minSdk = 28
     targetSdk = 36
-    versionCode = 36
+    versionCode = 37
     versionName = "1.0.8"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
