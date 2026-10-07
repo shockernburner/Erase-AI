@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import express, { type Express } from "express";
 import cookieParser from "cookie-parser";
@@ -70,11 +71,15 @@ app.post(
 const webDistDir = process.env.WEB_DIST_DIR;
 if (webDistDir) {
   const root = path.resolve(webDistDir);
-  app.use(express.static(root, { index: false, maxAge: "1h" }));
-  // Single-page app: every non-API GET falls back to index.html.
-  app.get(/^\/(?!api\/).*/, (_req, res) => {
+  // redirect: false so /learn stays /learn instead of becoming /learn/.
+  app.use(express.static(root, { index: false, redirect: false, maxAge: "1h" }));
+  // Prerendered pages live at <path>/index.html (see artifacts/eraseai/scripts/prerender.mjs);
+  // anything else is the single-page app's index.html.
+  app.get(/^\/(?!api\/).*/, (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
-    res.sendFile(path.join(root, "index.html"));
+    const page = path.join(root, req.path, "index.html");
+    const file = page.startsWith(root + path.sep) && fs.existsSync(page) ? page : path.join(root, "index.html");
+    res.sendFile(file);
   });
   logger.info({ root }, "Serving the website from WEB_DIST_DIR");
 }

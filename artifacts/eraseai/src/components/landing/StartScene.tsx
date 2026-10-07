@@ -60,6 +60,9 @@ export function StartScene({ onSignUp, onPlans }: { onSignUp: () => void; onPlan
       <button onClick={onPlans} className="relative z-10 mt-3 text-xs font-semibold text-white/50 underline-offset-4 hover:text-white hover:underline">
         {t("story.start.plansAgain")}
       </button>
+      <a href={`${base}learn`} className="relative z-10 mt-2 text-xs font-semibold text-white/50 underline-offset-4 hover:text-white hover:underline">
+        {t("story.start.learn")}
+      </a>
 
       {/* Contact */}
       <motion.div

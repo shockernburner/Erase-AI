@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, Mail, Mouse } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronUp, Mail, Mouse } from "lucide-react";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import AuthForm from "@/components/AuthForm";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { useSeoMeta } from "@/pages/seo/useSeoMeta";
+import { usePageMeta } from "@/pages/seo/useSeoMeta";
 import { chromeStoreLink } from "@/lib/extensionStore";
 import { ANDROID_PLAY_URL, peekPricingFocus, setPricingFocus } from "@/lib/products";
 import type { PricingTierId } from "@/lib/pricingPlans";
@@ -63,14 +63,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   const scene = SCENES[frame.scene];
   const baseUrl = import.meta.env.BASE_URL;
 
-  useSeoMeta({
-    title: "EraseAI — Use AI without leaking your data",
-    description:
-      "EraseAI erases names, card numbers, API keys and private files from what you send to ChatGPT, Claude, Gemini and other AI, right at the Send button.",
-    url: "https://eraseai.ai",
-    keywords:
-      "AI firewall, ChatGPT data leak prevention, Claude privacy, Gemini privacy, LLM security, prompt scanning, PII detection, API key detection, AI DLP, AI privacy tool",
-  });
+  usePageMeta("/");
 
   // The page is a fixed stage; stop the document from scrolling underneath.
   useEffect(() => {
@@ -151,6 +144,10 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           <span className="hidden font-display text-lg font-bold tracking-tight sm:inline">EraseAI</span>
         </button>
         <div className="flex items-center gap-2 sm:gap-3">
+          <a href={`${baseUrl}learn`} className="hidden items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white sm:flex">
+            <BookOpen className="h-4 w-4" />
+            {t("story.nav.learn")}
+          </a>
           <a href={`${baseUrl}contact`} className="hidden items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white sm:flex">
             <Mail className="h-4 w-4" />
             {t("story.nav.contact")}

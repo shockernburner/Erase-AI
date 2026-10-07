@@ -1765,7 +1765,8 @@
       "home": "EraseAI, volver al inicio",
       "previous": "Anterior",
       "next": "Siguiente",
-      "chapters": "Capítulos"
+      "chapters": "Capítulos",
+      "learn": "Guías"
     },
     "chapters": {
       "headlines": "Titulares",
@@ -1925,7 +1926,8 @@
       "company": "Vantward Solutions Pte. Ltd., Singapur",
       "privacy": "Privacidad",
       "terms": "Términos",
-      "license": "Licencia"
+      "license": "Licencia",
+      "learn": "Guías: usar la IA sin filtrar tus datos"
     },
     "auth": {
       "signupTitle": "Crea tu cuenta",

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { canonicalUrl, staticPage, type PageMeta } from "@/seo/site";
 
 interface SeoMeta {
   title: string;
@@ -7,49 +8,55 @@ interface SeoMeta {
   keywords?: string;
 }
 
+/** Sets the page's title, description, canonical and social tags while it is shown. */
 export function useSeoMeta({ title, description, url, keywords }: SeoMeta) {
   useEffect(() => {
-    document.title = title;
-
-    const setMeta = (attr: string, key: string, content: string) => {
-      let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
-      if (el) {
-        el.content = content;
-      } else {
-        el = document.createElement("meta");
-        el.setAttribute(attr, key);
-        el.content = content;
-        document.head.appendChild(el);
-      }
-    };
-
-    setMeta("name", "description", description);
-    if (keywords) {
-      setMeta("name", "keywords", keywords);
-    }
-    setMeta("property", "og:title", title);
-    setMeta("property", "og:description", description);
-    setMeta("property", "og:url", url);
-
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (canonical) {
-      canonical.href = url;
-    }
-
-    return () => {
-      const defaults = {
-        title: "EraseAI — AI Firewall to Prevent Data Leaks in ChatGPT, Gemini & Claude",
-        description: "EraseAI scans prompts, files, and AI responses to stop PII, API keys, bank data, client records, and confidential information from leaking into AI tools.",
-        url: "https://eraseai.ai",
-        keywords: "AI firewall, ChatGPT data leak prevention, Claude privacy, Gemini privacy, LLM security, prompt scanning, PII detection, API key detection, AI DLP, AI privacy tool",
-      };
-      document.title = defaults.title;
-      setMeta("name", "description", defaults.description);
-      setMeta("name", "keywords", defaults.keywords);
-      setMeta("property", "og:title", defaults.title);
-      setMeta("property", "og:description", defaults.description);
-      setMeta("property", "og:url", defaults.url);
-      if (canonical) canonical.href = defaults.url;
-    };
+    const restore = applyMeta({ title, description, url, keywords });
+    return restore;
   }, [title, description, keywords, url]);
+}
+
+/** useSeoMeta for a page registered in seo/site.ts (or a guide's own meta). */
+export function usePageMeta(page: PageMeta | string) {
+  const meta = typeof page === "string" ? staticPage(page) : page;
+  useSeoMeta({ title: meta.title, description: meta.description, url: canonicalUrl(meta.path), keywords: meta.keywords });
+}
+
+function setMeta(attr: "name" | "property", key: string, content: string) {
+  let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
+
+function applyMeta({ title, description, url, keywords }: SeoMeta) {
+  // What the static HTML for this URL had, to put back when the page unmounts.
+  const before = {
+    title: document.title,
+    description: document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "",
+    keywords: document.querySelector('meta[name="keywords"]')?.getAttribute("content") ?? "",
+    canonical: document.querySelector('link[rel="canonical"]')?.getAttribute("href") ?? "",
+  };
+  const set = (m: SeoMeta) => {
+    document.title = m.title;
+    setMeta("name", "description", m.description);
+    if (m.keywords) setMeta("name", "keywords", m.keywords);
+    setMeta("property", "og:title", m.title);
+    setMeta("property", "og:description", m.description);
+    setMeta("property", "og:url", m.url);
+    setMeta("name", "twitter:title", m.title);
+    setMeta("name", "twitter:description", m.description);
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = m.url;
+  };
+  set({ title, description, url, keywords });
+  return () => set({ title: before.title, description: before.description, url: before.canonical, keywords: before.keywords });
 }

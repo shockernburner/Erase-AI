@@ -1,13 +1,9 @@
 import { Shield, AlertTriangle, Eye, Lock, Zap, CheckCircle2 } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks, AddToChromeButton } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 export default function AiFirewallPage() {
-  useSeoMeta({
-    title: "AI Firewall — Protect Your Data Before It Reaches AI | EraseAI",
-    description: "An AI firewall sits between you and AI tools, analyzing your input before it is sent. EraseAI detects sensitive data, warns users, and blocks risky prompts.",
-    url: "https://eraseai.ai/ai-firewall",
-  });
+  usePageMeta("/ai-firewall");
 
   return (
     <SeoPage>

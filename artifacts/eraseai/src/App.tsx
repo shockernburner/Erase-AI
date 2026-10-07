@@ -138,6 +138,8 @@ const BlogIndex = lazy(() => import("@/pages/seo/BlogIndex"));
 const BlogPost_ApiKeys = lazy(() => import("@/pages/seo/BlogPost_ApiKeys"));
 const BlogPost_AiFirewall = lazy(() => import("@/pages/seo/BlogPost_AiFirewall"));
 const BlogPost_PreventLeaks = lazy(() => import("@/pages/seo/BlogPost_PreventLeaks"));
+const LearnIndex = lazy(() => import("@/pages/seo/LearnIndex"));
+const GuideRoute = lazy(() => import("@/pages/seo/GuidePage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -517,6 +519,8 @@ function App() {
               <Route path="/chatgpt-data-leak" component={ChatgptDataLeakPage} />
               <Route path="/ai-prompt-security" component={AiPromptSecurityPage} />
               <Route path="/api-key-protection-ai" component={ApiKeyProtectionPage} />
+              <Route path="/learn" component={LearnIndex} />
+              <Route path="/learn/:slug" component={GuideRoute} />
               <Route path="/blog" component={BlogIndex} />
               <Route path="/blog/api-keys-chatgpt" component={BlogPost_ApiKeys} />
               <Route path="/blog/what-is-ai-firewall" component={BlogPost_AiFirewall} />

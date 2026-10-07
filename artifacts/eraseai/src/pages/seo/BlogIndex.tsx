@@ -1,6 +1,6 @@
 import { BookOpen, ArrowRight, Calendar } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -26,11 +26,7 @@ const posts = [
 ];
 
 export default function BlogIndex() {
-  useSeoMeta({
-    title: "Blog — AI Security, Data Protection & Prompt Safety | EraseAI",
-    description: "Insights on AI security, data protection, and how to safely use AI tools without compromising sensitive information.",
-    url: "https://eraseai.ai/blog",
-  });
+  usePageMeta("/blog");
 
   return (
     <SeoPage>

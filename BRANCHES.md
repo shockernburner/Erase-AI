@@ -7,6 +7,7 @@ Update this file when a branch is created, merged or deleted.
 |---|---|---|---|
 | `main` | Released code. Website deploys and store builds come from here. | — | — |
 | `claude/bold-feynman-5rjicj` | Launch prep: device-aware install buttons on the home page, try-it-now extension welcome page, launch posts for 1.6.0 and Android, company outreach emails (`docs/marketing/prospect-outreach.md`). Also this file (now on `main` too; keep `main`'s copy if they conflict). | Draft PR open | Android app is in production (the home page's Android button opens the Play listing). First merge `main` into it: keep `main`'s new home page (and its Pro / Teams/Family plan names), re-adding the device-aware install buttons there. Deploy the website after merging. |
+| `claude/kind-cerf-lx36pv` | SEO: every public page is prerendered at build time with its own title, description, canonical, structured data and full text (fixes Search Console's "Alternate page with proper canonical tag"); new `/learn` hub with nine AI data security guides (AI DLP, LLM data security, shadow AI, ChatGPT at work, PII redaction, prompt injection, AI policy template, GDPR/HIPAA/PCI, glossary); generated sitemap.xml and llms.txt; Learn links on the home page. | Pushed | Any time. Deploy the website after merging, then resubmit the sitemap in Search Console. |
 
 ## Release order (agreed Oct 6, 2026)
 

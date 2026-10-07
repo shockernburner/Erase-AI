@@ -1765,7 +1765,8 @@
       "home": "EraseAI, retour au début",
       "previous": "Précédent",
       "next": "Suivant",
-      "chapters": "Chapitres"
+      "chapters": "Chapitres",
+      "learn": "Guides"
     },
     "chapters": {
       "headlines": "À la une",
@@ -1925,7 +1926,8 @@
       "company": "Vantward Solutions Pte. Ltd., Singapour",
       "privacy": "Confidentialité",
       "terms": "Conditions",
-      "license": "Licence"
+      "license": "Licence",
+      "learn": "Guides : utiliser l’IA sans divulguer vos données"
     },
     "auth": {
       "signupTitle": "Créez votre compte",

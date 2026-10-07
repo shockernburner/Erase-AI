@@ -1,15 +1,11 @@
 import { Shield, AlertTriangle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 const BASE = import.meta.env.BASE_URL;
 
 export default function BlogPost_PreventLeaks() {
-  useSeoMeta({
-    title: "How to Prevent Data Leaks in AI Tools | EraseAI Blog",
-    description: "From ChatGPT to Gemini, AI tools are powerful but risky. Learn practical steps to prevent accidental data exposure with EraseAI.",
-    url: "https://eraseai.ai/blog/prevent-data-leaks-ai",
-  });
+  usePageMeta("/blog/prevent-data-leaks-ai");
 
   return (
     <SeoPage>
