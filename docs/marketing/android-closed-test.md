@@ -60,7 +60,7 @@ What I'm asking:
 
 Full guide with fake test data: <guide link>
 
-About permissions: it uses Accessibility to see the AI app's text box and Send button. It only reads text in the AI apps you pick, skips password fields, and ignores every other app. The VPN feature is optional and local only.
+About permissions: it uses Accessibility to see the AI app's text box and Send button. It only reads text in the AI apps you pick, skips password fields, and ignores every other app. It is not a VPN and does not touch network traffic.
 
 Comment "joined" when you're in and I'll confirm, and post your link so I can test yours. Thanks!
 ```

@@ -78,14 +78,6 @@ adb shell settings put secure accessibility_enabled 1
 | K7 | Attach a file with EraseAI Keyboard active | Accessibility curtain still appears (`mode=geometry` or `resolved`) |
 | K8 | Minimize/reopen keyboard three times | Single keyboard instance (no stacking) |
 
-## Phase A4 — Strict network gate (optional)
-
-| # | Scenario | Expected |
-|---|----------|----------|
-| N1 | Settings → Strict network gate ON, accept VPN permission | `strict_egress_gate=on` in diagnostics |
-| N2 | Risky prompt + curtain up | `egress.arm` / `egress.tunnel.up` in logcat; ChatGPT cannot reach network |
-| N3 | Send Anyway approved | `egress.window` then send succeeds within ~15s window |
-
 ## Phase A3 — History hygiene
 
 | # | Scenario | Expected |

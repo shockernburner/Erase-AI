@@ -2,7 +2,6 @@ package com.eraseai.firewall.guard
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -57,22 +56,5 @@ class GuardStateStoreTest {
 
     assertTrue(GuardStateStore.isImeWithholdFailed())
     assertFalse(GuardStateStore.isImeWithheld())
-  }
-
-  @Test
-  fun `egress blocked when strict mode armed`() {
-    GuardStateStore.setStrictEgressEnabled(true)
-    GuardStateStore.setArmed("com.openai.chatgpt")
-
-    assertTrue(GuardStateStore.isEgressBlocked())
-    assertEquals("com.openai.chatgpt", GuardStateStore.getArmedPackage())
-  }
-
-  @Test
-  fun `egress not blocked when strict mode off`() {
-    GuardStateStore.setStrictEgressEnabled(false)
-    GuardStateStore.setArmed("com.openai.chatgpt")
-
-    assertFalse(GuardStateStore.isEgressBlocked())
   }
 }

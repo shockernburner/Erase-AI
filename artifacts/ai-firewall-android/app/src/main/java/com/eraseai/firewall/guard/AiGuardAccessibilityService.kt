@@ -360,9 +360,8 @@ class AiGuardAccessibilityService : AccessibilityService() {
     pendingRisk = pending
     riskSeenAt = System.currentTimeMillis()
     cleanSince = 0L
-    // Cover send first. The curtain is what stops a tap; arming the Strict VPN does a
-    // synchronous prefs commit and a service call, and every millisecond spent there before
-    // the overlay is mounted is a window in which a fast tap on send still reaches the app.
+    // Cover send first. The curtain is what stops a tap; every millisecond spent before the
+    // overlay is mounted is a window in which a fast tap on send still reaches the app.
     val wasShowing = curtain.isShowing
     lastZones[packageName] = Rect(target.submitZone)
     curtain.show(
@@ -999,7 +998,6 @@ class AiGuardAccessibilityService : AccessibilityService() {
   }
 
   private fun performApprovedSend() {
-    GuardStateStore.grantEgressWindow()
     // Get the modal out of the way first so the host can settle behind it.
     detachOverlayView()
     attemptApprovedSend(overlayPackageName ?: curtainPackage, attempt = 1)
