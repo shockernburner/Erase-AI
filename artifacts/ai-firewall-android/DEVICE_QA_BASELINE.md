@@ -48,5 +48,4 @@ Re-run Phase A in `REAL_DEVICE_QA_MATRIX.md` plus:
 
 - **Geometry curtain:** `curtain.show` logs `mode=geometry` when send node unresolved
 - **IME path:** Enable EraseAI Keyboard → risky text withheld before composer (`ime.withhold`)
-- **Strict egress:** Settings → Strict network gate ON → `egress.arm` while curtain up; send tap fails to reach network
 - **IME primary:** With EraseAI keyboard active, text-only prompts skip `curtain.show` (`curtain.skip reason=ime-primary`)
