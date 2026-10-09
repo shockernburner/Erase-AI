@@ -1,0 +1,95 @@
+# Deployed into eraseai-prod by a Control Tower StackSet (02-accounts).
+# GitHub Actions (OIDC, no stored keys) assumes these roles to run the
+# workload Terraform; the workload state lives in this account.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: EraseAI - GitHub Actions OIDC roles and Terraform state bucket
+
+Parameters:
+  Repo:
+    Type: String
+    Default: shockernburner/Erase-AI
+
+Resources:
+  GitHubOidc:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  StateBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub eraseai-tfstate-${AWS::AccountId}
+      VersioningConfiguration: { Status: Enabled }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  StateBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StateBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: TLSOnly
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource: [!GetAtt StateBucket.Arn, !Sub "${StateBucket.Arn}/*"]
+            Condition: { Bool: { aws:SecureTransport: "false" } }
+
+  # Any branch or pull request in the repo: read-only, for terraform plan.
+  PlanRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: eraseai-github-plan
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: !Ref GitHubOidc }
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals: { "token.actions.githubusercontent.com:aud": sts.amazonaws.com }
+              StringLike: { "token.actions.githubusercontent.com:sub": !Sub "repo:${Repo}:*" }
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/ReadOnlyAccess]
+      Policies:
+        - PolicyName: terraform-state-lock
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [s3:PutObject, s3:DeleteObject]
+                Resource: !Sub "${StateBucket.Arn}/*.tflock"
+
+  # Only jobs that run in the repo's GitHub "production" environment may deploy.
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: eraseai-github-deploy
+      MaxSessionDuration: 7200
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: !Ref GitHubOidc }
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "token.actions.githubusercontent.com:aud": sts.amazonaws.com
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${Repo}:environment:production"
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AdministratorAccess]
+
+Outputs:
+  PlanRoleArn: { Value: !GetAtt PlanRole.Arn }
+  DeployRoleArn: { Value: !GetAtt DeployRole.Arn }
+  StateBucket: { Value: !Ref StateBucket }

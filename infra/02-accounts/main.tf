@@ -117,6 +117,29 @@ resource "aws_servicecatalog_provisioned_product" "eraseai_prod" {
   }
 }
 
-output "prod_account_id" {
-  value = one([for o in aws_servicecatalog_provisioned_product.eraseai_prod.outputs : o.value if o.key == "AccountId"])
+locals {
+  prod_account_id = one([for o in aws_servicecatalog_provisioned_product.eraseai_prod.outputs : o.value if o.key == "AccountId"])
 }
+
+# GitHub OIDC deploy/plan roles and the workload state bucket, pushed into
+# eraseai-prod the same way Control Tower deploys its own baselines.
+resource "aws_cloudformation_stack_set" "github_deploy" {
+  name                    = "eraseai-github-deploy"
+  permission_model        = "SELF_MANAGED"
+  administration_role_arn = "arn:aws:iam::741853494029:role/service-role/AWSControlTowerStackSetRole"
+  execution_role_name     = "AWSControlTowerExecution"
+  capabilities            = ["CAPABILITY_NAMED_IAM"]
+  template_body           = file("${path.module}/github-deploy.yaml")
+}
+
+resource "aws_cloudformation_stack_set_instance" "github_deploy" {
+  stack_set_name            = aws_cloudformation_stack_set.github_deploy.name
+  account_id                = local.prod_account_id
+  stack_set_instance_region = "ap-southeast-1"
+}
+
+output "github_plan_role_arn" { value = "arn:aws:iam::${local.prod_account_id}:role/eraseai-github-plan" }
+output "github_deploy_role_arn" { value = "arn:aws:iam::${local.prod_account_id}:role/eraseai-github-deploy" }
+output "workload_state_bucket" { value = "eraseai-tfstate-${local.prod_account_id}" }
+
+output "prod_account_id" { value = local.prod_account_id }
