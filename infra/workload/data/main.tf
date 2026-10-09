@@ -41,6 +41,13 @@ locals {
   account = data.aws_caller_identity.me.account_id
 }
 
+# Paused: the database is stopped, and a daily schedule stops it again
+# because RDS restarts stopped instances after 7 days. Resume with false.
+variable "paused" {
+  type    = bool
+  default = true
+}
+
 variable "instance_class" {
   type    = string
   default = "db.t4g.small"
@@ -340,3 +347,65 @@ output "db_endpoint" { value = aws_db_instance.main.address }
 output "db_identifier" { value = aws_db_instance.main.identifier }
 output "migration_bucket" { value = aws_s3_bucket.migration.bucket }
 output "secret_names" { value = concat(keys(local.generated), local.external) }
+
+# --- Pause: keep the database stopped -----------------------------------------
+
+resource "aws_iam_role" "db_scheduler" {
+  name = "eraseai-db-stop-scheduler"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "scheduler.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+      Condition = { StringEquals = { "aws:SourceAccount" = local.account } }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "db_scheduler" {
+  name = "stop-db"
+  role = aws_iam_role.db_scheduler.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "rds:StopDBInstance"
+      Resource = aws_db_instance.main.arn
+    }]
+  })
+}
+
+resource "aws_scheduler_schedule" "db_stop" {
+  name                         = "eraseai-db-keep-stopped"
+  description                  = "Stops the database daily while the environment is paused"
+  state                        = var.paused ? "ENABLED" : "DISABLED"
+  schedule_expression          = "cron(0 20 * * ? *)" # 04:00 Singapore
+  schedule_expression_timezone = "UTC"
+  flexible_time_window { mode = "OFF" }
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:rds:stopDBInstance"
+    role_arn = aws_iam_role.db_scheduler.arn
+    input    = jsonencode({ DbInstanceIdentifier = aws_db_instance.main.identifier })
+    retry_policy { maximum_retry_attempts = 0 }
+  }
+}
+
+# Stop or start the database right away when the pause setting changes.
+resource "terraform_data" "db_power" {
+  triggers_replace = [var.paused]
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command     = <<-SH
+      id=${aws_db_instance.main.identifier}
+      state=$(aws rds describe-db-instances --db-instance-identifier $id --query 'DBInstances[0].DBInstanceStatus' --output text)
+      echo "database $id is $state"
+      if [ "${var.paused}" = true ]; then
+        [ "$state" = available ] && aws rds stop-db-instance --db-instance-identifier $id --query 'DBInstance.DBInstanceStatus' --output text || true
+      else
+        [ "$state" = stopped ] && aws rds start-db-instance --db-instance-identifier $id --query 'DBInstance.DBInstanceStatus' --output text && aws rds wait db-instance-available --db-instance-identifier $id || true
+      fi
+    SH
+  }
+  depends_on = [terraform_data.restore]
+}

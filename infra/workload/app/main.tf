@@ -55,6 +55,13 @@ resource "aws_ssm_parameter" "image_tag" {
   lifecycle { ignore_changes = [insecure_value] }
 }
 
+# Paused: no containers run (autoscaling pinned to 0). Resume by setting
+# false (and nat_enabled = true in network, paused = false in data).
+variable "paused" {
+  type    = bool
+  default = true
+}
+
 variable "desired_count" {
   description = "Minimum running tasks"
   type        = number
@@ -352,8 +359,8 @@ resource "aws_appautoscaling_target" "app" {
   service_namespace  = "ecs"
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.app.name}"
   scalable_dimension = "ecs:service:DesiredCount"
-  min_capacity       = var.desired_count
-  max_capacity       = var.max_count
+  min_capacity       = var.paused ? 0 : var.desired_count
+  max_capacity       = var.paused ? 0 : var.max_count
 }
 
 resource "aws_appautoscaling_policy" "cpu" {

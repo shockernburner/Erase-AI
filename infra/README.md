@@ -55,3 +55,14 @@ Manual run: Actions → infra → Run workflow → stack name.
 | `data` | 6 | RDS PostgreSQL 16 (private, encrypted, TLS-only, 14-day backups, deletion protection), Secrets Manager eraseai/* (generated + console-set third-party keys), migration bucket + one-off restore task |
 | `frontend` | 7 | Amplify Hosting app eraseai-web (zip deployments from CI), /api proxy to the ALB, SPA fallback, security headers, custom domain aws.eraseai.ai |
 | `monitoring` | 9 | CloudWatch alarms (ALB, ECS, RDS, WAF) to SNS email, dashboard, GuardDuty (S3, RDS login) with high-severity alerts, Security Hub (AWS FSBP); ALB access logs live in the app stack |
+
+## Paused (cost saving until AWS credits arrive)
+
+`network.nat_enabled = false`, `app.paused = true`, `data.paused = true`:
+no NAT gateway, 0 containers, database stopped (a daily EventBridge
+Scheduler job re-stops it, since RDS auto-starts after 7 days). Load
+balancer, WAF, DNS, certificates, Amplify and all data remain.
+
+Resume: set `nat_enabled = true` (network), `paused = false` (data, then
+app), push, approve the three applies. The app comes back on the image in
+`/eraseai/app/image-tag`.

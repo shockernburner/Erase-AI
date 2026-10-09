@@ -31,6 +31,13 @@ variable "cidr" {
   default = "10.20.0.0/16"
 }
 
+# Off while the environment is paused (no running containers need the
+# internet). Set to true before resuming the app.
+variable "nat_enabled" {
+  type    = bool
+  default = false
+}
+
 variable "nat_per_az" {
   description = "One NAT gateway per AZ (HA, ~US$40/month each) instead of one shared"
   type        = bool
@@ -100,7 +107,7 @@ resource "aws_subnet" "db" {
 # --- NAT -------------------------------------------------------------------
 
 locals {
-  nat_azs = var.nat_per_az ? local.azs : [local.azs[0]]
+  nat_azs = var.nat_enabled ? (var.nat_per_az ? local.azs : [local.azs[0]]) : []
 }
 
 resource "aws_eip" "nat" {
@@ -137,9 +144,12 @@ resource "aws_route_table_association" "public" {
 resource "aws_route_table" "app" {
   for_each = local.subnets
   vpc_id   = aws_vpc.main.id
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[var.nat_per_az ? each.key : local.azs[0]].id
+  dynamic "route" {
+    for_each = var.nat_enabled ? [1] : []
+    content {
+      cidr_block     = "0.0.0.0/0"
+      nat_gateway_id = aws_nat_gateway.main[var.nat_per_az ? each.key : local.azs[0]].id
+    }
   }
   tags = { Name = "eraseai-app-${each.key}" }
 }
