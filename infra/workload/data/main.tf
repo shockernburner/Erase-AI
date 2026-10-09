@@ -289,6 +289,7 @@ resource "aws_ecs_task_definition" "restore" {
 }
 
 # Runs the restore once per dump key, from the GitHub runner (deploy role).
+# Re-running needs a new key (upload under a new name), never the same one.
 resource "terraform_data" "restore" {
   count            = var.restore_dump_key == "" ? 0 : 1
   triggers_replace = [var.restore_dump_key]
