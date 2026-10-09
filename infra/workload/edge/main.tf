@@ -30,11 +30,11 @@ variable "domain" {
   default = "aws.eraseai.ai"
 }
 
-# Set to true once the NS records exist at GoDaddy; Terraform then waits
-# until ACM has issued the certificate.
+# Wait until ACM has issued the certificate (needs the 4 NS records for
+# "aws" at GoDaddy, added 2026-10-09).
 variable "wait_for_certificate" {
   type    = bool
-  default = false
+  default = true
 }
 
 # --- DNS -------------------------------------------------------------------
