@@ -1,0 +1,61 @@
+# Builds the app image (API server + website, see Dockerfile) and pushes it
+# to ECR in eraseai-prod, tagged with the commit SHA. Deploying a tag to
+# ECS happens through the app stack (image_tag) in infra.yml.
+name: build
+
+on:
+  push:
+    paths:
+      - "artifacts/api-server/**"
+      - "artifacts/eraseai/**"
+      - "lib/**"
+      - "extension/**"
+      - "Dockerfile"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ap-southeast-1
+  REPOSITORY: eraseai/app
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::110796370706:role/eraseai-github-deploy
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.REPOSITORY }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Scan result
+        run: |
+          aws ecr wait image-scan-complete --repository-name "$REPOSITORY" --image-id imageTag=${{ github.sha }}
+          aws ecr describe-image-scan-findings --repository-name "$REPOSITORY" --image-id imageTag=${{ github.sha }} \
+            --query 'imageScanFindings.findingSeverityCounts' --output json | tee counts.json
+          { echo "### Image"; echo '```'; echo "${{ steps.ecr.outputs.registry }}/$REPOSITORY:${{ github.sha }}"; echo '```';
+            echo "Vulnerability findings by severity:"; echo '```'; cat counts.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
