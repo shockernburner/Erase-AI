@@ -56,7 +56,7 @@ variable "multi_az" {
 # runs the restore task once; it WIPES the database first.
 variable "restore_dump_key" {
   type    = string
-  default = ""
+  default = "eraseai.dump" # Replit dump uploaded 2026-10-09
 }
 
 # --- Database ----------------------------------------------------------------
