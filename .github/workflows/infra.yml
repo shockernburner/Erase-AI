@@ -1,0 +1,100 @@
+# Terraform for the eraseai-prod account (infra/workload/<stack>).
+# plan: read-only role, any branch.  apply: deploy role, only inside the
+# GitHub "production" environment (approval required there).
+name: infra
+
+on:
+  push:
+    paths: ["infra/workload/**", ".github/workflows/infra.yml"]
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: "Stack under infra/workload (e.g. network)"
+        required: true
+        default: network
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: infra-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-1
+  TF_VERSION: 1.13.4
+  PLAN_ROLE: arn:aws:iam::110796370706:role/eraseai-github-plan
+  DEPLOY_ROLE: arn:aws:iam::110796370706:role/eraseai-github-deploy
+  # Apply order; stacks later in the list read outputs of earlier ones.
+  STACK_ORDER: network edge ecr data app frontend cicd monitoring
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      stacks: ${{ steps.pick.outputs.stacks }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: pick
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            changed="${{ inputs.stack }}"
+          else
+            before="${{ github.event.before }}"
+            if [ -z "$before" ] || ! git cat-file -e "$before" 2>/dev/null; then before=$(git rev-list --max-parents=0 HEAD | tail -1); fi
+            changed=$(git diff --name-only "$before" "${{ github.sha }}" -- infra/workload | cut -d/ -f3 | sort -u)
+          fi
+          stacks=()
+          for s in $STACK_ORDER; do
+            if echo "$changed" | grep -qx "$s" && [ -d "infra/workload/$s" ]; then stacks+=("\"$s\""); fi
+          done
+          echo "stacks=[$(IFS=,; echo "${stacks[*]}")]" >> "$GITHUB_OUTPUT"
+          echo "Stacks: ${stacks[*]:-none}"
+
+  plan:
+    needs: detect
+    if: needs.detect.outputs.stacks != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix: { stack: "${{ fromJSON(needs.detect.outputs.stacks) }}" }
+    defaults:
+      run: { working-directory: "infra/workload/${{ matrix.stack }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "${{ env.TF_VERSION }}", terraform_wrapper: false }
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ env.PLAN_ROLE }}", aws-region: "${{ env.AWS_REGION }}" }
+      - run: terraform fmt -check -diff
+      - run: terraform init -input=false
+      - run: terraform validate
+      - name: terraform plan
+        run: |
+          terraform plan -input=false -no-color -lock=false -out=tfplan | tee plan.txt
+          { echo "### ${{ matrix.stack }}"; echo '```'; grep -E '^  # |^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    needs: [detect, plan]
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      max-parallel: 1
+      matrix: { stack: "${{ fromJSON(needs.detect.outputs.stacks) }}" }
+    defaults:
+      run: { working-directory: "infra/workload/${{ matrix.stack }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "${{ env.TF_VERSION }}", terraform_wrapper: false }
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ env.DEPLOY_ROLE }}", aws-region: "${{ env.AWS_REGION }}", role-duration-seconds: 7200 }
+      - run: terraform init -input=false
+      - run: terraform plan -input=false -no-color -out=tfplan
+      - run: terraform apply -input=false -no-color tfplan
+      - name: outputs
+        run: |
+          { echo "### ${{ matrix.stack }} outputs"; echo '```'; terraform output -no-color; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

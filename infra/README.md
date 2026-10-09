@@ -37,3 +37,15 @@ terraform plan -refresh=false -out=tfplan && terraform apply tfplan
 
 Never apply a plan that wants to *replace* the landing zone. From AWS
 CloudShell or GitHub Actions (no proxy) plain `terraform plan` works.
+
+## Workload stacks (eraseai-prod, 110796370706)
+
+`infra/workload/<stack>`, state in `s3://eraseai-tfstate-110796370706`.
+Applied only by GitHub Actions (`.github/workflows/infra.yml`): a push that
+changes a stack runs `plan` with the read-only role, then `apply` with the
+deploy role inside the `production` environment (needs approval there).
+Manual run: Actions → infra → Run workflow → stack name.
+
+| Stack | Phase | What |
+|---|---|---|
+| `network` | 2 | VPC 10.20.0.0/16 over 2 AZs: public / app / db subnets, IGW, NAT, S3 endpoint, security groups (ALB → app:8080 → db:5432), VPC flow logs |
