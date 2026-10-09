@@ -20,3 +20,20 @@ terraform apply tfplan
 `00-bootstrap` was applied once with local state (a temporary
 `backend_override.tf` with `backend "local" {}`), then migrated into the
 bucket with `terraform init -migrate-state`.
+
+## Known quirk: Control Tower tag reads through the Claude Code session proxy
+
+From the Claude Code cloud session, `controltower:ListTagsForResource` fails
+with `AccessDeniedException: Unable to determine service/operation name`
+(the session's AWS proxy mangles that REST path). Effect: Terraform reports
+an error right after creating an `aws_controltower_*` resource and marks it
+tainted, although the resource itself is fine. Recovery used here:
+
+```bash
+aws controltower get-landing-zone --landing-zone-identifier <arn>   # confirm ACTIVE
+terraform untaint aws_controltower_landing_zone.this
+terraform plan -refresh=false -out=tfplan && terraform apply tfplan
+```
+
+Never apply a plan that wants to *replace* the landing zone. From AWS
+CloudShell or GitHub Actions (no proxy) plain `terraform plan` works.
