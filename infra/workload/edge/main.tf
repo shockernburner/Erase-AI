@@ -62,22 +62,25 @@ resource "aws_acm_certificate" "main" {
   lifecycle { create_before_destroy = true }
 }
 
+# ACM gives the apex and the wildcard the same validation record, so one
+# record (from the apex entry) validates both names.
+locals {
+  cert_dvo = one([for o in aws_acm_certificate.main.domain_validation_options : o if o.domain_name == var.domain])
+}
+
 resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for o in aws_acm_certificate.main.domain_validation_options : o.resource_record_name => o...
-  }
   zone_id         = aws_route53_zone.main.zone_id
-  name            = each.key
-  type            = each.value[0].resource_record_type
+  name            = local.cert_dvo.resource_record_name
+  type            = local.cert_dvo.resource_record_type
   ttl             = 300
-  records         = [each.value[0].resource_record_value]
+  records         = [local.cert_dvo.resource_record_value]
   allow_overwrite = true
 }
 
 resource "aws_acm_certificate_validation" "main" {
   count                   = var.wait_for_certificate ? 1 : 0
   certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
+  validation_record_fqdns = [aws_route53_record.cert_validation.fqdn]
   timeouts { create = "45m" }
 }
 

@@ -74,6 +74,7 @@ jobs:
       - run: terraform validate
       - name: terraform plan
         run: |
+          set -o pipefail
           terraform plan -input=false -no-color -lock=false -out=tfplan | tee plan.txt
           { echo "### ${{ matrix.stack }}"; echo '```'; grep -E '^  # |^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
