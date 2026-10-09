@@ -41,16 +41,23 @@ variable "audit_email" {
 data "aws_organizations_organization" "this" {}
 
 # --- Shared accounts -------------------------------------------------------
-# Control Tower moves these into the Security OU, hence ignore parent_id.
+# Landing zone 4.0 needs the service integration accounts together in one
+# OU directly under the root.
+
+resource "aws_organizations_organizational_unit" "security" {
+  name      = "Security"
+  parent_id = data.aws_organizations_organization.this.roots[0].id
+}
 
 resource "aws_organizations_account" "log_archive" {
   name                       = "Log Archive"
   email                      = var.log_archive_email
   iam_user_access_to_billing = "ALLOW"
   close_on_deletion          = false
+  parent_id                  = aws_organizations_organizational_unit.security.id
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [parent_id, role_name, iam_user_access_to_billing]
+    ignore_changes  = [role_name, iam_user_access_to_billing]
   }
 }
 
@@ -59,9 +66,10 @@ resource "aws_organizations_account" "audit" {
   email                      = var.audit_email
   iam_user_access_to_billing = "ALLOW"
   close_on_deletion          = false
+  parent_id                  = aws_organizations_organizational_unit.security.id
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [parent_id, role_name, iam_user_access_to_billing]
+    ignore_changes  = [role_name, iam_user_access_to_billing]
   }
 }
 
@@ -155,20 +163,28 @@ resource "aws_iam_role_policy_attachment" "config_aggregator" {
 # --- Landing zone ----------------------------------------------------------
 
 resource "aws_controltower_landing_zone" "this" {
-  version = "3.3"
+  version = "4.0"
   manifest_json = jsonencode({
-    governedRegions       = [var.home_region]
-    organizationStructure = { security = { name = "Security" }, sandbox = { name = "Sandbox" } }
+    governedRegions  = [var.home_region]
+    accessManagement = { enabled = true }
+    backup           = { enabled = false }
     centralizedLogging = {
+      enabled   = true
       accountId = aws_organizations_account.log_archive.id
       configurations = {
         loggingBucket       = { retentionDays = 365 }
         accessLoggingBucket = { retentionDays = 3650 }
       }
-      enabled = true
     }
-    securityRoles    = { accountId = aws_organizations_account.audit.id }
-    accessManagement = { enabled = true }
+    config = {
+      enabled   = true
+      accountId = aws_organizations_account.audit.id
+      configurations = {
+        loggingBucket       = { retentionDays = 365 }
+        accessLoggingBucket = { retentionDays = 3650 }
+      }
+    }
+    securityRoles = { enabled = true, accountId = aws_organizations_account.audit.id }
   })
 
   depends_on = [
@@ -194,5 +210,6 @@ resource "aws_organizations_organizational_unit" "workloads" {
 output "log_archive_account_id" { value = aws_organizations_account.log_archive.id }
 output "audit_account_id" { value = aws_organizations_account.audit.id }
 output "landing_zone_arn" { value = aws_controltower_landing_zone.this.arn }
+output "security_ou_id" { value = aws_organizations_organizational_unit.security.id }
 output "workloads_ou_id" { value = aws_organizations_organizational_unit.workloads.id }
 output "workloads_ou_arn" { value = aws_organizations_organizational_unit.workloads.arn }

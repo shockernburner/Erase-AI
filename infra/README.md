@@ -7,7 +7,7 @@ Apply them in order.
 | Stack | Account | What |
 |---|---|---|
 | `00-bootstrap` | management | State bucket (versioned, encrypted, TLS-only) |
-| `01-landing-zone` | management | Control Tower landing zone, Log Archive + Audit accounts, service roles, Workloads OU |
+| `01-landing-zone` | management | Control Tower landing zone 4.0, Security OU with Log Archive + Audit accounts, service roles, Workloads OU |
 
 ```bash
 cd infra/<stack>
