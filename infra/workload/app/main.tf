@@ -145,6 +145,61 @@ resource "aws_iam_role" "task" {
 
 # --- Load balancer -----------------------------------------------------------
 
+# Access logs (90 days). ALB log delivery requires SSE-S3 and, in
+# ap-southeast-1, the regional ELB account 114774131450 as writer.
+resource "aws_s3_bucket" "alb_logs" {
+  bucket = "eraseai-alb-logs-${data.aws_caller_identity.me.account_id}"
+}
+
+resource "aws_s3_bucket_public_access_block" "alb_logs" {
+  bucket                  = aws_s3_bucket.alb_logs.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+  rule {
+    apply_server_side_encryption_by_default { sse_algorithm = "AES256" }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+  rule {
+    id     = "expire"
+    status = "Enabled"
+    filter {}
+    expiration { days = 90 }
+  }
+}
+
+resource "aws_s3_bucket_policy" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "ELBLogDelivery"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::114774131450:root" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.alb_logs.arn}/alb/AWSLogs/${data.aws_caller_identity.me.account_id}/*"
+      },
+      {
+        Sid       = "TLSOnly"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource  = [aws_s3_bucket.alb_logs.arn, "${aws_s3_bucket.alb_logs.arn}/*"]
+        Condition = { Bool = { "aws:SecureTransport" = "false" } }
+      },
+    ]
+  })
+}
+
 resource "aws_lb" "main" {
   name                       = "eraseai"
   load_balancer_type         = "application"
@@ -154,6 +209,12 @@ resource "aws_lb" "main" {
   drop_invalid_header_fields = true
   idle_timeout               = 120 # 10 MB dataset uploads
   enable_deletion_protection = true
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.id
+    prefix  = "alb"
+    enabled = true
+  }
+  depends_on = [aws_s3_bucket_policy.alb_logs]
 }
 
 resource "aws_lb_target_group" "app" {
