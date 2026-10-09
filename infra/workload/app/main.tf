@@ -3,9 +3,7 @@
 # stacks' outputs.
 #
 #   https://api.aws.eraseai.ai  ->  ALB (+WAF)  ->  Fargate tasks :8080
-#
-# The service starts at desired_count = 0: tasks only run once the image
-# is in ECR (Phase 8 builds it) and the database + secrets exist (Phase 6).
+
 
 terraform {
   required_version = ">= 1.10"
@@ -49,13 +47,13 @@ locals {
 variable "image_tag" {
   description = "Image tag (git commit SHA) in eraseai/app; CI sets it"
   type        = string
-  default     = "bootstrap"
+  default     = "8cf2cf20f19bdea0c660a9989bfe7b9d9f041e25"
 }
 
 variable "desired_count" {
-  description = "Minimum running tasks (0 until the image and database exist)"
+  description = "Minimum running tasks"
   type        = number
-  default     = 0
+  default     = 1
 }
 
 variable "max_count" {
