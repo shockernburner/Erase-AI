@@ -44,10 +44,15 @@ locals {
   site_url = "https://${local.edge.domain}"
 }
 
-variable "image_tag" {
-  description = "Image tag (git commit SHA) in eraseai/app; CI sets it"
-  type        = string
-  default     = "8cf2cf20f19bdea0c660a9989bfe7b9d9f041e25"
+# Image tag (git commit SHA) to run. Terraform creates the parameter; the
+# build pipeline (.github/workflows/build.yml) overwrites it with each new
+# image and then applies this stack, which rolls the service forward.
+resource "aws_ssm_parameter" "image_tag" {
+  name = "/eraseai/app/image-tag"
+  type = "String"
+  # not a secret; insecure_value keeps it readable in plans
+  insecure_value = "8cf2cf20f19bdea0c660a9989bfe7b9d9f041e25"
+  lifecycle { ignore_changes = [insecure_value] }
 }
 
 variable "desired_count" {
@@ -227,7 +232,7 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([{
     name                   = "app"
-    image                  = "${local.ecr.repository_url}:${var.image_tag}"
+    image                  = "${local.ecr.repository_url}:${aws_ssm_parameter.image_tag.insecure_value}"
     essential              = true
     readonlyRootFilesystem = false
     portMappings           = [{ containerPort = 8080, protocol = "tcp" }]
@@ -309,6 +314,7 @@ resource "aws_appautoscaling_policy" "cpu" {
 # --- Outputs -----------------------------------------------------------------
 
 output "api_url" { value = "https://${local.api_host}" }
+output "image_tag" { value = aws_ssm_parameter.image_tag.insecure_value }
 output "alb_dns_name" { value = aws_lb.main.dns_name }
 output "alb_arn_suffix" { value = aws_lb.main.arn_suffix }
 output "target_group_arn_suffix" { value = aws_lb_target_group.app.arn_suffix }
