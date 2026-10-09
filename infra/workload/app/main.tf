@@ -70,6 +70,12 @@ variable "secret_names" {
 
 data "aws_caller_identity" "me" {}
 
+# ECS needs the full ARN for Secrets Manager; a bare name means SSM.
+data "aws_secretsmanager_secret" "app" {
+  for_each = toset(var.secret_names)
+  name     = "eraseai/${each.key}"
+}
+
 # --- Cluster and logs --------------------------------------------------------
 
 resource "aws_ecs_cluster" "main" {
@@ -232,7 +238,7 @@ resource "aws_ecs_task_definition" "app" {
       { name = "WEB_BASE_URL", value = local.site_url },
     ]
     secrets = [
-      for n in var.secret_names : { name = n, valueFrom = "eraseai/${n}" }
+      for n in var.secret_names : { name = n, valueFrom = data.aws_secretsmanager_secret.app[n].arn }
     ]
     logConfiguration = {
       logDriver = "awslogs"
