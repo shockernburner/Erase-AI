@@ -130,6 +130,7 @@ resource "aws_cloudformation_stack_set" "github_deploy" {
   execution_role_name     = "AWSControlTowerExecution"
   capabilities            = ["CAPABILITY_NAMED_IAM"]
   template_body           = file("${path.module}/github-deploy.yaml")
+  parameters              = { Repo = "shockernburner/Erase-AI" }
 }
 
 resource "aws_cloudformation_stack_set_instance" "github_deploy" {

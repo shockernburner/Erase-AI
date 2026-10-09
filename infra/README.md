@@ -8,7 +8,7 @@ Apply them in order.
 |---|---|---|
 | `00-bootstrap` | management | State bucket (versioned, encrypted, TLS-only) |
 | `01-landing-zone` | management | Control Tower landing zone 4.0, Security OU with Log Archive + Audit accounts, service roles, Workloads OU |
-| `02-accounts` | management | Workloads OU registered with Control Tower; eraseai-prod account via Account Factory |
+| `02-accounts` | management | Workloads OU registered with Control Tower; eraseai-prod (110796370706) via Account Factory; GitHub OIDC plan/deploy roles + workload state bucket in eraseai-prod (StackSet) |
 
 ```bash
 cd infra/<stack>
