@@ -1,0 +1,49 @@
+# Read-only health report for eraseai-prod (uses the read-only plan role,
+# so it needs no approval). Prints service state, ECS events, why recent
+# tasks stopped, target health and recent app warnings/errors.
+name: diagnose
+
+on:
+  push:
+    paths: [".github/workflows/diagnose.yml", "infra/diagnose-trigger"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-southeast-1
+      CLUSTER: eraseai
+      SERVICE: eraseai-app
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::110796370706:role/eraseai-github-plan
+          aws-region: ap-southeast-1
+      - name: Service
+        run: |
+          aws ecs describe-services --cluster $CLUSTER --services $SERVICE \
+            --query 'services[0].{status:status,desired:desiredCount,running:runningCount,pending:pendingCount,taskDef:taskDefinition,rollout:deployments[0].rolloutState,reason:deployments[0].rolloutStateReason}' --output table
+          echo "--- recent service events"
+          aws ecs describe-services --cluster $CLUSTER --services $SERVICE --query 'services[0].events[:12].[createdAt,message]' --output text
+      - name: Autoscaling target
+        run: aws application-autoscaling describe-scalable-targets --service-namespace ecs --query 'ScalableTargets[].[ResourceId,MinCapacity,MaxCapacity]' --output text
+      - name: Stopped tasks
+        run: |
+          arns=$(aws ecs list-tasks --cluster $CLUSTER --service-name $SERVICE --desired-status STOPPED --query 'taskArns[:5]' --output text)
+          [ -z "$arns" ] && { echo "no stopped tasks"; exit 0; }
+          aws ecs describe-tasks --cluster $CLUSTER --tasks $arns \
+            --query 'tasks[].{stopped:stoppedAt,code:stopCode,reason:stoppedReason,exit:containers[0].exitCode,why:containers[0].reason}' --output table
+      - name: Target health
+        run: |
+          tg=$(aws elbv2 describe-target-groups --names eraseai-app --query 'TargetGroups[0].TargetGroupArn' --output text)
+          aws elbv2 describe-target-health --target-group-arn "$tg" --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State,TargetHealth.Reason,TargetHealth.Description]' --output text
+      - name: App log (warnings and errors, last hour)
+        run: |
+          aws logs filter-log-events --log-group-name /eraseai/app --start-time $(( ($(date +%s) - 3600) * 1000 )) \
+            --query 'events[].message' --output text | tr '\t' '\n' \
+            | grep -E '"level":(40|50|60)|Error|error|listening|ECONN|getaddrinfo' | cut -c1-300 | tail -40 || true
