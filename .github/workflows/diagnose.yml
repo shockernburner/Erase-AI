@@ -47,3 +47,9 @@ jobs:
           aws logs filter-log-events --log-group-name /eraseai/app --start-time $(( ($(date +%s) - 3600) * 1000 )) \
             --query 'events[].message' --output text | tr '\t' '\n' \
             | grep -E '"level":(40|50|60)|Error|error|listening|ECONN|getaddrinfo' | cut -c1-300 | tail -40 || true
+      - name: Amplify domain
+        run: |
+          app=$(aws amplify list-apps --query "apps[?name=='eraseai-web'].appId | [0]" --output text)
+          aws amplify get-domain-association --app-id "$app" --domain-name aws.eraseai.ai \
+            --query 'domainAssociation.{status:domainStatus,reason:statusReason,cert:certificateVerificationDNSRecord,sub:subDomains[].dnsRecord}' --output json
+          aws amplify list-jobs --app-id "$app" --branch-name main --max-items 3 --query 'jobSummaries[].[jobId,status,startTime]' --output text || true
