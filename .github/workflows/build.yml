@@ -1,6 +1,8 @@
-# Builds the app image (API server + website, see Dockerfile) and pushes it
-# to ECR in eraseai-prod, tagged with the commit SHA. Deploying a tag to
-# ECS happens through the app stack (image_tag) in infra.yml.
+# Builds the app image (API server + website, see Dockerfile), pushes it to
+# ECR in eraseai-prod tagged with the commit SHA, then rolls it out: the tag
+# goes into SSM (/eraseai/app/image-tag) and the app stack is applied, which
+# registers a new task definition and ECS replaces the tasks (circuit
+# breaker rolls back if the new tasks fail health checks).
 name: build
 
 on:
@@ -59,3 +61,34 @@ jobs:
             --query 'imageScanFindings.findingSeverityCounts' --output json | tee counts.json
           { echo "### Image"; echo '```'; echo "${{ steps.ecr.outputs.registry }}/$REPOSITORY:${{ github.sha }}"; echo '```';
             echo "Vulnerability findings by severity:"; echo '```'; cat counts.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: image
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run: { working-directory: infra/workload/app }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: 1.13.4, terraform_wrapper: false }
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::110796370706:role/eraseai-github-deploy
+          aws-region: ap-southeast-1
+          role-duration-seconds: 3600
+      - name: Set image tag
+        run: aws ssm put-parameter --name /eraseai/app/image-tag --type String --overwrite --value "${{ github.sha }}" >/dev/null
+      - run: terraform init -input=false
+      - name: Roll out
+        run: |
+          set -o pipefail
+          terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+          terraform apply -input=false -no-color tfplan
+          aws ecs wait services-stable --cluster eraseai --services eraseai-app
+          { echo "### Deployed ${{ github.sha }}"; echo '```'; grep -E '^  # |^Plan:' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Smoke test
+        run: |
+          for u in https://api.aws.eraseai.ai/api/healthz https://aws.eraseai.ai/api/healthz; do
+            curl -fsS --retry 5 --retry-delay 10 "$u"; echo " <- $u"
+          done
