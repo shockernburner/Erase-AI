@@ -117,17 +117,9 @@ resource "aws_iam_role" "cloudtrail" {
   assume_role_policy = data.aws_iam_policy_document.trust["cloudtrail"].json
 }
 
-resource "aws_iam_role_policy" "cloudtrail" {
-  name = "AWSControlTowerCloudTrailRolePolicy"
-  role = aws_iam_role.cloudtrail.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
-      Resource = "arn:aws:logs:*:*:log-group:aws-controltower/CloudTrailLogs:*"
-    }]
-  })
+resource "aws_iam_role_policy_attachment" "cloudtrail" {
+  role       = aws_iam_role.cloudtrail.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSControlTowerCloudTrailRolePolicy"
 }
 
 resource "aws_iam_role" "stackset" {
@@ -190,7 +182,7 @@ resource "aws_controltower_landing_zone" "this" {
   depends_on = [
     aws_iam_role_policy_attachment.admin,
     aws_iam_role_policy.admin,
-    aws_iam_role_policy.cloudtrail,
+    aws_iam_role_policy_attachment.cloudtrail,
     aws_iam_role_policy.stackset,
     aws_iam_role_policy_attachment.config_aggregator,
   ]
