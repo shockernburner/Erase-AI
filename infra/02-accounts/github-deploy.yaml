@@ -70,6 +70,14 @@ Resources:
               - Effect: Allow
                 Action: [s3:PutObject, s3:DeleteObject]
                 Resource: !Sub "${StateBucket.Arn}/*.tflock"
+        # The data stack's state holds the database password and app secrets.
+        - PolicyName: no-secret-state
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Deny
+                Action: s3:GetObject
+                Resource: !Sub "${StateBucket.Arn}/data.tfstate"
 
   # Only jobs that run in the repo's GitHub "production" environment may deploy.
   DeployRole:

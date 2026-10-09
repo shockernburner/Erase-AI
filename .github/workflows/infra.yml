@@ -27,7 +27,10 @@ env:
   PLAN_ROLE: arn:aws:iam::110796370706:role/eraseai-github-plan
   DEPLOY_ROLE: arn:aws:iam::110796370706:role/eraseai-github-deploy
   # Apply order; stacks later in the list read outputs of earlier ones.
-  STACK_ORDER: network edge ecr data app frontend cicd monitoring
+  STACK_ORDER: network edge ecr app data frontend cicd monitoring
+  # State of these stacks holds secrets: the read-only role cannot read it,
+  # so they are planned only inside the protected apply job.
+  PLAN_IN_APPLY_ONLY: data
 
 jobs:
   detect:
@@ -73,6 +76,7 @@ jobs:
       - run: terraform init -input=false
       - run: terraform validate
       - name: terraform plan
+        if: ${{ !contains(env.PLAN_IN_APPLY_ONLY, matrix.stack) }}
         run: |
           set -o pipefail
           terraform plan -input=false -no-color -lock=false -out=tfplan | tee plan.txt
@@ -94,7 +98,11 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with: { role-to-assume: "${{ env.DEPLOY_ROLE }}", aws-region: "${{ env.AWS_REGION }}", role-duration-seconds: 7200 }
       - run: terraform init -input=false
-      - run: terraform plan -input=false -no-color -out=tfplan
+      - name: terraform plan
+        run: |
+          set -o pipefail
+          terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+          { echo "### ${{ matrix.stack }} (applied plan)"; echo '```'; grep -E '^  # |^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - run: terraform apply -input=false -no-color tfplan
       - name: outputs
         run: |
