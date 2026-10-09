@@ -49,3 +49,4 @@ Manual run: Actions → infra → Run workflow → stack name.
 | Stack | Phase | What |
 |---|---|---|
 | `network` | 2 | VPC 10.20.0.0/16 over 2 AZs: public / app / db subnets, IGW, NAT, S3 endpoint, security groups (ALB → app:8080 → db:5432), VPC flow logs |
+| `edge` | 3 | Route 53 zone aws.eraseai.ai (delegated from GoDaddy), ACM cert aws.eraseai.ai + *.aws.eraseai.ai, WAF (rate limit + AWS managed rules) with logs |
