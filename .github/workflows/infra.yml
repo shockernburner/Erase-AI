@@ -73,10 +73,17 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with: { role-to-assume: "${{ env.PLAN_ROLE }}", aws-region: "${{ env.AWS_REGION }}" }
       - run: terraform fmt -check -diff
-      - run: terraform init -input=false
+      - name: terraform init
+        run: |
+          if [[ " $PLAN_IN_APPLY_ONLY " == *" ${{ matrix.stack }} "* ]]; then
+            terraform init -input=false -backend=false
+            echo "### ${{ matrix.stack }}: planned in the protected apply job (state holds secrets)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            terraform init -input=false
+          fi
       - run: terraform validate
       - name: terraform plan
-        if: ${{ !contains(env.PLAN_IN_APPLY_ONLY, matrix.stack) }}
+        if: ${{ !contains(format(' {0} ', env.PLAN_IN_APPLY_ONLY), format(' {0} ', matrix.stack)) }}
         run: |
           set -o pipefail
           terraform plan -input=false -no-color -lock=false -out=tfplan | tee plan.txt
