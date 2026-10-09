@@ -50,3 +50,4 @@ Manual run: Actions → infra → Run workflow → stack name.
 |---|---|---|
 | `network` | 2 | VPC 10.20.0.0/16 over 2 AZs: public / app / db subnets, IGW, NAT, S3 endpoint, security groups (ALB → app:8080 → db:5432), VPC flow logs |
 | `edge` | 3 | Route 53 zone aws.eraseai.ai (delegated from GoDaddy), ACM cert aws.eraseai.ai + *.aws.eraseai.ai, WAF (rate limit + AWS managed rules) with logs |
+| `ecr` | 4 | ECR repo eraseai/app (immutable SHA tags, scan on push, lifecycle: 30 builds), pull-through cache for public.ecr.aws base images |
