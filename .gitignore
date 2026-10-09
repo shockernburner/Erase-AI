@@ -54,3 +54,4 @@ attached_assets/
 /*.mov
 /*.webm
 /EraseAI_Project_Hero.png
+.claude/settings.local.json
