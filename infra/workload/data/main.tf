@@ -257,35 +257,57 @@ resource "aws_ecs_task_definition" "restore" {
   memory                   = "2048"
   execution_role_arn       = "arn:aws:iam::${local.account}:role/eraseai-ecs-execution"
   task_role_arn            = aws_iam_role.restore.arn
-  container_definitions = jsonencode([{
-    name       = "restore"
-    image      = "public.ecr.aws/docker/library/postgres:16"
-    essential  = true
-    entryPoint = ["bash", "-c"]
-    command = [<<-SH
-      set -euo pipefail
-      apt-get update -qq >/dev/null && apt-get install -y -qq awscli >/dev/null
-      aws s3 cp --quiet "s3://$BUCKET/$DUMP_KEY" /tmp/dump
-      [ "$(head -c 5 /tmp/dump)" = PGDMP ] || { echo "not a pg_dump custom-format file"; exit 1; }
-      DB="$${DATABASE_URL/sslmode=no-verify/sslmode=require}"
-      ADMIN=$(printf %s "$DB" | sed "s#:5432/eraseai?#:5432/postgres?#")
-      psql "$ADMIN" -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS eraseai WITH (FORCE)" -c "CREATE DATABASE eraseai"
-      pg_restore --no-owner --no-privileges -d "$DB" /tmp/dump || echo "pg_restore finished with warnings"
-      psql "$DB" -At -c "select 'users=' || count(*) from users"
-      echo RESTORE_DONE
-    SH
-    ]
-    environment = [{ name = "BUCKET", value = aws_s3_bucket.migration.bucket }]
-    secrets     = [{ name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.generated["DATABASE_URL"].arn }]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.restore.name
-        awslogs-region        = "ap-southeast-1"
-        awslogs-stream-prefix = "restore"
+  # Two containers, no package installs (app subnets only allow HTTPS out):
+  # "fetch" (AWS CLI image) copies the dump into a shared volume, then
+  # "restore" (PostgreSQL image) loads it.
+  volume { name = "dump" }
+  container_definitions = jsonencode([
+    {
+      name        = "fetch"
+      image       = "public.ecr.aws/aws-cli/aws-cli:latest"
+      essential   = false
+      entryPoint  = ["sh", "-c"]
+      command     = ["aws s3 cp --only-show-errors \"s3://$BUCKET/$DUMP_KEY\" /dump/eraseai.dump && ls -l /dump"]
+      environment = [{ name = "BUCKET", value = aws_s3_bucket.migration.bucket }]
+      mountPoints = [{ sourceVolume = "dump", containerPath = "/dump" }]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.restore.name
+          awslogs-region        = "ap-southeast-1"
+          awslogs-stream-prefix = "fetch"
+        }
       }
-    }
-  }])
+    },
+    {
+      name        = "restore"
+      image       = "public.ecr.aws/docker/library/postgres:16"
+      essential   = true
+      dependsOn   = [{ containerName = "fetch", condition = "SUCCESS" }]
+      mountPoints = [{ sourceVolume = "dump", containerPath = "/dump", readOnly = true }]
+      entryPoint  = ["bash", "-c"]
+      command = [<<-SH
+        set -euo pipefail
+        [ "$(head -c 5 /dump/eraseai.dump)" = PGDMP ] || { echo "not a pg_dump custom-format file"; exit 1; }
+        DB="$${DATABASE_URL/sslmode=no-verify/sslmode=require}"
+        ADMIN=$(printf %s "$DB" | sed "s#:5432/eraseai?#:5432/postgres?#")
+        psql "$ADMIN" -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS eraseai WITH (FORCE)" -c "CREATE DATABASE eraseai"
+        pg_restore --no-owner --no-privileges -d "$DB" /dump/eraseai.dump || echo "pg_restore finished with warnings"
+        psql "$DB" -At -c "select 'users=' || count(*) from users" -c "select 'tables=' || count(*) from information_schema.tables where table_schema='public'"
+        echo RESTORE_DONE
+      SH
+      ]
+      secrets = [{ name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.generated["DATABASE_URL"].arn }]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.restore.name
+          awslogs-region        = "ap-southeast-1"
+          awslogs-stream-prefix = "restore"
+        }
+      }
+    },
+  ])
 }
 
 # Runs the restore once per dump key, from the GitHub runner (deploy role).
@@ -300,11 +322,11 @@ resource "terraform_data" "restore" {
       task=$(aws ecs run-task --cluster ${local.app.cluster_name} --launch-type FARGATE \
         --task-definition ${aws_ecs_task_definition.restore.arn} \
         --network-configuration 'awsvpcConfiguration={subnets=[${join(",", local.net.app_subnet_ids)}],securityGroups=[${local.net.app_security_group_id}],assignPublicIp=DISABLED}' \
-        --overrides '{"containerOverrides":[{"name":"restore","environment":[{"name":"DUMP_KEY","value":"${var.restore_dump_key}"}]}]}' \
+        --overrides '{"containerOverrides":[{"name":"fetch","environment":[{"name":"DUMP_KEY","value":"${var.restore_dump_key}"}]}]}' \
         --query 'tasks[0].taskArn' --output text)
       echo "restore task: $task"
       aws ecs wait tasks-stopped --cluster ${local.app.cluster_name} --tasks "$task"
-      code=$(aws ecs describe-tasks --cluster ${local.app.cluster_name} --tasks "$task" --query 'tasks[0].containers[0].exitCode' --output text)
+      code=$(aws ecs describe-tasks --cluster ${local.app.cluster_name} --tasks "$task" --query "tasks[0].containers[?name=='restore'].exitCode | [0]" --output text)
       aws logs tail ${aws_cloudwatch_log_group.restore.name} --since 30m | grep -vE 'debconf|^\s*$' | tail -20
       [ "$code" = 0 ]
     SH
