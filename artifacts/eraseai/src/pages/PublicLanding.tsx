@@ -18,6 +18,7 @@ import { WhyNowScene } from "@/components/landing/WhyNowScene";
 import { BrandScene } from "@/components/landing/BrandScene";
 import { PlansScene, type PlanActions } from "@/components/landing/PlansScene";
 import { StartScene } from "@/components/landing/StartScene";
+import { FeaturePip, hasPip, type PipPlan } from "@/components/landing/FeaturePip";
 import { CONTACT, LANDING_PLANS } from "@/components/landing/landingData";
 
 // The public homepage plays like a film: the page itself never scrolls.
@@ -25,8 +26,9 @@ import { CONTACT, LANDING_PLANS } from "@/components/landing/landingData";
 // scrolling up goes back. Frames: the headlines → how data leaks through AI →
 // why now → what EraseAI is → plans with checkout → start and contact.
 // Docs, blogs and the rest live behind sign-in.
-
-type PreviewMode = "developer" | "enterprise" | "personal" | null;
+//
+// Check out on a plan opens a picture-in-picture animation of what the plan
+// does, with sign up / sign in under it. Nothing on this page is sample data.
 
 const SCENES = [
   { id: "headlines", steps: 2 },
@@ -44,21 +46,23 @@ const firstFrameOf = (scene: number) => FRAMES.findIndex((f) => f.scene === scen
 // Read at load: App rewrites /pricing to / before this page first renders.
 const LANDED_ON_PRICING = typeof window !== "undefined" && /\/pricing\/?$/.test(window.location.pathname);
 
-function initialFrame(): number {
-  // eraseai.ai/pricing and a plan picked earlier open on the plans.
-  const focus = peekPricingFocus();
-  if (!focus && !LANDED_ON_PRICING) return 0;
+function initialFrame(plan?: PricingTierId): number {
+  // eraseai.ai/pricing, /developer, /business... and a plan picked earlier open on the plans.
+  const focus = plan ?? peekPricingFocus();
+  if (!focus && !LANDED_ON_PRICING && !plan) return 0;
   const planIdx = Math.max(0, LANDING_PLANS.findIndex((p) => p.id === focus));
   return firstFrameOf(PLANS_SCENE) + planIdx;
 }
 
-export default function PublicLanding({ onPreview }: { onPreview: (mode: PreviewMode) => void }) {
+/** previewPlan: a plan whose page was opened directly (e.g. /developer); starts on its card, with its animation playing when it has one. */
+export default function PublicLanding({ previewPlan }: { previewPlan?: PricingTierId }) {
   const reduce = useReducedMotion();
   const { t } = useTranslation();
   const [auth, setAuth] = useState<null | "login" | "signup">(null);
   // Plan picked before signing up; after sign-up the app opens checkout on it.
   const [chosenPlan, setChosenPlan] = useState<PricingTierId | null>(() => peekPricingFocus());
-  const startAt = useMemo(initialFrame, []);
+  const [pip, setPip] = useState<PipPlan | null>(() => (previewPlan && hasPip(previewPlan) ? previewPlan : null));
+  const startAt = useMemo(() => initialFrame(previewPlan), [previewPlan]);
   const { index, direction, goTo, step } = useSceneNavigation(FRAMES.length, { initial: startAt, paused: auth !== null });
   const frame = FRAMES[index];
   const scene = SCENES[frame.scene];
@@ -85,9 +89,23 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
   };
   const openExternal = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
 
+  // The animation follows the card in front and goes away with the plans frame.
+  const activePlan = scene.id === "plans" ? LANDING_PLANS[frame.step]?.id : undefined;
+  useEffect(() => {
+    if (!activePlan) setPip(null);
+    else setPip((cur) => (cur && hasPip(activePlan) ? activePlan : null));
+  }, [activePlan]);
+
+  const authWithPlan = (plan: PipPlan, mode: "login" | "signup") => {
+    setPricingFocus(plan);
+    setChosenPlan(plan);
+    setAuth(mode);
+  };
+
   const planActions: PlanActions = {
     onCheckout: (plan) => {
       if (plan.id === "enterprise") return contact();
+      if (hasPip(plan.id)) return setPip(plan.id);
       setPricingFocus(plan.id);
       setChosenPlan(plan.id);
       setAuth("signup");
@@ -100,9 +118,8 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
             { label: t("story.plans.extraAndroid"), onClick: () => openExternal(playStoreLink("landing-plan-personal")) },
           ];
         case "pro":
-          return [{ label: t("story.plans.extraPreview"), onClick: () => onPreview("developer") }];
         case "business":
-          return [{ label: t("story.plans.extraAdmin"), onClick: () => onPreview("enterprise") }];
+          return [];
         case "enterprise":
           return [{ label: t("story.plans.extraWhatsapp", { number: CONTACT.whatsappLabel }), onClick: () => openExternal(CONTACT.whatsappUrl) }];
       }
@@ -236,6 +253,13 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
           })}
         </div>
       </nav>
+
+      {/* Picture-in-picture preview of the plan in front */}
+      <AnimatePresence>
+        {pip && auth === null && (
+          <FeaturePip key={pip} plan={pip} onClose={() => setPip(null)} onSignUp={() => authWithPlan(pip, "signup")} onSignIn={() => authWithPlan(pip, "login")} />
+        )}
+      </AnimatePresence>
 
       {/* Sign in / sign up */}
       <Dialog open={auth !== null} onOpenChange={(open) => !open && setAuth(null)}>

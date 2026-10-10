@@ -1908,8 +1908,6 @@
       },
       "extraChrome": "免费 Chrome 扩展",
       "extraAndroid": "Android 应用",
-      "extraPreview": "试用在线预览",
-      "extraAdmin": "预览所有者仪表板",
       "extraWhatsapp": "WhatsApp {{number}}"
     },
     "start": {
@@ -1934,6 +1932,33 @@
       "loginTitle": "欢迎回来",
       "picked": "你选择了{{plan}}。注册或登录后即可前往结账。",
       "default": "保护你发给 AI 的每一条消息。"
+    },
+    "pip": {
+      "preview": "预览",
+      "close": "关闭预览",
+      "signUp": "注册",
+      "signIn": "登录",
+      "hint": "注册或登录后，我们会带你前往结账。",
+      "personal": {
+        "title": "发送前先检查",
+        "s1": "你输入了一条带有密钥的消息",
+        "s2": "EraseAI 会拦下它并显示发现的内容",
+        "s3": "Sanitize & Send 一键将其遮盖",
+        "s4": "文件和截图也会被扫描，手机同样受保护"
+      },
+      "pro": {
+        "title": "API 密钥与 Webhook",
+        "s1": "在控制台创建密钥",
+        "s2": "发送文本，返回发现的内容",
+        "s3": "发生事件时，Webhook 会通知你的应用"
+      },
+      "business": {
+        "title": "整个团队一个套餐",
+        "s1": "分享邀请链接",
+        "s2": "成员加入并获得保护",
+        "s3": "管理员按人查看被拦截的内容",
+        "s4": "全员一张发票"
+      }
     }
   }
 }

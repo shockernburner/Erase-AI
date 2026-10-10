@@ -1908,8 +1908,6 @@
       },
       "extraChrome": "Extension Chrome gratuite",
       "extraAndroid": "App Android",
-      "extraPreview": "Essayer l'aperçu",
-      "extraAdmin": "Voir le tableau de bord du titulaire",
       "extraWhatsapp": "WhatsApp {{number}}"
     },
     "start": {
@@ -1934,6 +1932,33 @@
       "loginTitle": "Bon retour",
       "picked": "Vous avez choisi {{plan}}. Inscrivez-vous ou connectez-vous, puis passez au paiement.",
       "default": "Protégez chaque message que vous envoyez à l'IA."
+    },
+    "pip": {
+      "preview": "Aperçu",
+      "close": "Fermer l'aperçu",
+      "signUp": "S'inscrire",
+      "signIn": "Se connecter",
+      "hint": "Inscrivez-vous ou connectez-vous et nous vous menons au paiement.",
+      "personal": {
+        "title": "Vérifié avant l'envoi",
+        "s1": "Vous écrivez un message contenant une clé",
+        "s2": "EraseAI l'arrête et montre ce qu'il a trouvé",
+        "s3": "Sanitize & Send la masque en un clic",
+        "s4": "Fichiers et captures sont analysés aussi, et votre téléphone est couvert"
+      },
+      "pro": {
+        "title": "Clés d'API et webhooks",
+        "s1": "Créez une clé dans votre tableau de bord",
+        "s2": "Envoyez du texte, recevez ce qui a été trouvé",
+        "s3": "Un webhook prévient votre application quand quelque chose arrive"
+      },
+      "business": {
+        "title": "Une offre pour toute l'équipe",
+        "s1": "Partagez un lien d'invitation",
+        "s2": "Les personnes rejoignent et sont protégées",
+        "s3": "L'administrateur voit ce qui a été bloqué, par personne",
+        "s4": "Une seule facture pour tous"
+      }
     }
   }
 }
