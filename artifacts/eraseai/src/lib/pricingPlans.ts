@@ -67,7 +67,7 @@ export const PRICING_TIERS: PricingTier[] = [
     forYou: [
       { text: "Chrome: one-click Sanitize & Send" },
       { text: "Chrome: attachment and screenshot scanning (PDF, Word, Excel, slides, images)" },
-      { text: "Android: protection stays on, with Sanitize, EraseAI Safe files and the Strict network gate" },
+      { text: "Android: protection stays on, with Sanitize and EraseAI Safe files" },
       { text: "Unlimited checks, scan history and alerts" },
       { text: "AI rewriting of risky text" },
     ],

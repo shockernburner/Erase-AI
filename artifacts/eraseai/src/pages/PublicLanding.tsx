@@ -8,7 +8,8 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { usePageMeta } from "@/pages/seo/useSeoMeta";
 import { chromeStoreLink } from "@/lib/extensionStore";
-import { ANDROID_PLAY_URL, peekPricingFocus, setPricingFocus } from "@/lib/products";
+import { playStoreLink } from "@/lib/installTarget";
+import { peekPricingFocus, setPricingFocus } from "@/lib/products";
 import type { PricingTierId } from "@/lib/pricingPlans";
 import { useSceneNavigation } from "@/components/landing/useSceneNavigation";
 import { HeadlinesScene } from "@/components/landing/HeadlinesScene";
@@ -96,7 +97,7 @@ export default function PublicLanding({ onPreview }: { onPreview: (mode: Preview
         case "personal":
           return [
             { label: t("story.plans.extraChrome"), onClick: () => openExternal(chromeStoreLink("landing-plan-personal")) },
-            { label: t("story.plans.extraAndroid"), onClick: () => openExternal(ANDROID_PLAY_URL) },
+            { label: t("story.plans.extraAndroid"), onClick: () => openExternal(playStoreLink("landing-plan-personal")) },
           ];
         case "pro":
           return [{ label: t("story.plans.extraPreview"), onClick: () => onPreview("developer") }];

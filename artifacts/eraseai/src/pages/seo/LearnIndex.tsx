@@ -1,7 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { GUIDES, GUIDE_TOPICS } from "@/content/guides";
 import { SITE_URL } from "@/seo/site";
-import { SeoPage, AddToChromeButton } from "./SeoLayout";
+import { SeoPage, AddToChromeButton, GetAndroidLink } from "./SeoLayout";
 import { JsonLd } from "./RichText";
 import { usePageMeta } from "./useSeoMeta";
 
@@ -73,7 +73,10 @@ export default function LearnIndex() {
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-6 py-8 text-center">
         <h2 className="text-xl font-bold text-foreground mb-2">Put the guides into practice</h2>
         <p className="text-muted-foreground mb-6">EraseAI checks every message to ChatGPT, Claude and Gemini before it is sent. Free in Chrome.</p>
-        <AddToChromeButton placement="learn-index" />
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <AddToChromeButton placement="learn-index" />
+          <GetAndroidLink placement="learn-index" />
+        </div>
       </div>
     </SeoPage>
   );

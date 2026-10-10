@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import type { AppView } from "@/components/AppShell";
 import { chromeStoreLink } from "@/lib/extensionStore";
-import { ANDROID_PLAY_URL, EXTENSION_ZIP_URL, ORG_COVERAGE_SUMMARY, setPricingFocus } from "@/lib/products";
+import { playStoreLink } from "@/lib/installTarget";
+import { EXTENSION_ZIP_URL, ORG_COVERAGE_SUMMARY, setPricingFocus } from "@/lib/products";
 import type { PricingTierId } from "@/lib/pricingPlans";
 
 // Signed-in home. EraseAI is an AI firewall first: install protection on
@@ -166,7 +167,7 @@ function InstallProtection({
                 account to use your plan.
               </p>
               <div className="flex flex-wrap gap-2">
-                <StoreButton href={ANDROID_PLAY_URL} icon={<Smartphone className="h-4 w-4" />} primary>
+                <StoreButton href={playStoreLink("app-home")} icon={<Smartphone className="h-4 w-4" />} primary>
                   Get it on Google Play
                 </StoreButton>
               </div>

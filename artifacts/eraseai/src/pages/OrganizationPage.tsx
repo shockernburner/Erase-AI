@@ -9,7 +9,7 @@ import { Button, Input } from "@/components/ui-elements";
 import { ORG_PLAN_NAMES, ORG_ROLE_NAMES, inviteUrl, orgApi } from "@/lib/orgInvite";
 import { ManagedRolloutPanel } from "@/components/ManagedRolloutPanel";
 import { chromeStoreLink } from "@/lib/extensionStore";
-import { ANDROID_PLAY_URL } from "@/lib/products";
+import { playStoreLink } from "@/lib/installTarget";
 
 type Role = "owner" | "admin" | "member";
 
@@ -409,7 +409,7 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
           <a href={chromeStoreLink("org-page")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
             <Chrome className="w-4 h-4" /> Add to Chrome
           </a>
-          <a href={ANDROID_PLAY_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-border/50 px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/30">
+          <a href={playStoreLink("org-page")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-border/50 px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/30">
             <Smartphone className="w-4 h-4" /> Get it on Google Play
           </a>
         </div>

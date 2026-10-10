@@ -135,8 +135,8 @@ Use **your** story; this is a suggested frame based on public profile + what you
 
 **Execution proof**
 
-- **Full stack shipped solo/small team:** Chrome MV3 extension, Android accessibility + IME + VPN paths, API server, web app, Stripe, Play — investors rarely see this depth pre-seed.
-- **Real device QA** (OPPO, Gboard, AWS key detection, VPN egress) — you’re not demo-only.
+- **Full stack shipped solo/small team:** Chrome MV3 extension, Android Accessibility send gate, API server, web app, Stripe, Play — investors rarely see this depth pre-seed.
+- **Real device QA** (OPPO, Gboard, AWS key detection, send gate) — you’re not demo-only.
 - **Distribution ready:** Chrome Web Store + Play internal testing — GTM can start day one post-funding.
 
 **Domain credibility**

@@ -1,5 +1,6 @@
 import { Shield, ArrowRight, MessageCircle, Mail, Chromium } from "lucide-react";
 import { chromeStoreLink } from "@/lib/extensionStore";
+import { playStoreLink } from "@/lib/installTarget";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const BASE = import.meta.env.BASE_URL;
@@ -24,6 +25,14 @@ export function SeoNav() {
             className="hover:text-primary transition-colors"
           >
             Chrome Extension
+          </a>
+          <a
+            href={playStoreLink("seo-nav")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Android App
           </a>
           <a href={`${BASE}learn/ai-data-loss-prevention`} className="hover:text-primary transition-colors">AI DLP</a>
           <a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a>
@@ -65,6 +74,7 @@ export function SeoFooter() {
               <li><a href={`${BASE}chatgpt-data-leak`} className="hover:text-primary transition-colors">Prevent ChatGPT Data Leaks</a></li>
               <li><a href={`${BASE}ai-prompt-security`} className="hover:text-primary transition-colors">AI Prompt Security</a></li>
               <li><a href={`${BASE}api-key-protection-ai`} className="hover:text-primary transition-colors">API Key Protection</a></li>
+              <li><a href={playStoreLink("seo-footer")} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Android App</a></li>
               <li><a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a></li>
               <li><a href={`${BASE}terms`} className="hover:text-primary transition-colors">Terms of Service</a></li>
               <li><a href={`${BASE}license`} className="hover:text-primary transition-colors">License Agreement</a></li>
@@ -128,6 +138,20 @@ export function AddToChromeButton({ placement, text = "Add to Chrome — it's fr
     >
       <Chromium className="w-5 h-5" />
       {text}
+    </a>
+  );
+}
+
+/** Quiet text link to the Android app, shown beside the Chrome button; [placement] tags the click. */
+export function GetAndroidLink({ placement }: { placement: string }) {
+  return (
+    <a
+      href={playStoreLink(placement)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+    >
+      Or get the Android app
     </a>
   );
 }
