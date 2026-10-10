@@ -1,12 +1,12 @@
 # EraseAI Firewall — launch post drafts
 
 Drafts for launching the Chrome extension. Every claim here matches the code
-as of extension 1.4.4 — keep it that way; technical audiences check.
+as of extension 1.6.0 — keep it that way; technical audiences check.
 
-**Before posting:** 1.4.4 must be live on the Chrome Web Store (on-device
-protection, welcome page, review prompt). Posting while the store still
-serves 1.4.3 sends people to a version that needs an account before it does
-anything.
+**Before posting:** 1.6.0 must be live on the Chrome Web Store (free
+on-device protection, working image OCR, managed rollout). Versions before
+1.5.0 did not check anything without an API key; versions before 1.6.0
+never read text in images. Don't post while the store serves an older one.
 
 ---
 
@@ -16,15 +16,24 @@ anything.
   private keys, database URLs), passwords, emails, phone numbers, card
   numbers and SSNs **before you press Send** in ChatGPT, Claude, Gemini and
   Replit.
-- Scans attachments too: PDF, Word, spreadsheets, slide decks, images (OCR
-  in the browser) and ZIP/TAR archives.
-- You choose: **Sanitize & Send** (placeholders), **Send Anyway**, or
-  **Cancel**.
+- **Attachments are a Personal feature.** Personal scans PDF, Word,
+  spreadsheets, slide decks, images (OCR in the browser, fixed in 1.6.0) and
+  ZIP/TAR archives. On the free plan, attached files are listed as "not
+  scanned" so the person can decide. Never say attachment scanning is free.
+- You choose: **Send Anyway** or **Cancel** (free), plus **Sanitize & Send**
+  (placeholders, Personal and above).
 - **Pricing (from 1.5.0)**: free with no limit and no account (every
   message checked and warned about). EraseAI Personal, $5/month or $54/year,
   adds one-click Sanitize & Send, attachment and screenshot scanning,
   history and the Android app. Before 1.5.0, no-key users were NOT
   checked at all; don't claim no-account protection for older versions.
+- **Managed rollout (1.6.0)**: IT sets the EraseAI enrollment token in
+  Chrome policy (Google Admin, Intune); the extension enrolls the person by
+  work email and turns on the organization's plan, no key to paste. The
+  popup shows which organization manages the browser.
+- **Android app**: on Google Play (Personal plan, 7-day trial without an
+  account). It has no VPN and no network blocking; don't describe it as a
+  network gate. Link with `playStoreLink()` UTM tags from the web app.
 - **Works without an account**: checks run on your device with the same
   rules as the EraseAI server. Nothing is sent until you add an API key.
 - With an account: server-side scanning, scan history (first 500 chars,
@@ -62,15 +71,15 @@ Show HN: EraseAI Firewall – stop secrets and PII before they reach ChatGPT
 ```
 Hi HN — we built a Chrome extension that checks what you're about to send to ChatGPT, Claude, Gemini or Replit, and stops it if it contains an API key, password, card number, email or similar.
 
-It hooks the send button (and Enter), scans the prompt plus any attached files — PDFs, Word/Excel/PowerPoint, images via in-browser OCR, and zip archives — and if it finds something, shows what and where. You can Sanitize & Send (replaces values with placeholders), Send Anyway, or Cancel.
+It hooks the send button (and Enter), checks the prompt on your device, and if it finds something, shows what and where. You can Send Anyway or Cancel; the paid tier adds Sanitize & Send (replaces values with placeholders) and scanning of attached files — PDFs, Word/Excel/PowerPoint, images via in-browser OCR, zip archives.
 
 Things you'll probably ask:
 
-- Where does my text go? Without an account, nowhere: the checks run in the extension, with the same rules our server uses (the extension's scanner is generated from the server's rule code). If you add an API key, text is sent to our API for scanning and your history keeps the first 500 characters with secrets masked. Images are always OCR'd locally.
+- Where does my text go? Without an account, nowhere: the checks run in the extension, with the same rules our server uses (the extension's scanner is generated from the server's rule code). If you add an API key, text is sent to our API for scanning and your history keeps the first 500 characters with secrets masked. Image OCR also runs locally, in the extension (the OCR engine and language data ship inside it; nothing is fetched at runtime).
 - How does detection work? Pattern rules plus validators (e.g. Luhn for card numbers, context checks so "ISBN 978…" isn't a card). No LLM in the loop. It will miss secrets it has no pattern for, and it will sometimes flag harmless text — both are fixable and we'd like examples.
 - Why an extension and not a proxy? Consumer AI apps pin TLS and personal laptops don't have a corporate proxy. The extension sees the text before it's encrypted.
 
-Free to install; the checks run on your device and don't need an account. Personal ($5/month) adds one-click Sanitize and attachment scanning. Would love feedback, especially false positives and things it should have caught.
+Free to install and free to use: prompt checks run on your device with no account and no limit. Personal ($5/month) adds one-click Sanitize, attachment/screenshot scanning, history and the Android app. Organizations can roll it out via Chrome policy (Google Admin/Intune). Would love feedback, especially false positives and things it should have caught.
 
 https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp?utm_source=hackernews&utm_medium=post&utm_campaign=launch
 ```
@@ -115,9 +124,9 @@ Curious what others are doing here: DLP on the proxy, enterprise browser, policy
 ```
 Title: I built a Chrome extension that stops you pasting API keys and personal data into ChatGPT
 
-It checks your prompt and any attached files (PDF, Word, images via OCR, zips) when you hit Send in ChatGPT, Claude, Gemini or Replit. If there's a key, password, card number or email in there, it shows you and offers to redact it.
+It checks your prompt when you hit Send in ChatGPT, Claude, Gemini or Replit. If there's a key, password, card number or email in there, it shows you and lets you cancel. The paid tier adds one-click redaction and scans attached files (PDF, Word, images via OCR, zips).
 
-Works without signing up — the checks run on your device.
+Free and works without signing up — the checks run on your device.
 
 Would love blunt feedback: what did it flag that it shouldn't have, and what did it miss?
 
@@ -135,7 +144,7 @@ anything that can send text to a server; only post there if asked).
 - **Description** (≤ 260 chars):
 
 ```
-A browser firewall for AI chats. EraseAI checks your prompt and attachments in ChatGPT, Claude and Gemini for API keys, passwords, card numbers and personal data, and lets you redact before sending. Works on-device without an account.
+A browser firewall for AI chats. EraseAI checks your prompts in ChatGPT, Claude and Gemini for API keys, passwords, card numbers and personal data before you send. Free on-device, no account; Personal adds redaction and attachment scanning.
 ```
 
 - **Gallery:** use the five store screenshots (see
@@ -147,11 +156,12 @@ Hey Product Hunt 👋
 
 We built EraseAI Firewall after watching smart people paste production keys and customer data into AI chats — not carelessly, just fast.
 
-What it does: when you press Send in ChatGPT, Claude, Gemini or Replit, it checks the message and any attached files. If it finds a key, password, card number or personal data, it shows you exactly what, and you choose: Sanitize & Send, Send Anyway, or Cancel.
+What it does: when you press Send in ChatGPT, Claude, Gemini or Replit, it checks the message. If it finds a key, password, card number or personal data, it shows you exactly what, and you choose to Send Anyway or Cancel (Personal adds Sanitize & Send).
 
 What we're proud of:
-• It works the moment it's installed — checks run on your device, no account needed
-• It reads attachments: PDFs, Office files, screenshots (OCR in the browser) and zips
+• Free, and it works the moment it's installed — checks run on your device, no account needed
+• Personal ($5/mo) also reads attachments: PDFs, Office files, screenshots (OCR in the browser) and zips
+• IT can roll it out to a whole company through Chrome policy
 • It stays out of the way when there's nothing to flag
 
 We're a small team and read every comment — tell us what it flagged that it shouldn't have, and what it missed.
@@ -188,9 +198,9 @@ Your team is pasting things into ChatGPT that shouldn't leave the company.
 
 Not on purpose. A log file with a key in it. A customer email thread. A spreadsheet "just to summarise".
 
-We built EraseAI Firewall to catch that at the moment it happens. It's a free Chrome extension that checks prompts and attachments in ChatGPT, Claude and Gemini before they're sent, and offers to redact API keys, passwords, card numbers and personal data.
+We built EraseAI Firewall to catch that at the moment it happens. It's a free Chrome extension that checks prompts in ChatGPT, Claude and Gemini before they're sent and warns you about API keys, passwords, card numbers and personal data. Paid plans add one-click redaction and attachment scanning.
 
-It works on-device without an account, so anyone can try it in a minute. For teams, there's a dashboard and central controls.
+It works on-device without an account, so anyone can try it in a minute. For teams, IT can deploy it through Google Admin or Intune with a single enrollment token — no keys to paste — plus a dashboard and central controls.
 
 If you run security or IT and are dealing with "shadow AI", I'd like to hear how you're handling it today.
 
@@ -204,11 +214,11 @@ If you run security or IT and are dealing with "shadow AI", I'd like to hear how
 ```
 1/ We just launched EraseAI Firewall: a Chrome extension that stops API keys, passwords and personal data before you hit Send in ChatGPT, Claude and Gemini. 🧵
 
-2/ It checks your prompt AND attachments — PDFs, Office files, screenshots (OCR in your browser), zip files.
+2/ Free and no account: it checks your prompt on your device, with the same rules as our server.
 
-3/ Found something? You choose: Sanitize & Send (placeholders), Send Anyway, or Cancel. Clean prompts go straight through.
+3/ Found something? You choose Send Anyway or Cancel. Clean prompts go straight through.
 
-4/ No account needed. The checks run on your device with the same rules as our server.
+4/ Personal ($5/mo) adds one-click Sanitize & Send and scans attachments — PDFs, Office files, screenshots (OCR in your browser), zips. IT can also roll it out via Chrome policy.
 
 5/ Try it and tell us what it gets wrong: <link with utm_source=x>
 ```
@@ -220,18 +230,19 @@ and newsletters for IT/security leads (e.g. those covering shadow AI and
 DLP). Personalise the first line every time.
 
 ```
-Subject: A tool for your "AI at work" coverage — free Pro access to test
+Subject: A tool for your "AI at work" coverage — free Personal access to test
 
 Hi <name>,
 
 I liked your <specific video/issue> on <topic>. We built EraseAI Firewall, a Chrome extension that stops secrets and personal data from being sent to ChatGPT, Claude and Gemini — it checks prompts and attachments at the moment you hit Send.
 
 A few things your audience might find interesting:
-• It works without an account; checks run locally
-• It reads attachments, including OCR on screenshots, in the browser
+• Free and works without an account; checks run locally
+• Personal adds attachment scanning, including OCR on screenshots, in the browser
+• Managed rollout for IT via Chrome policy (Google Admin, Intune)
 • Pattern-based and transparent about what it catches
 
-Happy to set you up with a Pro account for testing, answer technical questions, or join a call. No obligation to cover it — honest criticism is welcome too.
+Happy to set you up with a Personal account for testing, answer technical questions, or join a call. No obligation to cover it — honest criticism is welcome too.
 
 <your name>
 <link with utm_source=<creator>&utm_medium=creator>
@@ -243,7 +254,7 @@ Happy to set you up with a Pro account for testing, answer technical questions, 
 
 | Day | Channel |
 |---|---|
-| 0 | Confirm 1.4.4 is live; screenshots and video uploaded to the listing |
+| 0 | Confirm 1.6.0 is live; screenshots and video uploaded to the listing |
 | 1 | Show HN (Tue–Thu, ~8–9 AM ET), stay in the thread all day |
 | 2 | LinkedIn article + share post (`linkedin-article.md`) + X thread |
 | 3–4 | Reddit (one sub per day, following each sub's rules) |
