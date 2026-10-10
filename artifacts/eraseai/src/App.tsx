@@ -1,3 +1,4 @@
+import type { PricingTierId } from "@/lib/pricingPlans";
 import { useState, useEffect, lazy, Suspense, type ReactElement } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -40,11 +41,8 @@ import ResetPassword from "@/pages/ResetPassword";
 import { capturePendingInvite } from "@/lib/orgInvite";
 import { peekPricingFocus, planIdFromParam, setPricingFocus } from "@/lib/products";
 import TermsAcceptanceModal from "@/components/TermsAcceptanceModal";
-import { ArrowLeft, Loader2, ShieldX, Globe, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
-import { LanguageSelector } from "@/components/LanguageSelector";
-import { FeedbackButton } from "@/components/FeedbackModal";
+import { Loader2, ShieldX, Crown, Shield, Briefcase, Building2, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
-import { BrandLogo } from "@/components/BrandLogo";
 
 function isTrialExpiredFrontend(user: { planType?: string; planEndDate?: string | null; role?: string } | null): boolean {
   if (!user) return false;
@@ -152,14 +150,6 @@ const queryClient = new QueryClient({
 });
 
 type AppView = ShellView;
-// Task #158 — `enterprise` and `dataset-sanitizer` both render the
-// Dataset Sanitizer (the "Try Enterprise" / "Try Business" landing
-// card now opens the sanitizer in preview mode rather than the
-// analytics dashboard). The two names are kept distinct so the
-// landing-card analytics + the deep-link routes (`/enterprise`,
-// `/business`, `/dataset-sanitizer`) keep their human-readable intent.
-type PreviewMode = "developer" | "enterprise" | "dataset-sanitizer" | "personal" | null;
-
 function SeoLoadingFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -168,102 +158,16 @@ function SeoLoadingFallback() {
   );
 }
 
-function PreviewPage({ mode, onBack }: { mode: PreviewMode; onBack: () => void }) {
-  const { t } = useTranslation();
-
-  const noop = () => {};
-
-  return (
-    <div className="min-h-screen w-full relative">
-      <div
-        className="fixed inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none"
-        style={{
-          backgroundImage: `url(${import.meta.env.BASE_URL}images/bg-mesh.png)`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="flex items-center justify-between flex-wrap gap-4"
-          >
-            <div className="flex items-center gap-3">
-              <BrandLogo className="h-10 w-10" />
-              <div>
-                <span className="text-xl font-display font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-                  {t("app.name")}
-                </span>
-                <p className="text-[10px] font-mono text-primary/80 uppercase tracking-widest">
-                  {t("app.tagline")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-sm font-medium text-foreground hover:bg-muted/40 transition-all"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {t("landing.backToHomepage")}
-              </button>
-              <span className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold">
-                {t("landing.previewMode")}
-              </span>
-              <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground bg-card/50 px-4 py-2 rounded-full border border-border/50 backdrop-blur-md">
-                <Globe className="w-3.5 h-3.5 text-primary" />
-                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                {t("nav.live")}
-              </div>
-              <LanguageSelector />
-              <FeedbackButton />
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="relative z-10">
-        {mode === "developer" && <DeveloperDashboard onBack={onBack} previewMode />}
-        {(mode === "enterprise" || mode === "dataset-sanitizer") && (
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12">
-            <DatasetSanitizer previewMode onNavigatePricing={noop} />
-          </div>
-        )}
-        {mode === "personal" && <PersonalMode onBack={onBack} onUpgrade={noop} previewMode />}
-      </div>
-    </div>
-  );
-}
-
-// Task #158 — wrapper for Wouter deep-link routes (e.g. /developer,
-// /dataset-sanitizer). Renders the same PreviewPage chrome a visitor
-// sees after clicking a card on PublicLanding, but with a "Back" that
-// returns to `/` (so the URL stays clean).
-function PreviewRoute({ mode }: { mode: NonNullable<PreviewMode> }) {
-  const goHome = () => {
-    if (typeof window !== "undefined") {
-      window.history.pushState({}, "", "/");
-      // Wouter listens to popstate, not pushState, so we trigger a
-      // synthetic popstate to make the router re-evaluate the path.
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    }
-  };
-  return <PreviewPage mode={mode} onBack={goHome} />;
-}
-
 // Every signed-in user lands on the simple 3-choice "Get started" picker.
 // Plan-specific dashboards remain reachable via the sidebar and shortcuts.
 function getDefaultViewForPlan(_planType: string | undefined): AppView {
   return "getStarted";
 }
 
-function AuthGate() {
+/** previewPlan: a plan page opened by URL (/developer, /business...); signed-out visitors see the landing page on that plan. */
+function AuthGate({ previewPlan }: { previewPlan?: PricingTierId }) {
   const { t } = useTranslation();
   const { isLoading, isAuthenticated, user, logout } = useAuth();
-  const [previewMode, setPreviewMode] = useState<PreviewMode>(null);
   const [view, setView] = useState<AppView>(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("admin") === "true") {
@@ -354,10 +258,7 @@ function AuthGate() {
   }
 
   if (!isAuthenticated) {
-    if (previewMode) {
-      return <PreviewPage mode={previewMode} onBack={() => setPreviewMode(null)} />;
-    }
-    return <PublicLanding onPreview={setPreviewMode} />;
+    return <PublicLanding previewPlan={previewPlan} />;
   }
 
   if (termsAccepted === null) {
@@ -544,29 +445,25 @@ function App() {
               </Route>
               <Route path="/status" component={StatusPage} />
               <Route path="/reset-password" component={ResetPassword} />
-              {/* Task #158 — explicit deep-link routes for the public-visitor
-                   preview pages. These render BEFORE the catch-all so that
-                   /personal, /developer, /dev, /dataset-sanitizer, /enterprise,
-                   and /business open the matching preview directly instead of
-                   falling into AuthGate (which would redirect signed-in users
-                   to their dashboard and force visitors through PublicLanding). */}
+              {/* Old public dashboard previews showed sample numbers. These URLs now open
+                   the landing page on the matching plan, with its animated preview. */}
               <Route path="/personal">
-                <PreviewRoute mode="personal" />
+                <AuthGate previewPlan="personal" />
               </Route>
               <Route path="/developer">
-                <PreviewRoute mode="developer" />
+                <AuthGate previewPlan="pro" />
               </Route>
               <Route path="/dev">
-                <PreviewRoute mode="developer" />
+                <AuthGate previewPlan="pro" />
               </Route>
               <Route path="/dataset-sanitizer">
-                <PreviewRoute mode="dataset-sanitizer" />
-              </Route>
-              <Route path="/enterprise">
-                <PreviewRoute mode="enterprise" />
+                <AuthGate previewPlan="business" />
               </Route>
               <Route path="/business">
-                <PreviewRoute mode="enterprise" />
+                <AuthGate previewPlan="business" />
+              </Route>
+              <Route path="/enterprise">
+                <AuthGate previewPlan="enterprise" />
               </Route>
               <Route>
                 <AuthGate />

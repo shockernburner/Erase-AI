@@ -63,3 +63,6 @@ Status marked **[repo]** = verified in code/git; **[user]** = you told us, not v
 - Never upload a new extension package while one is pending review. Keep the no-remote-code test green.
 - Branch for this session: `feature/launch-download-links-b5hke7`; no PR/merge/deploy without your say.
 - On approval, I save this as `docs/handoff/CONTEXT.md` on that branch so every future session starts from it.
+
+## Update log
+- 2026-10-10: Check out on Personal / Pro / Teams-Family opens a looped picture-in-picture animation (`components/landing/FeaturePip.tsx`) with sign up / sign in below. Enterprise Check out still goes to Contact. The signed-out dashboards with sample numbers are gone from public view: `/personal`, `/developer`, `/dev`, `/business`, `/dataset-sanitizer`, `/enterprise` open the landing page on that plan. Rule: no sample or invented numbers anywhere public.

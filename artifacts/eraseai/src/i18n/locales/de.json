@@ -1908,8 +1908,6 @@
       },
       "extraChrome": "Kostenlose Chrome-Erweiterung",
       "extraAndroid": "Android-App",
-      "extraPreview": "Live-Vorschau testen",
-      "extraAdmin": "Inhaber-Dashboard ansehen",
       "extraWhatsapp": "WhatsApp {{number}}"
     },
     "start": {
@@ -1934,6 +1932,33 @@
       "loginTitle": "Willkommen zurück",
       "picked": "Sie haben {{plan}} gewählt. Registrieren oder anmelden, dann geht es zur Kasse.",
       "default": "Schützen Sie jede Nachricht, die Sie an KI senden."
+    },
+    "pip": {
+      "preview": "Vorschau",
+      "close": "Vorschau schließen",
+      "signUp": "Registrieren",
+      "signIn": "Anmelden",
+      "hint": "Registrieren oder anmelden, dann geht es weiter zur Kasse.",
+      "personal": {
+        "title": "Geprüft, bevor du sendest",
+        "s1": "Du tippst eine Nachricht mit einem Schlüssel darin",
+        "s2": "EraseAI stoppt sie und zeigt, was gefunden wurde",
+        "s3": "Sanitize & Send maskiert es mit einem Klick",
+        "s4": "Dateien und Screenshots werden ebenfalls geprüft, auch auf dem Handy"
+      },
+      "pro": {
+        "title": "API-Schlüssel und Webhooks",
+        "s1": "Schlüssel im Dashboard erstellen",
+        "s2": "Text senden, Funde zurückbekommen",
+        "s3": "Ein Webhook meldet deiner App, wenn etwas passiert"
+      },
+      "business": {
+        "title": "Ein Tarif fürs ganze Team",
+        "s1": "Einladungslink teilen",
+        "s2": "Personen treten bei und sind geschützt",
+        "s3": "Die Verwaltung sieht pro Person, was abgefangen wurde",
+        "s4": "Eine Rechnung für alle"
+      }
     }
   }
 }

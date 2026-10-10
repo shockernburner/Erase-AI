@@ -1908,8 +1908,6 @@
       },
       "extraChrome": "Extensión de Chrome gratis",
       "extraAndroid": "App Android",
-      "extraPreview": "Probar la vista previa",
-      "extraAdmin": "Ver el panel del titular",
       "extraWhatsapp": "WhatsApp {{number}}"
     },
     "start": {
@@ -1934,6 +1932,33 @@
       "loginTitle": "Bienvenido de nuevo",
       "picked": "Elegiste {{plan}}. Regístrate o inicia sesión y te llevamos al pago.",
       "default": "Protege cada mensaje que envías a la IA."
+    },
+    "pip": {
+      "preview": "Vista previa",
+      "close": "Cerrar vista previa",
+      "signUp": "Registrarse",
+      "signIn": "Iniciar sesión",
+      "hint": "Regístrate o inicia sesión y te llevamos al pago.",
+      "personal": {
+        "title": "Revisado antes de enviar",
+        "s1": "Escribes un mensaje con una clave dentro",
+        "s2": "EraseAI lo detiene y muestra lo que encontró",
+        "s3": "Sanitize & Send la oculta con un clic",
+        "s4": "También se analizan archivos y capturas, y tu móvil queda cubierto"
+      },
+      "pro": {
+        "title": "Claves de API y webhooks",
+        "s1": "Crea una clave en tu panel",
+        "s2": "Envía texto y recibe lo que encontró",
+        "s3": "Un webhook avisa a tu app cuando algo ocurre"
+      },
+      "business": {
+        "title": "Un plan para todo el equipo",
+        "s1": "Comparte un enlace de invitación",
+        "s2": "Las personas se unen y quedan protegidas",
+        "s3": "El administrador ve qué se detectó, por persona",
+        "s4": "Una factura para todos"
+      }
     }
   }
 }

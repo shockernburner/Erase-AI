@@ -1908,8 +1908,6 @@
       },
       "extraChrome": "Free Chrome extension",
       "extraAndroid": "Android app",
-      "extraPreview": "Try the live preview",
-      "extraAdmin": "Preview the owner dashboard",
       "extraWhatsapp": "WhatsApp {{number}}"
     },
     "start": {
@@ -1934,6 +1932,33 @@
       "loginTitle": "Welcome back",
       "picked": "You picked {{plan}}. Sign up or sign in and we'll take you to checkout.",
       "default": "Protect every message you send to AI."
+    },
+    "pip": {
+      "preview": "Preview",
+      "close": "Close preview",
+      "signUp": "Sign up",
+      "signIn": "Sign in",
+      "hint": "Sign up or sign in and we'll take you to checkout.",
+      "personal": {
+        "title": "Checked before you send",
+        "s1": "You type a message with a key in it",
+        "s2": "EraseAI stops it and shows what it found",
+        "s3": "Sanitize & Send masks it in one click",
+        "s4": "Files and screenshots are scanned too, and your phone is covered"
+      },
+      "pro": {
+        "title": "API keys and webhooks",
+        "s1": "Create a key in your dashboard",
+        "s2": "Send text, get back what it found",
+        "s3": "A webhook tells your app when something happens"
+      },
+      "business": {
+        "title": "One plan for the whole team",
+        "s1": "Share an invite link",
+        "s2": "People join and are protected",
+        "s3": "The admin sees what was caught, by person",
+        "s4": "One invoice for everyone"
+      }
     }
   }
 }
