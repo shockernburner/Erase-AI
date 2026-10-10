@@ -133,6 +133,7 @@ const ExtensionWelcomePage = lazy(() => import("@/pages/seo/ExtensionWelcomePage
 const ExtensionUninstalledPage = lazy(() => import("@/pages/seo/ExtensionUninstalledPage"));
 const ChatgptDataLeakPage = lazy(() => import("@/pages/seo/ChatgptDataLeakPage"));
 const AiPromptSecurityPage = lazy(() => import("@/pages/seo/AiPromptSecurityPage"));
+const DeveloperApiPage = lazy(() => import("@/pages/seo/DeveloperApiPage"));
 const ApiKeyProtectionPage = lazy(() => import("@/pages/seo/ApiKeyProtectionPage"));
 const BlogIndex = lazy(() => import("@/pages/seo/BlogIndex"));
 const BlogPost_ApiKeys = lazy(() => import("@/pages/seo/BlogPost_ApiKeys"));
@@ -519,6 +520,7 @@ function App() {
               <Route path="/chatgpt-data-leak" component={ChatgptDataLeakPage} />
               <Route path="/ai-prompt-security" component={AiPromptSecurityPage} />
               <Route path="/api-key-protection-ai" component={ApiKeyProtectionPage} />
+              <Route path="/developer-api" component={DeveloperApiPage} />
               <Route path="/learn" component={LearnIndex} />
               <Route path="/learn/:slug" component={GuideRoute} />
               <Route path="/blog" component={BlogIndex} />
