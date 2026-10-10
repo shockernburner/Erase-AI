@@ -7,7 +7,7 @@ import android.content.Context
  */
 object GuardStateStore {
   private const val PREFS = "eraseai_firewall_prefs"
-  private const val ARMED_PKG_KEY = "armed_package"
+  private const val ARMED_PKG_KEY = "egress_armed_package"
   private const val IME_WITHHELD_KEY = "ime_withheld"
   private const val IME_WITHHOLD_FAILED_KEY = "ime_withhold_failed"
 

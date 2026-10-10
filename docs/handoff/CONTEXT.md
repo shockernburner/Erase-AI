@@ -25,7 +25,7 @@ Status marked **[repo]** = verified in code/git; **[user]** = you told us, not v
 ## 3. Current release state
 - **Extension 1.6.0** — live on Chrome Web Store **[user]**. Contents: managed rollout (IT token via Google Admin/Intune, enrolls by work email), new icon, OCR fix, no remote code.
 - **Android 1.0.9 / versionCode 38** — approved/live **[user]**. No VpnService, no foreground service. Play Console: v38 must be on *every* track; declaration forms should no longer be requested.
-- **Web** — `main` contains the overhauled landing (PR #3). PR #6 (open, `feature/launch-download-links`) adds Play buttons + attribution; web typecheck and production build pass; Android tests not runnable in the cloud (no SDK).
+- **Web** — `main` contains the overhauled landing (PR #3). PR #6 (open, `feature/launch-download-links`) adds Play buttons + attribution; web typecheck and production build pass. PR #6 contains no Android code, so the shipped v38 bundle matches the repo.
 
 ## 4. VPN policy — the rule going forward
 - EraseAI is **not a VPN app**. No `VpnService`, no "Strict network gate", no network-shutdown claims — in app, web copy, plans, posts, decks or Play listing.
@@ -43,14 +43,14 @@ Status marked **[repo]** = verified in code/git; **[user]** = you told us, not v
 | PRs #2–#5 | merged | done |
 
 ## 6. Known open items / risks
-1. PR #6 touched `GuardStateStore.kt` (renamed `egress_armed_package` pref key) — **Android tests not run since**; needs `./gradlew test` locally/CI.
+1. No Android build needed: the shipped v38 `.aab` (kept outside git) matches the repo. The one-line pref-key rename in `GuardStateStore.kt` was reverted; do not reintroduce Android code changes without a build and tests.
 2. `landing-video` package fails typecheck (pre-existing, unrelated) so root `pnpm typecheck` is red.
 3. Play referrer attribution unverified — needs a test install from a tagged link.
 4. Website must be **deployed** after PR #6 merges (Replit publish / AWS copy).
 5. Extension 1.5.0's review state was "pending" in `BRANCHES.md` (Oct 6); confirm current store state.
 
 ## 7. Path forward (the only plan, in order)
-1. **Review & merge PR #6** (add 256cdbe first). Run `./gradlew test` on a machine with the Android SDK. Deploy web.
+1. **Review & merge PR #6** (add 256cdbe first). Deploy web.
 2. **Verify** Play UTM referrer with a test install; confirm Play Console shows v38 on all tracks and no VPN/FGS declaration pending.
 3. **Cherry-pick** `prospect-outreach.md` + `ExtensionWelcomePage` from PR #1 (update for 1.6.0/v38/no network gate), then close PR #1.
 4. **Organic credibility (Days 1–10):** Show HN, Reddit (per sub rules), Medium/LinkedIn article share, X; one UTM link per channel (table in `extension-launch-posts.md`).
