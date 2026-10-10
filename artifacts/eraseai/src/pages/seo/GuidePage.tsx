@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { guideBySlug, type Guide } from "@/content/guides";
 import { guideMeta } from "@/seo/pages";
 import { canonicalUrl, SITE_URL } from "@/seo/site";
-import { SeoPage, AddToChromeButton, CtaButton, RelatedLinks } from "./SeoLayout";
+import { SeoPage, AddToChromeButton, GetAndroidLink, CtaButton, RelatedLinks } from "./SeoLayout";
 import { JsonLd, RichText } from "./RichText";
 import { usePageMeta } from "./useSeoMeta";
 import NotFound from "@/pages/not-found";
@@ -127,6 +127,7 @@ export function GuidePage({ guide }: { guide: Guide }) {
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <AddToChromeButton placement={`learn-${guide.slug}`} />
+            <GetAndroidLink placement={`learn-${guide.slug}`} />
             <CtaButton text="Try EraseAI" />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowRight, Mail, MessageCircle, MessagesSquare, Smartphone } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { chromeStoreLink } from "@/lib/extensionStore";
-import { ANDROID_PLAY_URL } from "@/lib/products";
+import { playStoreLink } from "@/lib/installTarget";
 import { CONTACT } from "./landingData";
 
 export function StartScene({ onSignUp, onPlans }: { onSignUp: () => void; onPlans: () => void }) {
@@ -42,7 +42,7 @@ export function StartScene({ onSignUp, onPlans }: { onSignUp: () => void; onPlan
           <ArrowRight className="h-4 w-4" />
         </a>
         <a
-          href={ANDROID_PLAY_URL}
+          href={playStoreLink("landing-start")}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
