@@ -66,3 +66,5 @@ Status marked **[repo]** = verified in code/git; **[user]** = you told us, not v
 
 ## Update log
 - 2026-10-10: Check out on Personal / Pro / Teams-Family opens a looped picture-in-picture animation (`components/landing/FeaturePip.tsx`) with sign up / sign in below. Enterprise Check out still goes to Contact. The signed-out dashboards with sample numbers are gone from public view: `/personal`, `/developer`, `/dev`, `/business`, `/dataset-sanitizer`, `/enterprise` open the landing page on that plan. Rule: no sample or invented numbers anywhere public.
+- 2026-10-10: Google Ads kit built in `marketing-assets/google-ads/` (plan, 3 videos from the live UI, 44 images, logos, English + Traditional Chinese copy, CSVs). Open blockers before launch: no Google tag or conversion tracking on the site; store links do not carry the ad's UTMs; pricing page still marks Chrome managed rollout "soon" although extension 1.6.0 is live. Search ads must use eraseai.ai as the final URL (display-URL rule); the Play app is promoted by an App campaign.
+
