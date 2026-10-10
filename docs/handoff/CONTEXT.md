@@ -52,7 +52,7 @@ Status marked **[repo]** = verified in code/git; **[user]** = you told us, not v
 ## 7. Path forward (the only plan, in order)
 1. **Review & merge PR #6** (add 256cdbe first). Deploy web.
 2. **Verify** Play UTM referrer with a test install; confirm Play Console shows v38 on all tracks and no VPN/FGS declaration pending.
-3. **Cherry-pick** `prospect-outreach.md` + `ExtensionWelcomePage` from PR #1 (update for 1.6.0/v38/no network gate), then close PR #1.
+3. ~~Cherry-pick `prospect-outreach.md` + `ExtensionWelcomePage` from PR #1~~ — **done** (PR #8, outreach wording corrected for Personal-only attachments). Close PR #1 without merging.
 4. **Organic credibility (Days 1–10):** Show HN, Reddit (per sub rules), Medium/LinkedIn article share, X; one UTM link per channel (table in `extension-launch-posts.md`).
 5. **B2B (weeks 2–4):** Singapore first (MAS/PDPC hook); LinkedIn outreach to named accounts, 20–30/week; approved offer = free 30-day pilot up to 10 people; managed rollout via Chrome policy is the enterprise path. Prospect lists: ~50 Asia, ~150+ US. Lead signal = work-email-domain sign-ups.
 6. **B2C:** Google Search ads, Singapore geo, SGD 20–30/day, 2-week test, landing on `/ai-firewall`.
