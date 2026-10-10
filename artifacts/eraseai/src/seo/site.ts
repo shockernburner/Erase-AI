@@ -76,6 +76,15 @@ export const STATIC_PAGES: PageMeta[] = [
     priority: 0.8,
   },
   {
+    path: "/developer-api",
+    title: "Developer API — Check Prompts for Secrets and PII | EraseAI",
+    description:
+      "Add EraseAI to your own app: send text to the API and get back the API keys, passwords, card numbers and personal data it contains, or the text with them masked.",
+    keywords: "prompt security API, PII detection API, secret detection API, LLM data loss prevention API",
+    updated: "2026-10-10",
+    priority: 0.8,
+  },
+  {
     path: "/blog",
     title: "Blog — AI Security, Data Protection & Prompt Safety | EraseAI",
     description: "Articles on AI security, data protection and using AI tools without exposing sensitive information.",

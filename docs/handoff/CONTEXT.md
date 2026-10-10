@@ -56,7 +56,7 @@ Status marked **[repo]** = verified in code/git; **[user]** = you told us, not v
 4. **Organic credibility (Days 1–10):** Show HN, Reddit (per sub rules), Medium/LinkedIn article share, X; one UTM link per channel (table in `extension-launch-posts.md`).
 5. **B2B (weeks 2–4):** Singapore first (MAS/PDPC hook); LinkedIn outreach to named accounts, 20–30/week; approved offer = free 30-day pilot up to 10 people; managed rollout via Chrome policy is the enterprise path. Prospect lists: ~50 Asia, ~150+ US. Lead signal = work-email-domain sign-ups.
 6. **B2C:** Google Search ads, Singapore geo, SGD 20–30/day, 2-week test, landing on `/ai-firewall`.
-7. **Next build:** public `/developer-api` page; then next Android/extension updates only after Play-policy and CWS (no remote code) checks.
+7. **Next build:** ~~public `/developer-api` page~~ — **built** (PR #9; documents ping/analyze/sanitize from the real code, linked from footer and related links, in sitemap and llms.txt); then next Android/extension updates only after Play-policy and CWS (no remote code) checks.
 
 ## 8. Standing rules
 - Pricing and plan names unchanged. No network-gate/VPN claims. Attachments/Sanitize are Personal-only — never say free.

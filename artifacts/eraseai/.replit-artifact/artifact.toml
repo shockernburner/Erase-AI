@@ -38,6 +38,10 @@ from = "/api-key-protection-ai"
 to = "/_pages/api-key-protection-ai.html"
 
 [[services.production.rewrites]]
+from = "/developer-api"
+to = "/_pages/developer-api.html"
+
+[[services.production.rewrites]]
 from = "/blog"
 to = "/_pages/blog.html"
 

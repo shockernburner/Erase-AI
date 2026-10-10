@@ -113,6 +113,7 @@ const llms = `# EraseAI
 ## Product
 - [Home](${canonicalUrl("/")}): what EraseAI does, plans and pricing
 - [AI firewall](${canonicalUrl("/ai-firewall")}): how the check at the Send button works
+- [Developer API](${canonicalUrl("/developer-api")}): check text for secrets and personal data from your own app
 - [Chrome extension](https://chromewebstore.google.com/detail/eraseai-firewall/hckhbadbpkihjpooeljdocgidelcampp): free, checks every message on your device
 - [Android app](https://play.google.com/store/apps/details?id=com.eraseai.firewall): protection in AI apps on your phone
 
