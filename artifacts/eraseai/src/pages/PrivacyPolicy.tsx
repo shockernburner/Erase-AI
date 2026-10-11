@@ -138,7 +138,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground mt-3">
               <li><strong className="text-foreground">Session Cookies:</strong> Required for authentication and maintaining your login state. These are HTTP-only and secure.</li>
               <li><strong className="text-foreground">Preference Cookies:</strong> Used to remember your language and display preferences.</li>
-              <li><strong className="text-foreground">Measurement Cookies (optional):</strong> Google Analytics (<code>_ga</code>, <code>_ga_*</code>) and Google Ads (<code>_gcl_*</code>), set only if you accept. They record page views, clicks to the Chrome Web Store and Google Play, sign-ups and checkout starts, and the campaign that brought you here.</li>
+              <li><strong className="text-foreground">Measurement Cookies (optional):</strong> Google Analytics (<code>_ga</code>, <code>_ga_*</code>) and Google Ads (<code>_gcl_*</code>), set only if you accept. They record page views, clicks to the Chrome Web Store and Google Play, sign-ups, checkout starts and completed purchases (the plan and amount, never card details), and the campaign that brought you here.</li>
             </ul>
           </section>
 

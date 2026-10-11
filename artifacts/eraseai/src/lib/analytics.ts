@@ -62,7 +62,7 @@ export function setConsent(granted: boolean) {
   window.gtag?.("consent", "update", consentState(granted));
 }
 
-export function track(name: string, params: Record<string, string | number | boolean> = {}) {
+export function track(name: string, params: Record<string, unknown> = {}) {
   window.gtag?.("event", name, params);
 }
 
