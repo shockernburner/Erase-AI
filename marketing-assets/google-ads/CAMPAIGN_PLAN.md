@@ -9,10 +9,10 @@ Everything in this folder is ready to upload. Anything marked **verify** depends
 
 | # | Item | Status |
 |---|---|---|
-| 1 | **Google tag on the site** (GA4 property `EraseAI Website`, ID `G-K82G1MZ7SE`) with a consent banner. Events: `sign_up`, `begin_checkout`, `generate_lead` (contact form), `click_chrome_store`, `click_google_play`. | **Built** in this PR. Starts after you deploy. |
+| 1 | **Google tag on the site** (GA4 property `EraseAI Website`, ID `G-K82G1MZ7SE`) with a consent banner. Events: `sign_up`, `begin_checkout`, `purchase` (once per Stripe session, with plan and amount), `generate_lead` (contact form), `click_chrome_store`, `click_google_play`. | **Built** in this PR. Starts after you deploy. |
 | 2 | **Ad campaign carried to the store links**: a visit from an ad keeps its `utm_*` tags, and the Chrome Web Store and Google Play links reuse them (the button's own name goes in `utm_content`), so store dashboards credit the install to the campaign. Organic visits keep the old tags. | **Built** in this PR. |
 | 3 | **Privacy policy** names Google Analytics and Ads measurement and the consent choice (it used to say we use no advertising cookies). | **Done** in this PR. |
-| 4 | In Analytics: mark `sign_up`, `begin_checkout`, `generate_lead`, `click_chrome_store`, `click_google_play` as **key events** (Admin, Data display, Events) once they appear, about a day after deploy. | You |
+| 4 | In Analytics: mark `sign_up`, `begin_checkout`, `purchase`, `generate_lead`, `click_chrome_store`, `click_google_play` as **key events** (Admin, Data display, Events) once they appear, about a day after deploy. | You |
 | 5 | **Link Analytics to Google Ads** (Admin, Product links, Google Ads links); turn on auto-tagging in Google Ads; import the key events as conversions (Goals, Conversions, New conversion action, Import, Google Analytics 4). Make `click_chrome_store` and `sign_up` the primary conversions, `click_google_play` and `begin_checkout` secondary. | You |
 | 6 | **Fix the pricing page's "managed rollout: soon" label** (Teams/Family, Chrome). Extension 1.6.0 is live and supports it. Ad copy avoids the claim until this is settled. | You decide; I can change it |
 | 7 | **YouTube channel** to host the three videos (Google Ads video assets are YouTube links). | You |

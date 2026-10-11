@@ -65,4 +65,30 @@ ok(d.some(a=>a[0]==="consent"&&a[1]==="default"&&a[2].analytics_storage==="denie
 ctx=await mk({}); p=await ctx.newPage(); await p.goto("http://localhost:4396/pricing?utm_source=google&utm_medium=cpc&utm_campaign=hk_zh"); await p.waitForTimeout(2500);
 await p.getByRole("button",{name:"Android app"}).first().click(); await p.waitForTimeout(300);
 d=await dl(p); const pe=d.find(a=>a[0]==="event"&&a[1]==="click_google_play"); ok(pe&&pe[2].campaign==="hk_zh","landing card button: click_google_play "+JSON.stringify(pe&&pe[2]));
+
+// 7: purchase event on the checkout success page (sign-in and Stripe replies mocked): once per session, with the amount
+{
+  const ctx7 = await mk({});
+  await ctx7.route("**/api/**", (r) => {
+    const u = r.request().url();
+    const j = (o) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(o) });
+    if (u.includes("/api/auth/user")) return j({ user: { id: "u1", email: "t@example.com", planType: "free" } });
+    if (u.includes("/api/auth/terms-status")) return j({ accepted: true });
+    if (u.includes("/api/billing/checkout-status")) return j({ status: "succeeded", planType: "personal", billingPeriod: "monthly", transactionId: "cs_test_123", value: 5, currency: "USD" });
+    return j({});
+  });
+  const q = await ctx7.newPage();
+  // As in real use: the checkout session id is saved just before the redirect to Stripe, and Stripe returns to ?checkout=success.
+  await q.addInitScript(() => sessionStorage.setItem("eraseai_checkout_intent", "cs_test_123"));
+  await q.goto("http://localhost:4396/?checkout=success");
+  await q.waitForTimeout(2500);
+  let dd = await dl(q);
+  const purch = dd.filter((a) => a[0] === "event" && a[1] === "purchase");
+  ok(purch.length === 1 && purch[0][2].transaction_id === "cs_test_123" && purch[0][2].value === 5 && purch[0][2].currency === "USD" && purch[0][2].items?.[0]?.item_id === "personal", "purchase event once, with transaction id, value and plan: " + JSON.stringify(purch[0] && purch[0][2]));
+  await q.goto("http://localhost:4396/?checkout=success");
+  await q.waitForTimeout(2500);
+  dd = await dl(q);
+  ok(!dd.some((a) => a[0] === "event" && a[1] === "purchase"), "reload does not count the purchase again");
+  await ctx7.close();
+}
 await b.close(); srv.close();
