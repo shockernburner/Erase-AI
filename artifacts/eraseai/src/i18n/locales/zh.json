@@ -1960,5 +1960,12 @@
         "s4": "全员一张发票"
       }
     }
+  },
+  "consent": {
+    "label": "Cookie 选择",
+    "text": "我们使用 Google Analytics 和 Google Ads 衡量来了解哪些页面和广告有效。拒绝后网站功能不受影响。",
+    "policy": "隐私政策",
+    "accept": "接受",
+    "decline": "拒绝"
   }
 }

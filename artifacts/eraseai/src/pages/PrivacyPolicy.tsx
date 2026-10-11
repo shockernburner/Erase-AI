@@ -133,11 +133,12 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
           <section>
             <h2 className="text-xl font-bold text-foreground mb-3">7. Cookies &amp; Tracking Technologies</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We use essential cookies necessary for the operation of the Platform, including session cookies for authentication and security. We do not use third-party advertising cookies or cross-site tracking technologies.
+              We use essential cookies necessary for the operation of the Platform, including session cookies for authentication and security. If you choose &quot;Accept&quot; in the banner on your first visit, we also use Google Analytics and Google Ads measurement cookies to learn which pages and advertisements lead to visits, sign-ups and installs. We do not use them for personalised advertising or remarketing, and we never send the text of your AI prompts or your files to Google. If you decline, or your browser sends a Global Privacy Control or Do Not Track signal, those cookies are not set. You can change your choice at any time by clearing this site&apos;s data in your browser.
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground mt-3">
               <li><strong className="text-foreground">Session Cookies:</strong> Required for authentication and maintaining your login state. These are HTTP-only and secure.</li>
               <li><strong className="text-foreground">Preference Cookies:</strong> Used to remember your language and display preferences.</li>
+              <li><strong className="text-foreground">Measurement Cookies (optional):</strong> Google Analytics (<code>_ga</code>, <code>_ga_*</code>) and Google Ads (<code>_gcl_*</code>), set only if you accept. They record page views, clicks to the Chrome Web Store and Google Play, sign-ups and checkout starts, and the campaign that brought you here.</li>
             </ul>
           </section>
 
@@ -149,6 +150,7 @@ export default function PrivacyPolicy({ onBack, onViewTerms }: { onBack: () => v
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
               <li><strong className="text-foreground">Payment Processing:</strong> Stripe for payment processing. Payment data is handled directly by the payment processor in compliance with PCI-DSS standards.</li>
               <li><strong className="text-foreground">Authentication Providers:</strong> Google and GitHub for OAuth-based login. We receive only the profile information you authorize.</li>
+              <li><strong className="text-foreground">Analytics and Advertising Measurement:</strong> Google (Google Analytics and Google Ads), only after you accept; see Section 7.</li>
               <li><strong className="text-foreground">Cloud Infrastructure:</strong> Our hosting providers for server infrastructure and database hosting.</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">

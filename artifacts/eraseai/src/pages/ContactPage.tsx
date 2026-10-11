@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Mail, MessageCircle, MapPin, Send, Loader2, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BrandLogo } from "@/components/BrandLogo";
+import { track } from "@/lib/analytics";
 
 export default function ContactPage({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation();
@@ -19,6 +20,7 @@ export default function ContactPage({ onBack }: { onBack: () => void }) {
       });
       if (!res.ok) throw new Error("Failed");
       setStatus("sent");
+      track("generate_lead", { form: "contact" });
       setForm({ name: "", email: "", subject: "", message: "" });
     } catch {
       setStatus("error");

@@ -1960,5 +1960,12 @@
         "s4": "One invoice for everyone"
       }
     }
+  },
+  "consent": {
+    "label": "Cookie choice",
+    "text": "We use Google Analytics and Google Ads measurement to learn which pages and ads work. Decline and the site works the same.",
+    "policy": "Privacy policy",
+    "accept": "Accept",
+    "decline": "Decline"
   }
 }

@@ -5,6 +5,8 @@ import { Mail, Lock, User, Loader2, Eye, EyeOff, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui-elements";
 
+import { track } from "@/lib/analytics";
+
 export default function AuthForm({ initialMode = "login" }: { initialMode?: "login" | "signup" } = {}) {
   const { t } = useTranslation();
   const { login, signup } = useAuth();
@@ -41,6 +43,8 @@ export default function AuthForm({ initialMode = "login" }: { initialMode?: "log
 
       if (result.error) {
         setError(result.error);
+      } else if (mode === "signup") {
+        track("sign_up", { method: "email" });
       }
     } catch {
       setError(t("login.genericError"));

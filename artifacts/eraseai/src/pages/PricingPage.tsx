@@ -21,6 +21,7 @@ import { TeamCheckoutDialog } from "@/components/TeamCheckoutDialog";
 import { ORG_COVERAGE_STEPS, takePricingFocus } from "@/lib/products";
 import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor, type PricingTierId } from "@/lib/pricingPlans";
 import { BrandLogo } from "@/components/BrandLogo";
+import { track } from "@/lib/analytics";
 
 interface PricingPageProps {
   onBack: () => void;
@@ -117,6 +118,7 @@ export default function PricingPage({ onBack, embedded = false }: PricingPagePro
       });
       const data = await response.json();
       if (response.ok && data.url) {
+        track("begin_checkout", { plan, billing_period: billingPeriod });
         if (data.sessionId) {
           sessionStorage.setItem("eraseai_checkout_intent", data.sessionId);
         }

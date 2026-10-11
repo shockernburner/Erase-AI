@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Minus, Plus, Users, X } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
+import { track } from "@/lib/analytics";
 
 // Team prices per person; must match api-server team-source.mjs / billing-source.mjs.
 const SEAT_PRICE = { monthly: 9, annual: 96 } as const;
@@ -45,6 +46,7 @@ export function TeamCheckoutDialog({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.url) {
+        track("begin_checkout", { plan: "business", billing_period: period });
         if (data.sessionId) sessionStorage.setItem("eraseai_checkout_intent", data.sessionId);
         window.location.href = data.url;
         return;

@@ -1960,5 +1960,12 @@
         "s4": "Una factura para todos"
       }
     }
+  },
+  "consent": {
+    "label": "Elección de cookies",
+    "text": "Usamos Google Analytics y la medición de Google Ads para saber qué páginas y anuncios funcionan. Si lo rechazas, el sitio funciona igual.",
+    "policy": "Política de privacidad",
+    "accept": "Aceptar",
+    "decline": "Rechazar"
   }
 }
