@@ -20,6 +20,7 @@ import { PlansScene, type PlanActions } from "@/components/landing/PlansScene";
 import { StartScene } from "@/components/landing/StartScene";
 import { FeaturePip, hasPip, type PipPlan } from "@/components/landing/FeaturePip";
 import { CONTACT, LANDING_PLANS } from "@/components/landing/landingData";
+import { trackStoreClick } from "@/lib/analytics";
 
 // The public homepage plays like a film: the page itself never scrolls.
 // Scrolling (wheel, swipe, arrow keys) moves to the next frame in place and
@@ -87,7 +88,10 @@ export default function PublicLanding({ previewPlan }: { previewPlan?: PricingTi
   const contact = () => {
     window.location.href = `${baseUrl}contact`;
   };
-  const openExternal = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+  const openExternal = (url: string) => {
+    trackStoreClick(url);
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   // The animation follows the card in front and goes away with the plans frame.
   const activePlan = scene.id === "plans" ? LANDING_PLANS[frame.step]?.id : undefined;

@@ -1960,5 +1960,12 @@
         "s4": "Eine Rechnung für alle"
       }
     }
+  },
+  "consent": {
+    "label": "Cookie-Auswahl",
+    "text": "Wir nutzen Google Analytics und die Google-Ads-Messung, um zu sehen, welche Seiten und Anzeigen wirken. Bei Ablehnung funktioniert die Seite genauso.",
+    "policy": "Datenschutzerklärung",
+    "accept": "Akzeptieren",
+    "decline": "Ablehnen"
   }
 }

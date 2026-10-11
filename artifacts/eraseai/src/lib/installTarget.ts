@@ -4,6 +4,7 @@
 
 import { chromeStoreLink } from "@/lib/extensionStore";
 import { ANDROID_PLAY_URL } from "@/lib/products";
+import { attribution } from "@/lib/analytics";
 
 export type InstallTarget = "android" | "chrome" | "other-mobile";
 
@@ -25,10 +26,11 @@ export function detectInstallTarget(userAgent: string = typeof navigator === "un
  */
 export function playStoreLink(placement: string, source = "site"): string {
   const url = new URL(ANDROID_PLAY_URL);
-  url.searchParams.set(
-    "referrer",
-    `utm_source=${source}&utm_medium=${placement}&utm_campaign=android`,
-  );
+  const from = attribution();
+  const tags = from
+    ? { utm_source: from.source, utm_medium: from.medium, utm_campaign: from.campaign, utm_content: placement, ...(from.term ? { utm_term: from.term } : {}) }
+    : { utm_source: source, utm_medium: placement, utm_campaign: "android" };
+  url.searchParams.set("referrer", new URLSearchParams(tags).toString());
   return url.toString();
 }
 

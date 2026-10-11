@@ -1,6 +1,7 @@
 import type { PricingTierId } from "@/lib/pricingPlans";
 import { useState, useEffect, lazy, Suspense, type ReactElement } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -412,6 +413,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ConsentBanner />
         <Router base={base === "/" ? "" : base}>
           <Suspense fallback={<SeoLoadingFallback />}>
             <Switch>

@@ -5,17 +5,24 @@ Everything in this folder is ready to upload. Anything marked **verify** depends
 
 ---
 
-## 0. Do these first (they block or weaken the campaign)
+## 0. Before launch
 
-| # | Item | Why it matters | Who |
-|---|---|---|---|
-| 1 | **Add the Google tag and conversion events to the site.** `eraseai.ai` has no analytics or Google tag today. | Without it Google Ads cannot count sign-ups or store clicks, so it cannot optimise and you cannot see what works. Events to create: `sign_up`, `click_chrome_store`, `click_google_play`, `begin_checkout`. Show a consent notice (Singapore PDPA, Hong Kong PDPO). | I can build it once you give me the Ads conversion ID and GA4 ID |
-| 2 | **Carry the ad's UTM tags through to the store links.** The site's Chrome and Play buttons use fixed tags (`utm_source=site`), so every store install from an ad would show as "site" in the Chrome Web Store and Play dashboards. | Real per-campaign install attribution. Small change: save the landing URL's UTMs and reuse them in `chromeStoreLink()` and `playStoreLink()`. | I can build it |
-| 3 | **Fix the pricing page's "managed rollout: soon" label** (Teams/Family, Chrome). Extension 1.6.0 is live and supports it; the page still says "soon". | Ad copy and outreach say pilots are available. Visitors who click through must not see a contradiction. Ad copy here avoids "managed rollout" until this is settled. | You decide; I can change it |
-| 4 | **YouTube channel** to host the three videos (Google Ads video assets are YouTube links). | Videos cannot be uploaded to Ads directly. | You |
-| 5 | **Ads account basics:** billing, currency, and advertiser verification if your account shows it. | Ads will not serve without them. | You |
+| # | Item | Status |
+|---|---|---|
+| 1 | **Google tag on the site** (GA4 property `EraseAI Website`, ID `G-K82G1MZ7SE`) with a consent banner. Events: `sign_up`, `begin_checkout`, `generate_lead` (contact form), `click_chrome_store`, `click_google_play`. | **Built** in this PR. Starts after you deploy. |
+| 2 | **Ad campaign carried to the store links**: a visit from an ad keeps its `utm_*` tags, and the Chrome Web Store and Google Play links reuse them (the button's own name goes in `utm_content`), so store dashboards credit the install to the campaign. Organic visits keep the old tags. | **Built** in this PR. |
+| 3 | **Privacy policy** names Google Analytics and Ads measurement and the consent choice (it used to say we use no advertising cookies). | **Done** in this PR. |
+| 4 | In Analytics: mark `sign_up`, `begin_checkout`, `generate_lead`, `click_chrome_store`, `click_google_play` as **key events** (Admin, Data display, Events) once they appear, about a day after deploy. | You |
+| 5 | **Link Analytics to Google Ads** (Admin, Product links, Google Ads links); turn on auto-tagging in Google Ads; import the key events as conversions (Goals, Conversions, New conversion action, Import, Google Analytics 4). Make `click_chrome_store` and `sign_up` the primary conversions, `click_google_play` and `begin_checkout` secondary. | You |
+| 6 | **Fix the pricing page's "managed rollout: soon" label** (Teams/Family, Chrome). Extension 1.6.0 is live and supports it. Ad copy avoids the claim until this is settled. | You decide; I can change it |
+| 7 | **YouTube channel** to host the three videos (Google Ads video assets are YouTube links). | You |
+| 8 | **Ads account basics:** billing, currency, and advertiser verification if your account shows it. | You |
 
-Limits of what Google can measure: a Chrome extension install happens on the Chrome Web Store, outside your site, so Google Ads cannot count installs itself. Count **clicks to the store** as the conversion and compare with installs in the Chrome Web Store dashboard (by `utm_source`) after item 2.
+How the consent works: the tag loads on every page but starts with all storage denied (Google Consent Mode). **Accept** grants analytics and ad-measurement storage; ad personalisation stays denied because we run no remarketing. **Decline**, or a Global Privacy Control / Do Not Track signal, keeps everything denied. Google still receives cookieless pings, so some visits are modelled rather than counted. Expect GA4 numbers to be lower than real traffic.
+
+Limits of what Google can measure: a Chrome extension install happens on the Chrome Web Store, outside your site, so Google Ads cannot count installs itself. Count **clicks to the store** as the conversion and compare with installs in the Chrome Web Store dashboard (by `utm_source`, now `google` for ad visits). The store property in Analytics (`hckhbadbp...`) is separate from the website property.
+
+Test it yourself after deploy: open `https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=test`, accept the banner, hover the "Chrome Extension" link and confirm its address ends with `utm_source=google&utm_medium=cpc&utm_campaign=test`; then in Analytics, Reports, Realtime, you should see yourself and, after clicking it, the `click_chrome_store` event. `node marketing-assets/google-ads/build/verify_tracking.mjs` runs the same checks against a local build.
 
 ---
 
