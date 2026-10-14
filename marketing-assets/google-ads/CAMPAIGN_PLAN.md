@@ -47,7 +47,7 @@ Singapore and Hong Kong are both UTC+8, so one schedule serves both.
 - Bidding: start with **Maximise clicks** and a **max CPC cap of S$3.00**. After at least 15 conversions in 30 days, switch to **Maximise conversions**, later to a target CPA.
 - Keywords start as phrase and exact match only. No broad match until you have conversions.
 - Ad rotation: optimise. Pin nothing except, if needed, "EraseAI Firewall" to position 3.
-- Final URL suffix (campaign level): `utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_content={adgroupid}`. Each ad's Final URL in the CSVs already carries a named version.
+- Tracking tags: leave the campaign-level tracking template and final URL suffix **empty**. Each ad's Final URL (in the CSVs and `copy/BUILD_SHEET.md`) already carries `utm_source`, `utm_medium`, `utm_campaign` and `utm_content`; adding a suffix would repeat them.
 
 ---
 
