@@ -1,8 +1,10 @@
 # Google Ads build sheet: paste-ready
 
-Everything below is copied straight from `build_copy.py`, so it already fits Google's limits. Work through **Campaign 1** first (English, Singapore + Hong Kong), then **Campaign 2** (Traditional Chinese, Hong Kong).
+Everything below is copied from `build_copy.py`, so it already fits Google's limits. Work through **Campaign 1** first (English, Singapore + Hong Kong), then **Campaign 2** (Traditional Chinese, Hong Kong).
 
-Final URL for every ad already contains its tracking tags. **Do not** also set a tracking template or final URL suffix at campaign level, or the tags would be added twice.
+Each ad group's Final URL already carries its tracking tags. **Do not** also set a tracking template or final URL suffix at campaign level.
+
+**Paste lists without the leading `- `.** Callouts below are plain lines; if a bullet dash comes along it shows up in the live ad.
 
 
 ---
@@ -24,19 +26,23 @@ Final URL for every ad already contains its tracking tags. **Do not** also set a
 - **Contact Us** | Talk to the team | Set up a team pilot
   - URL: `https://eraseai.ai/contact?utm_source=google&utm_medium=cpc&utm_campaign=sitelink`
 
-## Callouts
-- Free Chrome Extension
-- No Account Needed
-- Android App
-- Checks Before You Send
-- Singapore Company
-- Team Pilots Available
+## Callouts (one per box, no dash)
+```
+Free Chrome Extension
+No Account Needed
+Android App
+Checks Before You Send
+Singapore Company
+Team Pilots Available
+```
 
 ## Structured snippet
-Header **Types**, values:
-- Chrome extension
-- Android app
-- Developer API
+Header **Types**, values (one per box):
+```
+Chrome extension
+Android app
+Developer API
+```
 
 ## Negative keywords (campaign level, phrase match)
 Paste, one per line, with the quotes:
@@ -83,7 +89,7 @@ Paste, one per line, with the quotes:
 
 ## Ad group 1: `chatgpt-data-leak`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "chatgpt data leak"
 "prevent chatgpt data leak"
@@ -94,11 +100,13 @@ Paste, one per line, with the quotes:
 "protect data from chatgpt"
 [chatgpt data leak prevention]
 ```
-**Final URL:** `https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=SG-HK | Search | EN | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=sg_hk_search_en&utm_content={adgroupid}
+```
 **Display path:** `chatgpt` / `data-leak`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 Stop Secrets Reaching ChatGPT
 Stop Pasting Data Into AI
@@ -126,7 +134,7 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 
 ## Ad group 2: `ai-dlp`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "ai data loss prevention"
 [ai dlp]
@@ -138,11 +146,13 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 "genai dlp"
 [ai data loss prevention]
 ```
-**Final URL:** `https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=SG-HK | Search | EN | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=sg_hk_search_en&utm_content={adgroupid}
+```
 **Display path:** `ai-dlp` / `shadow-ai`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 AI Data Loss Prevention
 Shadow AI Protection
@@ -170,7 +180,7 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 
 ## Ad group 3: `api-keys-secrets`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "api key leaked chatgpt"
 "stop pasting api keys"
@@ -179,11 +189,13 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 "prompt secret scanner"
 "api key in chatgpt prompt"
 ```
-**Final URL:** `https://eraseai.ai/api-key-protection-ai?utm_source=google&utm_medium=cpc&utm_campaign=SG-HK | Search | EN | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/api-key-protection-ai?utm_source=google&utm_medium=cpc&utm_campaign=sg_hk_search_en&utm_content={adgroupid}
+```
 **Display path:** `api-keys` / `ai-prompts`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 Stop Pasting API Keys Into AI
 Catch Secrets In Prompts
@@ -211,7 +223,7 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 
 ## Ad group 4: `ai-firewall`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "ai firewall"
 [ai firewall extension]
@@ -222,11 +234,13 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 "claude data privacy"
 "gemini data privacy"
 ```
-**Final URL:** `https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=SG-HK | Search | EN | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=sg_hk_search_en&utm_content={adgroupid}
+```
 **Display path:** `ai-firewall` / `chrome`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 AI Firewall For Your Browser
 ChatGPT Security Extension
@@ -254,7 +268,7 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 
 ## Ad group 5: `developer-api`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "prompt security api"
 "pii detection api"
@@ -263,11 +277,13 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 "llm input filtering api"
 "prompt pii redaction"
 ```
-**Final URL:** `https://eraseai.ai/developer-api?utm_source=google&utm_medium=cpc&utm_campaign=SG-HK | Search | EN | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/developer-api?utm_source=google&utm_medium=cpc&utm_campaign=sg_hk_search_en&utm_content={adgroupid}
+```
 **Display path:** `developer` / `api`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 Prompt Security API
 PII & Secret Detection API
@@ -312,19 +328,23 @@ Personal adds one-click redaction, file scanning, history and the Android app.
 - **聯絡我們** | 與團隊聯絡 | 安排團隊試行
   - URL: `https://eraseai.ai/contact?utm_source=google&utm_medium=cpc&utm_campaign=sitelink`
 
-## Callouts
-- 免費 Chrome 擴充功能
-- 毋須註冊帳戶
-- Android 應用程式
-- 傳送前先檢查
-- 新加坡公司
-- 提供團隊試行
+## Callouts (one per box, no dash)
+```
+免費 Chrome 擴充功能
+毋須註冊帳戶
+Android 應用程式
+傳送前先檢查
+新加坡公司
+提供團隊試行
+```
 
 ## Structured snippet
-Header **類型**, values:
-- Chrome 擴充功能
-- Android 應用程式
-- 開發者 API
+Header **類型**, values (one per box):
+```
+Chrome 擴充功能
+Android 應用程式
+開發者 API
+```
 
 ## Negative keywords (campaign level, phrase match)
 Paste, one per line, with the quotes:
@@ -348,7 +368,7 @@ Paste, one per line, with the quotes:
 
 ## Ad group 1: `chatgpt-洩漏`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "chatgpt 資料外洩"
 "防止 chatgpt 洩露資料"
@@ -357,11 +377,13 @@ Paste, one per line, with the quotes:
 "chatgpt 機密資料"
 "chatgpt 資安"
 ```
-**Final URL:** `https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=HK | Search | ZH-HK | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=hk_search_zh&utm_content={adgroupid}
+```
 **Display path:** `chatgpt` / `資料外洩`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 防止資料外洩到 ChatGPT
 停止把機密貼入 AI
@@ -389,7 +411,7 @@ Personal 方案加入一鍵遮蓋、檔案掃描、記錄及 Android 應用程�
 
 ## Ad group 2: `ai-資料防洩漏`
 
-**Keywords** (paste into the keyword box, one per line; the quotes and brackets set the match type):
+**Keywords** (one per line; the quotes and brackets set the match type):
 ```
 "ai 資料防洩漏"
 "ai dlp"
@@ -399,11 +421,13 @@ Personal 方案加入一鍵遮蓋、檔案掃描、記錄及 Android 應用程�
 "ai 防火牆"
 "ai 數據外洩"
 ```
-**Final URL:** `https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=HK | Search | ZH-HK | Extension+Leak&utm_content={adgroupid}`
-
+**Final URL** (copy the whole line):
+```
+https://eraseai.ai/ai-firewall?utm_source=google&utm_medium=cpc&utm_campaign=hk_search_zh&utm_content={adgroupid}
+```
 **Display path:** `ai-dlp` / `企業`
 
-**Headlines** (15, paste one per box):
+**Headlines** (15, one per box):
 ```
 AI 資料防洩漏 (DLP)
 影子 AI 防護

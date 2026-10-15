@@ -31,8 +31,16 @@ def check(label: str, s: str, limit: int):
     return s
 
 
+# URL-safe campaign tags: the display names contain spaces and "|", which Google Ads rejects in a URL.
+SLUGS = {
+    "SG-HK | Search | EN | Extension+Leak": "sg_hk_search_en",
+    "HK | Search | ZH-HK | Extension+Leak": "hk_search_zh",
+}
+
+
 def utm(campaign: str, content: str = "") -> str:
-    q = f"utm_source=google&utm_medium=cpc&utm_campaign={campaign}&utm_content={{adgroupid}}"
+    tag = SLUGS.get(campaign, campaign)
+    q = f"utm_source=google&utm_medium=cpc&utm_campaign={tag}&utm_content={{adgroupid}}"
     return q if not content else q + f"&utm_term={content}"
 
 
