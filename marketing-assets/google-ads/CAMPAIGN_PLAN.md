@@ -30,12 +30,12 @@ Test it yourself after deploy: open `https://eraseai.ai/ai-firewall?utm_source=g
 
 | Campaign | Type | Where / language | Devices | Budget | Landing |
 |---|---|---|---|---|---|
-| **SG-HK \| Search \| EN \| Extension+Leak** | Search | Singapore + Hong Kong, English | **Desktop and tablet only** (see below) | S$20 / day | `/ai-firewall`, `/api-key-protection-ai`, `/developer-api` |
-| **HK \| Search \| ZH-HK \| Extension+Leak** | Search | Hong Kong, Chinese (Traditional) | Desktop and tablet only | S$8 / day (about HK$48) | `/ai-firewall` |
+| **SG-HK \| Search \| EN \| Extension+Leak** | Search | Singapore + Hong Kong, English | **Computers only** (see below) | S$20 / day | `/ai-firewall`, `/api-key-protection-ai`, `/developer-api` |
+| **HK \| Search \| ZH-HK \| Extension+Leak** | Search | Hong Kong, Chinese (Traditional) | Computers only | S$8 / day (about HK$48) | `/ai-firewall` |
 | **SG-HK \| Demand Gen \| Video** (phase 2) | Demand Gen | Singapore + Hong Kong, English | All | S$15 / day | `/ai-firewall` |
 | **SG-HK \| App \| Android installs** (phase 3) | App campaign | Singapore + Hong Kong, English + Chinese (Traditional) | Android (automatic) | S$15 / day | Google Play listing |
 
-Why desktop only for the extension campaigns: Chrome on phones cannot install extensions. Mobile clicks would pay for visitors who cannot install. Set mobile to **-100%** on both Search campaigns. Phones are reached by the App campaign instead.
+Why computers only for the extension campaigns: Chrome on phones and tablets cannot install extensions. Their clicks would pay for visitors who cannot install. Set **Mobile phones and Tablets to -100%** on both Search campaigns (Insights and reports, When and where ads showed, Devices, Bid adj. column). Phones are reached by the App campaign instead.
 
 Singapore and Hong Kong are both UTC+8, so one schedule serves both.
 
@@ -47,7 +47,7 @@ Singapore and Hong Kong are both UTC+8, so one schedule serves both.
 - Bidding: start with **Maximise clicks** and a **max CPC cap of S$3.00**. After at least 15 conversions in 30 days, switch to **Maximise conversions**, later to a target CPA.
 - Keywords start as phrase and exact match only. No broad match until you have conversions.
 - Ad rotation: optimise. Pin nothing except, if needed, "EraseAI Firewall" to position 3.
-- Final URL suffix (campaign level): `utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_content={adgroupid}`. Each ad's Final URL in the CSVs already carries a named version.
+- Tracking tags: leave the campaign-level tracking template and final URL suffix **empty**. Each ad's Final URL (in the CSVs and `copy/BUILD_SHEET.md`) already carries `utm_source`, `utm_medium`, `utm_campaign` and `utm_content`; adding a suffix would repeat them.
 
 ---
 
