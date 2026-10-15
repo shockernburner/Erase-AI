@@ -30,12 +30,12 @@ Test it yourself after deploy: open `https://eraseai.ai/ai-firewall?utm_source=g
 
 | Campaign | Type | Where / language | Devices | Budget | Landing |
 |---|---|---|---|---|---|
-| **SG-HK \| Search \| EN \| Extension+Leak** | Search | Singapore + Hong Kong, English | **Desktop and tablet only** (see below) | S$20 / day | `/ai-firewall`, `/api-key-protection-ai`, `/developer-api` |
-| **HK \| Search \| ZH-HK \| Extension+Leak** | Search | Hong Kong, Chinese (Traditional) | Desktop and tablet only | S$8 / day (about HK$48) | `/ai-firewall` |
+| **SG-HK \| Search \| EN \| Extension+Leak** | Search | Singapore + Hong Kong, English | **Computers only** (see below) | S$20 / day | `/ai-firewall`, `/api-key-protection-ai`, `/developer-api` |
+| **HK \| Search \| ZH-HK \| Extension+Leak** | Search | Hong Kong, Chinese (Traditional) | Computers only | S$8 / day (about HK$48) | `/ai-firewall` |
 | **SG-HK \| Demand Gen \| Video** (phase 2) | Demand Gen | Singapore + Hong Kong, English | All | S$15 / day | `/ai-firewall` |
 | **SG-HK \| App \| Android installs** (phase 3) | App campaign | Singapore + Hong Kong, English + Chinese (Traditional) | Android (automatic) | S$15 / day | Google Play listing |
 
-Why desktop only for the extension campaigns: Chrome on phones cannot install extensions. Mobile clicks would pay for visitors who cannot install. Set mobile to **-100%** on both Search campaigns. Phones are reached by the App campaign instead.
+Why computers only for the extension campaigns: Chrome on phones and tablets cannot install extensions. Their clicks would pay for visitors who cannot install. Set **Mobile phones and Tablets to -100%** on both Search campaigns (Insights and reports, When and where ads showed, Devices, Bid adj. column). Phones are reached by the App campaign instead.
 
 Singapore and Hong Kong are both UTC+8, so one schedule serves both.
 
