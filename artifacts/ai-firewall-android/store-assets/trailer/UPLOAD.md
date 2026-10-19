@@ -68,3 +68,13 @@ FONTS_HK=... FONTS_ROBOTO=... node build/render_trailer.mjs video silent.mp4
 ffmpeg -i silent.mp4 -i audio.m4a -c:v copy -c:a copy -shortest eraseai-play-trailer-1920x1080-37s.mp4
 ```
 (`audio.m4a`: `ffmpeg -i audio.wav -af "acompressor=threshold=-22dB:ratio=3:attack=8:release=160:makeup=2,loudnorm=I=-16:TP=-1.5:LRA=9" -c:a aac -b:a 192k audio.m4a`)
+
+## Phone screenshots (Play Console → Main store listing → Phone screenshots)
+
+`../play-screenshots/` holds six 1080x1920 screenshots in two sets, `-en` and `-zh-HK`, in this order:
+01 choose apps · 02 protection on · 03 checks before send · 04 you decide · 05 safe text · 06 enable accessibility.
+
+- Upload the `-en` set to the default (English) listing and the `-zh-HK` set to a Chinese (Hong Kong) custom listing or translation.
+- The captions are translated; the phone UI is the app's own text, which is English-only today.
+- Google Play wants 2 to 8 phone screenshots, 16:9 or 9:16, each side 320 to 3840 px.
+- `build/render_screens.mjs` regenerates them from the same page as the trailer.
