@@ -78,3 +78,12 @@ ffmpeg -i silent.mp4 -i audio.m4a -c:v copy -c:a copy -shortest eraseai-play-tra
 - The captions are translated; the phone UI is the app's own text, which is English-only today.
 - Google Play wants 2 to 8 phone screenshots, 16:9 or 9:16, each side 320 to 3840 px.
 - `build/render_screens.mjs` regenerates them from the same page as the trailer.
+
+## Hong Kong listing (zh-HK)
+
+Everything for the Chinese (Hong Kong) listing is in `../listing-zh-HK/`: `listing-zh-HK.md` (name, short and full description, copy-paste blocks)
+and `feature-graphic-1024x500-zh-HK.png`. Screenshots are `../play-screenshots/*-zh-HK.png`; the video is the same bilingual trailer.
+
+## English listing (default, en-US)
+
+New text in `../listing-en/listing-en.md`. It replaces the "internal testers / sign in with an EraseAI account" description.
