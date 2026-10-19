@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>EraseAI Firewall for Android: Play trailer</title>
+<!-- Everything on the phone is the app's own UI, rebuilt from the Compose source in
+     artifacts/ai-firewall-android (Color.kt, Type.kt, Components.kt, MainActivity.kt,
+     AiGuardAccessibilityService.kt, SendCurtain.kt). Sizes are in dp. The scan result and the
+     sanitized text come from build/scanner_port.mjs, a port of LocalRiskScanner.kt. No invented numbers. -->
+<link rel="stylesheet" href="/fonts/roboto/400.css" />
+<link rel="stylesheet" href="/fonts/roboto/500.css" />
+<link rel="stylesheet" href="/fonts/roboto/700.css" />
+<link rel="stylesheet" href="/fonts/hk/400.css" />
+<link rel="stylesheet" href="/fonts/hk/500.css" />
+<link rel="stylesheet" href="/fonts/hk/700.css" />
+<style>
+  :root {
+    --primary: #0DCCF2; --primary-bright: #3DE0FF; --bg: #070A13; --surface: #0B111E; --secondary: #18212F;
+    --muted: #151C28; --border: #192433; --fg: #F8FAFC; --muted-fg: #94A3B8; --success: #24C278;
+    --destructive: #EF4343;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #05070E; }
+  body { font-family: "Roboto", "Noto Sans HK", sans-serif; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    background: radial-gradient(900px 700px at 28% 48%, rgba(13,204,242,.16), transparent 70%),
+                radial-gradient(800px 600px at 85% 90%, rgba(61,224,255,.07), transparent 70%), #070A13; }
+
+  /* ---------- phone ---------- */
+  #phone { position: absolute; left: 250px; top: 40px; width: 450px; height: 1000px; border-radius: 68px;
+    background: #0E1626; border: 2px solid #26334C; padding: 10px;
+    box-shadow: 0 0 0 1px #000, 0 40px 120px rgba(0,0,0,.6), 0 0 90px rgba(13,204,242,.18); }
+  #screenWrap { width: 430px; height: 980px; border-radius: 58px; overflow: hidden; position: relative; background: var(--bg); }
+  #screen { position: absolute; left: 0; top: 0; width: 360px; height: 820px; transform: scale(1.1944); transform-origin: 0 0;
+    background: var(--bg); overflow: hidden; }
+  .layer { position: absolute; inset: 0; }
+  .sb { position: absolute; top: 0; left: 0; right: 0; height: 28px; padding: 6px 22px 0; display: flex; justify-content: space-between;
+    font: 500 12px/16px Roboto; color: var(--fg); z-index: 20; }
+  .sb i { font-style: normal; letter-spacing: 1.5px; }
+  .appbar { position: absolute; top: 28px; left: 0; right: 0; height: 64px; display: flex; align-items: center; padding: 0 16px 0 4px; background: var(--bg); }
+  .appbar .back { width: 48px; height: 48px; display: grid; place-items: center; }
+  .appbar h1 { font: 600 18px/24px Roboto; color: var(--fg); }
+  .col { position: absolute; top: 92px; left: 0; right: 0; bottom: 0; padding: 12px 20px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+  .hero { display: flex; align-items: flex-start; gap: 8px; }
+  .hero .t { font: 600 20px/26px Roboto; letter-spacing: -.2px; }
+  .hero .s { font: 400 14px/20px Roboto; color: var(--muted-fg); margin-top: 6px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .card.hl { border-color: rgba(13,204,242,.55); }
+  .tm { font: 600 16px/22px Roboto; } .ts { font: 400 12px/16px Roboto; color: var(--muted-fg); }
+  .lm { font: 500 12px/16px Roboto; color: var(--muted-fg); }
+  .row { display: flex; align-items: center; }
+  .btn { height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font: 600 14px/20px Roboto; width: 100%; }
+  .btn.p { background: var(--primary); color: var(--bg); } .btn.s { border: 1px solid var(--border); color: var(--fg); }
+  .cb { width: 40px; height: 40px; display: grid; place-items: center; margin-left: -8px; }
+  .cb b { width: 18px; height: 18px; border-radius: 2px; border: 2px solid #CAC4D0; display: grid; place-items: center; }
+  .cb b svg { opacity: 0; }
+  .app .tm { margin-bottom: 2px; }
+  .badge { font: 500 12px/16px Roboto; }
+  .banner { border-radius: 16px; border: 1px solid rgba(36,194,120,.45); background: var(--surface); }
+  .banner .in { padding: 16px; display: flex; align-items: center; background: linear-gradient(90deg, rgba(36,194,120,.14), transparent); border-radius: 16px; }
+  .sec { font: 500 12px/16px Roboto; color: var(--muted-fg); letter-spacing: .5px; padding-top: 4px; }
+  .sw { width: 52px; height: 32px; border-radius: 16px; background: var(--success); position: relative; flex: none; }
+  .sw::after { content: ""; position: absolute; right: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); }
+
+  /* chat (generic AI assistant, no third-party branding) */
+  #chat { background: #0A0E16; }
+  .chead { position: absolute; top: 28px; left: 0; right: 0; height: 56px; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid #1B2433; font: 500 17px Roboto; color: #E2E8F0; }
+  .dot { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#334155,#1E293B); }
+  .msgs { position: absolute; top: 84px; left: 0; right: 0; bottom: 330px; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; justify-content: flex-end; }
+  .bub { align-self: flex-end; max-width: 270px; background: #1E293B; color: #E2E8F0; border-radius: 18px 18px 4px 18px; padding: 12px 14px; font: 400 14px/20px Roboto; }
+  .typing { align-self: flex-start; display: flex; gap: 5px; padding: 12px 14px; background: #131A26; border-radius: 18px 18px 18px 4px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: #64748B; display: block; }
+  .composer { position: absolute; left: 12px; right: 12px; bottom: 284px; min-height: 52px; border-radius: 26px; border: 1px solid #334155; background: #0F1521; display: flex; align-items: flex-end; padding: 8px 8px 8px 16px; gap: 8px; }
+  .composer .txt { flex: 1; font: 400 15px/21px Roboto; color: #E2E8F0; padding: 4px 0; min-height: 21px; word-break: break-word; }
+  .composer .ph { color: #64748B; }
+  .send { width: 38px; height: 38px; border-radius: 50%; background: #E2E8F0; display: grid; place-items: center; flex: none; position: relative; }
+  .kbd { position: absolute; left: 0; right: 0; bottom: 0; height: 270px; background: #11151D; padding: 10px 4px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #1B2433; }
+  .kr { display: flex; gap: 4px; justify-content: center; }
+  .kr span { width: 31px; height: 46px; border-radius: 6px; background: #232A36; }
+  .kr.mid span { width: 33px; } .kr .wide { width: 46px; } .kr .space { width: 180px; }
+  .curtain { position: absolute; border-radius: 26px; background: rgba(185,28,28,.95); border: 1px solid rgba(248,250,252,.4);
+    display: flex; align-items: center; justify-content: center; padding: 6px 12px; font: 500 12px/15px Roboto; color: #fff; text-align: center; z-index: 8; }
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.55); z-index: 9; }
+  .gate { position: absolute; left: 18px; right: 18px; top: 150px; background: #0B1220; border: 1px solid #334155; border-radius: 20px; padding: 20px 22px; z-index: 10;
+    box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+  .gate .lab { font: 500 11px/14px Roboto; letter-spacing: .88px; color: #EF4444; }
+  .gate h2 { font: 400 20px/26px Roboto; color: #F8FAFC; padding-top: 8px; }
+  .gate p { font: 400 14px/20px Roboto; color: #CBD5E1; padding: 8px 0 12px; }
+  .gb { margin-top: 8px; border-radius: 12px; padding: 12px 16px; text-align: center; font: 400 15px/21px Roboto; background: #1E293B; color: #F8FAFC; border: 1px solid #475569; position: relative; }
+  .gb.f { background: #38BDF8; color: #0B1220; border-color: #38BDF8; }
+  .gate .open { font: 400 13px/18px Roboto; color: #38BDF8; padding-top: 14px; }
+  .ripple { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 3px solid var(--primary-bright);
+    background: rgba(61,224,255,.25); opacity: 0; pointer-events: none; z-index: 30; }
+
+  /* ---------- captions ---------- */
+  #caps { position: absolute; left: 860px; top: 0; width: 900px; height: 1080px; }
+  .cap { position: absolute; left: 0; right: 0; top: 50%; opacity: 0; }
+  .cap .step { font: 700 24px/1 Inter, Roboto, "Noto Sans HK"; letter-spacing: 4px; color: var(--primary); margin-bottom: 26px; }
+  .cap .en { font: 700 62px/1.12 Inter, Roboto; letter-spacing: -1px; color: #fff; }
+  .cap .zh { font: 500 46px/1.3 "Noto Sans HK", Inter; color: var(--primary-bright); margin-top: 20px; }
+  .cap .note { font: 400 28px/1.4 Inter, Roboto, "Noto Sans HK"; color: var(--muted-fg); margin-top: 28px; }
+
+  /* ---------- centre screens (intro / outro) ---------- */
+  .centre { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; }
+  .centre img { width: 150px; height: 150px; margin-bottom: 40px; filter: drop-shadow(0 0 40px rgba(13,204,242,.5)); }
+  .centre .en { font: 800 92px/1.08 Inter, Roboto; letter-spacing: -2px; color: #fff; }
+  .centre .zh { font: 500 58px/1.3 "Noto Sans HK", Inter; color: var(--primary-bright); margin-top: 22px; }
+  .centre .sub { font: 500 34px/1.3 Inter, Roboto, "Noto Sans HK"; color: var(--muted-fg); margin-top: 44px; letter-spacing: .5px; }
+  .centre .line { margin-top: 0; }
+  .pill { display: inline-block; margin-top: 46px; padding: 18px 44px; border-radius: 60px; border: 2px solid rgba(13,204,242,.6); background: rgba(13,204,242,.1);
+    font: 600 34px/1.2 Inter, Roboto, "Noto Sans HK"; color: #fff; }
+  .pill small { display: block; font: 500 26px/1.3 "Noto Sans HK", Inter; color: var(--primary-bright); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="caps">
+    <div class="cap" id="c1"><div class="step">STEP 1 · 步驟 1</div><div class="en">Choose the AI apps<br>to protect.</div><div class="zh">選擇要保護的 AI 應用程式。</div></div>
+    <div class="cap" id="c2"><div class="step">STEP 2 · 步驟 2</div><div class="en">Turn protection on.</div><div class="zh">開啟保護。</div><div class="note">It only watches the apps you chose.<br>只會監察你選擇的應用程式。</div></div>
+    <div class="cap" id="c3"><div class="step">STEP 3 · 步驟 3</div><div class="en">Use AI as usual.</div><div class="zh">照常使用 AI。</div></div>
+    <div class="cap" id="c4"><div class="step">BEFORE YOU SEND · 傳送之前</div><div class="en">EraseAI checks<br>the message first.</div><div class="zh">傳送前，先檢查訊息。</div></div>
+    <div class="cap" id="c5"><div class="step">BEFORE YOU SEND · 傳送之前</div><div class="en">It shows what<br>it found.</div><div class="zh">並顯示偵測到的內容。</div></div>
+    <div class="cap" id="c6"><div class="step">YOU DECIDE · 由你決定</div><div class="en">Cancel, Sanitize,<br>or Send Anyway.</div><div class="zh">取消、淨化，或仍然傳送。</div></div>
+    <div class="cap" id="c7"><div class="step">RESULT · 結果</div><div class="en">Only the safe<br>text goes out.</div><div class="zh">只會傳送已淨化的文字。</div></div>
+  </div>
+
+  <div id="phone"><div id="screenWrap"><div id="screen">
+    <div class="sb"><span>9:41</span><i>▲ ◖ ▮</i></div>
+
+    <!-- Protected Apps -->
+    <div class="layer" id="sApps">
+      <div class="appbar"><div class="back"><svg width="24" height="24" viewBox="0 0 24 24" fill="#F8FAFC"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div><h1>Protected Apps</h1></div>
+      <div class="col" style="gap:10px">
+        <div class="hero"><div><div class="t">Protected Apps</div><div class="s">Select AI or coding apps to protect. Suggested LLM apps are listed first. Gemini runs inside the Google app on many phones, so “Gemini” and “Google” switch on and off together.</div></div></div>
+        <div class="card hl app" id="a1"><div class="row"><div class="cb"><b></b></div><div style="flex:1"><div class="tm">ChatGPT</div><div class="ts">com.openai.chatgpt</div></div><div class="badge" style="color:var(--success)">Installed</div></div><div class="ripple"></div></div>
+        <div class="card hl app" id="a2"><div class="row"><div class="cb"><b></b></div><div style="flex:1"><div class="tm">Claude</div><div class="ts">com.anthropic.claude</div></div><div class="badge" style="color:var(--success)">Installed</div></div><div class="ripple"></div></div>
+        <div class="card hl app" id="a3"><div class="row"><div class="cb"><b></b></div><div style="flex:1"><div class="tm">Gemini</div><div class="ts">com.google.android.apps.bard</div></div><div class="badge" style="color:var(--success)">Installed</div></div><div class="ripple"></div></div>
+        <div class="card hl app"><div class="row"><div class="cb"><b></b></div><div style="flex:1"><div class="tm">Microsoft Copilot</div><div class="ts">com.microsoft.copilot</div></div><div class="badge" style="color:var(--muted-fg)">Suggested</div></div></div>
+        <div class="card app"><div class="row"><div class="cb"><b></b></div><div style="flex:1"><div class="tm">Perplexity</div><div class="ts">com.perplexity.app</div></div><div class="badge" style="color:var(--muted-fg)">Suggested</div></div></div>
+        <div class="card app"><div class="row"><div class="cb"><b></b></div><div style="flex:1"><div class="tm">DeepSeek</div><div class="ts">ai.deepseek</div></div><div class="badge" style="color:var(--muted-fg)">Suggested</div></div></div>
+      </div>
+    </div>
+
+    <!-- Home -->
+    <div class="layer" id="sHome">
+      <div class="appbar"><h1 style="padding-left:16px">Home</h1></div>
+      <div class="col" id="homeCol">
+        <div class="hero"><div style="flex:1"><div class="t">EraseAI Firewall</div><div class="s">Warn, redact, or block risky prompts before they leave selected AI apps.</div></div>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="#94A3B8" style="padding:12px;flex:none"><path d="M19.14 12.94a7.07 7.07 0 000-1.88l2.03-1.58-1.92-3.32-2.39.96a7 7 0 00-1.63-.94L14.9 3h-3.84l-.36 2.55a7 7 0 00-1.63.94l-2.39-.96-1.92 3.32 2.03 1.58a7.07 7.07 0 000 1.88l-2.03 1.58 1.92 3.32 2.39-.96c.5.38 1.04.7 1.63.94l.36 2.55h3.84l.36-2.55c.59-.24 1.13-.56 1.63-.94l2.39.96 1.92-3.32zM13 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg></div>
+        <div class="banner" id="banner"><div class="in"><div style="flex:1"><div class="tm" id="bTitle">Protection incomplete</div><div class="ts" id="bBody" style="margin-top:4px">No protected apps selected.</div></div><div class="badge" id="bOn" style="font:600 14px Roboto;color:#38BDF8">OFF</div></div></div>
+        <div class="card"><div class="tm">Free trial · 7 days left · 25 messages left</div><div class="ts">Protection runs on this phone. To keep it after the trial, create an account and subscribe to EraseAI Personal.</div><div class="btn s" style="margin-top:8px">Create account or sign in</div></div>
+        <div class="row" style="gap:10px"><div class="card" style="flex:1"><div class="lm">Accessibility</div><div class="tm">Running</div></div><div class="card" style="flex:1"><div class="lm">Keyboard</div><div class="tm">System</div></div></div>
+        <div class="row" style="gap:10px"><div class="card" style="flex:1"><div class="lm">Apps</div><div class="tm" id="appsN">0</div></div><div class="card" style="flex:1"><div class="lm">Plan</div><div class="tm">No account</div></div></div>
+        <div class="row" style="gap:10px"><div class="card" style="flex:1"><div class="lm">Scans</div><div class="tm">On device</div></div><div class="card" style="flex:1"><div class="lm">Mode</div><div class="tm">Curtain fallback</div></div></div>
+      </div>
+    </div>
+
+    <!-- Enable Accessibility (used for store screenshots only) -->
+    <div class="layer" id="sGuide" style="opacity:0">
+      <div class="appbar"><div class="back"><svg width="24" height="24" viewBox="0 0 24 24" fill="#F8FAFC"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></svg></div><h1>Enable Accessibility</h1></div>
+      <div class="col">
+        <div class="hero"><div><div class="t">Enable Accessibility</div><div class="s">EraseAI intercepts Send in ChatGPT, Claude, Gemini, and other selected AI apps. You'll see Cancel, Sanitize, or Send Anyway before risky prompts leave your phone.</div></div></div>
+        <div class="banner"><div class="in"><div style="flex:1"><div class="tm">Accessibility enabled</div><div class="ts" style="margin-top:4px">Return here after choosing apps, then tap Done.</div></div><div class="badge" style="font:600 14px Roboto;color:#24C278">ON</div></div></div>
+        <div class="card"><div class="tm">Setup checklist</div>
+          <div style="font:400 14px/20px Roboto">1. Open Accessibility settings and enable EraseAI Firewall.</div>
+          <div style="font:400 14px/20px Roboto">2. Choose protected AI apps (Gemini + Google if both appear).</div>
+          <div style="font:400 14px/20px Roboto">3. Confirm firewall scanning is On from Home.</div>
+          <div style="font:400 14px/20px Roboto">4. Type a prompt and tap Send — EraseAI scans before it goes out.</div></div>
+        <div class="btn p">Open Accessibility Settings</div>
+        <div class="btn s">Choose Protected Apps</div>
+        <div class="btn s">Done — back to Home</div>
+      </div>
+    </div>
+
+    <!-- AI chat -->
+    <div class="layer" id="sChat">
+      <div id="chat" class="layer">
+        <div class="chead"><span style="opacity:.7">←</span><div class="dot"></div><span>AI assistant</span></div>
+        <div class="msgs"><div class="bub" id="sentBub" style="opacity:0"></div><div class="typing" id="typing" style="opacity:0"><i></i><i></i><i></i></div></div>
+        <div class="composer" id="composer"><div class="txt" id="ctext"><span class="ph">Message</span></div>
+          <div class="send" id="sendBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F172A"><path d="M12 4l-7 7h5v9h4v-9h5z"/></svg></div></div>
+        <div class="kbd" id="kbd">
+          <div class="kr"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="kr mid"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="kr"><span class="wide"></span><span></span><span></span><span></span><span></span><span></span><span></span><span class="wide"></span></div>
+          <div class="kr"><span class="wide"></span><span class="space"></span><span class="wide"></span></div>
+        </div>
+        <div class="curtain" id="curtain">EraseAI blocked send · tap to review</div>
+        <div class="ripple" id="rCurtain"></div>
+      </div>
+      <div class="scrim" id="scrim"></div>
+      <div class="gate" id="gate">
+        <div class="lab">ERASEAI · SEND GATE</div>
+        <h2>Sensitive data detected</h2>
+        <p id="gateBody"></p>
+        <div class="gb" id="gCancel">Cancel</div>
+        <div class="gb f" id="gSan">Sanitize &amp; Send<div class="ripple"></div></div>
+        <div class="gb" id="gAny">Send Anyway</div>
+        <div class="open">Open EraseAI</div>
+      </div>
+    </div>
+  </div></div></div>
+
+  <div class="centre" id="intro">
+    <img src="/branding/logos/eraseai-icon.svg" alt="" />
+    <div class="en">Use AI.<br>Keep your data.</div>
+    <div class="zh">使用 AI，同時保護資料</div>
+    <div class="sub">EraseAI Firewall for Android · Android 版</div>
+  </div>
+  <div class="centre" id="outro1">
+    <img src="/branding/logos/eraseai-icon.svg" alt="" />
+    <div class="en" style="font-size:80px">Not a VPN.<br>Only the apps you choose.</div>
+    <div class="zh">不是 VPN，只保護你選擇的應用程式。</div>
+  </div>
+  <div class="centre" id="outro2">
+    <img src="/branding/logos/eraseai-icon.svg" alt="" />
+    <div class="en" style="font-size:78px">Free trial:<br>7 days or 25 messages.</div>
+    <div class="zh">免費試用：7 日或 25 則訊息。</div>
+    <div class="sub" style="margin-top:36px">No account needed to start · 毋須註冊即可開始</div>
+  </div>
+  <div class="centre" id="outro3">
+    <img src="/branding/logos/eraseai-icon.svg" alt="" />
+    <div class="en" style="font-size:88px">EraseAI Firewall</div>
+    <div class="zh">已在 Google Play 上架 · Available on Google Play</div>
+    <div class="pill">eraseai.ai<small>傳送前先檢查 · Check before you send</small></div>
+  </div>
+</div>
+
+<script>
+const TL = {
+  total: 37.0,
+  intro: [0.0, 3.7],
+  apps: [3.7, 8.4],      tick: [5.0, 5.8, 6.6],
+  home: [8.4, 12.9],     protectOn: 10.0,
+  chat: [12.9, 29.2],    typeFrom: 13.6, typeTo: 17.0, curtainAt: 17.4, tapCurtain: 19.0, gateAt: 19.5,
+  hiGate: [22.0, 23.0, 24.0], tapSanitize: 24.9, gateOut: 25.5, sentAt: 25.7,
+  outro1: [29.2, 32.0], outro2: [32.0, 34.6], outro3: [34.4, 37.0],
+  caps: { c1: [4.0, 8.4], c2: [9.0, 12.9], c3: [13.2, 17.2], c4: [17.2, 19.2], c5: [19.8, 22.0], c6: [22.0, 25.4], c7: [26.0, 29.0] },
+};
+if (typeof module !== "undefined") module.exports = TL;
+const PROMPT = "__PROMPT__";
+const SCAN = __SCAN__;   // { labels, redacted } from build/scanner_port.mjs
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const ease = (x) => 1 - Math.pow(1 - x, 3);
+const $ = (id) => document.getElementById(id);
+const win = (t, [a, b], f = 0.45) => seg(t, a, a + f) * (1 - seg(t, b - f, b));
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+$("gateBody").textContent = "EraseAI found " + SCAN.labels.join(", ") + " before sending to AI.";
+
+function ripple(el, t, at) {
+  const p = seg(t, at, at + 0.7);
+  el.style.opacity = p > 0 && p < 1 ? (1 - p) * 0.95 : 0;
+  el.style.transform = `scale(${0.4 + p * 1.6})`;
+}
+function place(el, parent, x, y) { el.style.left = x + "px"; el.style.top = y + "px"; }
+
+function renderAt(t) {
+  // intro / outro
+  $("intro").style.opacity = win(t, TL.intro, 0.5) ; $("intro").style.transform = `translateY(${(1 - seg(t, 0, 0.7)) * 20}px)`;
+  $("outro1").style.opacity = win(t, TL.outro1, 0.45);
+  $("outro2").style.opacity = win(t, TL.outro2, 0.45);
+  $("outro3").style.opacity = seg(t, TL.outro3[0], TL.outro3[0] + 0.45) * (1 - seg(t, TL.total - 0.5, TL.total));
+
+  // phone presence
+  const inP = ease(seg(t, 3.5, 4.3)), outP = ease(seg(t, 28.7, 29.5));
+  const ph = inP * (1 - outP);
+  $("phone").style.opacity = ph;
+  const float = Math.sin(t * 0.9) * 6;
+  $("phone").style.transform = `translate(${(1 - inP) * -90 + outP * -90}px, ${float}px) scale(${0.96 + 0.04 * ph})`;
+
+  // captions
+  for (const [id, r] of Object.entries(TL.caps)) {
+    const el = $(id), o = win(t, r, 0.5);
+    el.style.opacity = o;
+    el.style.transform = `translateY(calc(-50% + ${(1 - seg(t, r[0], r[0] + 0.5)) * 24}px))`;
+  }
+
+  // screens
+  $("sApps").style.opacity = win(t, TL.apps, 0.2);
+  $("sHome").style.opacity = win(t, TL.home, 0.2);
+  $("sChat").style.opacity = win(t, TL.chat, 0.2);
+
+  // protected apps: tick the three apps
+  ["a1", "a2", "a3"].forEach((id, i) => {
+    const card = $(id), on = t >= TL.tick[i];
+    const b = card.querySelector(".cb b");
+    b.style.background = on ? "#0DCCF2" : "transparent"; b.style.borderColor = on ? "#0DCCF2" : "#CAC4D0";
+    b.querySelector("svg") || (b.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#070A13"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"/></svg>');
+    b.firstChild.style.opacity = on ? 1 : 0;
+    const r = card.querySelector(".ripple"); place(r, card, 28, 36); ripple(r, t, TL.tick[i] - 0.15);
+  });
+
+  // home: protection turns on
+  const n = t >= TL.protectOn ? 3 : 0;
+  $("appsN").textContent = n;
+  $("bTitle").textContent = n ? "Protection active" : "Protection incomplete";
+  $("bBody").textContent = n ? "Scanning prompts in 3 protected app(s)." : "No protected apps selected.";
+  $("bOn").textContent = n ? "ON" : "OFF"; $("bOn").style.color = n ? "#24C278" : "#38BDF8";
+  $("banner").style.borderColor = n ? "rgba(36,194,120,.45)" : "rgba(13,204,242,.45)";
+  $("banner").firstChild.style.background = `linear-gradient(90deg, ${n ? "rgba(36,194,120,.14)" : "rgba(13,204,242,.14)"}, transparent)`;
+
+  // chat: typing
+  const len = PROMPT.length;
+  const typed = Math.floor(ease(seg(t, TL.typeFrom, TL.typeTo)) * len);
+  const sent = t >= TL.sentAt;
+  const caret = Math.floor(t * 2) % 2 === 0 ? "|" : "&nbsp;";
+  if (sent) {
+    $("ctext").innerHTML = '<span class="ph">Message</span>';
+  } else if (typed === 0) {
+    $("ctext").innerHTML = '<span class="ph">Message</span>';
+  } else {
+    $("ctext").innerHTML = esc(PROMPT.slice(0, typed)) + '<span style="color:#0DCCF2">' + caret + "</span>";
+  }
+  const sb = $("sentBub");
+  sb.innerHTML = esc(SCAN.redacted).replace(/\[[A-Z ]+\]/g, (m) => '<span style="color:#3DE0FF;font-weight:500">' + m + "</span>");
+  sb.style.opacity = sent ? ease(seg(t, TL.sentAt, TL.sentAt + 0.4)) : 0;
+  sb.style.transform = `translateY(${(1 - ease(seg(t, TL.sentAt, TL.sentAt + 0.4))) * 16}px)`;
+  $("typing").style.opacity = sent ? seg(t, TL.sentAt + 0.9, TL.sentAt + 1.3) : 0;
+  [...$("typing").children].forEach((d, i) => (d.style.opacity = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 6 - i))));
+
+  // curtain over the send button (position computed from the composer's geometry)
+  const comp = $("composer"), cb = comp.getBoundingClientRect(), s = $("screen").getBoundingClientRect();
+  const k = 360 / s.width;
+  const sendEl = $("sendBtn").getBoundingClientRect();
+  const cx = (sendEl.left - s.left) * k, cy = (sendEl.top - s.top) * k;
+  const curtain = $("curtain");
+  const curtainOn = t >= TL.curtainAt && t < TL.gateOut;
+  const w = 150, h = 50;
+  curtain.style.width = w + "px"; curtain.style.height = h + "px";
+  curtain.style.left = (340 - w) + "px"; curtain.style.top = ((cy + 19) - h / 2) + "px";
+  const cShow = ease(seg(t, TL.curtainAt, TL.curtainAt + 0.35));
+  curtain.style.opacity = curtainOn ? cShow : 0;
+  curtain.style.transform = `scale(${0.85 + 0.15 * cShow})`;
+  const rc = $("rCurtain"); rc.style.left = 265 + "px"; rc.style.top = ((cy + 19)) + "px"; ripple(rc, t, TL.tapCurtain);
+
+  // gate
+  const gShow = ease(seg(t, TL.gateAt, TL.gateAt + 0.4)) * (1 - seg(t, TL.gateOut, TL.gateOut + 0.3));
+  $("scrim").style.opacity = gShow; $("scrim").style.pointerEvents = "none";
+  $("gate").style.opacity = gShow; $("gate").style.transform = `translateY(${(1 - gShow) * 40}px)`;
+  const hl = (el, on) => { el.style.boxShadow = on ? "0 0 0 3px rgba(61,224,255,.9)" : "none"; };
+  hl($("gCancel"), t >= TL.hiGate[0] && t < TL.hiGate[1]);
+  hl($("gSan"), (t >= TL.hiGate[1] && t < TL.hiGate[2]) || (t >= TL.tapSanitize - 0.3 && t < TL.gateOut));
+  hl($("gAny"), t >= TL.hiGate[2] && t < TL.hiGate[2] + 0.9);
+  const rs = $("gSan").querySelector(".ripple"); rs.style.left = "50%"; rs.style.top = "50%"; ripple(rs, t, TL.tapSanitize);
+}
+window.renderAt = renderAt; window.TL = TL;
+document.fonts.ready.then(() => { window.__ready = true; renderAt(0); });
+</script>
+</body>
+</html>
