@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>AI assistant</title>
+<!-- A generic stand-in chat page, served as chatgpt.com only inside the capture harness so the real
+     EraseAI extension runs on it. It is not a copy of any company's product. -->
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;background:#0B0F14;color:#E5E7EB;font:16px/1.5 Inter,system-ui,sans-serif;overflow:hidden}
+  header{height:48px;border-bottom:1px solid #1B2433;display:flex;align-items:center;gap:14px;padding:0 28px;font-weight:600}
+  .dot{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#334155,#1E293B)}
+  main{position:absolute;top:48px;bottom:0;left:0;right:0}
+  #thread{position:absolute;top:20px;bottom:150px;left:50%;transform:translateX(-50%);width:min(880px,92vw);display:flex;flex-direction:column;justify-content:flex-end;gap:14px;overflow:hidden}
+  .msg{align-self:flex-end;max-width:720px;background:#1E293B;border-radius:22px 22px 6px 22px;padding:14px 18px;font-size:19px;white-space:pre-wrap}
+  .att{align-self:flex-end;display:flex;align-items:center;gap:10px;background:#111827;border:1px solid #243044;border-radius:12px;padding:8px 14px;font-size:16px;color:#CBD5E1}
+  .typing{align-self:flex-start;display:flex;gap:6px;padding:14px 18px;background:#131A26;border-radius:22px 22px 22px 6px}
+  .typing i{width:9px;height:9px;border-radius:50%;background:#64748B;display:block;animation:b 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  form{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);width:min(880px,92vw);background:#0F1521;border:1px solid #334155;border-radius:30px;padding:14px 18px 14px 22px}
+  #chips{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:10px;background:#111827;border:1px solid #243044;border-radius:12px;padding:8px 14px;margin-bottom:10px;font-size:16px}
+  .chip b{width:26px;height:26px;border-radius:6px;background:#0f766e;display:grid;place-items:center;font-size:11px;color:#fff;font-weight:700}
+  .row{display:flex;align-items:flex-end;gap:12px}
+  #prompt-textarea{flex:1;background:transparent;border:0;outline:0;color:#E5E7EB;font:inherit;font-size:19px;line-height:1.5;resize:none;min-height:30px;max-height:120px}
+  label.clip{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#94A3B8;cursor:pointer;font-size:22px}
+  button[data-testid="send-button"]{width:46px;height:46px;border-radius:50%;border:0;background:#E5E7EB;display:grid;place-items:center;cursor:pointer}
+  #caption{position:fixed;top:0;left:0;right:0;height:132px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+    background:linear-gradient(180deg,rgba(7,10,19,.96),rgba(7,10,19,.0));pointer-events:none;z-index:50;opacity:0;transition:opacity .35s}
+  #caption .h{font:800 50px/1.1 Inter,system-ui,sans-serif;letter-spacing:-1px;color:#fff}
+  #caption .s{font:500 26px/1.3 Inter,system-ui,sans-serif;color:#3DE0FF;margin-top:8px}
+</style></head>
+<body>
+<div id="caption"><div class="h"></div><div class="s"></div></div>
+<header><div class="dot"></div>AI assistant</header>
+<main>
+  <div id="thread"></div>
+  <form aria-label="Chat input form" id="f">
+    <div id="chips"></div>
+    <div class="row">
+      <label class="clip" title="Attach">&#128206;<input type="file" id="file" multiple style="display:none"></label>
+      <textarea id="prompt-textarea" data-id="root" rows="1" placeholder="Message"></textarea>
+      <button type="submit" data-testid="send-button" aria-label="Send prompt"><svg width="22" height="22" viewBox="0 0 24 24" fill="#0F172A"><path d="M12 4l-7 7h5v9h4v-9h5z"/></svg></button>
+    </div>
+  </form>
+</main>
+<script>
+  const thread=document.getElementById('thread'), chips=document.getElementById('chips'), ta=document.getElementById('prompt-textarea');
+  document.getElementById('file').addEventListener('change',e=>{
+    chips.innerHTML='';
+    for(const f of e.target.files){const c=document.createElement('div');c.className='chip';c.innerHTML='<b>'+(f.name.split('.').pop()||'').toUpperCase().slice(0,3)+'</b><span></span>';c.querySelector('span').textContent=f.name;chips.appendChild(c);}
+  });
+  document.getElementById('f').addEventListener('submit',e=>{
+    e.preventDefault();
+    const text=ta.value.trim(), files=[...document.getElementById('file').files].map(f=>f.name);
+    if(!text&&!files.length) return;
+    files.forEach(n=>{const a=document.createElement('div');a.className='att';a.textContent='\u{1F4CE} '+n;thread.appendChild(a)});
+    if(text){const m=document.createElement('div');m.className='msg';m.textContent=text;thread.appendChild(m)}
+    const t=document.createElement('div');t.className='typing';t.innerHTML='<i></i><i></i><i></i>';thread.appendChild(t);
+    ta.value='';chips.innerHTML='';document.getElementById('file').value='';
+  });
+  window.__caption=(h,s)=>{const c=document.getElementById('caption');if(!h){c.style.opacity=0;return}
+    c.querySelector('.h').textContent=h;c.querySelector('.s').textContent=s||'';c.style.opacity=1};
+</script></body></html>

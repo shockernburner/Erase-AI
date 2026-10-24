@@ -26,17 +26,23 @@ if (!FONTS_HK || !FONTS_ROBOTO) throw new Error("set FONTS_HK and FONTS_ROBOTO")
 
 // The demo prompt: AWS's public example key and an example.com address. What the app shows is computed
 // with the port of the app's own on-device rules, not typed in by hand.
-export const PROMPT = "Why does this fail? Email jordan.lee@example.com, my AWS key is AKIAIOSFODNN7EXAMPLE";
+export const PROMPT = process.env.TRAILER_PROMPT || "Why does this fail? Email jordan.lee@example.com, my AWS key is AKIAIOSFODNN7EXAMPLE";
 const s = scan(PROMPT);
 const SCANJSON = JSON.stringify({ labels: s.findings.map((f) => `${f.label} (${f.type})`), redacted: redact(PROMPT) });
 
+// TRAILER_LANG=en: hide the Chinese lines, keep the English ones (used for the website video).
+const EN_ONLY = `<style>.zh{display:none!important}</style><script>
+document.querySelectorAll('.step').forEach(e=>{e.textContent='ON ANDROID'});
+document.querySelectorAll('.note,.sub').forEach(e=>{e.innerHTML=e.innerHTML.replace(/<br>[^<]*[\\u3000-\\u9fff][^<]*/g,'').replace(/\\s*·\\s*[^<·]*[\\u3000-\\u9fff][^<]*/g,'')});
+</script>`;
 const types = { ".js": "text/javascript", ".css": "text/css", ".html": "text/html", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".woff": "font/woff" };
 const server = http
   .createServer((q, r) => {
     const u = decodeURIComponent(q.url.split("?")[0]);
     let f;
     if (u === "/" || u === "/index.html") {
-      const html = fs.readFileSync(path.join(root, "trailer.html"), "utf8").replace("__PROMPT__", PROMPT).replace("__SCAN__", SCANJSON);
+      let html = fs.readFileSync(path.join(root, "trailer.html"), "utf8").replace("__PROMPT__", PROMPT).replace("__SCAN__", SCANJSON);
+      if (process.env.TRAILER_LANG === "en") html = html.replace("</body>", EN_ONLY + "</body>");
       r.setHeader("content-type", "text/html");
       return r.end(html);
     }
@@ -69,8 +75,8 @@ if (mode === "stills") {
 } else if (mode === "video") {
   const FPS = 30;
   const ff = spawn("ffmpeg", ["-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-movflags", "+faststart", a], { stdio: ["pipe", "inherit", "inherit"] });
-  const frames = Math.round(total * FPS);
-  for (let i = 0; i < frames; i++) {
+  const i0 = Math.round(Number(process.env.T0 || 0) * FPS), frames = Math.round(Number(process.env.T1 || total) * FPS);
+  for (let i = i0; i < frames; i++) {
     await page.evaluate((x) => window.renderAt(x), i / FPS);
     const buf = await page.screenshot({ type: "jpeg", quality: 96 });
     if (!ff.stdin.write(buf)) await new Promise((res) => ff.stdin.once("drain", res));
