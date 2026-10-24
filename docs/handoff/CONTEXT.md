@@ -1,3 +1,4 @@
+<!-- Start every session with /CLAUDE.md (the current brief). This file is the dated history. -->
 <!-- Approved by the owner on 2026-10-10. This is the single source of truth for future sessions. Update it only with the owner's approval. -->
 # EraseAI — Canonical Context History & Path Forward (as of 2026-10-10)
 
