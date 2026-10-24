@@ -10,6 +10,7 @@ import ChatgptDataLeakPage from "@/pages/seo/ChatgptDataLeakPage";
 import AiPromptSecurityPage from "@/pages/seo/AiPromptSecurityPage";
 import ApiKeyProtectionPage from "@/pages/seo/ApiKeyProtectionPage";
 import DeveloperApiPage from "@/pages/seo/DeveloperApiPage";
+import StartPage from "@/pages/seo/StartPage";
 import BlogIndex from "@/pages/seo/BlogIndex";
 import BlogPost_ApiKeys from "@/pages/seo/BlogPost_ApiKeys";
 import BlogPost_AiFirewall from "@/pages/seo/BlogPost_AiFirewall";
@@ -30,6 +31,7 @@ const PAGES: Record<string, ComponentType> = {
   "/ai-prompt-security": AiPromptSecurityPage,
   "/api-key-protection-ai": ApiKeyProtectionPage,
   "/developer-api": DeveloperApiPage,
+  "/start": StartPage,
   "/blog": BlogIndex,
   "/blog/api-keys-chatgpt": BlogPost_ApiKeys,
   "/blog/what-is-ai-firewall": BlogPost_AiFirewall,

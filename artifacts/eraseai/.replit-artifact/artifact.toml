@@ -42,6 +42,10 @@ from = "/developer-api"
 to = "/_pages/developer-api.html"
 
 [[services.production.rewrites]]
+from = "/start"
+to = "/_pages/start.html"
+
+[[services.production.rewrites]]
 from = "/blog"
 to = "/_pages/blog.html"
 
