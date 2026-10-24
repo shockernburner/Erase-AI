@@ -85,6 +85,15 @@ export const STATIC_PAGES: PageMeta[] = [
     priority: 0.8,
   },
   {
+    // Landing page for ads. Kept out of search results and the sitemap; the canonical page for this topic is /ai-firewall.
+    path: "/start",
+    title: "Check Messages for Secrets Before You Send | EraseAI Firewall",
+    description:
+      "EraseAI Firewall checks what you are about to send to ChatGPT, Claude or Gemini and holds the message if it finds a key, password or personal data. Free Chrome extension.",
+    updated: "2026-10-24",
+    noindex: true,
+  },
+  {
     path: "/blog",
     title: "Blog — AI Security, Data Protection & Prompt Safety | EraseAI",
     description: "Articles on AI security, data protection and using AI tools without exposing sensitive information.",
