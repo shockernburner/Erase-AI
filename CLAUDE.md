@@ -113,13 +113,14 @@ time zone is Pacific (GMT-7, GMT-8 after Nov 1) while Singapore and Hong Kong ar
 
 ## 9. Open items and next actions (in order)
 
-1. **PR #18** (`/start` rework: Android + Chrome-attachments story, new video, this file) awaits the owner's merge and Replit republish. After that the campaigns keep running; **no changes until visitors show up.**
+1. **PR #18** (`/start` rework + this file) is merged (2026-10-24). The owner republishes the website themselves; confirm `/start` shows the Android + attachments page. **No campaign changes until visitors show up.**
 2. Oct 31 checkpoint (section 7). Then decide: keep the $3.00 cap, widen keywords, or change the page.
 3. Finish Play Console listing work and the YouTube trailer; wait for review before launch day.
 4. Decide on a way for free Chrome users to try attachment scanning (product gap). Decide on an Android-first (mobile or App) campaign.
 5. Pricing page still labels Chrome managed rollout "soon" although extension 1.6.0 is live: fix the label.
 6. Optional: GPC-only consent change, Search Console link in GA4, zh-TW or zh-CN listings (different wording or script from zh-HK), Safari only if the data supports it.
-7. Root `pnpm typecheck` is red because of the unrelated `artifacts/landing-video` package; leave it alone.
+7. **Unmerged work on GitHub (do not delete these branches):** `claude/compassionate-feynman-yhk6x4` has about 30 commits of AWS infrastructure (ECS rollout CI, alarms, GuardDuty, Security Hub; last commit "Pause eraseai-prod until AWS credits arrive"). It is not in `main` and is not part of the Replit deploy. `claude/bold-feynman-5rjicj` (2 old commits) is stale, already cherry-picked, never merge it. All other branches are fully merged.
+8. Root `pnpm typecheck` is red because of the unrelated `artifacts/landing-video` package; leave it alone.
 
 ## 10. Standing rules (do not break)
 
