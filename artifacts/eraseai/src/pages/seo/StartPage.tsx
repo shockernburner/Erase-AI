@@ -81,7 +81,6 @@ export default function StartPage() {
           >
             <source src={`${BASE}videos/eraseai-how-it-works.mp4`} type="video/mp4" />
           </video>
-          <p className="px-4 py-3 text-xs text-muted-foreground">17 seconds, recorded from the live product. No sound.</p>
         </div>
 
         <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-5">What happens when you press Send</h2>
