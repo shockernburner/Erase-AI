@@ -172,6 +172,24 @@
   let platform = null;
   let isIntercepting = false;
   let bypassNext = false;
+  // A bypass is armed for exactly one programmatic send. It expires, so one that was armed but never
+  // consumed (a click that never arrived) cannot wave a later, unchecked send through.
+  let bypassSetAt = 0;
+  const BYPASS_WINDOW_MS = 2500;
+  function armBypass() {
+    bypassNext = true;
+    bypassSetAt = Date.now();
+  }
+  // A check that started but never produced an overlay (the service worker never answered) must not
+  // swallow every later send. Past this age, with nothing on screen, a new send starts a fresh check.
+  let interceptStartedAt = 0;
+  let interceptSerial = 0;
+  const STUCK_INTERCEPT_MS = 5000;
+  // After the extension's own send attempts all failed, the user's next press of Send, on the same
+  // unchanged text, is let through: the text was already checked and found safe.
+  let manualPassText = "";
+  let manualPassUntil = 0;
+  const MANUAL_PASS_MS = 30000;
   // Set from the background before each check. Free: every prompt is checked and warned
   // about. Personal adds one-click Sanitize and attachment scanning.
   let planPaid = false;
@@ -286,6 +304,20 @@
   function composerRoot() {
     if (!platform || !platform.composerSelectors) return null;
     if (typeof document === "undefined") return null;
+    // The composer that holds the live input. Taking the first element on the page that matches a
+    // composer selector can pick an inline "edit message" form or a second composer instead, and then
+    // the attachment chips are never found and a removed file is never forgotten.
+    const input = findComposerInput();
+    if (input && typeof input.closest === "function") {
+      for (const sel of platform.composerSelectors) {
+        try {
+          const match = input.closest(sel);
+          if (match) return match;
+        } catch {
+          // :has() on older engines / jsdom may throw on parse — try the next.
+        }
+      }
+    }
     for (const sel of platform.composerSelectors) {
       try {
         const el = document.querySelector(sel);
@@ -297,6 +329,26 @@
     return null;
   }
 
+  // Everything in the composer that can carry an attachment's name: its text, and the labels hosts put
+  // on thumbnails and file tiles that show no text.
+  function composerNameText(root) {
+    let out = root.textContent || "";
+    try {
+      const nodes = root.querySelectorAll("[aria-label], [title], [alt], [data-filename], [data-file-name]");
+      const limit = Math.min(nodes.length, 400);
+      for (let i = 0; i < limit; i += 1) {
+        const el = nodes[i];
+        for (const attr of ["aria-label", "title", "alt", "data-filename", "data-file-name"]) {
+          const v = el.getAttribute(attr);
+          if (v) out += "\n" + v;
+        }
+      }
+    } catch {
+      // best effort
+    }
+    return out;
+  }
+
   // The host app owns attachment state; we only hold File objects because
   // their bytes are unreachable from the DOM. So eviction runs on positive
   // evidence: a file is dropped only once we have seen its chip in the
@@ -306,7 +358,7 @@
   function reconcileAttachments() {
     const root = composerRoot();
     if (!root) return;
-    const rendered = root.textContent || "";
+    const rendered = composerNameText(root);
     for (const [key, entry] of fileCache) {
       const name = entry.file.name;
       const stem = name.replace(/\.[^.]+$/, "").slice(0, 24);
@@ -1021,6 +1073,25 @@
     }
   }
 
+  function forgetFile(name) {
+    for (const [key, entry] of Array.from(fileCache)) {
+      if (entry.file && entry.file.name === name) fileCache.delete(key);
+    }
+  }
+
+  // "I already removed this file": drop it from the check and run the check again without it.
+  function wireForgetFileButtons(panel) {
+    panel.querySelectorAll(".eraseai-forget-file").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        forgetFile(btn.dataset.forgetFile);
+        removeOverlay();
+        isIntercepting = false;
+        // Not a bypass: pressing Send again runs the whole check on what is still attached.
+        pressSendForCheck();
+      });
+    });
+  }
+
   function wireCleanCopyButtons(panel, cleanCopies) {
     if (!cleanCopies) return;
     panel.querySelectorAll(".eraseai-clean-copy").forEach((btn) => {
@@ -1043,7 +1114,21 @@
     });
   }
 
-  function renderPiecesBlock(perPiece, cleanCopies) {
+  function cachedFileNamed(name) {
+    for (const entry of fileCache.values()) if (entry.file && entry.file.name === name) return true;
+    return false;
+  }
+
+  // The user's way out when the page never shows the file's name and so we cannot see it was removed.
+  function renderForgetFileButton(piece) {
+    if (typeof piece.source !== "string" || !piece.source.startsWith("file:")) return "";
+    const name = piece.source.slice(5);
+    if (!cachedFileNamed(name)) return "";
+    return `<button type="button" class="eraseai-forget-file" data-forget-file="${escapeHtml(name)}">I already removed this file</button>`;
+  }
+
+  function renderPiecesBlock(perPiece, cleanCopies, opts) {
+    const allowForget = Boolean(opts && opts.allowForget);
     if (!Array.isArray(perPiece) || perPiece.length === 0) return "";
     // Show the per-piece block whenever there are multiple rows OR even a
     // single row that comes from a file — single-file scenarios still need
@@ -1079,6 +1164,7 @@
           ${detail}
           ${partial}
           ${renderCleanCopyButton(p, cleanCopies)}
+          ${allowForget ? renderForgetFileButton(p) : ""}
         </div>`;
     }).join("");
     // Multiple files read as "it scanned my whole chat history". They are
@@ -1099,7 +1185,7 @@
     const circumference = 2 * Math.PI * 26;
     const dashOffset = circumference * (1 - riskScore / 100);
 
-    const piecesHtml = renderPiecesBlock(perPiece, cleanCopies);
+    const piecesHtml = renderPiecesBlock(perPiece, cleanCopies, { allowForget: true });
 
     let issuesHtml = "";
     if (issues && issues.length > 0) {
@@ -1212,6 +1298,7 @@
     let sanitizedApplied = false;
 
     wireCleanCopyButtons(panel, cleanCopies);
+    wireForgetFileButtons(panel);
 
     panel.querySelector("#eraseai-cancel").addEventListener("click", () => {
       reportOutcome("cancel");
@@ -1222,7 +1309,7 @@
     panel.querySelector("#eraseai-send-anyway").addEventListener("click", () => {
       reportOutcome(sanitizedApplied ? "sanitize" : "send-anyway");
       removeOverlay();
-      bypassNext = true;
+      armBypass();
       isIntercepting = false;
       // Clear cached files now so the next prompt starts fresh — even if
       // the host page hasn't yet visibly removed the attachment chips.
@@ -1401,7 +1488,7 @@
       }
       reportOutcome("auto-send");
       removeOverlay();
-      bypassNext = true;
+      armBypass();
       isIntercepting = false;
       clearFileCache();
       triggerSend();
@@ -1471,7 +1558,7 @@
     });
     panel.querySelector("#eraseai-send-anyway").addEventListener("click", () => {
       removeOverlay();
-      bypassNext = true;
+      armBypass();
       isIntercepting = false;
       clearFileCache();
       triggerSend();
@@ -1494,20 +1581,130 @@
     });
   }
 
+  // Visible Send controls only, and never a Stop control: while a reply is streaming, ChatGPT reuses
+  // the same id for its Stop button, and clicking that would cancel the reply instead of sending.
+  function resolveSendButton() {
+    const candidates = allSendButtons().filter((el) => {
+      const label = [el.getAttribute("aria-label"), el.dataset ? el.dataset.testid : null, el.getAttribute("title")]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return !/\bstop\b/.test(label);
+    });
+    // Where several match, the first in document order can be a leftover from an inline message
+    // editor, and clicking that one sends nothing. Falls back to the first match when no candidate
+    // reports any geometry, which is also the case in a DOM with no layout engine.
+    return candidates.find((el) => el.getClientRects().length > 0) || candidates[0] || null;
+  }
+
+  function readDraft() {
+    const el = findComposerInput();
+    if (!el || !platform) return "";
+    try {
+      return String(platform.getInputText(el) || "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  function showNotice(message) {
+    if (typeof document === "undefined" || !document.body) return;
+    const old = document.getElementById("eraseai-notice");
+    if (old) old.remove();
+    const el = document.createElement("div");
+    el.id = "eraseai-notice";
+    el.setAttribute("role", "status");
+    el.textContent = message;
+    el.style.cssText =
+      "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;max-width:min(520px,90vw);" +
+      "padding:12px 16px;border-radius:12px;background:#0B1220;color:#F8FAFC;border:1px solid #334155;" +
+      "font:500 14px/1.4 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.45);";
+    document.body.appendChild(el);
+    setTimeout(() => { if (el.isConnected) el.remove(); }, 12000);
+  }
+
+  // One way of sending, tried at the moment it is needed. Returns whether it could act at all.
+  // Every way runs synchronously inside the call, so a bypass that nothing consumed is dropped
+  // straight away instead of lingering for the user's next, unchecked, send.
+  function pressSend(attempt) {
+    let acted = false;
+    armBypass();
+    try {
+      if (attempt <= 1) {
+        const btn = resolveSendButton();
+        if (btn) { btn.click(); acted = true; }
+      } else if (attempt === 2) {
+        const input = findComposerInput();
+        const form = input && typeof input.closest === "function" ? input.closest("form") : null;
+        if (form && typeof form.requestSubmit === "function") { form.requestSubmit(); acted = true; }
+      } else {
+        const input = findComposerInput();
+        if (input) {
+          input.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true,
+          }));
+          acted = true;
+        }
+      }
+    } catch {
+      acted = false;
+    }
+    bypassNext = false;
+    return acted;
+  }
+
+  // Press Send again so the message goes through the check once more (no bypass).
+  function pressSendForCheck() {
+    setTimeout(() => {
+      const btn = resolveSendButton();
+      if (btn) {
+        btn.click();
+        return;
+      }
+      const input = findComposerInput();
+      if (input) {
+        input.dispatchEvent(new KeyboardEvent("keydown", {
+          key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true,
+        }));
+      }
+    }, 50);
+  }
+
+  const SEND_FIRST_MS = 50;
+  const SEND_VERIFY_MS = 700;
+  const SEND_ATTEMPTS = 4; // click, click again, submit the form, press Enter
+
+  /**
+   * Sends the message the user just had cleared. The host is asked in turn to send by clicking its
+   * Send button (looked up again each time, since hosts re-draw their composer), by submitting its
+   * form and by Enter. After each try the draft is checked: a host that took the message has cleared
+   * it, and one that did not is asked again. If every way fails the user is told and their own next
+   * press of Send goes through.
+   */
   function triggerSend() {
     if (!platform) return;
-    // Prefer a control the page is actually showing. Where several match, the
-    // first in document order can be a leftover from an inline message editor,
-    // and clicking that one sends nothing — so Send Anyway would appear to do
-    // nothing at all. Falls back to the first match when no candidate reports
-    // any geometry, which is also the case in a DOM with no layout engine.
-    const candidates = allSendButtons();
-    const sendBtn = candidates.find((el) => el.getClientRects().length > 0)
-      || candidates[0]
-      || null;
-    if (sendBtn) {
-      setTimeout(() => sendBtn.click(), 50);
-    }
+    const draft = readDraft();
+    let attempt = 0;
+    const step = () => {
+      // Another check or panel is on screen: the user has moved on, do not send behind it.
+      if (isIntercepting || document.getElementById("eraseai-overlay-backdrop")) return;
+      // The host took the message (it clears the draft when it sends).
+      if (attempt > 0 && readDraft() !== draft) return;
+      while (attempt < SEND_ATTEMPTS) {
+        const n = attempt;
+        attempt += 1;
+        if (pressSend(n)) {
+          // Nothing to compare for an attachment-only message; trust the first try.
+          if (draft) setTimeout(step, SEND_VERIFY_MS);
+          return;
+        }
+      }
+      if (!draft) return;
+      manualPassText = draft;
+      manualPassUntil = Date.now() + MANUAL_PASS_MS;
+      showNotice("EraseAI checked your message, but this page didn't send it. Press Send again.");
+    };
+    setTimeout(step, SEND_FIRST_MS);
   }
 
   // Cache of the most recent aggregated render model so terminal action
@@ -1763,7 +1960,7 @@
 
     if (aggregated.bypass) {
       removeOverlay();
-      bypassNext = true;
+      armBypass();
       isIntercepting = false;
       clearFileCache();
       triggerSend();
@@ -1917,22 +2114,38 @@
 
   function interceptSubmission(e) {
     if (bypassNext) {
+      const fresh = Date.now() - bypassSetAt <= BYPASS_WINDOW_MS;
       bypassNext = false;
-      return;
+      // A bypass that went stale is not honoured: this send is checked like any other.
+      if (fresh) return;
     }
 
     if (isDismissControl(e.target)) return;
 
     if (isIntercepting) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return;
+      const stuck = !document.getElementById("eraseai-overlay-backdrop")
+        && Date.now() - interceptStartedAt > STUCK_INTERCEPT_MS;
+      if (!stuck) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return;
+      }
+      // The earlier check never produced anything on screen. Start over instead of swallowing every send.
+      isIntercepting = false;
     }
 
     const cachedFiles = getCachedFiles();
     const inputEl = findComposerInput();
     const text = inputEl ? platform.getInputText(inputEl).trim() : "";
+
+    // The extension's own send attempts failed on this exact text, which was already checked and
+    // found safe: the user's next press goes through.
+    if (manualPassText && Date.now() < manualPassUntil && text === manualPassText && cachedFiles.length === 0) {
+      manualPassText = "";
+      manualPassUntil = 0;
+      return;
+    }
 
     // Allow submission to proceed when there's truly nothing to scan —
     // empty prompt with no attachments. If there ARE attached files we
@@ -1947,53 +2160,71 @@
     e.stopImmediatePropagation();
 
     isIntercepting = true;
+    interceptStartedAt = Date.now();
+    interceptSerial += 1;
+    const serial = interceptSerial;
     // Reset the per-submission outcome state so each new prompt produces at
     // most one outcome event tied to its own analysis result.
     lastAnalysis = null;
     outcomeReported = false;
     lastAggregated = null;
 
-    chrome.runtime.sendMessage({ type: "GET_CONFIG" }, (configResult) => {
-      if (chrome.runtime.lastError || !configResult) {
-        isIntercepting = false;
-        bypassNext = true;
-        triggerSend();
-        return;
-      }
+    // The extension can be updated or reloaded while this tab stays open; its messaging then throws.
+    // Never leave the user's message stuck behind a check that cannot run.
+    const failOpen = () => {
+      isIntercepting = false;
+      showNotice("EraseAI couldn't check this message because the extension was updated. Reload this tab to turn protection back on.");
+      triggerSend();
+    };
 
-      // Only a switched-off firewall skips the check. A missing API key used to
-      // skip it too, so without an account nothing was checked at all; the
-      // background now checks on this device in that case.
-      if (!configResult.enabled) {
-        isIntercepting = false;
-        bypassNext = true;
-        triggerSend();
-        return;
-      }
-
-      chrome.runtime.sendMessage({ type: "BEGIN_CHECK" }, (check) => {
-        void chrome.runtime.lastError;
-        if (check && check.bypass) {
+    try {
+      chrome.runtime.sendMessage({ type: "GET_CONFIG" }, (configResult) => {
+        if (serial !== interceptSerial) return; // a newer check has taken over
+        if (chrome.runtime.lastError || !configResult) {
           isIntercepting = false;
-          bypassNext = true;
           triggerSend();
           return;
         }
-        planPaid = Boolean(check && check.paid);
-        if (check && check.subscribeUrl) subscribeUrl = check.subscribeUrl;
 
-        const { panel } = createOverlayBackdrop();
-        const attemptId = newAttemptId();
+        // Only a switched-off firewall skips the check. A missing API key used to
+        // skip it too, so without an account nothing was checked at all; the
+        // background now checks on this device in that case.
+        if (!configResult.enabled) {
+          isIntercepting = false;
+          triggerSend();
+          return;
+        }
 
-        runMultiPieceAnalyze({
-          promptText: text,
-          files: cachedFiles,
-          panel,
-          inputEl,
-          attemptId,
-        });
+        try {
+          chrome.runtime.sendMessage({ type: "BEGIN_CHECK" }, (check) => {
+            void chrome.runtime.lastError;
+            if (serial !== interceptSerial) return;
+            if (check && check.bypass) {
+              isIntercepting = false;
+              triggerSend();
+              return;
+            }
+            planPaid = Boolean(check && check.paid);
+            if (check && check.subscribeUrl) subscribeUrl = check.subscribeUrl;
+
+            const { panel } = createOverlayBackdrop();
+            const attemptId = newAttemptId();
+
+            runMultiPieceAnalyze({
+              promptText: text,
+              files: cachedFiles,
+              panel,
+              inputEl,
+              attemptId,
+            });
+          });
+        } catch {
+          failOpen();
+        }
       });
-    });
+    } catch {
+      failOpen();
+    }
   }
 
   function handleKeyDown(e) {
@@ -2121,6 +2352,10 @@
       document.removeEventListener("DOMContentLoaded", init);
     }
     detachListeners();
+    // Also drop a pending auto-send: a torn-down instance must not click Send in the page later.
+    removeOverlay();
+    bypassNext = false;
+    isIntercepting = false;
   }
   if (typeof globalThis !== "undefined") {
     globalThis.__eraseAIContentTeardown = teardown;

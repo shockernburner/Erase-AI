@@ -113,13 +113,20 @@ time zone is Pacific (GMT-7, GMT-8 after Nov 1) while Singapore and Hong Kong ar
 
 ## 9. Open items and next actions (in order)
 
-1. **PR #18** (`/start` rework: Android + Chrome-attachments story, new video, this file) awaits the owner's merge and Replit republish. After that the campaigns keep running; **no changes until visitors show up.**
+1. **PR #18** (`/start` rework + this file) is merged (2026-10-24). The owner republishes the website themselves; confirm `/start` shows the Android + attachments page. **No campaign changes until visitors show up.**
 2. Oct 31 checkpoint (section 7). Then decide: keep the $3.00 cap, widen keywords, or change the page.
 3. Finish Play Console listing work and the YouTube trailer; wait for review before launch day.
 4. Decide on a way for free Chrome users to try attachment scanning (product gap). Decide on an Android-first (mobile or App) campaign.
 5. Pricing page still labels Chrome managed rollout "soon" although extension 1.6.0 is live: fix the label.
 6. Optional: GPC-only consent change, Search Console link in GA4, zh-TW or zh-CN listings (different wording or script from zh-HK), Safari only if the data supports it.
-7. Root `pnpm typecheck` is red because of the unrelated `artifacts/landing-video` package; leave it alone.
+7. **Unmerged work on GitHub (do not delete these branches):** `claude/compassionate-feynman-yhk6x4` has about 30 commits of AWS infrastructure (ECS rollout CI, alarms, GuardDuty, Security Hub; last commit "Pause eraseai-prod until AWS credits arrive"). It is not in `main` and is not part of the Replit deploy. `claude/bold-feynman-5rjicj` (2 old commits) is stale, already cherry-picked, never merge it. All other branches are fully merged.
+8. Root `pnpm typecheck` is red because of the unrelated `artifacts/landing-video` package; leave it alone.
+
+## 9b. Extension 1.6.1 (2026-11-01): send-path and attachment fixes (built, NOT yet on the Chrome Web Store)
+
+Owner report from live use on ChatGPT, Claude and Gemini: (1) from the second message of a thread the panel said "All clear" and the message never sent; (2) after a risky attachment was removed, a new safe message still showed the file's risk and would not send.
+Root causes found in `extension/src/content.js`: (1) one synthetic click on a button chosen 50 ms earlier, with no check that the page took the message (a host that re-draws its composer, or ignores a click, leaves the user stuck). Reproduced in headless Chrome and in tests, but the exact trigger on the live sites is **unproven** (no logins here); the fix is defensive. (2) the file cache only forgets a file when its chip's name was seen in the composer and is gone; names carried only in an `aria-label`/`title`, or a wrong composer chosen (first selector match instead of the one holding the input), left the file cached forever.
+Fixes: Send is looked up again at click time, the draft is checked afterwards, and it retries (click, click, form submit, Enter) before telling the user; bypass flag expires; a stuck or dead-extension check can no longer swallow sends; Stop buttons are never clicked; composer root is the one holding the input; attachment names are read from labels too; the risky-file panel has "I already removed this file". New tests: `extension/tests/send-resilience.test.js`, `file-removal-escape.test.js` (285 tests pass). Packages are built by `pnpm run build` in `artifacts/api-server` (`dist/eraseai-firewall-store-1.6.1.zip` is the store upload). Chrome Web Store review time is unknown: do not promise it for a date; for demos load the unpacked build (manual zip) in `chrome://extensions` with Developer mode.
 
 ## 10. Standing rules (do not break)
 
