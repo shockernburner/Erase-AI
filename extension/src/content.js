@@ -332,7 +332,17 @@
   // Everything in the composer that can carry an attachment's name: its text, and the labels hosts put
   // on thumbnails and file tiles that show no text.
   function composerNameText(root) {
+    // Text nodes are joined with line breaks so one element's text never runs into the next one's
+    // ("refunds.csv" + "Send" must not read "refunds.csvSend"); the plain text is kept as well.
     let out = root.textContent || "";
+    try {
+      const walker = document.createTreeWalker(root, 4 /* NodeFilter.SHOW_TEXT */);
+      let spaced = "";
+      for (let n = walker.nextNode(), c = 0; n && c < 2000; n = walker.nextNode(), c += 1) spaced += "\n" + n.nodeValue;
+      out += "\n" + spaced;
+    } catch {
+      // best effort
+    }
     try {
       const nodes = root.querySelectorAll("[aria-label], [title], [alt], [data-filename], [data-file-name]");
       const limit = Math.min(nodes.length, 400);
@@ -349,6 +359,30 @@
     return out;
   }
 
+  // True when `text` shows the file's name as a whole name. A longer name that merely starts with it
+  // ("report-clean.csv" for "report.csv", the name "Download clean copy" gives) is a different file.
+  // Hosts also shorten long names ("customer-export-CONFID…"): the first 24 characters count only
+  // when an ellipsis follows them.
+  function chipShowsName(text, name) {
+    const stem = name.replace(/\.[^.]+$/, "");
+    const isNameChar = (c) => /[A-Za-z0-9_\-]/.test(c);
+    const whole = (needle) => {
+      if (!needle) return false;
+      let from = 0;
+      for (;;) {
+        const i = text.indexOf(needle, from);
+        if (i === -1) return false;
+        const before = i > 0 ? text[i - 1] : "";
+        const after = text[i + needle.length] || "";
+        if (!(before && isNameChar(before)) && !(after && isNameChar(after))) return true;
+        from = i + 1;
+      }
+    };
+    if (whole(name) || (stem.length >= 8 && whole(stem))) return true;
+    const head = stem.slice(0, 24);
+    return stem.length > 24 && head.length >= 8 && (text.includes(head + "\u2026") || text.includes(head + "..."));
+  }
+
   // The host app owns attachment state; we only hold File objects because
   // their bytes are unreachable from the DOM. So eviction runs on positive
   // evidence: a file is dropped only once we have seen its chip in the
@@ -361,9 +395,7 @@
     const rendered = composerNameText(root);
     for (const [key, entry] of fileCache) {
       const name = entry.file.name;
-      const stem = name.replace(/\.[^.]+$/, "").slice(0, 24);
-      const matchesChip = rendered.includes(name)
-        || (stem.length >= 8 && rendered.includes(stem));
+      const matchesChip = chipShowsName(rendered, name);
       if (matchesChip) entry.seen = true;
       else if (entry.seen) fileCache.delete(key);
     }
@@ -1122,6 +1154,8 @@
   // The user's way out when the page never shows the file's name and so we cannot see it was removed.
   function renderForgetFileButton(piece) {
     if (typeof piece.source !== "string" || !piece.source.startsWith("file:")) return "";
+    // Only a file that holds the message back needs a way out; a safe one blocks nothing.
+    if (piece.level === "safe") return "";
     const name = piece.source.slice(5);
     if (!cachedFileNamed(name)) return "";
     return `<button type="button" class="eraseai-forget-file" data-forget-file="${escapeHtml(name)}">I already removed this file</button>`;

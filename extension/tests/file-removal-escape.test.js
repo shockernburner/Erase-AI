@@ -231,6 +231,59 @@ describe("removing a risky attachment lets the next safe message through", () =>
     expect(sent).toEqual([SAFE_PROMPT]);
   });
 
+  it("forgets the removed original while its '-clean' copy is still attached (Gemini chips)", async () => {
+    // Field report: download the clean copy, remove the original, attach the copy. The copy's chip
+    // contains the original's name, so a prefix match kept the removed original alive.
+    const stub = makeChrome();
+    load(stub);
+    await flush();
+    const { chipRow, textarea, fileInput } = buildComposer();
+    await flush();
+
+    const geminiChip = (base) => {
+      const b = document.createElement("button");
+      b.setAttribute("aria-label", base + ".csv");
+      b.innerHTML = '<div class="extension-label"> CSV </div><div class="filename-label">' + base + "</div>";
+      return b;
+    };
+    const dirtyChip = geminiChip("customer-export-CONFIDENTIAL");
+    chipRow.appendChild(dirtyChip);
+    attachFile(fileInput, new File([SECRET_TEXT], "customer-export-CONFIDENTIAL.csv", { type: "text/csv" }));
+    await wait(800);
+    pressEnter(textarea);
+    await flush(20);
+    document.getElementById("eraseai-cancel").click();
+
+    dirtyChip.remove(); // the user removes the original ...
+    chipRow.appendChild(geminiChip("customer-export-CONFIDENTIAL-clean")); // ... and attaches the clean copy
+    attachFile(fileInput, new File(["Name: [REDACTED]"], "customer-export-CONFIDENTIAL-clean.csv", { type: "text/csv" }));
+    await wait(800);
+
+    const before = stub.__analyzed.length;
+    pressEnter(textarea);
+    await flush(20);
+    const after = stub.__analyzed.slice(before);
+    expect(after.some((t) => t.includes("AKIAIOSFODNN7EXAMPLE"))).toBe(false);
+    expect(document.querySelector(".eraseai-forget-file")).toBeNull();
+  });
+
+  it("offers 'I already removed this file' only on files that block the message, not on safe ones", async () => {
+    const stub = makeChrome();
+    load(stub);
+    await flush();
+    const { textarea, fileInput } = buildComposer();
+    await flush();
+    attachFile(fileInput, secretFile());
+    await flush();
+    attachFile(fileInput, new File(["Name: [REDACTED]"], "notes-clean.csv", { type: "text/csv" }));
+    await flush();
+    pressEnter(textarea);
+    await flush(20);
+    const buttons = document.querySelectorAll(".eraseai-forget-file");
+    expect(buttons.length).toBe(1);
+    expect(buttons[0].getAttribute("data-forget-file")).toBe("refunds.csv");
+  });
+
   it("does not offer the way out for a file that was never listed", async () => {
     const stub = makeChrome();
     load(stub);
