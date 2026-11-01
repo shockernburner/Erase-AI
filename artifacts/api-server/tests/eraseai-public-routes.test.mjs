@@ -19,102 +19,33 @@ const APP_TSX = read("artifacts/eraseai/src/App.tsx");
 const PUBLIC_LANDING_TSX = read("artifacts/eraseai/src/pages/PublicLanding.tsx");
 
 describe("App.tsx — explicit Wouter deep-link routes", () => {
-  // The contract: each path renders <PreviewRoute mode="..."/> with the
-  // mode below. We assert the literal `<Route path="X">` is followed
-  // (within a small window) by the right PreviewRoute mode.
+  // Each plan path renders <AuthGate previewPlan="..."/>: signed-out visitors see the landing page on
+  // that plan, signed-in users get the app. (This replaced the old PreviewRoute/PreviewPage screens.)
   const expected = [
-    { path: "/personal", mode: "personal" },
-    { path: "/developer", mode: "developer" },
-    { path: "/dev", mode: "developer" },
-    { path: "/dataset-sanitizer", mode: "dataset-sanitizer" },
-    { path: "/enterprise", mode: "enterprise" },
-    { path: "/business", mode: "enterprise" },
+    { path: "/personal", plan: "personal" },
+    { path: "/developer", plan: "pro" },
+    { path: "/dev", plan: "pro" },
+    { path: "/dataset-sanitizer", plan: "business" },
+    { path: "/enterprise", plan: "enterprise" },
+    { path: "/business", plan: "business" },
   ];
 
-  for (const { path: routePath, mode } of expected) {
-    test(`<Route path="${routePath}"> renders <PreviewRoute mode="${mode}" />`, () => {
+  for (const { path: routePath, plan } of expected) {
+    test(`<Route path="${routePath}"> renders <AuthGate previewPlan="${plan}" />`, () => {
       const re = new RegExp(
-        `<Route\\s+path="${routePath.replace(/\//g, "\\/")}">[\\s\\S]{0,200}?<PreviewRoute\\s+mode="${mode}"\\s*/?\\s*>`,
+        `<Route\\s+path="${routePath.replace(/\//g, "\\/")}">[\\s\\S]{0,120}?<AuthGate\\s+previewPlan="${plan}"\\s*/?\\s*>`,
       );
-      assert.match(
-        APP_TSX,
-        re,
-        `Expected App.tsx to wire ${routePath} → PreviewRoute mode="${mode}"`,
-      );
+      assert.match(APP_TSX, re, `Expected App.tsx to wire ${routePath} to AuthGate previewPlan="${plan}"`);
     });
   }
 
-  test("PreviewRoute helper returns a <PreviewPage /> with onBack pushing /", () => {
-    assert.match(APP_TSX, /function PreviewRoute\(\{ mode \}/);
-    assert.match(
-      APP_TSX,
-      /window\.history\.pushState\([^)]*,\s*"",\s*"\/"\)/,
-      "PreviewRoute should pushState back to '/' so the URL stays clean",
-    );
-  });
-
   test("All 6 deep-link routes are declared before the AuthGate catch-all", () => {
-    // Routes must be declared before the AuthGate catch-all.
-    //
-    //
-    const authGateIdx = APP_TSX.indexOf("<AuthGate />");
-    assert.ok(authGateIdx > 0, "expected to find <AuthGate /> in App.tsx");
-    for (const { path: routePath } of [
-      { path: "/personal" },
-      { path: "/developer" },
-      { path: "/dev" },
-      { path: "/dataset-sanitizer" },
-      { path: "/enterprise" },
-      { path: "/business" },
-    ]) {
+    const catchAll = APP_TSX.indexOf("<AuthGate />");
+    assert.ok(catchAll > 0, "expected to find <AuthGate /> in App.tsx");
+    for (const { path: routePath } of expected) {
       const idx = APP_TSX.indexOf(`<Route path="${routePath}">`);
-      assert.ok(
-        idx > 0 && idx < authGateIdx,
-        `<Route path="${routePath}"> must appear before <AuthGate />`,
-      );
+      assert.ok(idx > 0 && idx < catchAll, `<Route path="${routePath}"> must appear before <AuthGate />`);
     }
-  });
-});
-
-describe("App.tsx — Enterprise/Business card → Dataset Sanitizer", () => {
-  test('PreviewPage renders <DatasetSanitizer previewMode /> for mode="enterprise"', () => {
-    assert.match(
-      APP_TSX,
-      /mode === "enterprise"[\s\S]{0,200}DatasetSanitizer/,
-      "Enterprise mode must render DatasetSanitizer (not AnalyticsDashboard)",
-    );
-    assert.match(
-      APP_TSX,
-      /mode === "dataset-sanitizer"[\s\S]{0,200}DatasetSanitizer/,
-      "dataset-sanitizer mode must render DatasetSanitizer",
-    );
-  });
-
-  test("PreviewPage no longer renders AnalyticsDashboard in any preview mode", () => {
-    const previewPageStart = APP_TSX.indexOf("function PreviewPage(");
-    assert.ok(previewPageStart > 0, "expected PreviewPage component to exist");
-    const nextFn = APP_TSX.indexOf("\nfunction ", previewPageStart + 1);
-    const previewBody = APP_TSX.slice(
-      previewPageStart,
-      nextFn === -1 ? APP_TSX.length : nextFn,
-    );
-    assert.ok(
-      !previewBody.includes("<AnalyticsDashboard"),
-      "AnalyticsDashboard must not be rendered inside PreviewPage anymore",
-    );
-  });
-
-  test("PreviewMode type accepts 'enterprise' and 'dataset-sanitizer'", () => {
-    assert.match(
-      APP_TSX,
-      /type PreviewMode = [^;]*"enterprise"/,
-      "PreviewMode type must list 'enterprise'",
-    );
-    assert.match(
-      APP_TSX,
-      /type PreviewMode = [^;]*"dataset-sanitizer"/,
-      "PreviewMode type must list 'dataset-sanitizer'",
-    );
   });
 });
 
