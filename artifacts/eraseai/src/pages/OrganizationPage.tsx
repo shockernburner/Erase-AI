@@ -4,6 +4,8 @@ import {
   CreditCard,
   Chrome,
   Smartphone,
+  ScrollText,
+  Download,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
 import { ORG_PLAN_NAMES, ORG_ROLE_NAMES, inviteUrl, orgApi } from "@/lib/orgInvite";
@@ -266,6 +268,239 @@ function ActivityPanel() {
   );
 }
 
+interface AuditEvent {
+  id: number;
+  at: string | null;
+  userId: string;
+  email: string;
+  name: string | null;
+  level: string;
+  action: string;
+  actionLabel: string;
+  riskScore: number | null;
+  categories: string[];
+}
+
+const levelTone: Record<string, string> = {
+  safe: "text-green-400",
+  caution: "text-yellow-400",
+  danger: "text-red-400",
+};
+
+// Every firewall decision by a member, newest first. Only the decision is stored (level, what the person
+// did, a score and the kinds of data found); never what anyone typed or attached.
+function AuditPanel() {
+  const [days, setDays] = useState(30);
+  const [level, setLevel] = useState("");
+  const [action, setAction] = useState("");
+  const [events, setEvents] = useState<AuditEvent[] | null>(null);
+  const [truncated, setTruncated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const query = `days=${days}${level ? `&level=${level}` : ""}${action ? `&action=${action}` : ""}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    setEvents(null);
+    setError(null);
+    orgApi<{ events: AuditEvent[]; truncated: boolean }>("GET", `/org/audit?${query}&limit=100`)
+      .then((d) => {
+        if (cancelled) return;
+        setEvents(d.events);
+        setTruncated(d.truncated);
+      })
+      .catch((e: Error) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
+  }, [query]);
+
+  const selectCls = "rounded-lg border border-border bg-input/50 px-2 py-1 text-xs text-foreground";
+  return (
+    <section className={panel} data-testid="audit-panel">
+      <div className="flex flex-wrap items-center gap-2 mb-1">
+        <ScrollText className="w-5 h-5 text-primary" />
+        <h2 className="text-lg font-semibold text-foreground">Audit log</h2>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <select value={days} onChange={(e) => setDays(Number(e.target.value))} className={selectCls} aria-label="Time range">
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+            <option value={365}>Last year</option>
+          </select>
+          <select value={level} onChange={(e) => setLevel(e.target.value)} className={selectCls} aria-label="Risk level">
+            <option value="">All levels</option>
+            <option value="danger">Danger</option>
+            <option value="caution">Caution</option>
+            <option value="safe">Safe</option>
+          </select>
+          <select value={action} onChange={(e) => setAction(e.target.value)} className={selectCls} aria-label="What happened">
+            <option value="">Everything</option>
+            <option value="cancel">Cancelled</option>
+            <option value="sanitize">Sanitized</option>
+            <option value="send-anyway">Sent anyway</option>
+            <option value="auto-send">Sent (all clear)</option>
+          </select>
+          <a
+            href={`/api/org/audit.csv?${query}`}
+            download
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-muted/30"
+          >
+            <Download className="w-3.5 h-3.5" /> Download CSV
+          </a>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">
+        One row per check, from the Chrome extension and the Android app, since each person joined. EraseAI never stores what anyone typed or attached; this log shows the decision only.
+      </p>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {!events && !error && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
+      {events && events.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          Nothing here yet. Each person's checks appear as soon as they use EraseAI signed in with their invited email.
+        </p>
+      )}
+      {events && events.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-border/30 text-left text-muted-foreground/70">
+                <th className="pb-2 font-medium">Time</th>
+                <th className="pb-2 pl-4 font-medium">Person</th>
+                <th className="pb-2 pl-4 font-medium">Level</th>
+                <th className="pb-2 pl-4 font-medium">What happened</th>
+                <th className="pb-2 pl-4 font-medium">Found</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((e) => (
+                <tr key={e.id} className="border-b border-border/10">
+                  <td className="py-2 text-xs text-muted-foreground whitespace-nowrap">{e.at ? new Date(e.at).toLocaleString() : "—"}</td>
+                  <td className="py-2 pl-4 text-foreground">{e.name || e.email}</td>
+                  <td className={`py-2 pl-4 capitalize ${levelTone[e.level] ?? ""}`}>{e.level}</td>
+                  <td className="py-2 pl-4">{e.actionLabel}</td>
+                  <td className="py-2 pl-4 text-xs text-muted-foreground">{e.categories.length ? e.categories.join(", ") : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {truncated && <p className="mt-3 text-xs text-muted-foreground">Showing the latest 100. Download the CSV for the full list.</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface BulkResult {
+  results: Array<{ email: string; ok: boolean; invitePath?: string; error?: string }>;
+  invalid: string[];
+  skipped: string[];
+  duplicates: number;
+}
+
+// Invite a whole team in one go: paste the emails, get a link for each person.
+function BulkInvite({ disabled, onDone }: { disabled: boolean; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [out, setOut] = useState<BulkResult | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setOut(null);
+    try {
+      const r = await orgApi<BulkResult>("POST", "/org/invites/bulk", { emails: text });
+      setOut(r);
+      setText("");
+      onDone();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    setBusy(false);
+  };
+
+  const list = out
+    ? out.results.filter((r) => r.ok && r.invitePath).map((r) => `${r.email}\t${inviteUrl(r.invitePath!)}`).join("\n")
+    : "";
+
+  return (
+    <div className="mt-4 border-t border-border/20 pt-4">
+      {!open ? (
+        <button type="button" className="text-sm font-medium text-primary hover:underline" onClick={() => setOpen(true)}>
+          Invite several people at once
+        </button>
+      ) : (
+        <form onSubmit={submit} className="space-y-2">
+          <label className="block text-sm font-medium text-foreground" htmlFor="bulk-emails">
+            Everyone's email addresses
+          </label>
+          <textarea
+            id="bulk-emails"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={5}
+            required
+            placeholder={"ana@company.com, bo@company.com\nchen@company.com"}
+            className="w-full rounded-xl border border-border bg-input/50 px-3 py-2 text-sm text-foreground"
+          />
+          <p className="text-xs text-muted-foreground">
+            Paste a column from a spreadsheet, or a list separated by commas or new lines. Each person gets an invite link and takes a seat until they join or you cancel the invite.
+          </p>
+          <div className="flex gap-2">
+            <Button type="submit" variant="primary" isLoading={busy} disabled={disabled || !text.trim()}>
+              Create invite links
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => { setOpen(false); setOut(null); setError(null); }}>
+              Close
+            </Button>
+          </div>
+        </form>
+      )}
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {out && (
+        <div className="mt-3 space-y-2 text-sm" data-testid="bulk-result">
+          <p className="text-foreground">
+            {out.results.filter((r) => r.ok).length} invited
+            {out.results.some((r) => !r.ok) && `, ${out.results.filter((r) => !r.ok).length} could not be invited`}.
+          </p>
+          {out.results.some((r) => r.ok) && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard.writeText(list);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? "Copied" : "Copy all links (email and link per line)"}
+            </Button>
+          )}
+          <ul className="divide-y divide-border/20">
+            {out.results.map((r) => (
+              <li key={r.email} className="py-1.5 flex flex-wrap items-center gap-2">
+                <span className="text-foreground">{r.email}</span>
+                {r.ok ? (
+                  <span className="text-xs text-green-400">link ready</span>
+                ) : (
+                  <span className="text-xs text-yellow-400">{r.error}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {out.invalid.length > 0 && <p className="text-xs text-yellow-400">Not an email address: {out.invalid.join(", ")}</p>}
+          {out.skipped.length > 0 && <p className="text-xs text-yellow-400">Over the limit of 100 at a time, not invited: {out.skipped.join(", ")}</p>}
+          {out.duplicates > 0 && <p className="text-xs text-muted-foreground">{out.duplicates} repeated address(es) ignored.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OrganizationPage({ onContact }: { onContact: () => void }) {
   const [data, setData] = useState<OrgResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -456,6 +691,7 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
               <button className="underline" onClick={onContact}>contact us</button>).
             </p>
           )}
+          <BulkInvite disabled={seatsFull || org.status !== "active"} onDone={load} />
         </section>
       )}
 
@@ -533,6 +769,7 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
       {me.canManage && <ManagedRolloutPanel />}
 
       {me.canManage && <ActivityPanel />}
+      {me.canManage && <AuditPanel />}
     </div>
   );
 }

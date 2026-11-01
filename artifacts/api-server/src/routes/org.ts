@@ -19,6 +19,9 @@ import {
   MAX_ORG_NAME_LENGTH,
   type ActivityRow,
 } from "../lib/org/org-source.mjs";
+import { auditCsv, parseAuditQuery, shapeAuditEvents } from "../lib/org/audit-source.mjs";
+import { parseEmailList } from "../lib/org/bulk-invite-source.mjs";
+import { decideAdminOwner } from "../lib/org/admin-create-source.mjs";
 
 // Organizations (Team / Enterprise).
 //
@@ -410,6 +413,115 @@ router.get("/org/activity", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// Audit log: one row per firewall decision by a member (no message text is stored or returned)
+// ---------------------------------------------------------------------------
+
+// The CSV can go further back in rows than the on-screen table.
+const AUDIT_CSV_LIMIT = 5000;
+
+async function loadAuditEvents(orgId: string, q: ReturnType<typeof parseAuditQuery>, limit: number) {
+  // Same scope as /org/activity: an active member's events from when they joined, never earlier.
+  const levelFilter = q.level ? sql`AND fo.level = ${q.level}` : sql``;
+  const actionFilter = q.action ? sql`AND fo.action = ${q.action}` : sql``;
+  const userFilter = q.userId ? sql`AND fo.user_id = ${q.userId}` : sql``;
+  const result = await db.execute(sql`
+    SELECT fo.id, fo.user_id AS "userId", fo.level, fo.action, fo.risk_score AS "riskScore",
+           fo.categories, fo.created_at AS "createdAt"
+    FROM firewall_outcomes fo
+    JOIN organization_members m
+      ON m.user_id = fo.user_id AND m.org_id = ${orgId} AND m.status = 'active'
+    WHERE fo.created_at >= GREATEST(m.joined_at, NOW() - make_interval(days => ${q.days}))
+      ${levelFilter} ${actionFilter} ${userFilter}
+    ORDER BY fo.created_at DESC, fo.id DESC
+    LIMIT ${limit}
+  `);
+  const members = await listMembers(orgId, false);
+  const byUser = new Map<string, { email: string; name: string | null }>();
+  for (const m of members) if (m.userId) byUser.set(m.userId, { email: m.email, name: m.name });
+  return shapeAuditEvents(result.rows, byUser);
+}
+
+router.get("/org/audit", async (req: Request, res: Response) => {
+  try {
+    const membership = await requireMembership(req, res);
+    if (!membership) return;
+    if (!canManage(membership.role)) {
+      res.status(403).json({ error: "Only organization owners and admins can see the audit log" });
+      return;
+    }
+    const q = parseAuditQuery(req.query);
+    const events = await loadAuditEvents(membership.orgId, q, q.limit);
+    res.json({ days: q.days, limit: q.limit, events, truncated: events.length >= q.limit });
+  } catch (err) {
+    console.error("Org audit error:", err);
+    res.status(500).json({ error: "Failed to load the audit log" });
+  }
+});
+
+router.get("/org/audit.csv", async (req: Request, res: Response) => {
+  try {
+    const membership = await requireMembership(req, res);
+    if (!membership) return;
+    if (!canManage(membership.role)) {
+      res.status(403).json({ error: "Only organization owners and admins can export the audit log" });
+      return;
+    }
+    const q = parseAuditQuery(req.query);
+    const events = await loadAuditEvents(membership.orgId, q, AUDIT_CSV_LIMIT);
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="eraseai-audit-${stamp}.csv"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.send(auditCsv(events));
+  } catch (err) {
+    console.error("Org audit export error:", err);
+    res.status(500).json({ error: "Failed to export the audit log" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Invite a whole team at once: the same createInvite path as a single invite, once per address
+// ---------------------------------------------------------------------------
+
+router.post("/org/invites/bulk", async (req: Request, res: Response) => {
+  try {
+    const membership = await requireMembership(req, res);
+    if (!membership) return;
+    if (membership.orgStatus !== "active") {
+      res.status(403).json({ error: "This organization is suspended" });
+      return;
+    }
+    const { emails, role } = (req.body ?? {}) as { emails?: unknown; role?: unknown };
+    const parsed = parseEmailList(emails);
+    if (parsed.valid.length === 0) {
+      res.status(400).json({ error: "No valid email addresses found", invalid: parsed.invalid });
+      return;
+    }
+    const results: Array<{ email: string; ok: boolean; invitePath?: string; error?: string }> = [];
+    for (const email of parsed.valid) {
+      const outcome = await createInvite({
+        orgId: membership.orgId,
+        actorRole: membership.role,
+        actorUserId: req.user!.id,
+        email,
+        role,
+      });
+      if (outcome.ok) results.push({ email, ok: true, invitePath: invitePath(outcome.token) });
+      else results.push({ email, ok: false, error: outcome.error });
+    }
+    res.status(201).json({
+      results,
+      invalid: parsed.invalid,
+      skipped: parsed.skipped,
+      duplicates: parsed.duplicates,
+    });
+  } catch (err) {
+    console.error("Bulk org invite error:", err);
+    res.status(500).json({ error: "Failed to create invites" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Invites: preview (public) and accept
 // ---------------------------------------------------------------------------
 
@@ -534,43 +646,67 @@ router.get("/admin/orgs", async (req: Request, res: Response) => {
   }
 });
 
-// Creates an organization and an owner invite for `ownerEmail`.
+// Creates an organization. The owner is either invited by email, or (claimOwner: true) the admin
+// themselves, active at once, so the organization dashboard can be looked at straight away. Either
+// way nothing is charged: an organization made here is not bought, and its dashboard says so.
 router.post("/admin/orgs", async (req: Request, res: Response) => {
   try {
     if (!requirePlatformAdmin(req, res)) return;
-    const body = (req.body ?? {}) as { name?: unknown; plan?: unknown; seatLimit?: unknown; ownerEmail?: unknown };
+    const body = (req.body ?? {}) as { name?: unknown; plan?: unknown; seatLimit?: unknown; ownerEmail?: unknown; claimOwner?: unknown };
     const input = validateOrgInput({ name: body.name, plan: body.plan, seatLimit: body.seatLimit });
     if (!input.ok) {
       res.status(400).json({ error: input.error });
       return;
     }
-    const ownerEmail = normalizeEmail(body.ownerEmail);
-    if (!ownerEmail) {
-      res.status(400).json({ error: "A valid owner email is required" });
+    const activeElsewhere = body.claimOwner === true ? Boolean(await getActiveMembership(req.user!.id)) : false;
+    const owner = decideAdminOwner({
+      claimOwner: body.claimOwner,
+      ownerEmail: body.ownerEmail,
+      admin: { id: req.user!.id, email: req.user!.email },
+      activeElsewhere,
+    });
+    if (!owner.ok) {
+      res.status(owner.status).json({ error: owner.error });
       return;
     }
-    const { token, hash } = generateInviteToken();
+    const invite = owner.mode === "invite" ? generateInviteToken() : null;
     const org = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(organizationsTable)
         .values({ ...input.value, createdBy: req.user!.id })
         .returning();
-      await tx.insert(organizationMembersTable).values({
-        orgId: created.id,
-        email: ownerEmail,
-        role: "owner",
-        status: "invited",
-        inviteTokenHash: hash,
-        invitedBy: req.user!.id,
-      });
+      await tx.insert(organizationMembersTable).values(
+        owner.mode === "claim"
+          ? {
+              orgId: created.id,
+              userId: owner.userId,
+              email: owner.email,
+              role: "owner" as const,
+              status: "active" as const,
+              invitedBy: req.user!.id,
+              joinedAt: new Date(),
+            }
+          : {
+              orgId: created.id,
+              email: owner.email,
+              role: "owner" as const,
+              status: "invited" as const,
+              inviteTokenHash: invite!.hash,
+              invitedBy: req.user!.id,
+            },
+      );
       return created;
     });
     res.status(201).json({
       organization: { ...org, createdAt: org.createdAt.toISOString(), updatedAt: org.updatedAt.toISOString() },
-      owner: { email: ownerEmail, status: "invited" },
-      invitePath: invitePath(token),
+      owner: { email: owner.email, status: owner.status },
+      ...(invite ? { invitePath: invitePath(invite.token) } : {}),
     });
   } catch (err) {
+    if (isUniqueViolation(err)) {
+      res.status(409).json({ error: "You're already in an organization. Leave it first, or create this one with another owner's email." });
+      return;
+    }
     console.error("Admin create org error:", err);
     res.status(500).json({ error: "Failed to create organization" });
   }
