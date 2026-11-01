@@ -654,7 +654,7 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
         <section className={panel}>
           <div className="flex items-center gap-2 mb-1">
             <UserPlus className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Invite someone</h2>
+            <h2 className="text-lg font-semibold text-foreground">Add people</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
             Enter one person's email and you get a link to send them (email, chat). They open it, sign in with that email,
@@ -764,12 +764,20 @@ export default function OrganizationPage({ onContact }: { onContact: () => void 
         </ul>
       </section>
 
-      {me.canManage && <BillingPanel onChanged={load} onContact={onContact} />}
-
-      {me.canManage && <ManagedRolloutPanel />}
-
-      {me.canManage && <ActivityPanel />}
       {me.canManage && <AuditPanel />}
+
+      {me.canManage && (
+        <details className="group" data-testid="org-more">
+          <summary className="cursor-pointer select-none rounded-xl border border-border/50 bg-card/50 px-4 py-3 text-sm font-semibold text-foreground">
+            More: billing and seats, activity by person, install for the whole company
+          </summary>
+          <div className="mt-4 space-y-6">
+            <BillingPanel onChanged={load} onContact={onContact} />
+            <ActivityPanel />
+            <ManagedRolloutPanel />
+          </div>
+        </details>
+      )}
     </div>
   );
 }
