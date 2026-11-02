@@ -6,12 +6,12 @@
   </head>
   <body>
     <script src="limits-config.js"></script>
-    <script src="../vendor/pdfjs/pdf.min.js"></script>
-    <script src="../vendor/mammoth/mammoth.browser.min.js"></script>
-    <script src="../vendor/tesseract/tesseract.min.js"></script>
+    <script src="../vendor/pdfjs/pdf.js"></script>
+    <script src="../vendor/mammoth/mammoth.browser.js"></script>
+    <script src="../vendor/tesseract/tesseract.dev.js"></script>
     <script>
       if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs/pdf.worker.min.js";
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs/pdf.worker.js";
       }
       // Where tesseract.js fetches its worker, wasm core, and language data.
       // Paths are relative to this sandbox page's URL
@@ -20,7 +20,7 @@
       // holding eng.traineddata.gz; `gzip: true` tells the worker the model is
       // gzip-compressed. The vendored model is the LSTM "fast" English data.
       window.EraseAITesseractConfig = {
-        workerPath: "../vendor/tesseract/worker.min.js",
+        workerPath: "../vendor/tesseract/worker.dev.js",
         corePath: "../vendor/tesseract/",
         langPath: "../vendor/tesseract/",
         lang: "eng",
