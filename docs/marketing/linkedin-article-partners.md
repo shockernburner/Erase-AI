@@ -25,40 +25,40 @@ Helping clients adopt AI? Ship the seatbelt with it.
 ```
 Every AI project I hear about has the same quiet gap.
 
-The pilot works. The client's team starts using ChatGPT, Claude or Gemini every day. And somewhere between the kickoff and the handover, someone pastes a customer list, a contract or a production key into a chat box. Nobody was careless. They were fast.
+The pilot works. Within weeks the client's team is using ChatGPT, Claude or Gemini every day, and somewhere between kickoff and handover, someone pastes a customer list, a contract or a production key into a chat box. Nobody was careless. They were fast.
 
 I spent 17 years in security: Air Force first, then as an aerospace engineer where protecting sensitive information was the core of the job. Then I started a software company and wrote the code myself. I watched people on teams paste company information into public AI tools. One morning, as a father, I realised I had done the same with information about my own child. That is why I built EraseAI Firewall.
 
 WHAT IT IS
 
-EraseAI Firewall checks what you are about to send to ChatGPT, Claude or Gemini, and holds the message if it finds personal data, card numbers, passwords or API keys. You choose: Cancel, Sanitize & Send, or Send Anyway.
+EraseAI Firewall checks what you are about to send to ChatGPT, Claude or Gemini. If it finds personal data, card numbers, passwords or API keys, it holds the message and you choose: Cancel, Sanitize & Send, or Send Anyway.
 
-It is rules-based: patterns plus checks such as the card-number checksum. That makes it fast and predictable, and it also means it can miss things and flag harmless text. People stay in control. It is not a replacement for policy or training. It is the control that applies them at the moment of sending.
+The checks are rules, not guesswork: patterns plus validators such as the card-number checksum. That makes them fast and predictable, but they can miss things and flag harmless text, which is why you stay in control. They don't replace policy or training. They are what makes policy and training bite at the moment of sending.
 
-It runs in Chrome on the computer, and on Android inside the AI apps you choose. It is not a VPN.
+It runs in Chrome, and on Android inside the AI apps you choose. Not a VPN.
 
 WHY I AM WRITING TO YOU
 
-If you implement AI for clients, you already own the hard conversation: "yes, this will save you time, and here is how we keep your data safe." In my experience that answer is usually a policy document, not something built into what you deliver.
+If you implement AI for clients, you own a hard conversation: "Yes, this will save you time, and here is how we keep your data safe." In my experience, the second half of that answer is usually a policy document. Not something built into what you deliver.
 
-I would like to change that with a small number of partners, and I think everyone in the chain wins:
+I would like to change that with a few partners, and I think all three sides come out ahead.
 
-- For you, the implementer: a concrete answer to the client's data question that you can show, not describe. It sits in your delivery instead of in a slide, and it gives you a reason to stay in the account after go-live.
-- For your client: staff get the AI tools they want, and the company gets a check at the moment of sending, with a record of decisions (level, action, category, never the text of what anyone typed). Admins can invite people, or have IT roll it out through Google Admin or Intune.
-- For EraseAI: real deployments, and honest feedback from people who put it in front of real teams.
+- You, the implementer, get an answer you can show rather than describe. It sits inside the delivery instead of on a slide, and it gives you a reason to stay in the account after go-live.
+- Your client's staff keep the AI tools they like. The company gets a check at the moment of sending and a record of decisions (level, action, category, never the text anyone typed). Admins invite people one by one, or IT rolls it out through Google Admin or Intune.
+- EraseAI gets real deployments, and honest feedback from people who put it in front of real teams.
 
 TWO WAYS TO USE IT
 
-1. Staff using public AI tools. The Chrome extension checks every message on the device, for free, with no account. Paid plans add one-click Sanitize & Send and scanning of attachments. Teams plans add invite links and an admin dashboard with an audit log.
-2. AI you build for the client. Our Developer API scans text going into and out of your own application, so the check is part of what you ship. Documentation is public.
+1. Staff on public AI tools. The Chrome extension checks every message on the device, free, no account. Paid plans add one-click Sanitize & Send and attachment scanning; Teams plans add invite links and an admin dashboard with an audit log.
+2. AI you build for the client. Our Developer API scans the text going into and out of your own application, so the check ships with the product. The documentation is public.
 
 WHAT I AM ASKING
 
-Try it. I will set you up with a free account and send a short technical brief. If it holds up, I would like to run a free 30-day pilot with one of your client teams, up to 10 people. If it fits after that, we agree a partner arrangement together; I would rather design it with you than hand you a template. (Decide: add real terms here if you have them.)
+Try it. I will set you up with a free account and send a short technical brief. If it holds up, let's run a free 30-day pilot with one of your client teams, up to 10 people. After that we agree a partner arrangement together, because I would rather design it with you than hand you a template. (Decide: add real terms here if you have them.)
 
-I also want your honest review. If it flagged something it should not have, or missed something it should have caught, tell me. That is the most useful thing a partner can do.
+And tell me where it is wrong. A flag it should not have raised, a leak it should have caught: that is the most useful thing a partner can send me.
 
-If you help companies adopt AI and want the data question answered inside the delivery, message me, or start here:
+If you help companies adopt AI and want the data question answered inside the delivery, message me or start here:
 https://eraseai.ai/ai-firewall?utm_source=linkedin&utm_medium=article&utm_campaign=partners
 Developer API: https://eraseai.ai/developer-api?utm_source=linkedin&utm_medium=article&utm_campaign=partners
 
@@ -69,11 +69,11 @@ Vantward Solutions Pte. Ltd., Singapore
 ## Short post that shares the article (about 600 characters)
 
 ```
-If you help companies adopt AI, there is one question every client eventually asks: "how do we stop our people pasting sensitive data into it?"
+Sooner or later, every client of an AI project asks the same thing: "How do we stop our people pasting sensitive data into it?"
 
-I wrote down how I think implementers can answer it with something they can show, not just a policy, and what I would like to try with a few partners: a free account, a technical review, and a free 30-day pilot with one client team.
+I wrote up how implementers can answer with something they can show, not just a policy. I would also like to try it with a few partners: a free account, a technical review, then a free 30-day pilot with one client team.
 
-It is rules-based, so it is not perfect, and I say so. Honest reviews welcome.
+The checks are rules, so they are not perfect, and the article says where. Honest reviews welcome.
 
 <article link>
 
@@ -83,7 +83,7 @@ It is rules-based, so it is not perfect, and I say so. Honest reviews welcome.
 ## Connection note for direct outreach (300 characters or fewer)
 
 ```
-Hi <first name>, I build EraseAI, a check that stops customer data and keys being pasted into ChatGPT, Claude and Gemini. I saw <specific project>. Would you review it, and if it fits, run a free pilot with one client? No pitch in DMs unless you ask.
+Hi <first name>, I build EraseAI, a check that stops customer data and keys being pasted into ChatGPT, Claude and Gemini. I saw <specific project>. Would you review it and, if it fits, pilot it with one client? No pitch in DMs unless you ask.
 ```
 
 ## Who to send it to
