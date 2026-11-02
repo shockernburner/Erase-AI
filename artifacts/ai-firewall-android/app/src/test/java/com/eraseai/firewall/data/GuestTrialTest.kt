@@ -19,17 +19,17 @@ class GuestTrialTest {
 
   @Test
   fun `active for the offered days then expired`() {
-    assertEquals(21, GuestTrial.DAYS)
+    val days = GuestTrial.DAYS
     assertTrue(GuestTrial.isActive(start, start))
-    assertEquals(21, GuestTrial.daysLeft(start, start))
-    assertEquals(21, GuestTrial.daysLeft(start, start + hour))
-    assertEquals(14, GuestTrial.daysLeft(start, start + 7 * day))
-    assertEquals(1, GuestTrial.daysLeft(start, start + 21 * day - hour))
-    assertTrue(GuestTrial.isActive(start, start + 21 * day - 1))
+    assertEquals(days, GuestTrial.daysLeft(start, start))
+    assertEquals(days, GuestTrial.daysLeft(start, start + hour))
+    assertEquals(days - 1, GuestTrial.daysLeft(start, start + day))
+    assertEquals(1, GuestTrial.daysLeft(start, start + days * day - hour))
+    assertTrue(GuestTrial.isActive(start, start + days * day - 1))
 
-    assertFalse(GuestTrial.isActive(start, start + 21 * day))
-    assertTrue(GuestTrial.isExpired(start, start + 21 * day))
-    assertEquals(0, GuestTrial.daysLeft(start, start + 30 * day))
+    assertFalse(GuestTrial.isActive(start, start + days * day))
+    assertTrue(GuestTrial.isExpired(start, start + days * day))
+    assertEquals(0, GuestTrial.daysLeft(start, start + (days + 9) * day))
   }
 
   @Test
@@ -44,7 +44,7 @@ class GuestTrialTest {
   fun `clock set backwards keeps the trial active without adding days`() {
     assertTrue(GuestTrial.isActive(start, start - day))
     assertFalse(GuestTrial.isExpired(start, start - day))
-    assertEquals(21, GuestTrial.daysLeft(start, start - day))
+    assertEquals(GuestTrial.DAYS, GuestTrial.daysLeft(start, start - day))
   }
 
   @Test
@@ -55,8 +55,8 @@ class GuestTrialTest {
   }
 
   @Test
-  fun `closed-test build settings are 21 days and no message limit`() {
-    assertEquals(21, GuestTrial.DAYS)
-    assertEquals(0, GuestTrial.SENDS)
+  fun `production build settings are 7 days and 25 messages`() {
+    assertEquals(7, GuestTrial.DAYS)
+    assertEquals(25, GuestTrial.SENDS)
   }
 }

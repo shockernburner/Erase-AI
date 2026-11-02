@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Minus, Plus, Users, X } from "lucide-react";
 import { Button, Input } from "@/components/ui-elements";
+import { track } from "@/lib/analytics";
 
 // Team prices per person; must match api-server team-source.mjs / billing-source.mjs.
 const SEAT_PRICE = { monthly: 9, annual: 96 } as const;
@@ -45,6 +46,7 @@ export function TeamCheckoutDialog({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.url) {
+        track("begin_checkout", { plan: "business", billing_period: period });
         if (data.sessionId) sessionStorage.setItem("eraseai_checkout_intent", data.sessionId);
         window.location.href = data.url;
         return;
@@ -72,7 +74,7 @@ export function TeamCheckoutDialog({
       >
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-bold text-foreground">Buy Team for your organization</h2>
+          <h2 className="text-lg font-bold text-foreground">Buy Teams/Family for your team or family</h2>
           <button type="button" onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
@@ -122,7 +124,7 @@ export function TeamCheckoutDialog({
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             After paying you're the owner. Invite your people from the Organization page; each person installs the Chrome
-            extension and the Android app and signs in with their work email. They pay nothing. Change seats any time.
+            extension and the Android app and signs in with the email you invited. They pay nothing. Change seats any time.
           </p>
         </div>
 

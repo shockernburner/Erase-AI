@@ -1,15 +1,11 @@
 import { Shield, Eye, Lock, Zap, ArrowLeft } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 const BASE = import.meta.env.BASE_URL;
 
 export default function BlogPost_AiFirewall() {
-  useSeoMeta({
-    title: "What is an AI Firewall? | EraseAI Blog",
-    description: "AI firewalls are the next evolution in data security. Learn what they are, how they work, and why every organization needs one to protect AI interactions.",
-    url: "https://eraseai.ai/blog/what-is-ai-firewall",
-  });
+  usePageMeta("/blog/what-is-ai-firewall");
 
   return (
     <SeoPage>

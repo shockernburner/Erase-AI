@@ -1,13 +1,9 @@
 import { Shield, AlertTriangle, Eye, Lock, Zap, CheckCircle2 } from "lucide-react";
-import { SeoPage, CtaButton, RelatedLinks, AddToChromeButton } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { SeoPage, CtaButton, RelatedLinks, AddToChromeButton, GetAndroidLink } from "./SeoLayout";
+import { usePageMeta } from "./useSeoMeta";
 
 export default function AiFirewallPage() {
-  useSeoMeta({
-    title: "AI Firewall — Protect Your Data Before It Reaches AI | EraseAI",
-    description: "An AI firewall sits between you and AI tools, analyzing your input before it is sent. EraseAI detects sensitive data, warns users, and blocks risky prompts.",
-    url: "https://eraseai.ai/ai-firewall",
-  });
+  usePageMeta("/ai-firewall");
 
   return (
     <SeoPage>
@@ -27,6 +23,7 @@ export default function AiFirewallPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-12">
           <AddToChromeButton placement="ai-firewall-hero" />
+          <GetAndroidLink placement="ai-firewall-hero" />
           <span className="text-sm text-muted-foreground">Works in ChatGPT, Claude, Gemini and Replit.</span>
         </div>
 
@@ -84,6 +81,7 @@ export default function AiFirewallPage() {
           <p className="text-muted-foreground mb-6">See what EraseAI detects in your input.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <AddToChromeButton placement="ai-firewall-bottom" />
+            <GetAndroidLink placement="ai-firewall-bottom" />
             <CtaButton text="Try EraseAI Free" />
           </div>
         </div>

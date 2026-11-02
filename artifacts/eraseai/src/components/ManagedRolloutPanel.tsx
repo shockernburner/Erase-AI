@@ -93,7 +93,6 @@ export function ManagedRolloutPanel() {
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 text-left" aria-expanded={open}>
         <MonitorSmartphone className="w-5 h-5 text-primary" />
         <h2 className="text-lg font-semibold text-foreground">Install for the whole company (IT teams)</h2>
-        <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">Coming soon</span>
         <ChevronDown className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -109,10 +108,19 @@ export function ManagedRolloutPanel() {
 
       {open && (
       <div className="mt-4 space-y-4">
-        <p className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400">
-          Update coming soon: the Chrome extension and Android app updates that read this setup are on their way. You can
-          prepare it now; devices start joining once the updates are out.
-        </p>
+        <div className="rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1" data-testid="rollout-note">
+          <p className="text-foreground font-medium">How this works, and how many seats you need</p>
+          <p>
+            Your IT admin force-installs the extension for a group of people and pastes the token below into the browser policy.
+            Each person is added automatically the first time their browser starts, if their email ends in one of your domains
+            and a seat is free.
+          </p>
+          <p>
+            <span className="text-foreground">A seat is one person (one email), not one PC.</span> Someone on three PCs uses one seat.
+            Once every seat is taken, the next person is refused. Self-serve Teams covers 3 to 10 people; for more, use{" "}
+            <a className="underline" href="mailto:director@vantward.com?subject=EraseAI%20Enterprise%20seats">contact us</a> and we set up the seats by invoice.
+          </p>
+        </div>
         <div>
           <p className="text-sm text-foreground mb-1">1. Your company's email domains</p>
           <p className="mb-2 text-xs text-muted-foreground">
@@ -206,7 +214,7 @@ export function ManagedRolloutPanel() {
             </p>
             <CopyBlock label="Enrollment token" text={created.token} />
             <div className="space-y-1 text-xs text-muted-foreground">
-              <p className="text-sm text-foreground">4. Android (managed Google Play / any EMM) · update coming soon</p>
+              <p className="text-sm text-foreground">4. Android (needs a managed Google Play or other device-management setup)</p>
               <p>
                 Approve <code className="text-foreground">{created.android.packageName}</code> and set this managed
                 configuration. People sign in once with their work email and join automatically.

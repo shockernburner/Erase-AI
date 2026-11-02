@@ -31,7 +31,7 @@ Commit Android fixes + version bump together before uploading.
 
 ### Monday — Ship candidate build
 
-- [ ] Commit all Android v0.3.5 fixes (AWS detect, curtain, VPN, IME)
+- [ ] Commit all Android v0.3.5 fixes (AWS detect, curtain, IME)
 - [ ] Bump to **versionCode 28** / **versionName 1.0.0**
 - [ ] `./gradlew test` + install on OPPO — smoke test send gate
 - [ ] Build signed AAB
@@ -104,7 +104,6 @@ YOU STAY IN CONTROL
 HOW IT WORKS
 • Send gate: Cancel, Sanitize, or Send Anyway before text leaves your phone
 • Detects PII, secrets, credentials, and high-risk content
-• Optional EraseAI Keyboard for stronger typing protection
 • Manual scan and dataset sanitizer for files you share into the app
 
 SUBSCRIPTIONS
@@ -122,7 +121,6 @@ EraseAI Firewall 1.0.0
 
 • AI send gate for ChatGPT, Claude, Gemini, and apps you select
 • Cancel, Sanitize, and Send Anyway — with safety blocks for severe risk
-• EraseAI Keyboard + optional strict network hold while a prompt is reviewed
 • Manual scan and dataset sanitizer
 • Subscriptions via Google Play (trial available)
 • Accessibility is optional — you choose protected apps

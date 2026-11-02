@@ -93,7 +93,7 @@ function OrgDetails({ org, onChanged }: { org: OrgRow; onChanged: () => void }) 
             onChange={(e) => run(async () => { await orgApi("PATCH", `/admin/orgs/${org.id}`, { plan: e.target.value }); })}
             className="mt-1 block rounded-lg border border-border bg-input/50 px-2 py-1.5 text-sm text-foreground"
           >
-            <option value="business">Team</option>
+            <option value="business">Teams/Family</option>
             <option value="enterprise">Enterprise</option>
           </select>
         </label>
@@ -178,9 +178,9 @@ export function AdminOrganizations() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", plan: "business", seatLimit: "10", ownerEmail: "" });
+  const [form, setForm] = useState({ name: "", plan: "business", seatLimit: "10", ownerEmail: "", claimOwner: false });
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<{ name: string; email: string; url: string } | null>(null);
+  const [created, setCreated] = useState<{ name: string; email: string; url: string | null } | null>(null);
 
   const load = useCallback(() => {
     orgApi<{ organizations: OrgRow[] }>("GET", "/admin/orgs")
@@ -197,14 +197,14 @@ export function AdminOrganizations() {
     setSaving(true);
     setError(null);
     try {
-      const r = await orgApi<{ organization: OrgRow; invitePath: string }>("POST", "/admin/orgs", {
+      const r = await orgApi<{ organization: OrgRow; owner: { email: string }; invitePath?: string }>("POST", "/admin/orgs", {
         name: form.name,
         plan: form.plan,
         seatLimit: Number(form.seatLimit),
-        ownerEmail: form.ownerEmail,
+        ...(form.claimOwner ? { claimOwner: true } : { ownerEmail: form.ownerEmail }),
       });
-      setCreated({ name: r.organization.name, email: form.ownerEmail, url: inviteUrl(r.invitePath) });
-      setForm({ name: "", plan: "business", seatLimit: "10", ownerEmail: "" });
+      setCreated({ name: r.organization.name, email: r.owner.email, url: r.invitePath ? inviteUrl(r.invitePath) : null });
+      setForm({ name: "", plan: "business", seatLimit: "10", ownerEmail: "", claimOwner: false });
       setCreating(false);
       load();
     } catch (err) {
@@ -237,21 +237,48 @@ export function AdminOrganizations() {
       {creating && (
         <form onSubmit={create} className="grid gap-2 sm:grid-cols-2 mb-4 rounded-xl border border-border/30 p-4">
           <Input required placeholder="Organization name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input required type="email" placeholder="Owner's email" value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
+          <Input required={!form.claimOwner} disabled={form.claimOwner} type="email" placeholder={form.claimOwner ? "You will be the owner" : "Owner's email"} value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
           <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} className="rounded-xl border border-border bg-input/50 px-3 py-3 text-sm text-foreground">
-            <option value="business">Team ($9 a person a month, 3 to 10 people)</option>
+            <option value="business">Teams/Family ($9 a person a month, 3 to 10 people)</option>
             <option value="enterprise">Enterprise</option>
           </select>
           <Input required type="number" min={1} placeholder="Seats" value={form.seatLimit} onChange={(e) => setForm({ ...form, seatLimit: e.target.value })} />
+          <label className="sm:col-span-2 flex items-start gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={form.claimOwner}
+              onChange={(e) => setForm({ ...form, claimOwner: e.target.checked })}
+            />
+            <span>
+              Make me the owner now
+              <span className="block text-xs text-muted-foreground">
+                You see the organization dashboard straight away (members, invites, audit log) and can invite everyone from there.
+                Created by an admin, not bought: nothing is charged. Needs you not to be in another organization.
+              </span>
+            </span>
+          </label>
           <div className="sm:col-span-2">
-            <Button type="submit" variant="primary" size="sm" isLoading={saving}>Create and get owner invite link</Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={saving}>
+              {form.claimOwner ? "Create and open it as owner" : "Create and get owner invite link"}
+            </Button>
           </div>
         </form>
       )}
 
       {created && (
         <div className="mb-4">
-          <CopyableLink label={`${created.name} created. Send this owner invite to ${created.email}; it works once.`} url={created.url} />
+          {created.url ? (
+            <CopyableLink label={`${created.name} created. Send this owner invite to ${created.email}; it works once.`} url={created.url} />
+          ) : (
+            <p className="text-sm text-foreground rounded-xl border border-green-500/30 bg-green-500/10 p-3">
+              {created.name} created and you ({created.email}) are its owner.{" "}
+              <a className="underline font-medium" href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/?view=organization`}>
+                Open the organization dashboard
+              </a>{" "}
+              (reload first so your plan updates).
+            </p>
+          )}
         </div>
       )}
       {error && <p className="text-sm text-destructive mb-3">{error}</p>}

@@ -70,7 +70,7 @@ You're a builder, not a banker. This translates the jargon in the cheat sheet, s
 | **VPC / on-prem** | Customer's private cloud or their own servers — Enterprise option. |
 | **Audit trail** | Record of who sent what, what was blocked, who clicked "send anyway." |
 | **Verdict** | Safe / Caution / Danger — your risk label before Send. |
-| **Egress** | Data leaving the device/network. Your Android VPN path blocks egress when risk is high. |
+| **Egress** | Data leaving the device/network. Your Android app stops the send at the Send button when risk is high; it does not touch network traffic. |
 | **Injection / exfiltration** | Bad prompts trying to steal data or trick the model — your firewall blocks these. |
 
 ---

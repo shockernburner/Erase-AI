@@ -1,12 +1,34 @@
 {
   "entries": [
     {
+      "version": "1.6.2",
+      "date": "2026-11-01",
+      "changes": [
+        "Fixed: after you download the clean copy of a file, remove the original and attach the clean one, EraseAI no longer treats the removed original as still attached. The clean copy's name starts with the original's, and that used to fool the check",
+        "The \"I already removed this file\" button now appears only on a file that is holding the message back, not on safe files",
+        "The findings panel keeps its title bar in view while you scroll"
+      ]
+    },
+    {
+      "version": "1.6.1",
+      "date": "2026-11-01",
+      "changes": [
+        "Fixed: from the second message of a chat, the \"All clear\" panel could appear and the message never be sent. EraseAI now looks up the Send button again at the moment it presses it, checks that the page really took the message, and if not tries again (Send, then the form, then Enter). If the page still won't send, it says so and your next press of Send goes through",
+        "Fixed: after the extension was updated while a chat tab stayed open, Send could stop working in that tab. EraseAI now lets the message through, with a note asking you to reload the tab",
+        "Fixed: a check that never finished could block every later send in that tab",
+        "Fixed: an attachment you removed could still be scanned, blocking a new safe message. EraseAI now reads the attachment's name from the labels the page puts on file tiles and thumbnails, and looks in the composer you are typing in. If a page never shows the file's name, the panel lists the file with \"I already removed this file\", which checks your message again without it",
+        "Pressing Send on a page that is still streaming a reply no longer clicks the Stop button"
+      ]
+    },
+    {
       "version": "1.6.0",
       "date": "2026-10-06",
       "changes": [
         "Managed rollout for organizations: when IT sets the EraseAI enrollment token in Chrome policy (Google Admin, Intune), the extension enrolls the person by their work email and turns on their organization's plan, with no API key to paste. The popup shows which organization manages the browser",
         "If the policy doesn't include the work email, the popup asks for it once",
-        "New icon that matches the EraseAI website and Android app, also in the popup and the warning panel"
+        "New icon that matches the EraseAI website and Android app, also in the popup and the warning panel",
+        "Fixed: text in attached images and screenshots was never read, because the sandbox page's security policy blocked the OCR worker. The sandbox now allows its own workers",
+        "The bundled OCR library no longer contains its download addresses for an online copy of its engine and language data; everything it uses ships inside the extension"
       ]
     },
     {

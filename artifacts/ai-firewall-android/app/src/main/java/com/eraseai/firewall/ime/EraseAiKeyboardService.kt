@@ -296,7 +296,6 @@ class EraseAiKeyboardService : InputMethodService() {
 
   private fun releaseWithheldText() {
     val text = withheldText ?: return
-    GuardStateStore.grantEgressWindow()
     currentInputConnection?.commitText(text, 1)
     withheldText = null
     clearGuardState()
@@ -318,7 +317,6 @@ class EraseAiKeyboardService : InputMethodService() {
     val text = withheldText ?: return
     val redacted = LocalRiskScanner.redact(text)
 
-    GuardStateStore.grantEgressWindow()
     currentInputConnection?.commitText(redacted, 1)
     withheldText = null
     clearGuardState()

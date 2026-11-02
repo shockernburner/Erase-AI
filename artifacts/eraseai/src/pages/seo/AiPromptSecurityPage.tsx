@@ -1,13 +1,9 @@
 import { Shield, Lock, Eye, Zap, AlertTriangle } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 export default function AiPromptSecurityPage() {
-  useSeoMeta({
-    title: "AI Prompt Security — Protect What You Send to AI | EraseAI",
-    description: "Prompt security ensures your input is safe before it is sent to AI tools. EraseAI provides real-time prompt scanning, risk scoring, and actionable suggestions.",
-    url: "https://eraseai.ai/ai-prompt-security",
-  });
+  usePageMeta("/ai-prompt-security");
 
   return (
     <SeoPage>

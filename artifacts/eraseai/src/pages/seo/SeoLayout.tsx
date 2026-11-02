@@ -1,5 +1,6 @@
 import { Shield, ArrowRight, MessageCircle, Mail, Chromium } from "lucide-react";
 import { chromeStoreLink } from "@/lib/extensionStore";
+import { playStoreLink } from "@/lib/installTarget";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const BASE = import.meta.env.BASE_URL;
@@ -16,6 +17,7 @@ export function SeoNav() {
         </a>
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
           <a href={`${BASE}ai-firewall`} className="hover:text-primary transition-colors">AI Firewall</a>
+          <a href={`${BASE}learn`} className="hover:text-primary transition-colors">Learn</a>
           <a
             href={chromeStoreLink("seo-nav")}
             target="_blank"
@@ -24,7 +26,15 @@ export function SeoNav() {
           >
             Chrome Extension
           </a>
-          <a href={`${BASE}ai-prompt-security`} className="hover:text-primary transition-colors">Prompt Security</a>
+          <a
+            href={playStoreLink("seo-nav")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Android App
+          </a>
+          <a href={`${BASE}learn/ai-data-loss-prevention`} className="hover:text-primary transition-colors">AI DLP</a>
           <a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a>
         </nav>
         <a
@@ -55,10 +65,17 @@ export function SeoFooter() {
           <div>
             <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Resources</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><a href={`${BASE}learn`} className="hover:text-primary transition-colors">AI Data Security Guides</a></li>
+              <li><a href={`${BASE}learn/ai-data-loss-prevention`} className="hover:text-primary transition-colors">AI Data Loss Prevention</a></li>
+              <li><a href={`${BASE}learn/llm-data-security`} className="hover:text-primary transition-colors">LLM Data Security</a></li>
+              <li><a href={`${BASE}learn/shadow-ai`} className="hover:text-primary transition-colors">Shadow AI</a></li>
+              <li><a href={`${BASE}learn/ai-security-glossary`} className="hover:text-primary transition-colors">AI Security Glossary</a></li>
               <li><a href={`${BASE}ai-firewall`} className="hover:text-primary transition-colors">AI Firewall</a></li>
               <li><a href={`${BASE}chatgpt-data-leak`} className="hover:text-primary transition-colors">Prevent ChatGPT Data Leaks</a></li>
               <li><a href={`${BASE}ai-prompt-security`} className="hover:text-primary transition-colors">AI Prompt Security</a></li>
               <li><a href={`${BASE}api-key-protection-ai`} className="hover:text-primary transition-colors">API Key Protection</a></li>
+              <li><a href={playStoreLink("seo-footer")} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Android App</a></li>
+              <li><a href={`${BASE}developer-api`} className="hover:text-primary transition-colors">Developer API</a></li>
               <li><a href={`${BASE}blog`} className="hover:text-primary transition-colors">Blog</a></li>
               <li><a href={`${BASE}terms`} className="hover:text-primary transition-colors">Terms of Service</a></li>
               <li><a href={`${BASE}license`} className="hover:text-primary transition-colors">License Agreement</a></li>
@@ -90,7 +107,8 @@ export function SeoFooter() {
         </div>
         <div className="border-t border-border/20 pt-6 text-center">
           <p className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} EraseAI &mdash; A product of Vantward Solutions Pte. Ltd. | 68 Circular Road #02-01, Singapore 049422 | Reg. No. 202606980C
+            &copy; {new Date().getFullYear()} EraseAI &mdash; A product of{" "}
+            <a href="https://vantward.com/" className="underline-offset-2 hover:underline hover:text-foreground">Vantward Solutions Pte. Ltd.</a> | 68 Circular Road #02-01, Singapore 049422 | Reg. No. 202606980C
           </p>
         </div>
       </div>
@@ -125,12 +143,29 @@ export function AddToChromeButton({ placement, text = "Add to Chrome — it's fr
   );
 }
 
+/** Quiet text link to the Android app, shown beside the Chrome button; [placement] tags the click. */
+export function GetAndroidLink({ placement }: { placement: string }) {
+  return (
+    <a
+      href={playStoreLink(placement)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+    >
+      Or get the Android app
+    </a>
+  );
+}
+
 export function RelatedLinks({ exclude }: { exclude?: string }) {
   const links = [
+    { href: "learn", label: "AI Data Security Guides" },
+    { href: "learn/ai-data-loss-prevention", label: "AI Data Loss Prevention" },
     { href: "ai-firewall", label: "AI Firewall" },
     { href: "chatgpt-data-leak", label: "Prevent ChatGPT Data Leaks" },
     { href: "ai-prompt-security", label: "AI Prompt Security" },
     { href: "api-key-protection-ai", label: "API Key Protection" },
+    { href: "developer-api", label: "Developer API" },
     { href: "blog", label: "Blog" },
   ].filter((l) => l.href !== exclude);
 

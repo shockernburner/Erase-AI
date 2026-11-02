@@ -36,7 +36,7 @@ export function AdminStripeSetup() {
         code,
         maxRedemptions: Number(uses),
       });
-      setVoucher(`${r.code} (100% off Team, ${r.maxRedemptions} uses)`);
+      setVoucher(`${r.code} (100% off Teams/Family, ${r.maxRedemptions} uses)`);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -57,8 +57,8 @@ export function AdminStripeSetup() {
 
       <div>
         <p className="text-sm text-muted-foreground mb-2">
-          Creates any missing prices (Personal $5/$54, Developer $19/$205, Team $9/$96 a person) and switches off old ones,
-          such as the $99 Team price. Safe to run again.
+          Creates any missing prices (Personal $5/$54, Pro $19/$205, Teams/Family $9/$96 a person) and switches off old ones,
+          such as the old $99 Team price. Safe to run again.
         </p>
         <Button size="sm" variant="secondary" isLoading={busy === "prices"} onClick={setupPrices}>
           Set up prices
@@ -72,7 +72,7 @@ export function AdminStripeSetup() {
 
       <form onSubmit={makeVoucher}>
         <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1.5">
-          <Ticket className="w-4 h-4" /> A 100%-off code for Team, to try the purchase without paying. Enter it on the Stripe
+          <Ticket className="w-4 h-4" /> A 100%-off code for Teams/Family, to try the purchase without paying. Enter it on the Stripe
           checkout page ("Add promotion code"); no card is asked for.
         </p>
         <div className="flex flex-wrap gap-2">

@@ -9,13 +9,13 @@ export const ANDROID_PLAY_URL = `https://play.google.com/store/apps/details?id=$
 export const EXTENSION_ZIP_URL = "/api/extension/download";
 
 /**
- * How people in a paying organization (Team or Enterprise) get protected.
+ * How people in a paying organization or family (Teams/Family or Enterprise) get protected.
  * Shown on pricing, the Buy Team dialog, the organization page and the join page.
  */
 export const ORG_COVERAGE_STEPS: string[] = [
   "The organization buys seats; the owner invites people by email (or IT rolls EraseAI out).",
   "Each person installs the Chrome extension and the Android app.",
-  "They sign in with their work email. Chrome and Android are covered at once; they pay nothing themselves.",
+  "They sign in with the email they were invited with (work email for companies). Chrome and Android are covered at once; they pay nothing themselves.",
 ];
 
 export const ORG_COVERAGE_SUMMARY =

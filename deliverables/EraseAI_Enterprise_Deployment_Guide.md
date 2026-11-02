@@ -217,7 +217,7 @@ UNLESS source IN managed-device-group WITH eraseai-agent=active
 No — not if you want prompt content inspection. Server holds policy and audit; **devices do the reading**.
 
 **Is this a VPN?**  
-No. Android optional "Strict network gate" is a **local** VPN blackhole on that phone only — not enterprise router VPN.
+No. The Android app declares no VPN service and does not route or block network traffic; it stops risky sends at the keyboard and Send button.
 
 **Do you decrypt HTTPS on the gateway?**  
 Not the default product. Optional partner integrations possible; primary thesis is **on-device prompt inspection**.

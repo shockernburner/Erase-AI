@@ -8,10 +8,9 @@ Dual-rail billing:
 ## Scope
 
 - Backend scanning for prompts and shared text/JSON/CSV uploads.
-- **Send gate (three layers):**
+- **Send gate (two layers):**
   - **EraseAI Keyboard (IME, recommended):** withholds risky typed text before it reaches the AI app — no send-button tracking.
   - **Accessibility curtain (fallback):** geometry-based submit-band overlay when IME is off or attachments are present.
-  - **Strict network gate (optional):** local VPN blackhole for protected apps while a risky prompt is held.
 - **EraseAI Safe (prototype):** a `DocumentsProvider` shown in the system file picker (ChatGPT/Gemini/Claude "Files"). Picking a file there hands the AI app a redacted copy named `… (EraseAI Safe).ext`, built on-device at pick time. Sources are folders granted via the system folder picker and files shared to "Save to EraseAI Safe" — no broad storage permission. Text formats and DOCX (flattened to text). Images and PDFs are redacted with on-device OCR (ML Kit, bundled model — nothing leaves the phone): sensitive words are blacked out, images are re-encoded (EXIF/GPS dropped), and PDFs are rebuilt as image PDFs with no text layer. On Android 15+ the PDF's own text layer is used to locate values exactly; a value that cannot be located makes EraseAI refuse the file rather than serve it. PDFs over 15 pages are refused.
 - **Attachment gate:** any attachment chip in a protected composer holds Send unless its label carries the Safe marker *and* EraseAI served that exact name recently on this device (renamed files do not pass).
 - **Multi-piece scans:** prompt + attachment files via `/api/mobile/analyze-pieces`.

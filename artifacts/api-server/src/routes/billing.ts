@@ -123,7 +123,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
       },
       {
         id: "pro",
-        name: "Developer",
+        name: "Pro",
         price: PLAN_PRICING.pro.monthly,
         monthlyPrice: PLAN_PRICING.pro.monthly,
         annualPrice: PLAN_PRICING.pro.annual,
@@ -140,7 +140,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
       },
       {
         id: "business",
-        name: "Team",
+        name: "Teams/Family",
         price: PLAN_PRICING.business.monthly,
         monthlyPrice: PLAN_PRICING.business.monthly,
         annualPrice: PLAN_PRICING.business.annual,
@@ -173,7 +173,7 @@ router.get("/pricing", (_req: Request, res: Response) => {
         interval: "month",
         features: [
           "Contact us for pricing",
-          "Paid by your organization; everything in Team, any size",
+          "Paid by your organization; everything in Teams/Family, any size",
           "Unlimited rows and API keys",
           "Compliance reporting and private deployment",
           "Dedicated support, SLA and data processing agreement",
@@ -269,6 +269,16 @@ router.post("/checkout", async (req: Request, res: Response) => {
 // Poll endpoint hit by CheckoutSuccess after the Stripe redirect. Retrieves the
 // Checkout Session, verifies it belongs to the caller, and on a completed/paid
 // session promotes the user to the purchased plan.
+/**
+ * What the buyer paid at checkout, so the site can report the purchase to analytics.
+ * Omitted for free trials (amount 0), where no money changed hands.
+ */
+function purchaseAmount(session: { id: string; amount_total?: number | null; currency?: string | null }) {
+  const total = session.amount_total;
+  if (!total || total <= 0 || !session.currency) return { transactionId: session.id };
+  return { transactionId: session.id, value: total / 100, currency: session.currency.toUpperCase() };
+}
+
 router.get("/checkout-status", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
 
@@ -299,7 +309,7 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
       }
       if (team.kind === "succeeded") {
         const organizationId = await ensureTeamOrg({ ...team, ownerUserId: req.user!.id });
-        res.json({ status: "succeeded", planType: "business", organizationId });
+        res.json({ status: "succeeded", planType: "business", organizationId, ...purchaseAmount(session) });
         return;
       }
       res.json({ status: team.kind });
@@ -335,7 +345,7 @@ router.get("/checkout-status", async (req: Request, res: Response) => {
         }
       }
 
-      res.json({ status: "succeeded", planType: decision.plan, billingPeriod: decision.period });
+      res.json({ status: "succeeded", planType: decision.plan, billingPeriod: decision.period, ...purchaseAmount(session) });
       return;
     }
 

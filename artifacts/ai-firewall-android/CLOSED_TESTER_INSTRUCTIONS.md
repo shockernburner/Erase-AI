@@ -64,7 +64,6 @@ password fields, and it doesn't read your screen in other apps.
 | Feature | What it does | Permission it asks for |
 |---|---|---|
 | EraseAI Keyboard | Checks text as you type in AI apps | Android keyboard setting |
-| Strict network gate | While a risky message is waiting for your decision, blocks the AI app's internet so it can't be sent in the background | VPN (local only: nothing is routed to a server or decrypted) and notifications |
 | EraseAI Safe | A safe place to attach files from | None |
 
 ## 4. The main test (5 minutes)
@@ -102,11 +101,6 @@ Then check two more things:
   - **EraseAI Keyboard:** Android **Settings → System → Keyboard → On-screen
     keyboard** → turn on **EraseAI Keyboard**, then pick it while typing in
     an AI app.
-  - **Strict network gate:** EraseAI **Settings → Strict network gate** →
-    on. Accept the notification and VPN prompts. Next time the red bar
-    appears, you'll see a key icon in the status bar and a notification
-    saying "EraseAI is blocking AI app network". Both disappear once you
-    choose.
   - **EraseAI Safe:** share a file (a PDF or photo with fake data) to **Save
     to EraseAI Safe**. Then in ChatGPT, Claude or Gemini, tap attach →
     browse files → **EraseAI Safe**, and attach the safe copy.
@@ -122,7 +116,7 @@ AI apps tested: ChatGPT / Claude / Gemini
 Red bar appeared for the fake key: yes / no
 Anything sent before you chose: yes / no (what happened?)
 Harmless messages sent normally: yes / no
-Extras tried: keyboard / strict gate / Safe / none
+Extras tried: keyboard / Safe / none
 Anything confusing, slow or broken:
 Crashes (what were you doing?):
 Would you keep using it? Why or why not?
@@ -139,11 +133,9 @@ screen.
 | Play says the app isn't available | Check you joined the group and opted in with the **same** Google account as your phone. Wait 10 minutes and try again. |
 | No red bar on a fake key | Check Accessibility is still on for EraseAI (Android sometimes turns it off after an update). Close and reopen the AI app. |
 | Red bar doesn't go away | Tap it and choose Cancel, Sanitize & Send or Send Anyway. |
-| AI app has no internet | The Strict network gate is holding a message. Tap the red bar and choose. If it stays stuck, turn the gate off in EraseAI Settings and email us. |
-| EraseAI says another VPN is active | The Strict network gate can't run alongside another VPN. Turn one of them off. |
 
 ## What we don't do
 
-EraseAI never sees your passwords (password fields are skipped). The
-Strict network gate blocks traffic on your phone; it doesn't inspect,
-store or forward it. Privacy policy: https://eraseai.ai/privacy
+EraseAI never sees your passwords (password fields are skipped). It is
+not a VPN and doesn't route, inspect or block your network traffic.
+Privacy policy: https://eraseai.ai/privacy

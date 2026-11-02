@@ -1,15 +1,11 @@
 import { Key, AlertTriangle, Shield, ArrowLeft } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 const BASE = import.meta.env.BASE_URL;
 
 export default function BlogPost_ApiKeys() {
-  useSeoMeta({
-    title: "Why You Should Never Paste API Keys into ChatGPT | EraseAI Blog",
-    description: "Pasting API keys into ChatGPT can expose your infrastructure. Learn the real consequences and how to protect yourself with EraseAI.",
-    url: "https://eraseai.ai/blog/api-keys-chatgpt",
-  });
+  usePageMeta("/blog/api-keys-chatgpt");
 
   return (
     <SeoPage>

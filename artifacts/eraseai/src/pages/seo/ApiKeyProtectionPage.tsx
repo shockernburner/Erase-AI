@@ -1,13 +1,9 @@
 import { Shield, Key, AlertTriangle, Lock, CheckCircle2 } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 export default function ApiKeyProtectionPage() {
-  useSeoMeta({
-    title: "Protect API Keys When Using AI Tools | EraseAI",
-    description: "Never paste API keys into ChatGPT or AI tools. EraseAI detects API key patterns instantly and warns you before sending to prevent costly security breaches.",
-    url: "https://eraseai.ai/api-key-protection-ai",
-  });
+  usePageMeta("/api-key-protection-ai");
 
   return (
     <SeoPage>

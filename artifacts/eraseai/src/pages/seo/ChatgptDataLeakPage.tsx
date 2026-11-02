@@ -1,13 +1,9 @@
 import { AlertTriangle, Shield, Eye, Lock, CheckCircle2 } from "lucide-react";
 import { SeoPage, CtaButton, RelatedLinks } from "./SeoLayout";
-import { useSeoMeta } from "./useSeoMeta";
+import { usePageMeta } from "./useSeoMeta";
 
 export default function ChatgptDataLeakPage() {
-  useSeoMeta({
-    title: "How to Prevent Data Leaks in ChatGPT | EraseAI",
-    description: "Developers and users often paste API keys, credentials, and private data into ChatGPT. Learn how to prevent accidental data leaks with EraseAI.",
-    url: "https://eraseai.ai/chatgpt-data-leak",
-  });
+  usePageMeta("/chatgpt-data-leak");
 
   return (
     <SeoPage>

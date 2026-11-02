@@ -21,6 +21,7 @@ import { TeamCheckoutDialog } from "@/components/TeamCheckoutDialog";
 import { ORG_COVERAGE_STEPS, takePricingFocus } from "@/lib/products";
 import { PRICING_COMPARISON, PRICING_TIERS, annualPriceFor, type PricingTierId } from "@/lib/pricingPlans";
 import { BrandLogo } from "@/components/BrandLogo";
+import { track } from "@/lib/analytics";
 
 interface PricingPageProps {
   onBack: () => void;
@@ -117,6 +118,7 @@ export default function PricingPage({ onBack, embedded = false }: PricingPagePro
       });
       const data = await response.json();
       if (response.ok && data.url) {
+        track("begin_checkout", { plan, billing_period: billingPeriod });
         if (data.sessionId) {
           sessionStorage.setItem("eraseai_checkout_intent", data.sessionId);
         }
@@ -134,7 +136,7 @@ export default function PricingPage({ onBack, embedded = false }: PricingPagePro
   // TODO: Rename backend plan ids `pro` -> `developer` and `business` -> `team`
   // across billing, analytics, and stored plan metadata once a migration is planned.
   //
-  // Who pays decides the plan: Personal and Developer are paid by one person for
+  // Who pays decides the plan: Personal and Pro are paid by one person for
   // themselves. When an organization pays (Team or Enterprise), its members are
   // organization users and get Enterprise-level protection, never "Personal".
   // `soon` marks features not built yet, so the page never sells what does not exist.
@@ -185,7 +187,7 @@ export default function PricingPage({ onBack, embedded = false }: PricingPagePro
             </div>
             <h2 className="text-3xl font-display font-bold text-foreground">Pricing for AI firewall protection</h2>
             <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-              EraseAI stops sensitive data from leaking into AI tools. Who pays decides your plan: Personal and Developer are for people paying for themselves. When your organization pays (Team or Enterprise), every member gets the Chrome extension and the Android app with full protection by signing in with their work email, and pays nothing.
+              EraseAI stops sensitive data from leaking into AI tools. Who pays decides your plan: Personal and Pro are for people paying for themselves. When your organization pays (Team or Enterprise), every member gets the Chrome extension and the Android app with full protection by signing in with their work email, and pays nothing.
             </p>
           </div>
         </motion.div>

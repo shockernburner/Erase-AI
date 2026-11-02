@@ -6,6 +6,8 @@
 // Every link gets UTM tags so the Chrome Web Store dashboard can attribute
 // installs to a page.
 
+import { attribution } from "@/lib/analytics";
+
 const STORE_EXTENSION_ID = "hckhbadbpkihjpooeljdocgidelcampp";
 
 export const CHROME_STORE_URL: string =
@@ -18,6 +20,17 @@ export const CHROME_STORE_URL: string =
  */
 export function chromeStoreLink(placement: string, source = "site"): string {
   const url = new URL(CHROME_STORE_URL);
+  // A visit that came from an ad keeps its campaign tags, so the store's dashboard
+  // credits the install to the ad; the button's own placement moves to utm_content.
+  const from = attribution();
+  if (from) {
+    url.searchParams.set("utm_source", from.source);
+    url.searchParams.set("utm_medium", from.medium);
+    url.searchParams.set("utm_campaign", from.campaign);
+    url.searchParams.set("utm_content", placement);
+    if (from.term) url.searchParams.set("utm_term", from.term);
+    return url.toString();
+  }
   url.searchParams.set("utm_source", source);
   url.searchParams.set("utm_medium", placement);
   url.searchParams.set("utm_campaign", "extension");

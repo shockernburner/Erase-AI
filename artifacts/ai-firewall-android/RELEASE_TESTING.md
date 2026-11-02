@@ -6,7 +6,7 @@ Scope guardrails:
 
 - Web billing on eraseai.ai remains **Stripe**.
 - Android uses **Google Play Billing** only (no Stripe checkout in the app).
-- Optional **Strict network gate** (Settings) uses a local VPN blackhole for protected AI apps while a risky prompt is held — it does not MITM HTTPS. Do not add machine unlearning or dataset governance to this app.
+- The app declares no `VpnService` and no foreground service (the Strict network gate was removed for the Play VpnService policy). Do not add machine unlearning or dataset governance to this app.
 
 ## Build Environment
 

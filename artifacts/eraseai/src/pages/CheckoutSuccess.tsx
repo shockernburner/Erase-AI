@@ -4,6 +4,25 @@ import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui-elements";
 import { BrandLogo } from "@/components/BrandLogo";
+import { track } from "@/lib/analytics";
+
+/** Tells analytics about a finished payment, once per Stripe session (the page can be reloaded). */
+function reportPurchase(d: { transactionId?: string; planType?: string; value?: number; currency?: string }) {
+  if (!d.transactionId) return;
+  const key = `eraseai.purchase.${d.transactionId}`;
+  try {
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
+  } catch {
+    /* private mode: worst case the event repeats on reload */
+  }
+  const plan = d.planType || "unknown";
+  track("purchase", {
+    transaction_id: d.transactionId,
+    ...(d.value ? { value: d.value, currency: d.currency } : {}),
+    items: [{ item_id: plan, item_name: plan }],
+  });
+}
 
 interface CheckoutSuccessProps {
   onDone: () => void;
@@ -37,6 +56,7 @@ export default function CheckoutSuccess({ onDone }: CheckoutSuccessProps) {
           const statusData = await statusRes.json();
           if (statusData.status === "succeeded") {
             sessionStorage.removeItem("eraseai_checkout_intent");
+            reportPurchase(statusData);
             setActivatedPlan(statusData.planType || "pro");
             setTeamOrg(Boolean(statusData.organizationId));
             setStatus("success");

@@ -38,7 +38,7 @@ export function inviteUrl(invitePath: string): string {
 }
 
 export const ORG_PLAN_NAMES: Record<string, string> = {
-  business: "Team",
+  business: "Teams/Family",
   enterprise: "Enterprise",
 };
 

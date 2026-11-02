@@ -26,15 +26,15 @@ const CATALOG: PlanSpec[] = [
   },
   {
     plan: "pro",
-    name: "EraseAI Developer",
+    name: "EraseAI Pro",
     description: "API access, input/output scanning, and webhooks for builders.",
     monthly: PLAN_PRICING.pro.monthly * 100,
     annual: PLAN_PRICING.pro.annual * 100,
   },
   {
     plan: "business",
-    name: "EraseAI Team",
-    description: "Per person, paid by the organization: Chrome and Android for every member, admin dashboard by person.",
+    name: "EraseAI Teams/Family",
+    description: "Per person, paid by the company or family: Chrome and Android for every member, admin dashboard by person.",
     monthly: PLAN_PRICING.business.monthly * 100,
     annual: PLAN_PRICING.business.annual * 100,
   },
@@ -108,9 +108,9 @@ export async function ensureCatalog(): Promise<string[]> {
 export async function createTeamVoucher({ code, maxRedemptions }: { code: string; maxRedemptions: number }) {
   const stripe = await getUncachableStripeClient();
   const team = await findProduct(stripe, "business");
-  if (!team) throw new Error("No Team product yet. Run “Set up prices” first.");
+  if (!team) throw new Error("No Teams/Family product yet. Run “Set up prices” first.");
   const coupon = await stripe.coupons.create({
-    name: "Team, 100% off (owner testing)",
+    name: "Teams/Family, 100% off (owner testing)",
     percent_off: 100,
     duration: "forever",
     applies_to: { products: [team.id] },
