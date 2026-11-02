@@ -55,3 +55,33 @@ describe("vendored mammoth (Word reader) is the readable build", () => {
     expect(lines.reduce((n, l) => n + l.length, 0) / lines.length).toBeLessThan(100);
   });
 });
+
+describe("vendored tesseract.js (image text reader) is the readable build", () => {
+  const tdir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "vendor", "tesseract");
+  const src = path.resolve(tdir, "..", "..", "src");
+  it("ships tesseract.dev.js and worker.dev.js, not the .min.js builds", () => {
+    const files = fs.readdirSync(tdir);
+    expect(files).toContain("tesseract.dev.js");
+    expect(files).toContain("worker.dev.js");
+    expect(files).not.toContain("tesseract.min.js");
+    expect(files).not.toContain("worker.min.js");
+  });
+  it("the two JavaScript libraries are ordinary multi-line source", () => {
+    for (const f of ["tesseract.dev.js", "worker.dev.js"]) {
+      const lines = fs.readFileSync(path.join(tdir, f), "utf8").split("\n");
+      expect(lines.length, f).toBeGreaterThan(2000);
+      expect(lines.reduce((n, l) => n + l.length, 0) / lines.length, f).toBeLessThan(100);
+    }
+  });
+  it("the sandbox page, the worker path and the manifest all point at the readable files", () => {
+    const html = fs.readFileSync(path.join(src, "sandbox.html"), "utf8");
+    expect(html).toContain("vendor/tesseract/tesseract.dev.js");
+    expect(html).toContain('workerPath: "../vendor/tesseract/worker.dev.js"');
+    expect(html).not.toMatch(/tesseract\.min\.js|worker\.min\.js/);
+    const manifest = fs.readFileSync(path.join(src, "..", "manifest.json"), "utf8");
+    expect(manifest).toContain("vendor/tesseract/worker.dev.js");
+    expect(manifest).not.toMatch(/tesseract\.min\.js|worker\.min\.js/);
+  });
+  // tesseract-core*.wasm.js are compiler output with the WebAssembly embedded in one line; no readable
+  // build of them exists upstream, so they are deliberately not covered here.
+});
