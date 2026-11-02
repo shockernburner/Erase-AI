@@ -16,3 +16,6 @@ docs
 *.txt
 *.csv
 artifacts/ai-firewall-android
+# Terraform code and its local provider caches are not part of the image
+infra
+.github
