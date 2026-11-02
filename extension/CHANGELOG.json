@@ -6,7 +6,8 @@
       "changes": [
         "Fixed: after you download the clean copy of a file, remove the original and attach the clean one, EraseAI no longer treats the removed original as still attached. The clean copy's name starts with the original's, and that used to fool the check",
         "The \"I already removed this file\" button now appears only on a file that is holding the message back, not on safe files",
-        "The findings panel keeps its title bar in view while you scroll"
+        "The findings panel keeps its title bar in view while you scroll",
+        "The PDF and Word readers now ship as readable (unminified) source files, as the Chrome Web Store code-readability policy asks. Reading PDF and Word files works as before"
       ]
     },
     {

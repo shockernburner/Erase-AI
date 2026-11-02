@@ -137,6 +137,8 @@ Added (tests first, all in `artifacts/api-server/tests/org-*.test.mjs`): **audit
 1.6.2: a removed original was kept alive by its "-clean" copy (the old match used the first 24 characters of the name); matching now needs the whole name, "I already removed" shows only on blocking files, panel header is sticky. Found from the owner's live Gemini test (chip is a `button` with `aria-label` = file name).
 Organization page (2026-11-01): order is Get protected, Add people, People, Audit log, then a folded "More" (billing, activity, install for the whole company). The IT panel explains that a seat is one person, not one PC; Teams self-serve is 3 to 10 seats, more by invoice (`/admin/orgs` allows up to 1000). The managed-rollout flow has never been run against a real Google Workspace.
 
+Chrome Web Store rejected **1.6.1** (2026-11-02, "Code Readability Requirements", Red Titanium: obfuscated code, flagged `vendor/pdfjs/pdf.min.js`). 1.6.2 ships the readable pdf.js and worker 3.11.174 and Mammoth 1.7.2 (`tests/vendor-readable.test.js` guards it; PDF and Word reading checked in headless Chrome). **Still minified, no readable source here:** `vendor/tesseract/*.min.js` and the tesseract core `.wasm.js`; if the store flags them next, get the readable tesseract.js build (`tesseract.dev.js`/worker.dev.js) and the unminified core. 1.6.0 passed review with all of these, so the reviewer's finding was specific to pdf.min.js.
+
 ## 10. Standing rules (do not break)
 
 - No VPN claims, ever (see section 3). No "AI detection" claims. Pricing and plan names unchanged. Attachments, Sanitize & Send and clean copies are paid, never free.

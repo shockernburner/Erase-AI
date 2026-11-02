@@ -6,12 +6,12 @@
   </head>
   <body>
     <script src="limits-config.js"></script>
-    <script src="../vendor/pdfjs/pdf.min.js"></script>
-    <script src="../vendor/mammoth/mammoth.browser.min.js"></script>
+    <script src="../vendor/pdfjs/pdf.js"></script>
+    <script src="../vendor/mammoth/mammoth.browser.js"></script>
     <script src="../vendor/tesseract/tesseract.min.js"></script>
     <script>
       if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs/pdf.worker.min.js";
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs/pdf.worker.js";
       }
       // Where tesseract.js fetches its worker, wasm core, and language data.
       // Paths are relative to this sandbox page's URL
