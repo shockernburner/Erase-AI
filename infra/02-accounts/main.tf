@@ -33,7 +33,7 @@ data "terraform_remote_state" "lz" {
 
 variable "prod_account_email" {
   type    = string
-  default = "firdous.mahmood26+aws-prod@gmail.com"
+  default = "founder+aws-prod@eraseai.ai"
 }
 
 # IDs that Control Tower creates; looked up once after 01-landing-zone and
@@ -95,7 +95,7 @@ resource "aws_servicecatalog_provisioned_product" "eraseai_prod" {
   }
   provisioning_parameters {
     key   = "SSOUserEmail"
-    value = "firdous.mahmood26@gmail.com"
+    value = "founder@eraseai.ai"
   }
   provisioning_parameters {
     key   = "SSOUserFirstName"
@@ -110,7 +110,12 @@ resource "aws_servicecatalog_provisioned_product" "eraseai_prod" {
     aws_controltower_baseline.workloads,
     aws_servicecatalog_principal_portfolio_association.deployer,
   ]
-  lifecycle { prevent_destroy = true }
+  # Account email and SSO user were changed outside Account Factory (console
+  # email verification, Identity Center); don't push parameter updates.
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [provisioning_parameters]
+  }
   timeouts {
     create = "60m"
     update = "60m"

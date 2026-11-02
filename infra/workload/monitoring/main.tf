@@ -35,7 +35,7 @@ data "terraform_remote_state" "app" {
 variable "alert_email" {
   description = "Receives alarm emails (confirm the SNS subscription email once)"
   type        = string
-  default     = "firdous.mahmood26@gmail.com"
+  default     = "connect@eraseai.ai"
 }
 
 locals {

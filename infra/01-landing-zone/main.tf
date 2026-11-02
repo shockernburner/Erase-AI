@@ -30,12 +30,12 @@ variable "home_region" {
 
 variable "log_archive_email" {
   type    = string
-  default = "firdous.mahmood26+aws-log@gmail.com"
+  default = "connect+aws-log@eraseai.ai"
 }
 
 variable "audit_email" {
   type    = string
-  default = "firdous.mahmood26+aws-audit@gmail.com"
+  default = "connect+aws-audit@eraseai.ai"
 }
 
 data "aws_organizations_organization" "this" {}
@@ -55,9 +55,11 @@ resource "aws_organizations_account" "log_archive" {
   iam_user_access_to_billing = "ALLOW"
   close_on_deletion          = false
   parent_id                  = aws_organizations_organizational_unit.security.id
+  # The root email is changed in the console (AWS verifies the new mailbox);
+  # Terraform records it but does not try to change it.
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [role_name, iam_user_access_to_billing]
+    ignore_changes  = [role_name, iam_user_access_to_billing, email]
   }
 }
 
@@ -67,9 +69,11 @@ resource "aws_organizations_account" "audit" {
   iam_user_access_to_billing = "ALLOW"
   close_on_deletion          = false
   parent_id                  = aws_organizations_organizational_unit.security.id
+  # The root email is changed in the console (AWS verifies the new mailbox);
+  # Terraform records it but does not try to change it.
   lifecycle {
     prevent_destroy = true
-    ignore_changes  = [role_name, iam_user_access_to_billing]
+    ignore_changes  = [role_name, iam_user_access_to_billing, email]
   }
 }
 
