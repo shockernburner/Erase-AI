@@ -59,7 +59,7 @@ resource "aws_ssm_parameter" "image_tag" {
 # false (and nat_enabled = true in network, paused = false in data).
 variable "paused" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "desired_count" {

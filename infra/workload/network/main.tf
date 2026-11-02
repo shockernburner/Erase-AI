@@ -35,7 +35,7 @@ variable "cidr" {
 # internet). Set to true before resuming the app.
 variable "nat_enabled" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "nat_per_az" {

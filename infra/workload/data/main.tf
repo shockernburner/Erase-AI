@@ -45,7 +45,7 @@ locals {
 # because RDS restarts stopped instances after 7 days. Resume with false.
 variable "paused" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "instance_class" {
