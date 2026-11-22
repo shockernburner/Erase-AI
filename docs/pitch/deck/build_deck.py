@@ -10,7 +10,8 @@ slide("title", kicker="Pre-seed  ·  SGInnovate  ·  November 2026",
 slide("bullets", kicker="The problem", title="Work now happens in AI chats. The leak happens in one keystroke.",
   bullets=["A log file with a live key in it. A customer list “just to summarise”. A contract, to find one clause.",
            "Nobody is careless. They are fast, and the chat box accepts anything.",
-           "Once it is sent, it cannot be taken back."])
+           "Once it is sent, it cannot be taken back."],
+  note="One vendor\u2019s analysis of about 22 million enterprise AI prompts in 2025 found 579,113 sensitive items; ChatGPT accounted for 71.2% of them. Source: Harmonic Security, 2025 (a vendor study).")
 
 slide("cols", kicker="Why it is still happening", title="Most controls see the message after it has left.",
   cols=[("Policies and training","Rely on memory at the worst moment: a deadline, a clipboard and a chat box."),

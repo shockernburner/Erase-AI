@@ -13,6 +13,8 @@ EraseAI Firewall checks what your people are about to send to ChatGPT, Claude or
 - Nobody is careless. They are fast, and the chat box accepts anything.
 - Once it is sent, it cannot be taken back.
 
+_One vendor’s analysis of about 22 million enterprise AI prompts in 2025 found 579,113 sensitive items; ChatGPT accounted for 71.2% of them. Source: Harmonic Security, 2025 (a vendor study)._
+
 ## Slide 3: Why it is still happening
 **Most controls see the message after it has left.**
 

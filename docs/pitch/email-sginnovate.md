@@ -51,6 +51,7 @@ director@vantward.com  ·  +65 8243 0739  ·  https://eraseai.ai
 5. The deck uses your approved founder wording. Slide 7 mentions your child once, in the approved words, and nothing more.
 6. The email does not mention the PhD. If asked, the answer is in `investor-plan-notes.md` section 7; check immigration and student-pass questions with MOM, the university and a lawyer first.
 7. Open the PDF once on your own phone to check that it looks right.
+8. Slide 2 now carries one sourced statistic (Harmonic Security, 2025, a vendor study: about 22 million prompts, 579,113 sensitive items, ChatGPT 71.2%). The figures come from search summaries of the report, so open the report page yourself and confirm the numbers before you send; if you cannot confirm them, delete the footnote on slide 2.
 
 ## After you send
 
