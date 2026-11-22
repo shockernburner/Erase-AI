@@ -12,13 +12,13 @@
 
 Option 1 puts the hook first, which is what you wanted an investor to read first.
 
-## Body (about 215 words)
+## Body (about 220 words)
 
 Hi SGInnovate Investments team,
 
 You suggested on LinkedIn that I send a deck to this address, so here it is.
 
-EraseAI is an outgoing firewall at the Send button. It checks what people are about to send to ChatGPT, Claude or Gemini, on the device by default, with no proxy in the middle, and holds anything that looks like personal data, a card number, a password or a key until the person decides.
+EraseAI is an outgoing firewall at the Send button. It checks what people are about to send to ChatGPT, Claude or Gemini, on the device by default, with no proxy in the middle, and holds anything that looks like personal data, a card number, a password or a key until the person decides. On paid plans it reads attached files too.
 
 It is live on Chrome and Android and launched in October. I will be straight about where we are: pre-revenue, one founder, and detection that is rules-based, so it can miss things. What I want to build next is what a company needs before it can trust a control like this: central policy, an audit trail, a zero-retention mode, and a published detection benchmark so buyers can check our claims.
 
@@ -36,7 +36,7 @@ director@vantward.com  ·  +65 8243 0739  ·  https://eraseai.ai
 
 | Email line | Deck slide |
 |---|---|
-| Outgoing firewall at the Send button, no proxy | 1, 4 |
+| Outgoing firewall at the Send button, no proxy; attached files on paid plans | 1, 4, 5 |
 | Live on Chrome and Android, launched in October, pre-revenue, one founder | 5, 6, 7 |
 | Rules-based, can miss things | 4, 13 |
 | Central policy, audit trail, zero-retention mode, benchmark | 10, 11 |

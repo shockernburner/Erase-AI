@@ -19,13 +19,13 @@ slide("cols", kicker="Why it is still happening", title="Most controls see the m
         ("Checks at Send","The right place. A handful of browser extensions do it. It is not yet a company-grade control.")])
 
 slide("solution", kicker="The product", title="An outgoing firewall at the Send button.",
-  steps=[("1  Check","Every message, on the device by default, before it goes."),
+  steps=[("1  Check","Every message, on the device by default, before it goes. On paid plans, attached files too: PDF, Word, Excel, slides and screenshots are read in the browser."),
          ("2  Hold","If it finds personal data, card numbers, passwords or API keys, it stops and shows what and where."),
-         ("3  You decide","Cancel, Sanitize & Send, or Send Anyway. A person always has the last word.")],
+         ("3  You decide","Cancel or Send Anyway. On paid plans, Sanitize & Send swaps the sensitive values for labels, or you download a clean copy of the file. A person always has the last word.")],
   note="No proxy: nothing sits between your people and the AI.  Rules, not guesswork: patterns plus validators such as the card-number checksum. It can miss things and flag harmless text, which is why a person decides.")
 
 slide("cards", kicker="What is live today", title="Four surfaces, one decision record.",
-  cards=[("Chrome extension","ChatGPT, Claude, Gemini and Replit. Free checks run on the device. Paid plans scan attachments in the browser."),
+  cards=[("Chrome extension","ChatGPT, Claude, Gemini and Replit. Free checks run on the device. Paid plans also read attachments in the browser (PDF, Word, Excel, slides, images) and offer a clean copy."),
          ("Android app","A send gate inside the AI apps you choose. Not a VPN."),
          ("Teams dashboard","Invite people, see an audit log of decisions (level, action, category), never the text anyone typed."),
          ("Developer API","Scan the text going into and out of your own AI application.")],
