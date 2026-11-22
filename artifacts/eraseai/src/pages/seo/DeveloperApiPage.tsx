@@ -203,8 +203,8 @@ export default function DeveloperApiPage() {
         <div className="flex items-start gap-4 p-5 rounded-xl border border-border/30 bg-card/40 mb-12">
           <ShieldCheck className="w-6 h-6 text-primary shrink-0 mt-0.5" />
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Requests are sent over HTTPS. Your scan history stores only the first 500 characters of each request, with
-            keys, tokens and passwords masked, so you can review what was caught. Details are in the{" "}
+            Requests are sent over HTTPS. Your scan history stores only a short excerpt of each request (up to 200 characters), with
+            personal data, keys, tokens and passwords replaced by labels, so you can review what was caught. Details are in the{" "}
             <a href={`${BASE}privacy`} className="text-primary hover:underline">privacy policy</a>.
           </p>
         </div>

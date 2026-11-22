@@ -1,3 +1,4 @@
+import { excerptForStorage, flagsForStorage, suggestionsForStorage } from "../lib/dev/store-excerpt";
 import { Router } from "express";
 import { db, personalScansTable, personalAlertsTable } from "@workspace/db";
 import { eq, desc, sql, and, gte, inArray, lt } from "drizzle-orm";
@@ -11,11 +12,6 @@ const router = Router();
 
 // Free = 7-day trial with a total budget of 25 scans.
 const FREE_TRIAL_SCAN_LIMIT = 25;
-const MAX_STORED_CONTENT_LENGTH = 200;
-
-function redactMatchedText(text: string): string {
-  return text.length > 20 ? text.substring(0, 8) + "***" + text.substring(text.length - 4) : "***";
-}
 
 router.post("/personal/analyze", refreshPlanFromDB, requireActivePlan(), async (req, res) => {
   try {
@@ -56,17 +52,9 @@ router.post("/personal/analyze", refreshPlanFromDB, requireActivePlan(), async (
     const analysis = analyzeText(content);
     const risk = calculateRiskScore(analysis.flags);
 
-    const storedContent = content.substring(0, MAX_STORED_CONTENT_LENGTH) +
-      (content.length > MAX_STORED_CONTENT_LENGTH ? "..." : "");
-
-    const storedFlags = analysis.flags.map((f) => ({
-      ...f,
-      matchedText: redactMatchedText(f.matchedText),
-    }));
-    const storedSuggestions = analysis.suggestions.map((s) => ({
-      ...s,
-      original: redactMatchedText(s.original),
-    }));
+    const storedContent = excerptForStorage(content);
+    const storedFlags = flagsForStorage(analysis.flags);
+    const storedSuggestions = suggestionsForStorage(analysis.suggestions);
 
     const [scan] = await db
       .insert(personalScansTable)

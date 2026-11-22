@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { analyzePromptSafety } from "../lib/dev/safety";
 import { sanitizeText } from "../lib/dev/sanitize";
 import { refreshPlanFromDB, requireActivePlan } from "../middlewares/planMiddleware";
-import { redactInputForStorage } from "../lib/dev/store-redact";
+import { excerptForStorage } from "../lib/dev/store-excerpt";
 import { hashApiKey, enforceApiKeyTtlAndQuota } from "../middlewares/apiKeyMiddleware";
 import { getSessionId, getSession } from "../lib/auth";
 import { validateOutcomePayload } from "../lib/dev/outcome-source.mjs";
@@ -303,7 +303,7 @@ router.post("/analyze", ...burstChain, ...quotaChain, refreshPlanFromDB, require
 
     const result = analyzePromptSafety(text);
 
-    const storedInput = redactInputForStorage(text);
+    const storedInput = excerptForStorage(text);
     const storedIssues = result.issues.map(i => ({
       ...i,
       match: i.match.length > 30 ? i.match.substring(0, 12) + "***" + i.match.substring(i.match.length - 4) : "***",
@@ -363,8 +363,8 @@ router.post("/sanitize", ...burstChain, ...quotaChain, refreshPlanFromDB, requir
 
     const result = sanitizeText(text);
 
-    const storedInput = redactInputForStorage(text);
-    const storedSanitized = redactInputForStorage(result.sanitized);
+    const storedInput = excerptForStorage(text);
+    const storedSanitized = excerptForStorage(result.sanitized);
 
     await db.execute(sql`
       INSERT INTO dev_scans (user_id, scan_type, input_text, risk_score, issues, sanitized_text, created_at)

@@ -24,11 +24,11 @@ The model is `EraseAI_5yr_plan_model.xlsx` in this folder (live formulas; blue c
 Owner wording: an outgoing firewall at the Send button, no proxy, no retention.
 - **Outgoing firewall at the Send button**: true (Chrome extension and Android send gate).
 - **No proxy**: true. EraseAI does not sit between the user and the AI provider. (Say "no proxy", not "no network".)
-- **No retention**: true only for the free Chrome path (on-device checks, nothing sent). **Not true for signed-in use**:
-  - Developer API and extension with a key: `routes/dev.ts` stores `redactInputForStorage(text)` (a redacted excerpt) in `dev_scans`.
-  - Android and signed-in personal scans: `routes/mobile.ts` line 220 stores up to **500 characters of the message, apparently not redacted**, in `personal_scans`; multi-piece scans store 200 characters.
-  - So do not write "no retention" until a zero-retention mode exists. The honest line today is "checks run on the device, nothing in the middle". Shipping a no-retention mode is the first deliverable of the pre-seed (Section 6) and makes the claim true.
-  - Also check the public privacy policy, the Play Data Safety form and the Chrome Privacy tab against this.
+- **No retention**: true for the free Chrome path (on-device checks, nothing sent). For signed-in use the storage was fixed in code on 2026-11-22 (tests in `tests/store-excerpt.test.mjs`): scan history now keeps only an excerpt of up to 200 characters in which personal data, keys, tokens, passwords, database addresses and Singapore/Hong Kong phone and national ID numbers are replaced by whole labels, and flags and suggestions no longer keep the matched values. Before the fix, Android and personal scans stored up to 500 raw characters plus the matched values (`routes/mobile.ts`, `personal.ts`), and the Developer API stored an excerpt that masked secrets but not personal data.
+  - Set `SCAN_TEXT_RETENTION=none` on the server to store **no message text at all** (history rows then say "[message not stored]"). A per-account or per-company switch (a column and a settings screen) is the next step and part of the pre-seed deliverables.
+  - **Not true until deployed and cleaned**: the fix only protects new scans. Run `artifacts/api-server/scripts/redact-stored-scans.mjs` (dry run first, backup before `--apply`) to rewrite old rows. Until then, say "checks run on the device, nothing in the middle", not "no retention".
+  - The excerpt is still message text (names and free text that no rule detects can remain). "No retention" in the strict sense means the `SCAN_TEXT_RETENTION=none` setting.
+  - Public pages and the store listing were reworded to match (Developer API page, extension welcome page, STORE_LISTING.md, launch posts). The privacy policy page, the Play Data Safety form and the Chrome Privacy tab are the owner's to re-check.
 
 Candidate first sentences (the Sequoia business-plan page asks for the company in "a single declarative sentence" and warns against listing features):
 1. "EraseAI is an outgoing firewall at the Send button: it checks what staff are about to send to ChatGPT, Claude or Gemini, on the device, with no proxy in the middle." (true today)

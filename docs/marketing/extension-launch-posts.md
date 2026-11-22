@@ -36,8 +36,8 @@ never read text in images. Don't post while the store serves an older one.
   network gate. Link with `playStoreLink()` UTM tags from the web app.
 - **Works without an account**: checks run on your device with the same
   rules as the EraseAI server. Nothing is sent until you add an API key.
-- With an account: server-side scanning, scan history (first 500 chars,
-  secrets masked), team dashboard, API.
+- With an account: server-side scanning, scan history (short excerpt,
+  personal data and secrets replaced by labels), team dashboard, API.
 - Detection is rules-based (patterns plus validators such as the Luhn
   checksum for cards) — say so if asked; do not call it "AI-powered
   detection" or quote accuracy numbers we have not measured.
@@ -75,7 +75,7 @@ It hooks the send button (and Enter), checks the prompt on your device, and if i
 
 Things you'll probably ask:
 
-- Where does my text go? Without an account, nowhere: the checks run in the extension, with the same rules our server uses (the extension's scanner is generated from the server's rule code). If you add an API key, text is sent to our API for scanning and your history keeps the first 500 characters with secrets masked. Image OCR also runs locally, in the extension (the OCR engine and language data ship inside it; nothing is fetched at runtime).
+- Where does my text go? Without an account, nowhere: the checks run in the extension, with the same rules our server uses (the extension's scanner is generated from the server's rule code). If you add an API key, text is sent to our API for scanning and your history keeps a short excerpt (up to 200 characters) with personal data and secrets replaced by labels. Image OCR also runs locally, in the extension (the OCR engine and language data ship inside it; nothing is fetched at runtime).
 - How does detection work? Pattern rules plus validators (e.g. Luhn for card numbers, context checks so "ISBN 978…" isn't a card). No LLM in the loop. It will miss secrets it has no pattern for, and it will sometimes flag harmless text — both are fixable and we'd like examples.
 - Why an extension and not a proxy? Consumer AI apps pin TLS and personal laptops don't have a corporate proxy. The extension sees the text before it's encrypted.
 
