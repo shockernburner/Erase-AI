@@ -66,7 +66,7 @@ await shoot("vbg", `<div class="bg" style="width:1080px;height:1920px"><div clas
 for (let i = 0; i < caps.length; i++) await shoot(`vcap${i}`, `<div class="vcap"><div class="k">${caps[i][0]}</div><h2>${caps[i][1]}</h2>${caps[i][2] ? `<p>${caps[i][2]}</p>` : ""}</div>`, { w: 1080, h: 1920, transparent: true });
 // ---- video 2 cards
 const stat = "One vendor’s analysis of about 22 million enterprise AI prompts in 2025 found 579,113 sensitive items; ChatGPT accounted for 71.2% of them.";
-await shoot("v2_hook", card("A 80-SECOND GUIDE", "Your staff are pasting customer data into AI chats.", "Three ways to stop it, and what each is good and bad at."));
+await shoot("v2_hook", card("AN HONEST GUIDE", "Your staff are pasting customer data into AI chats.", "Three ways to stop it, and what each is good and bad at."));
 await shoot("v2_why", card("WHY IT HAPPENS", "Nobody is careless.<br>They are fast.", stat, "", "Source: Harmonic Security, 2025 (a vendor study)."));
 const opt = (n, title, good, weak) => card(`OPTION ${n}`, title, "", `<div class="two"><div class="box g"><h3>Good at</h3><p>${good}</p></div><div class="box w"><h3>Weak at</h3><p>${weak}</p></div></div>`);
 await shoot("v2_o1", opt(1, "Policy and training", "It is cheap, sets expectations, and you need it anyway.", "It depends on memory at the worst moment: a deadline and a chat box."));
@@ -113,27 +113,52 @@ function footage(o, start, end, capsList, capPrefix, bgPng, vertical) {
   ff([...inputs, "-filter_complex", fc, "-map", "[final]", "-t", d.toFixed(2), "-c:v", "libx264", "-crf", "17", P(o + ".mp4")]);
 }
 const footStart = TL.type - 0.3, footEnd = TL.end;
-// video 1 landscape
-still("v1_hook", 3.4, "a1"); footage("a2", footStart, footEnd, caps, "cap", "bg", false); still("v1_trust", 4.8, "a3"); still("v1_cta", 5.2, "a4");
-// video 1 vertical
-still("vv_hook", 3.4, "b1", 1080, 1920); footage("b2", footStart, footEnd, caps, "vcap", "vbg", true); still("vv_trust", 4.8, "b3", 1080, 1920); still("vv_cta", 5.2, "b4", 1080, 1920);
-// video 2
-const v2 = [["v2_hook", 5], ["v2_why", 8], ["v2_o1", 9], ["v2_o2", 9], ["v2_o3", 9]];
-v2.forEach(([p, d], i) => still(p, d, `c${i + 1}`));
-footage("c6", TL.send - 0.2, TL.sanitize + 2.6, [["", "", "", 0, 99]], "v2_democap_", "v2_demo", false);
-still("v2_q", 14, "c7"); still("v2_mix", 8, "c8"); still("v2_cta", 6, "c9");
-// ---- join and add a quiet sound bed
-const dur = (f) => parseFloat(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", P(f)]).toString());
-function join(parts, name) {
+const VOICE = process.env.VOICE_DIR;           // folder with eric_<line>.mp3 and music/bed.mp3 (see README)
+const dur = (f) => parseFloat(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]).toString());
+const vd = (k) => (VOICE ? dur(path.join(VOICE, `eric_${k}.mp3`)) : 0);
+const vf = (k) => path.join(VOICE, `eric_${k}.mp3`);
+// ---- video 1 timeline (landscape and vertical share it)
+const HOOK = 3.4, footLen = footEnd - footStart;
+const trust = VOICE ? vd("v1_7") + 0.9 : 4.8, cta = VOICE ? vd("v1_8") + 1.2 : 5.2;
+const fin = (t) => HOOK + (t - footStart);
+still("v1_hook", HOOK, "a1"); footage("a2", footStart, footEnd, caps, "cap", "bg", false); still("v1_trust", trust, "a3"); still("v1_cta", cta, "a4");
+still("vv_hook", HOOK, "b1", 1080, 1920); footage("b2", footStart, footEnd, caps, "vcap", "vbg", true); still("vv_trust", trust, "b3", 1080, 1920); still("vv_cta", cta, "b4", 1080, 1920);
+const t1 = [["v1_1", 0.4], ["v1_2", fin(TL.send - 0.1)], ["v1_3", fin(TL.hold) + 0.1], ["v1_4", fin(TL.buttons) + 0.1], ["v1_5", fin(TL.sanitize) + 0.9], ["v1_6", fin(TL.sent) + 0.3], ["v1_7", HOOK + footLen + 0.3], ["v1_8", HOOK + footLen + trust + 0.3]];
+// ---- video 2 timeline: each card lasts as long as its narration plus a short pause
+const cards = ["v2_hook", "v2_why", "v2_o1", "v2_o2", "v2_o3"].map((p, i) => [p, VOICE ? vd(`v2_${i + 1}`) + 0.9 : [5, 8, 9, 9, 9][i]]);
+cards.forEach(([p, d], i) => still(p, d, `c${i + 1}`));
+const demoStart = TL.send - 0.2, demoEnd = TL.sanitize + 2.6;
+footage("c6", demoStart, demoEnd, [["", "", "", 0, 99]], "v2_democap_", "v2_demo", false);
+const q = VOICE ? vd("v2_7") + 0.9 : 14, mix = VOICE ? vd("v2_8") + 0.9 : 8, cta2 = VOICE ? vd("v2_9") + 0.9 : 6;
+still("v2_q", q, "c7"); still("v2_mix", mix, "c8"); still("v2_cta", cta2, "c9");
+const t2 = []; let at = 0; const marks = [];
+cards.forEach(([p, d], i) => { t2.push([`v2_${i + 1}`, at + 0.3]); marks.push(at); at += d; });
+t2.push(["v2_6", at + 0.3]); marks.push(at); at += demoEnd - demoStart;
+t2.push(["v2_7", at + 0.3]); marks.push(at); at += q;
+t2.push(["v2_8", at + 0.3]); marks.push(at); at += mix;
+t2.push(["v2_9", at + 0.3]); marks.push(at); at += cta2;
+const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const names = ["The problem", "Why it happens", "Option 1: policy and training", "Option 2: network tools and gateways", "Option 3: a check at the Send button", "Option 3 in action (the real extension, sample data)", "Five questions to ask any vendor", "The honest answer: most companies need a mix", "Try it"];
+fs.writeFileSync(path.join(out, "chapters-v2.txt"), marks.map((m, i) => `${mmss(m)} ${names[i]}`).join("\n") + "\n");
+// ---- join, then mix narration and music (music ducks under the voice)
+function join(parts, name, voiceLines) {
   const list = P(name + ".txt"); fs.writeFileSync(list, parts.map((p) => `file '${P(p + ".mp4")}'`).join("\n"));
-  const total = parts.reduce((t, p) => t + dur(p + ".mp4"), 0);
+  const total = parts.reduce((t, p) => t + dur(P(p + ".mp4")), 0);
   ff(["-f", "concat", "-safe", "0", "-i", list, "-c", "copy", P(name + "_silent.mp4")]);
-  ff(["-f", "lavfi", "-i", `sine=frequency=110:sample_rate=44100:duration=${total}`, "-f", "lavfi", "-i", `sine=frequency=165:sample_rate=44100:duration=${total}`, "-f", "lavfi", "-i", `sine=frequency=220:sample_rate=44100:duration=${total}`,
-    "-filter_complex", `[0][1][2]amix=inputs=3,tremolo=f=0.15:d=0.6,lowpass=f=600,volume=0.14,afade=t=in:d=2,afade=t=out:st=${(total - 2).toFixed(2)}:d=2[a]`, "-map", "[a]", "-c:a", "aac", "-b:a", "128k", P(name + "_bed.m4a")]);
-  ff(["-i", P(name + "_silent.mp4"), "-i", P(name + "_bed.m4a"), "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy", "-shortest", "-movflags", "+faststart", path.join(out, name + ".mp4")]);
+  if (VOICE) {
+    const ins = []; voiceLines.forEach(([k]) => ins.push("-i", vf(k))); ins.push("-i", path.join(VOICE, "music/bed.mp3"));
+    const n = voiceLines.length;
+    const delays = voiceLines.map(([k, s], i) => `[${i}:a]adelay=${Math.round(s * 1000)}|${Math.round(s * 1000)},apad[d${i}]`).join(";");
+    const fc = `${delays};${voiceLines.map((_, i) => `[d${i}]`).join("")}amix=inputs=${n}:normalize=0:duration=longest,atrim=0:${total.toFixed(2)},asplit=2[vs][vo];[${n}:a]atrim=0:${total.toFixed(2)},volume=0.5,afade=t=in:d=2,afade=t=out:st=${(total - 2.5).toFixed(2)}:d=2.5[m];[m][vs]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=450[duck];[duck][vo]amix=inputs=2:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=9[a]`;
+    ff([...ins, "-filter_complex", fc, "-map", "[a]", "-t", total.toFixed(2), "-c:a", "aac", "-b:a", "192k", P(name + "_mix.m4a")]);
+  } else {
+    ff(["-f", "lavfi", "-i", `sine=frequency=110:sample_rate=44100:duration=${total}`, "-f", "lavfi", "-i", `sine=frequency=165:sample_rate=44100:duration=${total}`, "-f", "lavfi", "-i", `sine=frequency=220:sample_rate=44100:duration=${total}`,
+      "-filter_complex", `[0][1][2]amix=inputs=3,tremolo=f=0.15:d=0.6,lowpass=f=600,volume=0.14,afade=t=in:d=2,afade=t=out:st=${(total - 2).toFixed(2)}:d=2[a]`, "-map", "[a]", "-c:a", "aac", "-b:a", "128k", P(name + "_mix.m4a")]);
+  }
+  ff(["-i", P(name + "_silent.mp4"), "-i", P(name + "_mix.m4a"), "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "copy", "-shortest", "-movflags", "+faststart", path.join(out, name + ".mp4")]);
   console.log(name, total.toFixed(1) + "s");
 }
-join(["a1", "a2", "a3", "a4"], "eraseai-paste-test-1920x1080");
-join(["b1", "b2", "b3", "b4"], "eraseai-paste-test-vertical-1080x1920");
-join(["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"], "eraseai-3-ways-to-stop-staff-pasting-customer-data");
+join(["a1", "a2", "a3", "a4"], "eraseai-paste-test-1920x1080", t1);
+join(["b1", "b2", "b3", "b4"], "eraseai-paste-test-vertical-1080x1920", t1);
+join(["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9"], "eraseai-3-ways-to-stop-staff-pasting-customer-data", t2);
 for (const t of ["thumb_v1_a", "thumb_v1_b", "thumb_v2"]) fs.copyFileSync(P(t + ".png"), path.join(out, t.replace("thumb_", "thumbnail-") + ".png"));
