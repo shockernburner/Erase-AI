@@ -47,7 +47,7 @@ How it works: the check runs on your device by default, with no proxy in the mid
 Try it free on Chrome (the Android app has a free trial): https://eraseai.ai/ai-firewall?utm_source=youtube&utm_medium=video&utm_campaign=paste_test
 For teams: a free 30-day pilot for up to 10 people. Write to director@vantward.com
 
-Narration and music are AI-generated (ElevenLabs).
+Narration and music are AI-generated (ElevenLabs). Vee is the Vantward mascot.
 Made by Vantward Solutions Pte. Ltd., Singapore.
 #AISecurity #DataLeakPrevention #ShadowAI #ChatGPT #PromptSecurity
 ```
@@ -90,7 +90,7 @@ I build EraseAI Firewall, a check at the Send button. It runs on your device by 
 Try it free on Chrome: https://eraseai.ai/ai-firewall?utm_source=youtube&utm_medium=video&utm_campaign=three_ways
 For teams: a free 30-day pilot for up to 10 people. director@vantward.com
 
-Narration and music are AI-generated (ElevenLabs).
+Narration and music are AI-generated (ElevenLabs). Vee is the Vantward mascot.
 Made by Vantward Solutions Pte. Ltd., Singapore.
 #AISecurity #ShadowAI #DataLossPrevention #AIGovernance #CyberSecurity
 ```
@@ -107,12 +107,20 @@ Made with your ElevenLabs plan: voice "Eric - Smooth, Trustworthy" (a library vo
 - The music bed is `audio/music-bed-110s.mp3` if you want to reuse it. Video 1 uses its opening 36 seconds.
 - If you would rather record your own voice, read the lines in `narration-lines.json` (change "we" to "I" where you like) and replace the audio in any video editor.
 
+## Vee, the presenter
+
+Vee is the small robot from vantward.com. He appears in every video: big on the left of each card and next to the footage, with a mood that fits the moment (worried on the hook, wide-eyed when the extension catches the data, happy on Sanitize, delighted on the offer). His mouth moves with the narration (it follows the loudness of the voice, frame by frame), and he floats, blinks and glows like on the site.
+- He is not a copy: `build/vee_stage.mjs` renders the real Vee markup and styles taken from the live site (`build/vee_source.html` is a saved copy of https://vantward.com, which is served from the repo `shockernburner/vantward-site`).
+- The vertical cut puts him at the bottom, next to the "On your device by default. Not a VPN." line.
+- Thumbnails with Vee: `thumbnail-v1_c.png` (worried: "STOP. Before you hit Send."), `thumbnail-v1_d.png` (wow: "HELD before sending"), `thumbnail-v2_vee.png` (video 2). The earlier panel-only thumbnails are still there for A/B testing: a face against no face is a good test.
+- The description of each video says that Vee is Vantward's mascot, so nobody mistakes him for a person.
+
 ## Thumbnails (1280x720)
 
 - `thumbnail-v1_a.png`: "STOP. Before you hit Send." with the real hold panel, red border.
 - `thumbnail-v1_b.png`: "HELD before sending" with the three choices, cyan border.
 - `thumbnail-v2.png`: "3 ways to stop staff pasting customer data into AI".
-Use YouTube's "Test and compare" with a and b on video 1. They use real frames, so they match what the viewer then sees.
+Use YouTube's "Test and compare" on video 1 with up to three of: a, b, c (Vee worried) and d (Vee wow). My pick to try first: c against a. They use real frames, so they match what the viewer then sees.
 
 ## Before you publish
 
@@ -142,7 +150,8 @@ To add narration and music, generate them first (see the scripts' headers), then
 cd <voiceDir> && cp <repo>/marketing-assets/youtube/audio/narration-lines.json lines.json
 python3 <repo>/marketing-assets/youtube/build/generate_voice.py cjVigY5qzO86Huf0OWal eric       # writes eric_<line>.mp3
 mkdir music && (cd music && python3 <repo>/marketing-assets/youtube/build/generate_music.py)       # writes music/bed.mp3
-VOICE_DIR=<voiceDir> node build/build_videos.mjs <work> <outDir>                                   # card lengths follow the narration
+VOICE_DIR=<voiceDir> node build/build_videos.mjs <work> <outDir>                                   # card lengths follow the narration; Vee is rendered and composited (a few minutes)
+node build/make_thumbs_vee.mjs <veeMoodDir> <frame.png> <outDir>                                   # thumbnails with Vee (moods from: node build/vee_stage.mjs build/vee_source.html <veeMoodDir> sheet - 640)
 ```
 
 Without `VOICE_DIR` the script builds the silent version with a quiet placeholder bed.
