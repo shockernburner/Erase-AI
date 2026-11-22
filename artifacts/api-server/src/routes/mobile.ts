@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, personalScansTable, usersTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { analyzeText } from "../lib/personalAnalyzer";
+import { excerptForStorage, flagsForStorage, suggestionsForStorage } from "../lib/dev/store-excerpt";
 import { calculateRiskScore } from "../lib/riskScorer";
 import { refreshPlanFromDB, requireActivePlan } from "../middlewares/planMiddleware";
 import {
@@ -217,7 +218,7 @@ router.post("/analyze", requireActivePlan(), async (req: Request, res: Response)
   try {
     const analysis = analyzeText(text);
     const risk = calculateRiskScore(analysis.flags);
-    const storedContent = text.length > 500 ? `${text.substring(0, 500)}...` : text;
+    const storedContent = excerptForStorage(text);
 
     const scan = silentPreview
       ? undefined
@@ -229,8 +230,8 @@ router.post("/analyze", requireActivePlan(), async (req: Request, res: Response)
             content: storedContent,
             riskScore: risk.score,
             level: risk.level,
-            flags: JSON.stringify(analysis.flags ?? []),
-            suggestions: JSON.stringify(analysis.suggestions ?? []),
+            flags: JSON.stringify(flagsForStorage(analysis.flags)),
+            suggestions: JSON.stringify(suggestionsForStorage(analysis.suggestions)),
           })
           .returning()
       )[0];
@@ -456,14 +457,14 @@ router.post("/analyze-pieces", requireActivePlan(), async (req: Request, res: Re
     worstScore = Math.min(worstScore, 30);
   }
 
-  const storedContent = (primaryText || "multi-piece scan").substring(0, 200);
+  const storedContent = excerptForStorage(primaryText) || "multi-piece scan";
   const [scan] = await db
     .insert(personalScansTable)
     .values({
       userId,
       content: storedContent,
       riskScore: worstScore,
-      flags: JSON.stringify(allFlags.slice(0, 50)),
+      flags: JSON.stringify(flagsForStorage(allFlags.slice(0, 50))),
       suggestions: JSON.stringify([]),
       level: worstLevel,
     })

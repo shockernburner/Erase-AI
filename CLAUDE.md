@@ -20,7 +20,11 @@ for them, and open a PR only when asked.
   information was the core duty), then started a software company and wrote the code by hand. Saw people on teams paste company information into public AI tools. One
   morning, as a father, realised they had done the same with information about their own child. Do not add details about the child. Do not invent a rank.
 
-## 2. Our strength, and what we are NOT strong at (owner decision, 2026-10-24)
+## 2a. Positioning update (owner decision, 2026-11-22; supersedes the Android-strength line in section 2)
+
+The owner says **Android is not the strength; the target is B2B** (teams and companies), and the lead idea is an **outgoing firewall at the Send button, no proxy**. Do not write "Android is our strength" in new material. Facts as of 2026-11-22 (owner screenshots): Play Console 8 installs, no revenue; GA4 21 users this year, 0 purchases; **Chrome Web Store 645 installs is not citable** (installs exceed impressions about 3x, 82% Romania, no matching uninstalls). The investor pitch is SGInnovate only; see `docs/pitch/`. **"No retention" needs care**: the storage fix is in code (scan history keeps a labelled excerpt of up to 200 characters; `SCAN_TEXT_RETENTION=none` stores no text) but is not deployed or cleaned in the live database until the owner runs `artifacts/api-server/scripts/redact-stored-scans.mjs` (see `docs/pitch/investor-plan-notes.md` section 3). Until then do not claim "no retention".
+
+## 2. Our strength, and what we are NOT strong at (owner decision, 2026-10-24; Android line superseded by 2a)
 
 - **Strength: Android.** Send-level filtering of sensitive chats inside the AI apps the user chooses, plus the **Chrome attachment scanning and Sanitize & Send**
   (paid). In one standard web search I found no Android competitor doing send-level filtering; that is **not proof**. Never claim "first" or "only".

@@ -60,7 +60,7 @@ WHERE IT WORKS
 ChatGPT, Claude, Gemini and Replit in your browser.
 
 YOUR DATA
-The extension runs only on the sites above. Without an account, every check happens on your device and nothing is sent anywhere. With an account, message text is checked by the EraseAI API over HTTPS, and your scan history keeps a short excerpt of each scan, with secrets masked, so you can review it in your dashboard. We never sell your data or use it to train models. Privacy policy: https://eraseai.ai/privacy
+The extension runs only on the sites above. Without an account, every check happens on your device and nothing is sent anywhere. With an account, message text is checked by the EraseAI API over HTTPS, and your scan history keeps a short excerpt of each scan (up to 200 characters), with personal data and secrets replaced by labels, so you can review it in your dashboard. We never sell your data or use it to train models. Privacy policy: https://eraseai.ai/privacy
 
 FOR TEAMS
 Security and IT teams use EraseAI Firewall to reduce data leaks to AI tools without banning them. Team plans are available at https://eraseai.ai.
