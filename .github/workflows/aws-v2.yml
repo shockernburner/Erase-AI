@@ -1,0 +1,239 @@
+# v2: builds and converges the whole EraseAI replica in the new organization
+# (management 635096817158, owned by founder@eraseai.ai) in a fixed order,
+# then tests it. Driven by infra/v2/settings.env (MODE=running|paused).
+# Uses the "aws-new" GitHub environment (no per-run approval while the move
+# runs); the roles trust only this repository and that environment.
+name: aws-v2
+
+on:
+  push:
+    branches: [claude/compassionate-feynman-yhk6x4]
+    paths:
+      - "infra/v2/**"
+      - ".github/workflows/aws-v2.yml"
+      - "artifacts/api-server/**"
+      - "artifacts/eraseai/**"
+      - "lib/**"
+      - "extension/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: aws-v2
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-1
+  ORG_DEPLOY_ROLE: arn:aws:iam::635096817158:role/eraseai-github-org-deploy
+  DOMAIN: aws.eraseai.ai
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    environment: aws-new
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: 1.13.4, terraform_wrapper: false }
+
+      - name: Settings
+        run: |
+          set -a; . infra/v2/settings.env; set +a
+          case "$MODE" in running|paused) ;; *) echo "MODE must be running or paused"; exit 1;; esac
+          echo "MODE=$MODE" >> "$GITHUB_ENV"
+          echo "ATTACH_DOMAIN=$ATTACH_DOMAIN" >> "$GITHUB_ENV"
+          echo "TF_VAR_paused=$([ "$MODE" = paused ] && echo true || echo false)" >> "$GITHUB_ENV"
+          echo "### aws-v2: MODE=$MODE, ATTACH_DOMAIN=$ATTACH_DOMAIN, commit ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------- management account ----------------
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ env.ORG_DEPLOY_ROLE }}", aws-region: "${{ env.AWS_REGION }}", role-duration-seconds: 7200 }
+
+      - name: Organization (Control Tower, accounts)
+        working-directory: infra/v2/org
+        run: |
+          set -o pipefail
+          terraform init -input=false -no-color
+          terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+          terraform apply -input=false -no-color tfplan
+          { echo "#### org"; echo '```'; grep -E '^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: eraseai-prod access and enrollment
+        working-directory: infra/v2/accounts
+        run: |
+          set -o pipefail
+          terraform init -input=false -no-color
+          terraform plan -input=false -no-color -out=tfplan | tee plan.txt
+          terraform apply -input=false -no-color tfplan
+          { echo "#### accounts"; echo '```'; grep -E '^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "PROD_ID=$(terraform output -raw prod_account_id)" >> "$GITHUB_ENV"
+          echo "PROD_DEPLOY_ROLE=$(terraform output -raw github_deploy_role_arn)" >> "$GITHUB_ENV"
+          echo "STATE_BUCKET=$(terraform output -raw workload_state_bucket)" >> "$GITHUB_ENV"
+
+      # ---------------- eraseai-prod ----------------
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ env.PROD_DEPLOY_ROLE }}", aws-region: "${{ env.AWS_REGION }}", role-duration-seconds: 7200, role-chaining: false }
+
+      - name: Helpers
+        run: |
+          cat > "$RUNNER_TEMP/tf.sh" <<'SH'
+          # usage: tf <stack>   (plan + apply infra/v2/workload/<stack>)
+          tf() {
+            set -o pipefail
+            local d="$GITHUB_WORKSPACE/infra/v2/workload/$1"
+            ( cd "$d" &&
+              terraform init -input=false -no-color -reconfigure -backend-config="bucket=$STATE_BUCKET" >/dev/null &&
+              terraform plan -input=false -no-color -out=tfplan | tee plan.txt &&
+              terraform apply -input=false -no-color tfplan &&
+              { echo "#### $1"; echo '```'; grep -E '^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" )
+          }
+          tfout() { ( cd "$GITHUB_WORKSPACE/infra/v2/workload/$1" && terraform output -raw "$2" ); }
+          SH
+          echo "TF_VAR_account_id=$PROD_ID" >> "$GITHUB_ENV"
+          echo "TF_VAR_state_bucket=$STATE_BUCKET" >> "$GITHUB_ENV"
+          aws sts get-caller-identity --query Account --output text | grep -qx "$PROD_ID"
+
+      - name: Network and registry
+        run: |
+          . "$RUNNER_TEMP/tf.sh"
+          tf network
+          tf ecr
+
+      - name: DNS and certificate
+        run: |
+          . "$RUNNER_TEMP/tf.sh"
+          TF_VAR_wait_for_certificate=false tf edge
+          want=$(cd infra/v2/workload/edge && terraform output -json name_servers | jq -r '.[]' | sed 's/\.$//' | sort)
+          have=$(dig +short NS "$DOMAIN" @8.8.8.8 | sed 's/\.$//' | sort)
+          if [ -n "$have" ] && [ "$want" = "$have" ]; then
+            echo "DELEGATED=true" >> "$GITHUB_ENV"
+            TF_VAR_wait_for_certificate=true tf edge
+          else
+            echo "DELEGATED=false" >> "$GITHUB_ENV"
+            { echo "#### Waiting for GoDaddy: set the 4 NS records for \`aws\` to:"; echo '```'; echo "$want"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Image (build once per commit)
+        run: |
+          repo=$(cd infra/v2/workload/ecr && terraform output -raw repository_url)
+          echo "REPO=$repo" >> "$GITHUB_ENV"
+          if aws ecr describe-images --repository-name eraseai/app --image-ids imageTag=$GITHUB_SHA >/dev/null 2>&1; then
+            echo "image $GITHUB_SHA already in ECR"
+          else
+            aws ecr get-login-password | docker login --username AWS --password-stdin "${repo%%/*}"
+            docker build --platform linux/amd64 -t "$repo:$GITHUB_SHA" .
+            docker push "$repo:$GITHUB_SHA"
+            aws ecr wait image-scan-complete --repository-name eraseai/app --image-id imageTag=$GITHUB_SHA || true
+          fi
+          counts=$(aws ecr describe-image-scan-findings --repository-name eraseai/app --image-id imageTag=$GITHUB_SHA --query 'imageScanFindings.findingSeverityCounts' --output json || echo '{}')
+          { echo "#### image $GITHUB_SHA"; echo "scan findings: \`$(echo $counts | tr -d ' \n')\`"; } >> "$GITHUB_STEP_SUMMARY"
+          aws ssm put-parameter --name /eraseai/app/image-tag --type String --overwrite --value "$GITHUB_SHA" >/dev/null
+
+      - name: Database
+        run: |
+          . "$RUNNER_TEMP/tf.sh"
+          tf data
+
+      - name: App (ECS, load balancer, WAF)
+        run: |
+          . "$RUNNER_TEMP/tf.sh"
+          # Without a certificate the load balancer cannot serve HTTPS: keep
+          # the app paused until DNS is delegated.
+          run=false; [ "$MODE" = running ] && [ "$DELEGATED" = true ] && run=true
+          echo "APP_RUNNING=$run" >> "$GITHUB_ENV"
+          first=false
+          aws ecs describe-task-definition --task-definition eraseai-app >/dev/null 2>&1 || first=true
+          push_schema() {
+            local td subnets sg task code
+            td=$(aws ecs describe-task-definition --task-definition eraseai-app --query 'taskDefinition.taskDefinitionArn' --output text)
+            subnets=$(cd infra/v2/workload/network && terraform output -json app_subnet_ids | jq -r 'join(",")')
+            sg=$(cd infra/v2/workload/network && terraform output -raw app_security_group_id)
+            task=$(aws ecs run-task --cluster eraseai --launch-type FARGATE --task-definition "$td" \
+              --network-configuration "awsvpcConfiguration={subnets=[$subnets],securityGroups=[$sg],assignPublicIp=DISABLED}" \
+              --overrides '{"containerOverrides":[{"name":"app","command":["sh","-c","cd /app/lib/db && ./node_modules/.bin/drizzle-kit push --config ./drizzle.config.ts"]}]}' \
+              --query 'tasks[0].taskArn' --output text)
+            aws ecs wait tasks-stopped --cluster eraseai --tasks "$task"
+            code=$(aws ecs describe-tasks --cluster eraseai --tasks "$task" --query 'tasks[0].containers[0].exitCode' --output text)
+            echo "schema push ($td) exit code: $code"
+            [ "$code" = 0 ] || { echo "schema push failed: see /eraseai/app logs"; exit 1; }
+            echo "#### database schema up to date (drizzle-kit push with ${td##*/})" >> "$GITHUB_STEP_SUMMARY"
+          }
+          if [ "$run" = true ] && [ "$first" = true ]; then
+            # Empty database: register this version's task definition with no
+            # tasks, create the schema, then start the service on it.
+            TF_VAR_paused=true tf app
+            push_schema
+            TF_VAR_paused=false tf app
+            aws ecs wait services-stable --cluster eraseai --services eraseai-app
+          elif [ "$run" = true ]; then
+            # Roll out this version, bring the schema up to it, restart.
+            TF_VAR_paused=false tf app
+            push_schema
+            aws ecs update-service --cluster eraseai --service eraseai-app --force-new-deployment >/dev/null
+            aws ecs wait services-stable --cluster eraseai --services eraseai-app
+          else
+            TF_VAR_paused=true tf app
+          fi
+
+      - name: Website (Amplify)
+        run: |
+          . "$RUNNER_TEMP/tf.sh"
+          TF_VAR_attach_domain=$ATTACH_DOMAIN tf frontend
+          app=$(cd infra/v2/workload/frontend && terraform output -raw app_id)
+          echo "AMPLIFY_URL=$(cd infra/v2/workload/frontend && terraform output -raw default_url)" >> "$GITHUB_ENV"
+          echo "AMPLIFY_APP=$app" >> "$GITHUB_ENV"
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.28.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+
+      - name: Website build and deploy
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --filter "@workspace/eraseai..."
+          PORT=8080 BASE_PATH=/ pnpm --filter @workspace/eraseai run build
+          (cd artifacts/eraseai/dist/public && zip -qr "$RUNNER_TEMP/site.zip" .)
+          read -r job url < <(aws amplify create-deployment --app-id "$AMPLIFY_APP" --branch-name main --query '[jobId,zipUploadUrl]' --output text)
+          curl -sSf -X PUT -H "Content-Type: application/zip" --upload-file "$RUNNER_TEMP/site.zip" "$url"
+          aws amplify start-deployment --app-id "$AMPLIFY_APP" --branch-name main --job-id "$job" >/dev/null
+          for i in $(seq 1 60); do
+            st=$(aws amplify get-job --app-id "$AMPLIFY_APP" --branch-name main --job-id "$job" --query 'job.summary.status' --output text)
+            case "$st" in SUCCEED) break;; FAILED|CANCELLED) echo "Amplify job $st"; exit 1;; esac; sleep 10
+          done
+          [ "$st" = SUCCEED ]
+          echo "#### website deployed: $AMPLIFY_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Monitoring and security services
+        run: |
+          . "$RUNNER_TEMP/tf.sh"
+          tf monitoring
+
+      - name: Tests
+        if: env.APP_RUNNING == 'true'
+        run: |
+          set -euo pipefail
+          r() { echo "- $1" >> "$GITHUB_STEP_SUMMARY"; }
+          echo "#### tests" >> "$GITHUB_STEP_SUMMARY"
+          for u in "https://api.$DOMAIN/api/healthz" "$AMPLIFY_URL/api/healthz"; do
+            curl -fsS --retry 6 --retry-delay 10 --retry-all-errors "$u" | grep -q '"ok"'; r "health ok: $u"
+          done
+          [ "$(curl -s -o /dev/null -w '%{http_code}' "http://api.$DOMAIN/api/healthz")" = 301 ]; r "HTTP redirects to HTTPS"
+          curl -sSI "$AMPLIFY_URL/" | grep -qi '^strict-transport-security'; r "website HSTS header present"
+          [ "$(curl -s -o /dev/null -w '%{http_code}' "$AMPLIFY_URL/pricing")" = 200 ]; r "website deep link /pricing loads"
+          jar="$RUNNER_TEMP/jar"; email="replica-check@eraseai.ai"; pw="Replica-Check-$(date +%Y)!"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -c "$jar" -X POST "$AMPLIFY_URL/api/auth/signup" -H 'content-type: application/json' -d "{\"email\":\"$email\",\"password\":\"$pw\",\"firstName\":\"Replica\",\"lastName\":\"Check\"}")
+          case "$code" in 200|201|409) r "sign-up endpoint answers ($code)";; *) echo "signup $code"; exit 1;; esac
+          [ "$(curl -s -o /dev/null -w '%{http_code}' -c "$jar" -X POST "$AMPLIFY_URL/api/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$email\",\"password\":\"$pw\"}")" = 200 ]; r "login with the test account works"
+          [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$AMPLIFY_URL/api/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$email\",\"password\":\"wrong\"}")" = 401 ]; r "wrong password refused (401)"
+          curl -fsS -b "$jar" -X POST "$AMPLIFY_URL/api/mobile/analyze" -H 'content-type: application/json' -d '{"text":"card 4111 1111 1111 1111, email jane@example.com"}' | jq -e '[.flags[].type] | index("pii")' >/dev/null; r "scan flags a card number and an email"
+          waf=$(aws wafv2 get-web-acl-for-resource --resource-arn "$(aws elbv2 describe-load-balancers --names eraseai --query 'LoadBalancers[0].LoadBalancerArn' --output text)" --query 'WebACL.Name' --output text); [ "$waf" = eraseai ]; r "WAF attached to the load balancer"

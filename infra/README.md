@@ -66,3 +66,25 @@ balancer, WAF, DNS, certificates, Amplify and all data remain.
 Resume: set `nat_enabled = true` (network), `paused = false` (data, then
 app), push, approve the three applies. The app comes back on the image in
 `/eraseai/app/image-tag`.
+
+## v2: new organization (from 2026-11-26)
+
+The deployment moved to the organization owned by founder@eraseai.ai
+(management account 635096817158), so the AWS account matches the AWS
+Startups / Activate profile. Code: `infra/v2/`. Everything above this
+section is v1 (old organization 741853494029), kept until its teardown.
+
+| Path | Account | What |
+|---|---|---|
+| `v2/bootstrap/github-bootstrap.yaml` | management | Run once from CloudShell: GitHub OIDC roles (environment `aws-new`) + state bucket |
+| `v2/org` | management | Control Tower 4.0 (Identity Center left self-managed), Security OU (Log Archive `connect+log@`, Audit `connect+audit@`), Workloads OU, eraseai-prod (`founder+prod@`) |
+| `v2/accounts` | management → eraseai-prod | AWSControlTowerExecution role, GitHub plan/deploy roles, workload state bucket; registers the Workloads OU (enrolls eraseai-prod) |
+| `v2/workload/*` | eraseai-prod | network, edge (DNS + cert), ecr, data (empty database, no customer data), app (ECS + ALB + WAF), frontend (Amplify), monitoring |
+
+One pipeline, `.github/workflows/aws-v2.yml`, converges all of it on every
+push and tests it. `infra/v2/settings.env` controls it:
+`MODE=running|paused` (paused also removes the load balancer, WAF and NAT)
+and `ATTACH_DOMAIN` (attach aws.eraseai.ai to the v2 website once the v1
+Amplify app has released it). The app's schema is created by
+`drizzle-kit push` from inside the image (verified locally on an empty
+PostgreSQL 16: 23 tables, sign-up, login and a scan work).
