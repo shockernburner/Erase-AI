@@ -2,6 +2,8 @@
 // and the music bed (ducked under the voice), then normalises to -16 LUFS.
 //   node compose.mjs <timeline.json> <video.mp4> <voiceDir> <music.mp3> <out.mp4>
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 const [tlPath, video, voiceDir, music, out] = process.argv.slice(2);
 const tl = JSON.parse(fs.readFileSync(tlPath, "utf8"));
@@ -26,7 +28,7 @@ const filter = [
 ].join(";");
 // Pass 1: mix to WAV and measure. Pass 2: one fixed gain to -16 LUFS plus a peak limiter, so the
 // voice/music balance stays as mixed (a dynamic normaliser would lift the music in the pauses).
-const wav = out.replace(/\.mp4$/, ".mix.wav");
+const wav = path.join(os.tmpdir(), `dot-mix-${process.pid}.wav`);
 execFileSync("ffmpeg", ["-y", "-loglevel", "error", ...inputs, "-filter_complex", filter, "-map", "[aout]", "-t", T, "-c:a", "pcm_s16le", wav]);
 const meas = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", wav, "-af", "ebur128", "-f", "null", "-"], { encoding: "utf8" }).stderr;
 const I = Number([...meas.matchAll(/^\s+I:\s+(-?[\d.]+) LUFS/gm)].pop()[1]);

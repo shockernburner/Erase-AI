@@ -67,12 +67,13 @@ Pinned comment: `If your data could talk, what would it say to you? I'm reading 
 
 ## Rebuild
 
-From `marketing-assets/youtube/dot/build` (needs Chromium at /opt/pw-browsers/chromium, ffmpeg, Inter, and the
-`three` package installed in `artifacts/landing-video`):
+From `marketing-assets/youtube/dot/build`. Needs Chromium at /opt/pw-browsers/chromium, ffmpeg, the Inter font, and
+`pnpm install` run at the repo root (it provides `playwright-core` and the `three` package in `artifacts/landing-video`).
+Voice IDs: Will `bIHbv24MWmeRgasZH58o` (used), River `SAz9YHcvj6GT2YYXdXww`, Brian `nPczCjzI2devNBz1zQrb`.
 
 ```
-node voice.mjs <voiceId> ../audio/voice                 # ElevenLabs key from the session proxy, or ELEVENLABS_API_KEY
-./music.sh                                              # run from marketing-assets/youtube/dot
+node voice.mjs bIHbv24MWmeRgasZH58o ../audio/voice     # ElevenLabs key from the session proxy, or ELEVENLABS_API_KEY
+./music.sh                                              # writes ../audio/music.mp3
 node timeline.mjs ../audio/voice film > timeline-film.json
 node timeline.mjs ../audio/voice short > timeline-short.json
 node render.mjs timeline-film.json 1920 1080 /tmp/film-video.mp4

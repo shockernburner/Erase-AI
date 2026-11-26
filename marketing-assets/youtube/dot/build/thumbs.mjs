@@ -1,12 +1,13 @@
 // Three 1280x720 thumbnails for YouTube's title/thumbnail A/B test.
 //   node thumbs.mjs <outDir>     (uses timeline-film.json and render.mjs stills)
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = path.resolve(process.argv[2]);
-const tmp = fs.mkdtempSync("/tmp/claude-0/thumbs-");
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dot-thumbs-"));
 const tl = JSON.parse(fs.readFileSync(path.join(here, "timeline-film.json"), "utf8"));
 const at = (id) => tl.items.find((x) => x.id === id);
 const still = (t, env = {}, size = ["1280", "720"]) => {
