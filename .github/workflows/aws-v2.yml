@@ -128,7 +128,10 @@ jobs:
         run: |
           cat > "$RUNNER_TEMP/tf.sh" <<'SH'
           # usage: tf <stack>   (plan + apply infra/v2/workload/<stack>)
-          tf() {
+          # A new account can refuse calls for a minute after a service is first
+          # used (e.g. ECS "AuthFailure" reading subnets while its service-linked
+          # role propagates), so a failed apply is planned and applied once more.
+          tf_once() {
             set -o pipefail
             local d="$GITHUB_WORKSPACE/infra/v2/workload/$1"
             ( cd "$d" &&
@@ -137,6 +140,7 @@ jobs:
               terraform apply -input=false -no-color tfplan &&
               { echo "#### $1"; echo '```'; grep -E '^Plan:|^No changes' plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY" )
           }
+          tf() { tf_once "$1" || { echo "::warning::$1 apply failed; retrying once in 90 s"; sleep 90; tf_once "$1"; }; }
           tfout() { ( cd "$GITHUB_WORKSPACE/infra/v2/workload/$1" && terraform output -raw "$2" ); }
           SH
           echo "TF_VAR_account_id=$PROD_ID" >> "$GITHUB_ENV"
