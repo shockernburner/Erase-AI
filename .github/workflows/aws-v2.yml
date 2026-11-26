@@ -84,6 +84,9 @@ jobs:
             aws organizations list-targets-for-policy --policy-id "$p" --query 'Targets[].[Type,Name,TargetId]' --output text | sed 's/^/  target  /'
             aws organizations describe-policy --policy-id "$p" --query 'Policy.Content' --output text
           done
+          # The region guardrail must allow Singapore before the retry.
+          terraform init -input=false -no-color
+          terraform apply -input=false -no-color -auto-approve -target=aws_organizations_policy.region_restriction
           op=$(aws controltower reset-landing-zone --landing-zone-identifier "$lz" --query operationIdentifier --output text)
           for _ in $(seq 1 120); do
             s=$(aws controltower get-landing-zone-operation --operation-identifier "$op" --query 'operationDetails.status' --output text)

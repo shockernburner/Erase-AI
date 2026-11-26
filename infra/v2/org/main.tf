@@ -49,6 +49,23 @@ variable "prod_email" {
 
 data "aws_organizations_organization" "this" {}
 
+# --- Region guardrail ------------------------------------------------------
+# AWS's account setup created this SCP (attached to the root) allowing only
+# Sydney plus the global-service regions. Our home region is Singapore, so
+# Singapore takes Sydney's place; everything else in the policy is AWS's
+# original text (scp-region-restriction.json).
+import {
+  to = aws_organizations_policy.region_restriction
+  id = "p-bggjiptn"
+}
+
+resource "aws_organizations_policy" "region_restriction" {
+  name    = "AdvancedModeRegionRestrictionSecurityControlPolicy"
+  type    = "SERVICE_CONTROL_POLICY"
+  content = jsonencode(jsondecode(file("${path.module}/scp-region-restriction.json")))
+  lifecycle { ignore_changes = [description, tags, tags_all] }
+}
+
 # --- Shared accounts -------------------------------------------------------
 # Landing zone 4.0 needs the service integration accounts together in one
 # OU directly under the root.
@@ -189,6 +206,7 @@ resource "aws_controltower_landing_zone" "this" {
   })
 
   depends_on = [
+    aws_organizations_policy.region_restriction,
     aws_iam_role_policy_attachment.admin,
     aws_iam_role_policy.admin,
     aws_iam_role_policy_attachment.cloudtrail,
