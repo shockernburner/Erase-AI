@@ -282,3 +282,8 @@ jobs:
           [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$AMPLIFY_URL/api/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$email\",\"password\":\"wrong\"}")" = 401 ]; r "wrong password refused (401)"
           curl -fsS -b "$jar" -X POST "$AMPLIFY_URL/api/mobile/analyze" -H 'content-type: application/json' -d '{"text":"card 4111 1111 1111 1111, email jane@example.com"}' | jq -e '[.flags[].type] | index("pii")' >/dev/null; r "scan flags a card number and an email"
           waf=$(aws wafv2 get-web-acl-for-resource --resource-arn "$(aws elbv2 describe-load-balancers --names eraseai --query 'LoadBalancers[0].LoadBalancerArn' --output text)" --query 'WebACL.Name' --output text); [ "$waf" = eraseai ]; r "WAF attached to the load balancer"
+
+      - name: App logs (only when a test failed)
+        if: failure() && env.APP_RUNNING == 'true'
+        run: |
+          aws logs tail /eraseai/app --since 60m --format short | grep -v -E '"(GET|HEAD) /api/healthz' | tail -150 || true
