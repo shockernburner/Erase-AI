@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "1.6.3",
+      "date": "2026-11-26",
+      "changes": [
+        "Now catches Singapore NRIC/FIN numbers and Singapore phone numbers (+65, or 8 digits after a word like mobile or phone), and Sanitize replaces them"
+      ]
+    },
+    {
       "version": "1.6.2",
       "date": "2026-11-01",
       "changes": [

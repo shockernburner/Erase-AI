@@ -9,6 +9,10 @@ const CLASS_NAME_PATTERN = /class\s+([a-zA-Z_$][\w$]*)/g;
 
 const PII_REPLACEMENTS = [
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[EMAIL_REDACTED]" },
+  // Singapore NRIC/FIN shape (no checksum here: redacting a look-alike is harmless) and phone numbers.
+  { pattern: /(?<![A-Za-z0-9])[STFGMstfgm]\d{7}[A-Za-z](?![A-Za-z0-9])/g, replacement: "[NRIC_REDACTED]" },
+  { pattern: /(?<![\w+])\(?\+65\)?[\s-]?[3689]\d{3}[\s-]?\d{4}(?!\d)/g, replacement: "[PHONE_REDACTED]" },
+  { pattern: /(?<=\b(?:phone|mobile|hp|tel|call|whatsapp|contact)\b[^\d\n]{0,20})(?<![\d+])[3689]\d{3}[\s-]?\d{4}(?!\d)/gi, replacement: "[PHONE_REDACTED]" },
   { pattern: /\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: "[PHONE_REDACTED]" },
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[SSN_REDACTED]" },
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[CARD_REDACTED]" },
@@ -20,6 +24,9 @@ export function sanitizeText(text, issues) {
   const changes = [];
   let result = text;
   let offset = 0;
+  // Edits already applied, in original-text positions, so each PII match is
+  // replaced where it was found (not at the first identical string).
+  const edits = [];
 
   const secrets = detectSecrets(text);
   const secretsByPosition = secrets.sort((a, b) => a.start - b.start);
@@ -37,6 +44,7 @@ export function sanitizeText(text, issues) {
       end: secret.end,
     });
     offset += masked.length - secret.match.length;
+    edits.push({ start: secret.start, end: secret.end, delta: masked.length - secret.match.length });
   }
 
   for (const { pattern, replacement } of PII_REPLACEMENTS) {
@@ -44,17 +52,17 @@ export function sanitizeText(text, issues) {
     let m;
     const piiMatches = [];
     while ((m = re.exec(text)) !== null) {
-      const match = m;
-      const alreadyCovered = secrets.some((s) =>
-        match.index >= s.start && match.index + match[0].length <= s.end
-      );
-      if (!alreadyCovered) {
-        piiMatches.push({ match: match[0], start: match.index, end: match.index + match[0].length });
+      const start = m.index;
+      const end = start + m[0].length;
+      if (!edits.some((e) => start < e.end && end > e.start)) {
+        piiMatches.push({ match: m[0], start, end });
       }
     }
 
     for (const pii of piiMatches) {
-      result = result.replace(pii.match, replacement);
+      const pos = pii.start + edits.reduce((sum, e) => (e.end <= pii.start ? sum + e.delta : sum), 0);
+      result = result.slice(0, pos) + replacement + result.slice(pos + pii.match.length);
+      edits.push({ start: pii.start, end: pii.end, delta: replacement.length - pii.match.length });
       changes.push({
         category: "pii",
         original: pii.match,

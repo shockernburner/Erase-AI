@@ -25,6 +25,8 @@ const CORPUS = [
   "card 4111 1111 1111 1111, ssn 123-45-6789",
   "my password is correcthorsebattery",
   "function computePayroll() { return 42; } class TaxEngine {}",
+  "NRIC S1234567D, call +65 9123 4567",
+  "order 91234567",
   "What's the capital of France?",
   "",
 ];
