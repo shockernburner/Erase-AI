@@ -58,6 +58,38 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with: { role-to-assume: "${{ env.ORG_DEPLOY_ROLE }}", aws-region: "${{ env.AWS_REGION }}", role-duration-seconds: 7200 }
 
+      # A landing zone whose first setup failed stays in the org as FAILED and
+      # tainted in state. Print why (the stack set instances), retry it in place
+      # with ResetLandingZone, and untaint it once it is ACTIVE.
+      - name: Landing zone recovery (only if a previous setup failed)
+        working-directory: infra/v2/org
+        run: |
+          set -euo pipefail
+          lz=$(aws controltower list-landing-zones --query 'landingZones[0].arn' --output text 2>/dev/null || true)
+          if [ -z "$lz" ] || [ "$lz" = "None" ]; then echo "No landing zone yet."; exit 0; fi
+          status=$(aws controltower get-landing-zone --landing-zone-identifier "$lz" --query 'landingZone.status' --output text)
+          echo "Landing zone $lz status: $status"
+          diag() {
+            for ss in $(aws cloudformation list-stack-sets --status ACTIVE --query 'Summaries[?starts_with(StackSetName, `AWSControlTower`)].StackSetName' --output text); do
+              aws cloudformation list-stack-instances --stack-set-name "$ss" \
+                --query 'Summaries[?StackInstanceStatus.DetailedStatus!=`SUCCEEDED`].[Account,Region,StackInstanceStatus.DetailedStatus,StatusReason]' \
+                --output text | sed "s/^/$ss  /" || true
+            done
+          }
+          [ "$status" = "FAILED" ] || exit 0
+          echo "Stack set instances that did not succeed:"; diag
+          op=$(aws controltower reset-landing-zone --landing-zone-identifier "$lz" --query operationIdentifier --output text)
+          for _ in $(seq 1 120); do
+            s=$(aws controltower get-landing-zone-operation --operation-identifier "$op" --query 'operationDetails.status' --output text)
+            echo "reset: $s"; [ "$s" = "IN_PROGRESS" ] || break; sleep 30
+          done
+          if [ "$s" != "SUCCEEDED" ]; then
+            aws controltower get-landing-zone-operation --operation-identifier "$op" --query 'operationDetails.statusMessage' --output text
+            echo "Still failing:"; diag; exit 1
+          fi
+          terraform init -input=false -no-color
+          terraform untaint aws_controltower_landing_zone.this || true
+
       - name: Organization (Control Tower, accounts)
         working-directory: infra/v2/org
         run: |
