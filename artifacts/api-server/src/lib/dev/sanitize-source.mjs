@@ -9,6 +9,10 @@ const CLASS_NAME_PATTERN = /class\s+([a-zA-Z_$][\w$]*)/g;
 
 const PII_REPLACEMENTS = [
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[EMAIL_REDACTED]" },
+  // Singapore NRIC/FIN shape (no checksum here: redacting a look-alike is harmless) and phone numbers.
+  { pattern: /(?<![A-Za-z0-9])[STFGMstfgm]\d{7}[A-Za-z](?![A-Za-z0-9])/g, replacement: "[NRIC_REDACTED]" },
+  { pattern: /(?<![\w+])\(?\+65\)?[\s-]?[3689]\d{3}[\s-]?\d{4}(?!\d)/g, replacement: "[PHONE_REDACTED]" },
+  { pattern: /(?<=\b(?:phone|mobile|hp|tel|call|whatsapp|contact)\b[^\d\n]{0,20})(?<![\d+])[3689]\d{3}[\s-]?\d{4}(?!\d)/gi, replacement: "[PHONE_REDACTED]" },
   { pattern: /\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: "[PHONE_REDACTED]" },
   { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[SSN_REDACTED]" },
   { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[CARD_REDACTED]" },

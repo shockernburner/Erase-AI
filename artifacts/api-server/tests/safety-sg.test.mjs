@@ -79,3 +79,15 @@ describe("Singapore phone numbers", () => {
     });
   }
 });
+
+describe("sanitize, Singapore", () => {
+  test("replaces NRIC and phone numbers and the result re-checks clean", async () => {
+    const { sanitizeText } = await import("../src/lib/dev/sanitize-source.mjs");
+    const { sanitized } = sanitizeText("NRIC S1234567D, +65 9123 4567, mobile 8123 4567", []);
+    assert.equal(sanitized.split("[NRIC_REDACTED]").length - 1, 1);
+    assert.equal(sanitized.split("[PHONE_REDACTED]").length - 1, 2);
+    assert.match(sanitized, /mobile/);
+    const sg = analyzePromptSafety(sanitized).issues.filter((i) => i.detail === NRIC || i.detail === PHONE);
+    assert.equal(sg.length, 0);
+  });
+});
