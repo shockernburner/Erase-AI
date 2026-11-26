@@ -1,0 +1,9 @@
+0:00 The problem
+0:08 Why it happens
+0:23 Option 1: policy and training
+0:34 Option 2: network tools and gateways
+0:48 Option 3: a check at the Send button
+0:59 Option 3 in action (the real extension, sample data)
+1:09 Five questions to ask any vendor
+1:26 The honest answer: most companies need a mix
+1:35 Try it

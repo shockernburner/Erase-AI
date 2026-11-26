@@ -160,7 +160,7 @@ export default function ExtensionWelcomePage() {
         <h2 className="text-base font-bold text-foreground mb-2">What happens to your text</h2>
         The extension only runs on the AI sites it protects. Until you add an API key, every check runs on this device
         and nothing is sent. With a key, message text is checked by the EraseAI API over HTTPS and your scan history keeps
-        the first 500 characters of each scan with keys, tokens and passwords masked. Images are always read with OCR
+        a short excerpt of each scan (up to 200 characters) with personal data, keys, tokens and passwords replaced by labels. Images are always read with OCR
         inside your browser and never uploaded. Details in the{" "}
         <a href={`${BASE}privacy`} className="text-primary hover:underline">privacy policy</a>.
       </div>

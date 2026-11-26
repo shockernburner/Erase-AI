@@ -62,7 +62,7 @@
         "src/sandbox.html",
         "src/sandbox.js",
         "src/sandbox-extractor.js",
-        "vendor/tesseract/worker.min.js",
+        "vendor/tesseract/worker.dev.js",
         "vendor/tesseract/tesseract-core-simd-lstm.wasm.js",
         "vendor/tesseract/tesseract-core-lstm.wasm.js",
         "vendor/tesseract/eng.traineddata.gz"

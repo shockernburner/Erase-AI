@@ -1,0 +1,19 @@
+{
+ "v1_1": "You're about to paste a customer's details into an AI chat. A name, an email, a card number.",
+ "v1_2": "You press Send.",
+ "v1_3": "Erase A I holds the message and shows what it found.",
+ "v1_4": "You choose: cancel, sanitize and send, or send anyway.",
+ "v1_5": "On paid plans, sanitize swaps the values for labels.",
+ "v1_6": "And the A I only sees the sanitized message.",
+ "v1_7": "It runs on your device by default. No proxy. Not a VPN. It's rules, so it can miss things, and you always decide.",
+ "v1_8": "Free on Chrome. For teams, ask us for a free thirty day pilot.",
+ "v2_1": "Your staff are pasting customer data into A I chats. There are three ways to stop it, and each one is good and weak at different things.",
+ "v2_2": "Nobody is careless; they're fast. One vendor studied about twenty two million enterprise prompts in twenty twenty five, and found around five hundred and eighty thousand sensitive items. Chat G P T accounted for seventy one percent of them.",
+ "v2_3": "Option one: policy and training. It's cheap, it sets expectations, and you need it anyway. But it depends on memory at the worst moment: a deadline and a chat box.",
+ "v2_4": "Option two: network tools and gateways. They give central visibility, and can block whole categories of sites. But they see the message after it has left the person's hands, and they have to sit in the middle.",
+ "v2_5": "Option three: a check at the Send button. It acts before anything leaves, and the person decides. But rules can miss things, and it has to be rolled out on every device and browser.",
+ "v2_6": "Here's option three in action: the real extension, with sample data. It holds the message, shows what it found, and lets the person choose.",
+ "v2_7": "Before you buy anything, ask five questions. Where does the check run: on the device, or on your servers? What do you store, and for how long? What happens when it's unsure? Which apps and browsers does it cover? And can I see the decisions without seeing the text?",
+ "v2_8": "Most companies need a mix. Policy sets the rules. A check at Send catches the slip. And gateways give you visibility.",
+ "v2_9": "We build Erase A I. Try it free on Chrome, or ask us for a free thirty day pilot for up to ten people."
+}
