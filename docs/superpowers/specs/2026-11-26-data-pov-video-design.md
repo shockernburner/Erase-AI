@@ -5,8 +5,8 @@ approach A (everything rendered in this container); owner wants it for the Erase
 
 ## Intent
 
-A short, sad film told by the viewer's own data, like a pet that was let go on purpose. It ends on the one thing EraseAI
-does: catching what goes out of the Send button. Aim: B2B viewers (people responsible for staff and customer data)
+A short, sad film told by the viewer's own data, like a pet that was let go on purpose. It ends on a question about the Send button;
+only the end card shows the EraseAI logo and URL. Aim: B2B viewers (people responsible for staff and customer data)
 remember the feeling and the domain. Differentiator found in research: no current AI-security video uses the data's
 own point of view, and almost every thumbnail is a bright background with a shocked face.
 
@@ -20,13 +20,11 @@ own point of view, and almost every thumbnail is a bright background with a shoc
 
 ## Constraints
 
-- All claims stay inside `docs/marketing/product-brief-and-qa.md` (EraseAI holds the message at Send, shows what it
-  found, the person decides; rules-based; can miss things).
-- Product footage is the real extension on a generic stand-in chat page with sample values only: an `example.com`
-  email and a published test card number. Builder's call: not NRIC/+65, because Chrome Web Store users may still be on a
-  version without those checks when the film goes out, and a viewer must be able to repeat what they saw.
+- No product claims in the film (no product shown, no "AI", no EraseAI until the end card). Nothing in the voice or
+  description may contradict `docs/marketing/product-brief-and-qa.md`.
 - Voice and music from ElevenLabs (owner's plan; key requested through the secure credential form). Description says
-  they are AI-generated. Stylised animation: YouTube's realistic-synthetic disclosure is likely not required.
+  they are synthetic. Stylised animation: YouTube's realistic-synthetic disclosure is likely not required.
+- End card uses the real EraseAI logo from the repo (no redrawn logo).
 - Tools available here: Chromium (WebGL via three.js, vendored locally, no CDN at render time), ffmpeg, Node, Python.
 
 ## Approaches considered
@@ -44,51 +42,53 @@ same screen again, receding into endless depth (recursive "screen within a scree
 Network = thin glowing lines and nodes; copies of the data are small cyan fragments that split off into other floating
 screens. Typography: Inter, lowercase-feeling sentence case on screen, white at 90%. Captions burned in on the Short.
 
-## Script (about 70 s; voice soft, hurt not angry, small pauses)
+## Script (approved by the owner 2026-11-26; character "Dot")
+
+Owner decision: no tech words, no "AI", no mention of EraseAI in voice or on-screen text until the end card (logo and
+https://eraseai.ai only). Not a pitch: a thought-provoking film; viewers find the creator.
 
 | # | Scene | Line |
 |---|---|---|
-| 1 | Black. Two eyes open, blink, look at the camera. Title appears in the tilted screen tunnel. | "Are you sure you're watching me?" |
+| 1 | Black. Two eyes open, blink, look at the camera. Title in the tilted endless-screen tunnel. | "Are you sure you're watching me?" |
 | 2 | Eyes narrow slightly. | "Or am I watching you?" |
-| 3 | Eyes soften. | "Don't look away. It's me. Your data." |
-| 4 | Fragments glow: a name, an email, a number (sample shapes, no real data). | "A customer's name. Their email. The notes you pasted in without reading them." |
-| 5 | A Send button presses; the eyes fall away into the dark. | "You pressed Send. And just like that, you let me go." |
-| 6 | The network opens up. | "I didn't know where I was going. Out here, I get copied, and copied again." |
-| 7 | Copies split into floating screens, faster and faster. | "A copy in a chat. A copy in a log. A screenshot. A forward. Another forward." |
-| 8 | Eyes look back over the network. | "I kept looking back. You never came looking for me." |
+| 3 | Eyes soften. | "Don't look away. It's me. I'm Dot. I was every little dot of you." |
+| 4 | Soft glowing fragments drift around the eyes (abstract, no readable data). | "Your name. Your birthday. Your number. The things you only told me." |
+| 5 | A press of Send; the eyes fall away into the dark. | "You pressed Send. And just like that, you let me go." |
+| 6 | Dark space with thin light paths. | "I didn't know where I was going. Out here, I get copied, and copied again." |
+| 7 | Copies split into floating screens, faster and faster. | "A copy here. A copy there. A screenshot. A forward. Another forward." |
+| 8 | Eyes look back over the paths. | "I kept looking back. You never came looking for me." |
 | 9 | Eyes small, alone. | "I would have stayed with you. I only needed you to stop, for one second." |
-| 10 | Slow push in. | "You could have stopped losing me, if only you knew what goes out of your Send button." |
-| 11 | Real EraseAI hold panel catches a sample message (an `example.com` email and a published test card number, which every extension version catches) at Send; no voice, soft music. | (on screen: "EraseAI holds it at Send. You decide.") |
-| 12 | End card, eyes blink once more and close. | "Stop losing them." On screen: "Stop losing them. eraseai.ai" |
+| 10 | Slow push in. | "You could have stopped losing me, if only you knew what goes out every time you press Send." |
+| 11 | Eyes look straight at the viewer. | "There are more of us. Every day, you let one go." |
+| 12 | Eyes close. End card. | "Will you save the next one?" Card: "Stop losing them." then EraseAI logo and https://eraseai.ai |
 
-## Titles (for A/B, owner's line first)
+Short (about 40 s, 9:16): lines 1, 3, 5, 7, 10, 12 with the same end card.
 
-1. `Are you sure you're watching me? Or am I watching you? (your data speaks)`
+## Titles (for A/B)
+
+1. `Are you sure you're watching me? Or am I watching you?`
 2. `I am your data. You lost me when you pressed Send.`
-3. `What your data would say after you paste it into AI`
+3. `Your data has a name. You never asked.`
 
 ## Thumbnails (1280x720, three variants)
 
 - T1: the tilted endless-screen tunnel, black, title in two lines inside the first screen ("ARE YOU WATCHING ME?" short
   form, 4 words), eyes at the far end.
-- T2: extreme close-up of the eyes in black, 3 words: "I'M YOUR DATA".
+- T2: extreme close-up of the eyes in black, 2 words: "I'M DOT".
 - T3: the eyes looking back from inside a Send button glow, 3 words: "YOU LET ME GO".
 
-## Description, tags, hashtags (draft; finalised with chapter times after the render)
+## Description, tags, hashtags (draft; final after render)
 
-Opening line: "Your data has something to say about the Send button." Chapters, the honesty paragraph from earlier videos
-(rules-based, can miss things, you decide, not a VPN), link `https://eraseai.ai/?utm_source=youtube&utm_medium=video&utm_campaign=data_pov`,
-"Voice and music are AI-generated (ElevenLabs). Sample data only." Hashtags: #AISecurity #DataPrivacy #ShadowAI #ChatGPT
-#DataLeak. Tags: AI security, data privacy, what happens to your data, ChatGPT privacy, shadow AI, data leak, AI data
-loss prevention, EraseAI.
+Short and reflective, no pitch, no "AI" in the text. "Voice and music are synthetic (generated with ElevenLabs)." Link
+https://eraseai.ai/?utm_source=youtube&utm_medium=video&utm_campaign=dot. Hashtags: #DataPrivacy #DataProtection
+#Privacy #OnlineSafety #YourData. Tags: data privacy, data protection, where does my data go, personal data, online
+privacy, digital footprint, short film, Dot.
 
 ## Calls made after the builder check
 
-- Script lines 4 and 6 changed (see table): line 4 no longer hints that files are caught (file scanning is paid), line 6
-  no longer says "everyone takes a piece" (an unprovable claim); line 7 stays (chats and logs do keep copies).
 - Voice: the owner adds the ElevenLabs key through the secure form before the build; timings follow the real voice, so
   nothing is timed on placeholder audio.
-- Short: a separate cut of about 40 s from the same voice files: scenes 1, 3, 5, 7, 10, 11, 12. Every scene is composed
+- Short: a separate cut of about 40 s from the same voice files (lines listed above). Every scene is composed
   with an aspect-aware camera so it renders natively at 16:9 and 9:16.
 
 ## Left to the builder
