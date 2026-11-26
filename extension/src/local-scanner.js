@@ -597,6 +597,9 @@
       const changes = [];
       let result = text;
       let offset = 0;
+      // Edits already applied, in original-text positions, so each PII match is
+      // replaced where it was found (not at the first identical string).
+      const edits = [];
 
       const secrets = detectSecrets(text);
       const secretsByPosition = secrets.sort((a, b) => a.start - b.start);
@@ -614,6 +617,7 @@
           end: secret.end,
         });
         offset += masked.length - secret.match.length;
+        edits.push({ start: secret.start, end: secret.end, delta: masked.length - secret.match.length });
       }
 
       for (const { pattern, replacement } of PII_REPLACEMENTS) {
@@ -621,17 +625,17 @@
         let m;
         const piiMatches = [];
         while ((m = re.exec(text)) !== null) {
-          const match = m;
-          const alreadyCovered = secrets.some((s) =>
-            match.index >= s.start && match.index + match[0].length <= s.end
-          );
-          if (!alreadyCovered) {
-            piiMatches.push({ match: match[0], start: match.index, end: match.index + match[0].length });
+          const start = m.index;
+          const end = start + m[0].length;
+          if (!edits.some((e) => start < e.end && end > e.start)) {
+            piiMatches.push({ match: m[0], start, end });
           }
         }
 
         for (const pii of piiMatches) {
-          result = result.replace(pii.match, replacement);
+          const pos = pii.start + edits.reduce((sum, e) => (e.end <= pii.start ? sum + e.delta : sum), 0);
+          result = result.slice(0, pos) + replacement + result.slice(pos + pii.match.length);
+          edits.push({ start: pii.start, end: pii.end, delta: replacement.length - pii.match.length });
           changes.push({
             category: "pii",
             original: pii.match,

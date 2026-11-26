@@ -91,3 +91,11 @@ describe("sanitize, Singapore", () => {
     assert.equal(sg.length, 0);
   });
 });
+
+describe("sanitize, repeated number", () => {
+  test("redacts the copy after the phone word, not the first identical copy", async () => {
+    const { sanitizeText } = await import("../src/lib/dev/sanitize-source.mjs");
+    const { sanitized } = sanitizeText("order 9123 4567; mobile 9123 4567", []);
+    assert.equal(sanitized, "order 9123 4567; mobile [PHONE_REDACTED]");
+  });
+});
