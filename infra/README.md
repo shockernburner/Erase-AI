@@ -69,6 +69,10 @@ app), push, approve the three applies. The app comes back on the image in
 
 ## v2: new organization (from 2026-11-26)
 
+Status 2026-11-26: all pipeline tests passed, replica paused (`MODE=paused`). The v1
+organization below is torn down (Control Tower decommissioned, member accounts closed);
+the v1 sections are kept for history only.
+
 The deployment moved to the organization owned by founder@eraseai.ai
 (management account 635096817158), so the AWS account matches the AWS
 Startups / Activate profile. Code: `infra/v2/`. Everything above this
