@@ -204,7 +204,8 @@ jobs:
             sg=$(cd infra/v2/workload/network && terraform output -raw app_security_group_id)
             task=$(aws ecs run-task --cluster eraseai --launch-type FARGATE --task-definition "$td" \
               --network-configuration "awsvpcConfiguration={subnets=[$subnets],securityGroups=[$sg],assignPublicIp=DISABLED}" \
-              --overrides '{"containerOverrides":[{"name":"app","command":["sh","-c","cd /app/lib/db && ./node_modules/.bin/drizzle-kit push --config ./drizzle.config.ts"]}]}' \
+              --overrides "$(jq -nc --arg s "$(base64 -w0 infra/v2/scripts/push-schema.cjs)" \
+                '{containerOverrides:[{name:"app",command:["sh","-c","echo $S | base64 -d > /tmp/push-schema.cjs && cd /app/lib/db && NODE_PATH=/app/lib/db/node_modules node /tmp/push-schema.cjs"],environment:[{name:"S",value:$s}]}]}')" \
               --query 'tasks[0].taskArn' --output text)
             aws ecs wait tasks-stopped --cluster eraseai --tasks "$task"
             code=$(aws ecs describe-tasks --cluster eraseai --tasks "$task" --query 'tasks[0].containers[0].exitCode' --output text)
