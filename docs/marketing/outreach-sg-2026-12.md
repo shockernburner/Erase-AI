@@ -9,12 +9,11 @@ Answers only from `product-brief-and-qa.md`. Replaces the US Lemlist approach fo
 - Lessons: no trust in a far market, the wrong buyer (many prospects build AI themselves), and weak deliverability.
   The copy itself (personal first line, checklist offer) was reasonable and is reused below.
 
-## Blocker for this segment (found 2026-11-26)
+## Singapore detection (shipped 2026-11-26, PR #28)
 
-The scanner does **not** detect Singapore NRIC/FIN numbers, Singapore phone numbers, bank account numbers or
-salaries (tested against `extension/src/local-scanner.js`). These are exactly what these firms handle, so a pilot
-would show the gap in its first week. Add rules for NRIC/FIN (with the checksum letter) and +65 phone numbers
-before the first pilot starts; until then the copy below uses only what is detected today.
+NRIC/FIN and +65 phone checks are live on the server and in the website download (1.6.3). The Chrome Web Store
+copy gets them once 1.6.3 passes review, so set up every pilot on 1.6.3 (store if approved, otherwise the
+website download) and check the version in the popup. Android does not have them yet: pilots are Chrome-first.
 
 ## Who
 
@@ -53,9 +52,9 @@ Hi <first name>,
 
 <One specific line about the firm: a service they offer, a recent post, the kind of client files they handle.>
 
-Most firms we speak to have staff using ChatGPT or Gemini to draft letters and summarise documents. The risk is rarely deliberate: a client's email list, a card number or a system password pasted in to "just tidy this up".
+Most firms we speak to have staff using ChatGPT or Gemini to draft letters and summarise documents. The risk is rarely deliberate: a client's NRIC number, a contact list or a system password pasted in to "just tidy this up".
 
-EraseAI checks each message at the moment someone presses Send in ChatGPT, Claude or Gemini, and holds it if it finds email addresses, card numbers, passwords or keys. The person then cancels, sends a cleaned version, or sends anyway. You see what was caught across the team, never what anyone wrote.
+EraseAI checks each message at the moment someone presses Send in ChatGPT, Claude or Gemini, and holds it if it finds NRIC/FIN numbers, phone numbers, email addresses, card numbers or passwords. The person then cancels, sends a cleaned version, or sends anyway. You see what was caught across the team, never what anyone wrote.
 
 Would a free 30-day pilot for up to 10 of your people be useful? I set it up with you in about 15 minutes.
 
