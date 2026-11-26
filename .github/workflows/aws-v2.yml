@@ -78,6 +78,12 @@ jobs:
           }
           [ "$status" = "FAILED" ] || exit 0
           echo "Stack set instances that did not succeed:"; diag
+          echo "Service control policies other than FullAWSAccess (name, targets, content):"
+          for p in $(aws organizations list-policies --filter SERVICE_CONTROL_POLICY --query 'Policies[?Name!=`FullAWSAccess`].Id' --output text); do
+            aws organizations describe-policy --policy-id "$p" --query 'Policy.PolicySummary.[Id,Name,AwsManaged]' --output text
+            aws organizations list-targets-for-policy --policy-id "$p" --query 'Targets[].[Type,Name,TargetId]' --output text | sed 's/^/  target  /'
+            aws organizations describe-policy --policy-id "$p" --query 'Policy.Content' --output text
+          done
           op=$(aws controltower reset-landing-zone --landing-zone-identifier "$lz" --query operationIdentifier --output text)
           for _ in $(seq 1 120); do
             s=$(aws controltower get-landing-zone-operation --operation-identifier "$op" --query 'operationDetails.status' --output text)
