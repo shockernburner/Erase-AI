@@ -113,6 +113,26 @@
       return false;
     }
 
+    // Singapore NRIC/FIN check letter (ICA algorithm, S/T/F/G series).
+    // M-series and typed-wrong letters are caught only with a context word.
+    function nricChecksumValid(id) {
+      const s = id.toUpperCase();
+      const prefix = s[0];
+      if (!"STFG".includes(prefix)) return false;
+      const weights = [2, 7, 6, 5, 4, 3, 2];
+      let sum = 0;
+      for (let i = 0; i < 7; i++) sum += (s.charCodeAt(i + 1) - 48) * weights[i];
+      if (prefix === "T" || prefix === "G") sum += 4;
+      const letters = prefix === "S" || prefix === "T" ? "JZIHGFEDCBA" : "XWUTRQPNMLK";
+      return letters[sum % 11] === s[8];
+    }
+
+    const NRIC_CONTEXT_RE = /\b(?:nric|fin|ic|identity)\b/i;
+
+    function isLikelyNric(text, m) {
+      return nricChecksumValid(m.match) || NRIC_CONTEXT_RE.test(text.slice(Math.max(0, m.start - 30), m.start));
+    }
+
     // --- pattern definitions ---
 
     const PII_PATTERNS = [
@@ -125,6 +145,20 @@
       { pattern: /\b(?:\+?1[-.\s]?)?\d{10}\b/g, severity: "high", detail: "Phone number found in prompt" },
       { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, severity: "high", detail: "SSN-like pattern found" },
       { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, severity: "high", detail: "Credit card number found" },
+      // Singapore NRIC/FIN: valid check letter, or an NRIC/FIN/IC word just before.
+      {
+        pattern: /(?<![A-Za-z0-9])[STFGMstfgm]\d{7}[A-Za-z](?![A-Za-z0-9])/g,
+        severity: "high",
+        detail: "Singapore NRIC/FIN number found",
+        validate: isLikelyNric,
+      },
+      // Singapore phone numbers: +65 prefix, or 8 digits (3/6/8/9 first) after a phone word.
+      { pattern: /(?<![\w+])\(?\+65\)?[\s-]?[3689]\d{3}[\s-]?\d{4}(?!\d)/g, severity: "high", detail: "Singapore phone number found" },
+      {
+        pattern: /(?<=\b(?:phone|mobile|hp|tel|call|whatsapp|contact)\b[^\d\n]{0,20})(?<![\d+])[3689]\d{3}[\s-]?\d{4}(?!\d)/gi,
+        severity: "high",
+        detail: "Singapore phone number found",
+      },
     ];
 
     // Contextual / casually-typed PII shapes (added v1.3.3).
@@ -548,6 +582,10 @@
 
     const PII_REPLACEMENTS = [
       { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[EMAIL_REDACTED]" },
+      // Singapore NRIC/FIN shape (no checksum here: redacting a look-alike is harmless) and phone numbers.
+      { pattern: /(?<![A-Za-z0-9])[STFGMstfgm]\d{7}[A-Za-z](?![A-Za-z0-9])/g, replacement: "[NRIC_REDACTED]" },
+      { pattern: /(?<![\w+])\(?\+65\)?[\s-]?[3689]\d{3}[\s-]?\d{4}(?!\d)/g, replacement: "[PHONE_REDACTED]" },
+      { pattern: /(?<=\b(?:phone|mobile|hp|tel|call|whatsapp|contact)\b[^\d\n]{0,20})(?<![\d+])[3689]\d{3}[\s-]?\d{4}(?!\d)/gi, replacement: "[PHONE_REDACTED]" },
       { pattern: /\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: "[PHONE_REDACTED]" },
       { pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: "[SSN_REDACTED]" },
       { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, replacement: "[CARD_REDACTED]" },
