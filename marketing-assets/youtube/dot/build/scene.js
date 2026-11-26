@@ -76,7 +76,7 @@ function textTex(text, { w = 1600, h = 900, size = 92, weight = 600, color = "rg
   }
   if (text) {
     x.font = `${weight} ${size}px Inter`; x.fillStyle = color; x.textAlign = "center"; x.textBaseline = "middle";
-    const lines = wrapText(x, text, w * maxW); const lh = size * 1.22;
+    const lines = text.split("\n").flatMap((t) => wrapText(x, t, w * maxW)); const lh = size * 1.22;
     lines.forEach((l, i) => x.fillText(l, w / 2, h * ty + (i - (lines.length - 1) / 2) * lh));
   }
   return tex(c);
@@ -162,7 +162,7 @@ function blended(t) {
 
 // ---------- build ----------
 const TUNNEL_N = 8, TUNNEL_D = 3.2;
-window.setup = async ({ w, h, timeline }) => {
+window.setup = async ({ w, h, timeline, thumbTitle }) => {
   W = w; H = h; aspect = w / h; portrait = aspect < 1; TL = timeline;
   TL.blinks = [2.6, 5.2, ...TL.items.flatMap((x) => [x.start + 0.3 + (x.end - x.start) * 0.6])];
   await document.fonts.load("600 92px Inter"); await document.fonts.load("500 60px Inter");
@@ -176,7 +176,7 @@ window.setup = async ({ w, h, timeline }) => {
   // tunnel of tilted screens, one inside the other, receding toward the eyes at the origin
   const L = TUNNEL_N * TUNNEL_D; S.L = L;
   const sw = portrait ? 4.4 : 6.4, sh = sw * 0.62;
-  S.titleA = textTex("Are you sure you're watching me?", { frame: false, size: portrait ? 110 : 100, ty: 0.24 });
+  S.titleA = thumbTitle ? textTex(thumbTitle, { frame: false, size: 132, weight: 800, ty: 0.25, maxW: 0.9 }) : textTex("Are you sure you're watching me?", { frame: false, size: portrait ? 110 : 100, ty: 0.24 });
   S.titleB = textTex("Or am I watching you?", { frame: false, size: portrait ? 116 : 108, ty: 0.24 });
   S.frameOnly = textTex("", { frame: true });
   S.tunnel = new THREE.Group(); S.screensA = []; S.screensB = [];
@@ -184,7 +184,7 @@ window.setup = async ({ w, h, timeline }) => {
     const s = Math.pow(0.86, i);
     const a = plane(sw * s, sh * s, S.frameOnly), b = plane(sw * s, sh * s, i === 0 ? S.titleA : S.frameOnly, 0), c2 = plane(sw * s, sh * s, i === 0 ? S.titleB : S.frameOnly, 0);
     a.userData.text = [b, c2];
-    for (const p of [a, b, c2]) { p.position.set(0, 0, 10 + L - 7.5 - i * TUNNEL_D); p.rotation.set(-0.1, portrait ? 0.22 : 0.34, 0.02); S.tunnel.add(p); }
+    for (const p of [a, b, c2]) { p.position.set(sw * s * (portrait ? 0 : 0.1), 0, 10 + L - 7.5 - i * TUNNEL_D); p.rotation.set(-0.1, portrait ? 0.22 : 0.34, 0.02); S.tunnel.add(p); }
     S.screensA.push(a); S.screensB.push(b);
   }
   scene.add(S.tunnel);

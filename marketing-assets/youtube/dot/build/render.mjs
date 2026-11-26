@@ -25,7 +25,7 @@ page.on("pageerror", (e) => { console.error("pageerror", e); process.exit(1); })
 page.on("console", (m) => { if (m.type() === "error") console.error("console", m.text()); });
 await page.goto(url);
 await page.waitForFunction(() => typeof window.setup === "function");
-await page.evaluate((a) => window.setup(a), { w: +w, h: +h, timeline });
+await page.evaluate((a) => window.setup(a), { w: +w, h: +h, timeline, thumbTitle: process.env.THUMB_TITLE || "" });
 const grab = async (t) => {
   const b64 = await page.evaluate((t) => { window.renderAt(t); return document.querySelector("canvas").toDataURL("image/png").split(",")[1]; }, t);
   return Buffer.from(b64, "base64");
