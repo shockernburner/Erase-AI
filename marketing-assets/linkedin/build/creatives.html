@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--bg:#05070a;--cyan:#5fe3ff;--warm:#fff3e2;--muted:rgba(255,255,255,.72)}
+*{box-sizing:border-box;margin:0}body{background:#222;font-family:Inter,sans-serif}
+.card{position:relative;overflow:hidden;background:radial-gradient(ellipse at 70% 40%,#0d1a2a 0%,var(--bg) 60%);color:#fff;margin-bottom:20px}
+.eyes{display:flex;gap:.6em;font-size:var(--es)}.eye{width:2.2em;height:1.5em;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--warm),#e2d5c4);box-shadow:0 0 .5em rgba(95,227,255,.75);position:relative;overflow:hidden}
+.eye::after{content:"";position:absolute;width:.95em;height:.95em;border-radius:50%;background:#05070a;left:.62em;top:.3em;box-shadow:0 0 0 .1em rgba(43,212,255,.45)}
+.eye.sad::before{content:"";position:absolute;inset:-.1em -.2em auto -.2em;height:.55em;background:var(--bg);transform:rotate(var(--tilt));z-index:2}
+.chip{display:inline-flex;align-items:center;gap:.5em;border:2px solid rgba(255,120,120,.6);background:rgba(255,90,90,.08);color:#ffd9d9;border-radius:999px;padding:.28em .8em;font-weight:600;font-family:"Inter";white-space:nowrap}
+.chip b{font-weight:700;color:#ff8f8f;font-size:.8em;letter-spacing:.04em}
+.panel{border:2px solid rgba(95,227,255,.55);border-radius:22px;background:rgba(8,16,24,.85);box-shadow:0 0 40px rgba(95,227,255,.18)}
+.held{color:var(--cyan);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.btn{display:inline-block;border-radius:999px;padding:.45em 1.1em;font-weight:700}
+/* banner 1128x191: logo overlaps bottom-left on LinkedIn, keep the left 300px quiet */
+#banner{width:1128px;height:191px;padding:0 48px 0 330px;display:flex;align-items:center;justify-content:space-between}
+#banner h1{font-size:30px;font-weight:800;line-height:1.15}#banner p{font-size:17px;color:var(--muted);margin-top:8px}
+/* ad 1200x627 */
+#ad1{width:1200px;height:627px;padding:56px 64px;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+#ad1 h1{font-size:54px;font-weight:800;line-height:1.08}#ad1 .sub{font-size:24px;color:var(--muted);margin-top:18px;line-height:1.35}
+/* ad 1080x1080 */
+#ad2{width:1080px;height:1080px;padding:110px 72px 100px;display:flex;flex-direction:column;justify-content:space-between}
+#ad2 h1{font-size:78px;font-weight:800;line-height:1.06}#ad2 .sub{font-size:30px;color:var(--muted);margin-top:22px;line-height:1.35}
+</style></head><body>
+
+<div class="card" id="banner">
+  <div><h1>The calm part of a loud day.</h1><p>Vantward Solutions · Singapore software studio · makers of EraseAI Firewall</p></div>
+  <div style="display:flex;align-items:center;gap:26px"><div class="eyes" style="--es:26px"><div class="eye"></div><div class="eye"></div></div><img src="logo-shield.png" style="height:96px"></div>
+</div>
+
+<div class="card" id="ad1">
+  <div>
+    <h1>Client NRICs, pasted into ChatGPT to “tidy this up”.</h1>
+    <div class="sub">EraseAI holds the message at Send and shows what it found. The sender decides.</div>
+    <div style="margin-top:30px;display:flex;align-items:center;gap:18px"><img src="logo-shield.png" style="height:56px"><div style="font-size:22px;font-weight:700">Free 30-day pilot · up to 10 people</div></div>
+  </div>
+  <div class="panel" style="padding:28px;font-size:20px">
+    <div class="held" style="font-size:17px">Held before Send</div>
+    <div style="margin:16px 0 18px;color:var(--muted);font-size:18px">Found in this message:</div>
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+      <span class="chip"><b>NRIC</b>S1234567D</span><span class="chip"><b>PHONE</b>+65 9123 4567</span><span class="chip"><b>EMAIL</b>jane@client.example</span>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px;font-size:16px"><span class="btn" style="border:2px solid rgba(255,255,255,.4)">Cancel</span><span class="btn" style="background:var(--cyan);color:#05070a">Sanitize &amp; Send</span><span class="btn" style="border:2px solid rgba(255,255,255,.25);color:var(--muted)">Send anyway</span></div>
+    <div style="margin-top:16px;font-size:13px;color:rgba(255,255,255,.45)">Illustration · sample data</div>
+  </div>
+</div>
+
+<div class="card" id="ad2">
+  <div><h1>Client NRICs, pasted into ChatGPT to “tidy this up”.</h1><div class="sub">EraseAI holds the message at Send and shows what it found. The sender decides.</div></div>
+  <div class="panel" style="padding:32px;font-size:26px">
+    <div class="held" style="font-size:20px">Held before Send</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:20px"><span class="chip"><b>NRIC</b>S1234567D</span><span class="chip"><b>PHONE</b>+65 9123 4567</span><span class="chip"><b>EMAIL</b>jane@client.example</span></div>
+    <div style="margin-top:14px;font-size:15px;color:rgba(255,255,255,.45)">Illustration · sample data</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:20px"><img src="logo-shield.png" style="height:72px"><div style="font-size:30px;font-weight:700">Free 30-day pilot · up to 10 people</div></div>
+</div>
+</body></html>
