@@ -152,3 +152,32 @@ phases, so January opens with a direct offer to people who already know Dot.
 - Phase 1: cost per video view and completion rate. Stop early if, after $60, fewer than 25% of viewers reach 50%.
 - Phase 2: cost per lead and, more importantly, leads that start a pilot. Target: 2 pilots from the $100.
 - Check daily for the first 3 days, then twice a week. Do not change targeting during the first 5 days of a phase.
+
+## Review of the owner's two ad images and the current page (2026-11-27)
+
+Ads ("You firewalled the network. Your prompts walk straight out."), 2000x2000 and 1493x2000:
+- **Fix before use: "14% of organizations were breached through shadow AI (IBM 2025)".** IBM's 2025 report says 13% of
+  organisations reported breaches of AI models or applications, and about one in five (20%) studied organisations had a
+  breach linked to shadow AI. 14% does not appear. Use: "1 in 5 organisations studied had a breach linked to shadow AI.
+  Source: IBM Cost of a Data Breach Report 2025." and confirm the wording on IBM's page before publishing.
+- "No language model in the loop": true (the checks and the paid rewrite are rules in code; note the pricing page calls
+  the rewrite "AI rewriting", which should be reworded separately).
+- "API key" in the mock-up: the project rule is to lead with personal data, not keys; for Singapore swap it to "NRIC".
+- CTA "Talk to us: enterprise" fits companies of 200+ people, not the 11–200 audience in this plan. Either target 201+
+  with it as a separate, later campaign, or change the button to the pilot.
+- The 1493x2000 version is 3:4; LinkedIn's vertical image format is 4:5, so it may be cropped. Pad to 1600x2000.
+- eraseai.ai/contact exists (HTTP 200).
+
+Page (screenshots):
+- **Description and tagline** claim four verticals, including EV infrastructure, smart mobility and digital
+  transformation consulting, and "machine unlearning". Nothing in this repo supports those; the owner decides whether
+  they are real services. If not, replace with the EraseAI-led About above.
+- **Phone** is +852 (Hong Kong); everywhere else the public number is +65 8243 0739. Use one.
+- **Year founded 2024**, while the registration number 202606980C indicates incorporation in 2026. Confirm.
+- **Duplicate location** (the same address twice): delete the second row.
+- **Custom testimonial (Premium):** the grey "Jeff Carter, CEO at Flexis" text is LinkedIn's placeholder. Only add a
+  real, permitted quote; leave it off until a pilot customer agrees.
+- **Credibility highlights (Premium):** real ones available today: "Verified trader publisher on the Chrome Web Store",
+  "Launched on Product Hunt" (if the launch happened), "Registered in Singapore, UEN 202606980C".
+- **Custom button:** during the campaign switch to "Learn more" → eraseai.ai (UTM above) and turn on "Increase custom
+  button visibility" so it shows on posts.
