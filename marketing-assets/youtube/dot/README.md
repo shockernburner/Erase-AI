@@ -14,7 +14,8 @@ copies inside the bubbles; voice is Zelda (v3) with emotion; the end-card logo i
 |---|---|
 | `dot-film-1920x1080.mp4` | The film, 1:28, for YouTube |
 | `dot-short-1080x1920.mp4` | The Short, 0:47 (lines 1, 3, 5, 7, 10, 12), for YouTube Shorts, Reels, LinkedIn |
-| `thumb-1-eyes.png` | Dot's eyes on black under "ARE YOU WATCHING ME?" (matches the opening) |
+| `thumb-1-eyes.png` | Dot's eyes on black under "ARE YOU WATCHING ME?" with "or is it me watching you?" below the eyes (matches the opening) |
+| `thumb-short-1080x1920.png` | Vertical version for the Short (cover image for Shorts, Reels, TikTok, LinkedIn) |
 | `thumb-2-dot.png` | Close-up of Dot's sad eyes, "I'M DOT" |
 | `thumb-3-letgo.png` | Dot above the Send button, "YOU LET ME GO" |
 
