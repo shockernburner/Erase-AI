@@ -87,8 +87,13 @@ Voice and music are synthetic (generated with ElevenLabs).
 #ShortFilm #PersonalData #DataPrivacy #shorts
 ```
 
-Tags: same as the film. Captions: `files/dot-short.en.srt`. Cover: pick the frame where the eyes first open (in the YouTube
-app; Studio cannot set a Short's cover); use `files/thumb-short-1080x1920.png` as the cover on Reels, TikTok and LinkedIn.
+Tags: same as the film. Captions: `files/dot-short.en.srt`. Cover: upload `files/thumb-short-1080x1920.png` (the owner
+confirmed the channel can upload its own thumbnails); use the same image as the cover on Reels, TikTok and LinkedIn.
+
+Channel: keep both on the EraseAI channel. Studio > Customization > Layout: a "Short films" section (Dot, the Short)
+above "Product videos" (Chrome Web Store and Google Play trailers, demos) and "Vee explainers"; channel trailer for
+non-subscribers = Dot; featured video for returning subscribers = a product demo; Dot's end screen = Subscribe only,
+placed clear of the end-card logo. The permission line in the description is approved by the owner (2026-11-27).
 
 Pinned comment (both): `If your data could talk, what would it say to you? I'm reading every reply.`
 
@@ -102,7 +107,7 @@ terrifying, must watch, viral, "watch till the end".
    checked against the approved script, and every line was transcribed back and matched word for word. I cannot hear
    it: if a line's emotion is off, change its [direction] and regenerate that line only; the film re-times itself.
    The earlier Will version is kept in `audio/voice/` (and River/Brian samples in `audio/samples/`).
-2. Your ElevenLabs plan is Starter: check it covers commercial use of generated voice and music on YouTube.
+2. ElevenLabs: Starter plan includes the commercial licence for speech and music (owner checked 2026-11-27).
 3. YouTube Studio: "Altered or synthetic content": this is clearly animated, so the realistic-content label should not
    be required; the description already says the voice and music are synthetic. Audience: not made for kids.
 4. The description has no product claims on purpose. Do not add any in replies either ("never leak", "AI detection",
