@@ -174,3 +174,38 @@ node compose.mjs timeline-short.json /tmp/short-video.mp4 ../audio/voice-zelda .
 node thumbs.mjs ../files
 node --test timeline.test.mjs
 ```
+
+## LinkedIn post (from the founder's own profile)
+
+Upload the video natively (LinkedIn plays native video in the feed; a YouTube link in the post is shown as a small
+preview). Use the 1:28 film (`files/dot-film-1920x1080.mp4`) with captions `files/dot-film.en.srt` (LinkedIn: after
+choosing the video, Edit > Captions > upload .srt), or the 0:47 Short if you prefer vertical. Put the YouTube link in the
+first comment, not in the post.
+
+Post:
+```
+This is Dot.
+
+Dot is every little dot of you: your name, your birthday, your number, the things you only ever told it.
+
+Then you press Send, and Dot is gone. Copied into a chat. A screenshot. A forward. Another forward.
+
+I spent 17 years in security, and I still caught myself doing it.
+
+So we made a 90-second film instead of another slide about data handling. No product, no pitch. Just Dot.
+
+If you lead a team: you're welcome to show it in a meeting or an awareness session. Share the link or embed it.
+
+Which line stays with you?
+
+#PersonalData #DataPrivacy #ShortFilm #PDPA
+```
+
+First comment (post it yourself right after):
+```
+Full film on YouTube: <paste the film's link here>
+Vertical version (0:47) for team chats: <paste the Short's link here>
+```
+
+Notes: post on a weekday morning Singapore time; reply to every comment in the first hours; do not tag people who
+have not asked to be tagged.
