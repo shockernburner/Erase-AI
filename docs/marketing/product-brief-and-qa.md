@@ -67,10 +67,13 @@ Vantward and wrote EraseAI by hand. Site https://eraseai.ai. Chrome Web Store pu
 
 ## Q&A
 
-**What does it actually stop?** Email addresses, card numbers, US-format phone and social security numbers,
+**What does it actually stop?** Email addresses, card numbers, Singapore NRIC/FIN numbers, Singapore phone
+numbers (+65, or 8 digits after a word like mobile or phone), US-format phone and social security numbers,
 passwords, API keys and other secrets, at the moment someone presses Send.
-**Not yet (tested 2026-11-26 against the real scanner):** Singapore NRIC/FIN numbers, Singapore phone numbers
-(+65 9123 4567), bank account numbers and salaries. Never use these as examples until a rule for them ships.
+NRIC/FIN and +65 checks: live on the server and in the website download (extension 1.6.3, 2026-11-26); the
+Chrome Web Store copy gets them when 1.6.3 passes review. Pilots must be on 1.6.3 (check in the popup).
+Android does not have them yet.
+**Not yet:** bank account numbers written without a word like "account", salaries, HKID.
 
 **Does it read everything my staff type?** On the free plan the check runs inside the browser; the text does not
 leave the computer. With an account, text is sent to our API over HTTPS for the check. The team owner sees counts

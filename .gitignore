@@ -54,3 +54,8 @@ attached_assets/
 /*.mov
 /*.webm
 /EraseAI_Project_Hero.png
+
+# YouTube media: kept locally, not in Git (thumbnails and captions stay tracked)
+marketing-assets/youtube/**/*.mp4
+marketing-assets/youtube/**/*.mp3
+marketing-assets/youtube/**/*.wav

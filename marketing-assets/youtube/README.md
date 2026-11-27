@@ -1,5 +1,9 @@
 # YouTube pack: two videos to test (2026-11-22)
 
+> Videos and audio (`.mp4`, `.mp3`, `.wav`) are not in Git (see `.gitignore`); the owner keeps the originals locally
+> (`eraseai-youtube-media-2026-11-27.zip`). Thumbnails, captions and build scripts stay in the repo; the build scripts
+> can regenerate everything.
+
 Files are in `files/` (the final videos, with narration and music) and `audio/`. Rebuild with `build/` (see the end). No video here promises or can promise "viral": these are built to be tested, with two thumbnails to A/B.
 
 ## What I took from the advice you pasted, and what I left out
