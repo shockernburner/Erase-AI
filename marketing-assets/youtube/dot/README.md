@@ -12,8 +12,8 @@ copies inside the bubbles; voice is Zelda (v3) with emotion; the end-card logo i
 
 | File | What |
 |---|---|
-| `dot-film-1920x1080.mp4` | The film, 1:28, for YouTube |
-| `dot-short-1080x1920.mp4` | The Short, 0:47 (lines 1, 3, 5, 7, 10, 12), for YouTube Shorts, Reels, LinkedIn |
+| `dot-film-1920x1080.mp4` | The film, 1:28, for YouTube (captions: `dot-film.en.srt`) |
+| `dot-short-1080x1920.mp4` | The Short, 0:47 (lines 1, 3, 5, 7, 10, 12), for YouTube Shorts, Reels, LinkedIn (captions: `dot-short.en.srt`) |
 | `thumb-1-eyes.png` | Dot's eyes on black under "ARE YOU WATCHING ME?" with "or is it me watching you?" below the eyes (matches the opening) |
 | `thumb-short-1080x1920.png` | Vertical version for the Short (cover image for Shorts, Reels, TikTok, LinkedIn) |
 | `thumb-2-dot.png` | Close-up of Dot's sad eyes, "I'M DOT" |
@@ -21,43 +21,79 @@ copies inside the bubbles; voice is Zelda (v3) with emotion; the end-card logo i
 
 All thumbnails are 1280x720 (YouTube's A/B test drops anything smaller to 480p).
 
-## Titles (A/B: up to three, set on desktop in YouTube Studio)
+## Upload copy (revised 2026-11-27 from short-film title research and a decision-maker psychology review)
 
-1. `Are you sure you're watching me? Or am I watching you?`
-2. `I am your data. You lost me when you pressed Send.`
-3. `Your data has a name. You never asked.`
+What the research said, in one line each:
+- Emotional shorts lead with a short name, then a genre label after " | " or in round brackets ("In a Heartbeat - Animated
+  Short Film", "Hair Love | Oscar-Winning Short Film"). Square brackets did not appear in any of 15 sampled titles.
+- Brackets help viewers recognise the format; there is no evidence they raise clicks on YouTube (894 matched pairs: no
+  effect; the "+38%" figure is a 2015 paid-headline study, not YouTube). Use round brackets for the genre label.
+- Security leaders watch as curators ("could I show this to my people?"). They click on "short film", a stated length and
+  no vendor signals; "security", "AI", "breach", "protect" read as a pitch or training module and get skipped.
+  "Personal data" is the term that lands (it is the PDPA's term); "privacy" suits the general viewer.
+- Fear without an action backfires (EPPM), so the description adds one product-neutral action line.
+- YouTube: titles up to 100 characters (30–50 do best in studies), up to three hashtags show by the title, tags play a
+  minimal role. #shorts is not required for classification but does no harm.
 
-My pick to lead: 1 with `thumb-1-eyes.png` (title and thumbnail say the same thing). Test thumbnails 1, 2 and 3
-against each other first; YouTube picks the winner by watch time, and editing the title during a test stops it.
+### Film (16:9, 1:28): titles for YouTube's A/B test (desktop Studio, up to three)
 
-## Description (paste as is)
+1. `Dot | A short film about what leaves when you press Send` (my pick to lead, with `thumb-1-eyes.png`)
+2. `Are you sure you're watching me? | Dot (Short Film)` (your original line, kept as a test)
+3. `You pressed Send. Dot never came back. (Short Film)`
+
+Description (paste as is; the first two lines are what people see before "more"):
 
 ```
-Your data has something to say about the Send button.
+A 1:28 short film about the personal data that leaves every time we press Send. No product demo, no sales pitch.
+Free to show in team meetings and staff awareness sessions: share the link or embed it (please don't re-upload or edit). English captions included.
 
-This is Dot. Every little dot of you: your name, your birthday, your number, the things you only told it.
-One press of Send, and it's gone. Copied, and copied again.
+This is Dot. Every little dot of you: your name, your birthday, your number, the things you only ever told it. One press of Send, and it's gone. Copied, and copied again.
 
-Before the next one goes, stop for one second.
+Before you press Send, take one second. Names, birthdays, numbers, files: do they need to go?
 
 0:00 Are you watching me?
 0:28 You pressed Send
 0:57 I would have stayed with you
 1:13 There are more of us
 
+Vertical version (0:47): <paste the Short's link here>
+
 Made by Vantward Solutions Pte. Ltd., Singapore: https://eraseai.ai/?utm_source=youtube&utm_medium=video&utm_campaign=dot
 Voice and music are synthetic (generated with ElevenLabs). Animated short film; no real people or real data.
 
-#DataPrivacy #DataProtection #Privacy #OnlineSafety #YourData
+#ShortFilm #PersonalData #DataPrivacy #AnimatedShortFilm #Privacy #OnlineSafety
 ```
 
-Tags: data privacy, data protection, where does my data go, personal data, online privacy, digital footprint, think
-before you send, short film, animated short, Dot.
+Tags: short film, animated short film, personal data, data privacy, data protection, what happens to my data, think
+before you send, digital footprint, online privacy, staff awareness video, PDPA, Dot short film.
 
-Short (title, max 100 characters): `I'm Dot. You let me go when you pressed Send. #DataPrivacy #Shorts`
-Short description: first two lines of the description above, the link, the synthetic-voice line and the hashtags.
+Captions: upload `files/dot-film.en.srt` (Studio > Subtitles > English > Upload file > With timing).
 
-Pinned comment: `If your data could talk, what would it say to you? I'm reading every reply.`
+### Short (9:16, 0:47)
+
+Title: `You let me go when you pressed Send. | Dot (Short Film) #shorts`
+
+Description:
+
+```
+A 47-second short film about the personal data that leaves every time we press Send. No product demo, no sales pitch.
+Full film (1:28): <paste the film's link here>
+
+Before you press Send, take one second.
+
+Made by Vantward Solutions Pte. Ltd., Singapore: https://eraseai.ai/?utm_source=youtube&utm_medium=shorts&utm_campaign=dot
+Voice and music are synthetic (generated with ElevenLabs).
+
+#ShortFilm #PersonalData #DataPrivacy #shorts
+```
+
+Tags: same as the film. Captions: `files/dot-short.en.srt`. Cover: pick the frame where the eyes first open (in the YouTube
+app; Studio cannot set a Short's cover); use `files/thumb-short-1080x1920.png` as the cover on Reels, TikTok and LinkedIn.
+
+Pinned comment (both): `If your data could talk, what would it say to you? I'm reading every reply.`
+
+Words kept out on purpose: AI, ChatGPT, EraseAI, security, cybersecurity, breach, hackers, protect, shocking,
+terrifying, must watch, viral, "watch till the end".
 
 ## Before you publish
 
