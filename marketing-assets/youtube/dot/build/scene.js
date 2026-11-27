@@ -110,6 +110,27 @@ function glowDotTex() {
   x.fillStyle = g; x.fillRect(0, 0, 64, 64); return tex(c);
 }
 
+function bubbleTex(blur) {
+  const n = 256, c = canvas(n, n), x = c.getContext("2d"), m = n / 2;
+  x.filter = blur ? `blur(${blur}px)` : "none";
+  const r = n * 0.4;
+  let g = x.createRadialGradient(m, m, r * 0.2, m, m, r);
+  g.addColorStop(0, "rgba(110,140,255,0.10)"); g.addColorStop(0.75, "rgba(130,160,255,0.22)"); g.addColorStop(0.95, "rgba(185,205,255,0.55)"); g.addColorStop(1, "rgba(185,205,255,0)");
+  x.fillStyle = g; x.beginPath(); x.arc(m, m, r, 0, Math.PI * 2); x.fill();
+  x.fillStyle = "rgba(255,255,255,0.35)"; x.beginPath(); x.ellipse(m - r * 0.38, m - r * 0.45, r * 0.32, r * 0.16, -0.6, 0, Math.PI * 2); x.fill();
+  x.shadowColor = "#6f8cff"; x.shadowBlur = 18; x.lineWidth = r * 0.09; x.strokeStyle = "rgba(125,150,255,0.95)";
+  x.beginPath(); x.arc(m, m, r * 0.4, 0, Math.PI * 2); x.stroke(); x.shadowBlur = 0;
+  g = x.createRadialGradient(m - r * 0.1, m - r * 0.12, r * 0.04, m, m, r * 0.32);
+  g.addColorStop(0, "#c9d6f0"); g.addColorStop(0.6, "#6b7da6"); g.addColorStop(1, "#27314d");
+  x.fillStyle = g; x.beginPath(); x.arc(m, m, r * 0.3, 0, Math.PI * 2); x.fill();
+  return tex(c);
+}
+function bokehTex() {
+  const c = canvas(128, 128), x = c.getContext("2d");
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 60); g.addColorStop(0, "rgba(90,120,255,0.75)"); g.addColorStop(0.7, "rgba(80,110,255,0.45)"); g.addColorStop(1, "rgba(80,110,255,0)");
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128); return tex(c);
+}
+
 // ---------- timeline ----------
 function cue(t) {
   const it = TL.items; let i = -1;
@@ -124,7 +145,7 @@ const has = (id) => TL.items.some((x) => x.id === id);
 // blinks: a fixed list of times (seconds since film start) plus "slow" blinks driven by scenes
 function blinkAt(t) {
   let b = 0;
-  for (const bt of TL.blinks) { const d = Math.abs(t - bt); if (d < 0.14) b = Math.max(b, 1 - d / 0.14); }
+  for (const bt of TL.blinks) { const d = Math.abs(t - bt); if (d < 0.07) b = 1; else if (d < 0.2) b = Math.max(b, 1 - ease((d - 0.07) / 0.13)); }
   return b;
 }
 
@@ -133,9 +154,9 @@ const DEF = { x: 0, y: 0, z: 0, scale: 1, open: 1, lookX: 0, lookY: 0, sad: 0.25
 function eyeState(c) {
   const k = c.k ?? 0;
   switch (c.id) {
-    case "intro": return { ...DEF, open: ramp(c.local, 1.0, 2.2), alpha: ramp(c.local, 0.6, 1.6), sad: 0.05 };
-    case "l01": return { ...DEF, sad: 0.05 };
-    case "l02": return { ...DEF, open: lerp(1, 0.62, ramp(k, 0.1, 0.4)), sad: 0.0 };
+    case "intro": return { ...DEF, scale: 1.25, open: ramp(c.local, 1.0, 2.2), alpha: ramp(c.local, 0.6, 1.6), sad: 0.05 };
+    case "l01": return { ...DEF, scale: 1.25, sad: 0.05 };
+    case "l02": return { ...DEF, scale: 1.25, open: lerp(1, 0.62, ramp(k, 0.1, 0.4)), sad: 0.0 };
     case "l03": return { ...DEF, open: lerp(0.62, 1, ramp(k, 0, 0.3)), sad: lerp(0, 0.45, ramp(k, 0.2, 0.7)), glow: 0.6 };
     case "l04": return { ...DEF, sad: 0.4, lookX: Math.sin(k * 6.2) * 0.35, glow: 0.7 };
     case "l05": { const fall = ramp(k, 0.35, 0.95); return { ...DEF, y: lerp(0.8, -6, fall * fall), z: lerp(0, -10, fall), scale: lerp(0.85, 0.4, fall), sad: 0.6, lookY: lerp(0.2, -0.8, fall), alpha: 1 - ramp(k, 0.85, 1) }; }
@@ -163,7 +184,7 @@ function blended(t) {
 // ---------- build ----------
 const TUNNEL_N = 8, TUNNEL_D = 3.2;
 window.setup = async ({ w, h, timeline, thumbTitle }) => {
-  W = w; H = h; aspect = w / h; portrait = aspect < 1; TL = timeline;
+  W = w; H = h; aspect = w / h; portrait = aspect < 1; TL = timeline; S.thumbMode = !!thumbTitle;
   TL.blinks = [2.6, 5.2, ...TL.items.flatMap((x) => [x.start + 0.3 + (x.end - x.start) * 0.6])];
   await document.fonts.load("600 92px Inter"); await document.fonts.load("500 60px Inter");
   renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -202,25 +223,46 @@ window.setup = async ({ w, h, timeline, thumbTitle }) => {
   S.sendUp = sendTex(false); S.sendDown = sendTex(true);
   S.send = plane(portrait ? 2.2 : 2.0, (portrait ? 2.2 : 2.0) * 220 / 640, S.sendUp, 0); S.send.position.set(0, -1.9, 1); scene.add(S.send);
 
-  // network: nodes, edges, travelling pulses
-  const nodes = []; for (let i = 0; i < 70; i++) nodes.push(new THREE.Vector3((R() - 0.5) * 22, (R() - 0.5) * 12, -16 + R() * 18));
-  const edges = [];
-  nodes.forEach((n, i) => { const near = nodes.map((m, j) => [m.distanceTo(n), j]).filter(([, j]) => j !== i).sort((a, b) => a[0] - b[0]).slice(0, 2); near.forEach(([, j]) => { if (i < j) edges.push([i, j]); }); });
-  const pos = new Float32Array(edges.length * 6); edges.forEach(([i, j], e) => { pos.set([nodes[i].x, nodes[i].y, nodes[i].z, nodes[j].x, nodes[j].y, nodes[j].z], e * 6); });
-  const lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  S.net = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: 0x2bd4ff, transparent: true, opacity: 0 })); scene.add(S.net);
-  const dot = glowDotTex();
-  S.nodes = nodes.map((n) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, transparent: true, opacity: 0, depthWrite: false })); sp.position.copy(n); sp.scale.setScalar(0.25); scene.add(sp); return sp; });
-  S.pulses = edges.slice(0, 40).map(([i, j], e) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, transparent: true, opacity: 0, depthWrite: false })); sp.userData = { a: nodes[i], b: nodes[j], ph: R(), sp: 0.3 + R() * 0.5 }; sp.scale.setScalar(0.35); scene.add(sp); return sp; });
-
-  // copies
-  const se = staticEyes({ open: 1, lookX: 0, lookY: 0.1, sad: 0.5, glow: 0.4 }); const ct = copyTex(se);
-  S.copies = []; for (let i = 0; i < 30; i++) {
-    const p = plane(1.6, 1.0, ct, 0);
-    const ang = R() * Math.PI * 2, rad = 2.2 + R() * 4.5;
-    p.userData = { x: Math.cos(ang) * rad * (portrait ? 0.55 : 1), y: Math.sin(ang) * rad * 0.6, z: -3 - R() * 7, ry: (R() - 0.5) * 0.9, rx: (R() - 0.5) * 0.4, born: Math.pow((i + 1) / 30, 0.55) * 0.9 };
-    S.copies.push(p); scene.add(p);
+  // network: a 3D field of glass nodes joined by thin links; it moves toward the camera so we travel through it
+  S.bub = [bubbleTex(0), bubbleTex(5), bubbleTex(14)]; const bok = bokehTex(), dot = glowDotTex();
+  S.netGroup = new THREE.Group(); scene.add(S.netGroup);
+  const nodes = [];
+  while (nodes.length < 170) {
+    const v = new THREE.Vector3((R() - 0.5) * 30, (R() - 0.5) * 18, -64 + R() * 70);
+    if (Math.abs(v.x) < 2.2 && Math.abs(v.y) < 1.4) continue; // keep Dot's line of sight clear
+    nodes.push(v);
   }
+  S.nodeSprites = nodes.map((n) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: S.bub[0], transparent: true, opacity: 0, depthWrite: false })); sp.position.copy(n); sp.userData.size = 1.0 + R() * 1.3; S.netGroup.add(sp); return sp; });
+  const edges = [];
+  nodes.forEach((n, i) => { nodes.map((m, j) => [m.distanceTo(n), j]).filter(([, j]) => j !== i).sort((a, b) => a[0] - b[0]).slice(0, 3).forEach(([, j]) => { if (i < j) edges.push([i, j]); }); });
+  const cyl = new THREE.CylinderGeometry(0.022, 0.022, 1, 6, 1, true);
+  S.linkMat = new THREE.MeshBasicMaterial({ color: 0xa9c3ea, transparent: true, opacity: 0, depthWrite: false });
+  const up = new THREE.Vector3(0, 1, 0);
+  edges.forEach(([i, j]) => {
+    const a = nodes[i], b = nodes[j], d = new THREE.Vector3().subVectors(b, a);
+    const m = new THREE.Mesh(cyl, S.linkMat); m.position.copy(a).addScaledVector(d, 0.5); m.scale.set(1, d.length(), 1);
+    m.quaternion.setFromUnitVectors(up, d.clone().normalize()); S.netGroup.add(m);
+  });
+  S.pulses = edges.slice(0, 70).map(([i, j]) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, transparent: true, opacity: 0, depthWrite: false, color: 0xb9caff })); sp.userData = { a: nodes[i], b: nodes[j], ph: R(), sp: 0.25 + R() * 0.4 }; sp.scale.setScalar(0.3); S.netGroup.add(sp); return sp; });
+  S.bokeh = []; for (let i = 0; i < 240; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: bok, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    sp.position.set((R() - 0.5) * 70, (R() - 0.5) * 40, -40 - R() * 50); sp.scale.setScalar(1.5 + R() * 3.5); sp.userData.o = 0.25 + R() * 0.35; S.bokeh.push(sp); scene.add(sp);
+  }
+  // network clock: travel starts with the network scene
+  const netId = TL.items.find((x) => x.id === "l06") || TL.items.find((x) => x.id === "l07");
+  S.netT0 = netId ? netId.start - 0.6 : 1e9; S.netSpeed = 1.15;
+
+  // copies of Dot appear inside bubbles that will be in front of us during l07
+  const se = staticEyes({ open: 1, lookX: 0, lookY: 0.1, sad: 0.5, glow: 0.4 });
+  const l07i = TL.items.find((x) => x.id === "l07");
+  const travelMid = l07i ? (l07i.start + l07i.end) / 2 - S.netT0 : 0;
+  const cand = S.nodeSprites.filter((sp) => { const zw = sp.position.z + travelMid * S.netSpeed; return 10 - zw > 6 && 10 - zw < 24; });
+  S.copies = cand.slice(0, 30).map((sp, i, arr) => {
+    const c = new THREE.Sprite(new THREE.SpriteMaterial({ map: se.t, transparent: true, opacity: 0, depthWrite: false }));
+    c.position.copy(sp.position); c.position.z += 0.05; c.userData = { host: sp, born: Math.pow((i + 1) / arr.length, 0.55) * 0.9 };
+    S.netGroup.add(c); return c;
+  });
+  se.copyTex = null;
 
   // more of us
   S.others = []; for (let i = 0; i < 22; i++) {
@@ -229,12 +271,16 @@ window.setup = async ({ w, h, timeline, thumbTitle }) => {
     S.others.push(p); scene.add(p);
   }
 
+  S.black = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: BG, transparent: true, opacity: 0, depthTest: false, depthWrite: false, fog: false }));
+  S.black.renderOrder = 9; scene.add(S.black);
+
   // end card (drawn in front of the camera)
   S.endText = plane(1, 1, textTex("Stop losing them.", { w: 1600, h: 400, size: 120, weight: 600 }), 0);
   const logo = new Image(); logo.src = "/logo.png"; await logo.decode();
-  const lc = canvas(1600, 600); const lx = lc.getContext("2d");
-  lx.drawImage(logo, 800 - 130, 20, 260, 260);
-  lx.font = "500 76px Inter"; lx.fillStyle = "rgba(255,255,255,0.9)"; lx.textAlign = "center"; lx.fillText("https://eraseai.ai", 800, 400);
+  const lc = canvas(1600, 700); const lx = lc.getContext("2d");
+  const lh = 300, lw = lh * logo.width / logo.height;
+  lx.drawImage(logo, 800 - lw / 2, 20, lw, lh);
+  lx.font = "500 76px Inter"; lx.fillStyle = "rgba(255,255,255,0.9)"; lx.textAlign = "center"; lx.fillText("https://eraseai.ai", 800, 470);
   S.endLogo = plane(1, 1, tex(lc), 0);
   for (const p of [S.endText, S.endLogo]) { p.renderOrder = 10; p.material.depthTest = false; p.material.fog = false; scene.add(p); }
 };
@@ -248,7 +294,7 @@ window.renderAt = (t) => {
   // camera: flies through the tunnel during l02, then rests at z=10 looking at the origin
   const l02 = TL.items[idx("l02")] || TL.items[idx("l03")];
   const flyStart = has("l02") ? l02.end + 0.15 : l02.start - 1.6, flyEnd = (TL.items[idx("l03")]?.start ?? l02.end) + 1.1;
-  const fly = ease(clamp((t - flyStart) / (flyEnd - flyStart)));
+  const fly = S.thumbMode ? ease(clamp((t - flyStart) / (flyEnd - flyStart))) : 1;
   const drift = (at("l06") || at("l07")) && !at("l09") ? 1 : 0;
   camera.position.set(Math.sin(t * 0.21) * 0.35 * drift, Math.sin(t * 0.17) * 0.2 * drift, lerp(10 + S.L, 10, fly));
   camera.lookAt(0, 0, camera.position.z - 10);
@@ -260,7 +306,7 @@ window.renderAt = (t) => {
   const intro = ramp(t, 2.0, 3.4);
   S.screensA.forEach((p, i) => {
     const dz = camera.position.z - p.position.z; const near = clamp((dz - 0.6) / 2.2);
-    const base = Math.pow(0.82, i) * intro * tunnelFade * near;
+    const base = S.thumbMode ? Math.pow(0.82, i) * intro * tunnelFade * near : 0;
     p.material.opacity = base;
     const [ta, tb] = p.userData.text;
     ta.material.opacity = i === 0 ? base * (1 - outA) : 0; tb.material.opacity = i === 0 ? base * inB : 0;
@@ -300,20 +346,30 @@ window.renderAt = (t) => {
   const netIn = at("l06") ? ramp(t, TL.items[idx("l06")].start - 0.4, TL.items[idx("l06")].start + 1.5) : at("l07") ? ramp(t, TL.items[idx("l07")].start - 0.2, TL.items[idx("l07")].start + 1.0) : 0;
   const netOut = at("l09") ? 1 - ramp(t, TL.items[idx("l09")].start, TL.items[idx("l09")].start + 2.2) : at("l10") && !has("l09") ? 1 - ramp(t, TL.items[idx("l10")].start, TL.items[idx("l10")].start + 1.5) : 1;
   const net = netIn * netOut * (at("l11") ? 0 : 1);
-  S.net.material.opacity = 0.32 * net;
-  S.nodes.forEach((s, i) => { s.material.opacity = net * (0.5 + 0.5 * Math.sin(t * 1.3 + i)); });
+  const travel = Math.max(0, t - S.netT0) * S.netSpeed;
+  S.netGroup.position.set(Math.sin(t * 0.13) * 0.6, Math.sin(t * 0.11) * 0.35, travel);
+  S.netGroup.rotation.set(0, Math.sin(t * 0.07) * 0.08, Math.sin(t * 0.05) * 0.04);
+  S.netGroup.updateMatrixWorld();
+  const wp = new THREE.Vector3();
+  S.nodeSprites.forEach((sp) => {
+    sp.getWorldPosition(wp); const d = camera.position.z - wp.z;
+    const off = Math.abs(d - 13);
+    sp.material.map = d < 4 ? S.bub[2] : off < 4 ? S.bub[0] : off < 10 ? S.bub[1] : S.bub[2];
+    sp.material.opacity = net * (d < 0.6 ? 0 : clamp((d - 0.6) / 1.5)) * (d < 4 ? 0.55 : 1);
+    sp.scale.setScalar(sp.userData.size * (d < 4 ? 1.6 : 1));
+  });
+  S.linkMat.opacity = 0.5 * net;
   S.pulses.forEach((s) => { const u = s.userData; const f = (t * u.sp + u.ph) % 1; s.position.lerpVectors(u.a, u.b, f); s.material.opacity = net * Math.sin(f * Math.PI); });
+  S.bokeh.forEach((b) => { b.material.opacity = net * b.userData.o; });
 
-  // copies (l07, stay dim through l08)
+  // copies of Dot inside the bubbles (l07, dimmer in l08)
   const l07 = TL.items[idx("l07")];
   S.copies.forEach((p) => {
     const u = p.userData; let vis = 0;
     if (l07) { const k = (t - l07.start) / (l07.end - l07.start); vis = ramp(k, u.born, u.born + 0.06); }
-    vis *= at("l08") ? 0.55 : 1; vis *= netOut;
-    p.material.opacity = vis * 0.9;
-    p.position.set(u.x, u.y + Math.sin(t * 0.6 + u.x) * 0.15, u.z);
-    p.rotation.set(u.rx, u.ry + Math.sin(t * 0.3 + u.y) * 0.05, 0);
-    p.scale.setScalar(0.6 + 0.4 * vis);
+    vis *= at("l08") ? 0.6 : 1; vis *= net;
+    p.material.opacity = vis;
+    p.scale.set(u.host.userData.size * 0.95, u.host.userData.size * 0.475, 1);
   });
 
   // more of us (l11), fade during l12
@@ -327,11 +383,16 @@ window.renderAt = (t) => {
     const b = Math.abs(((t + u.blink) % 3.3) - 0.1) < 0.1 ? 0.1 : 1; p.scale.set(1, b, 1);
   });
 
+  const bl = t < TL.endCardStart ? blinkAt(t) : 0;
+  S.black.material.opacity = bl;
+  S.black.position.set(camera.position.x, camera.position.y, camera.position.z - 1);
+  S.black.quaternion.copy(camera.quaternion); S.black.scale.set(4, 4, 1);
+
   // end card, placed 2 units in front of the camera
   const ec = clamp(t - TL.endCardStart, 0, 99);
   const fw = 2 * 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect; // frustum width at distance 2
   const fh = fw / aspect;
-  for (const [p, a, h, y] of [[S.endText, ramp(ec, 0.2, 1.2), 0.25, 0.24], [S.endLogo, ramp(ec, 1.8, 2.8), 0.375, -0.2]]) {
+  for (const [p, a, h, y] of [[S.endText, ramp(ec, 0.2, 1.2), 0.25, 0.24], [S.endLogo, ramp(ec, 1.8, 2.8), 0.4375, -0.2]]) {
     p.material.opacity = t >= TL.endCardStart ? a : 0;
     const wdt = Math.min(fw * 0.92, 1.9); p.scale.set(wdt, wdt * h, 1);
     p.position.set(camera.position.x, camera.position.y + y * fh, camera.position.z - 2);

@@ -96,3 +96,13 @@ privacy, digital footprint, short film, Dot.
 Exact timings (follow the voice), camera moves, voice choice among 2–3 sampled soft voices (samples kept for the owner),
 music prompt (slow, sparse piano and pad), where files live (`marketing-assets/youtube/data-pov/`), build scripts
 committed, renders kept out of git if larger than the existing videos.
+
+## Revision 2 (owner feedback, 2026-11-27)
+
+- Opening: Dot's eyes alone on black; no tunnel, frames or title text in the film (the tunnel stays only in thumbnail 1).
+- Every blink: while the eyes are closed the whole screen is black, then they open again.
+- Network: a 3D field of glass nodes (ring and core, depth-of-field bokeh), thin 3D links, travelled through; Dot's
+  copies appear inside the bubbles. No flat screens.
+- Voice: ElevenLabs "Zelda - Sad and Sobbing" on eleven_v3 with emotion directions; told as a lost friend, not narrated.
+  Spoken words unchanged (guarded against lines.json; transcribed back and matched).
+- End card logo: the shield cut out of the app-icon tile (no white corners, no navy square).

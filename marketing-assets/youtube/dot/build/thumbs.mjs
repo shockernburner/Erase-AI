@@ -18,7 +18,7 @@ const FONT = "/usr/share/fonts/opentype/inter/Inter-Black.otf";
 const text = (lines, y) => lines.map((l, i) => `drawtext=fontfile=${FONT}:text='${l}':fontsize=104:fontcolor=white:x=(w-text_w)/2:y=${y + i * 116}:shadowcolor=0x5fe3ff@0.55:shadowx=0:shadowy=0:borderw=2:bordercolor=0x05070a`).join(",");
 fs.mkdirSync(out, { recursive: true });
 // T1: the tunnel, short title inside the tilted screen, eyes at the far end
-const t1 = still(at("l01").end - 0.2, { THUMB_TITLE: "ARE YOU\nWATCHING ME?" });
+const t1 = still(at("l01").start + 1.0, { THUMB_TITLE: "ARE YOU\nWATCHING ME?" });
 fs.copyFileSync(t1, path.join(out, "thumb-1-tunnel.png"));
 // T2: big sad eyes, "I'M DOT"
 const t2 = still(at("l11").start + 0.4, {}, ["2240", "1260"]);

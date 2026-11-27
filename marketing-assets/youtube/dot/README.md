@@ -4,13 +4,17 @@ A short film told by your data, a faceless character called Dot (only eyes in th
 "AI" in the film: the EraseAI logo and https://eraseai.ai appear only on the end card. Vee is not in this film.
 Design: `docs/superpowers/specs/2026-11-26-data-pov-video-design.md`.
 
+Revision 2 (owner feedback): opens on the eyes alone on black (no tunnel or text); every blink turns the whole
+screen black; the network is a 3D field of glass nodes with depth of field that the camera travels through, with Dot's
+copies inside the bubbles; voice is Zelda (v3) with emotion; the end-card logo is the shield cut out of its tile.
+
 ## Files (`files/`)
 
 | File | What |
 |---|---|
-| `dot-film-1920x1080.mp4` | The film, 1:14, for YouTube |
-| `dot-short-1080x1920.mp4` | The Short, 0:40 (lines 1, 3, 5, 7, 10, 12), for YouTube Shorts, Reels, LinkedIn |
-| `thumb-1-tunnel.png` | Tilted endless-screen tunnel, "ARE YOU WATCHING ME?", eyes at the far end |
+| `dot-film-1920x1080.mp4` | The film, 1:28, for YouTube |
+| `dot-short-1080x1920.mp4` | The Short, 0:47 (lines 1, 3, 5, 7, 10, 12), for YouTube Shorts, Reels, LinkedIn |
+| `thumb-1-tunnel.png` | Tilted endless-screen tunnel, "ARE YOU WATCHING ME?", eyes at the far end (the film itself now opens on the eyes alone) |
 | `thumb-2-dot.png` | Close-up of Dot's sad eyes, "I'M DOT" |
 | `thumb-3-letgo.png` | Dot above the Send button, "YOU LET ME GO" |
 
@@ -36,9 +40,9 @@ One press of Send, and it's gone. Copied, and copied again.
 Before the next one goes, stop for one second.
 
 0:00 Are you watching me?
-0:22 You pressed Send
-0:47 I would have stayed with you
-1:00 There are more of us
+0:28 You pressed Send
+0:57 I would have stayed with you
+1:13 There are more of us
 
 Made by Vantward Solutions Pte. Ltd., Singapore: https://eraseai.ai/?utm_source=youtube&utm_medium=video&utm_campaign=dot
 Voice and music are synthetic (generated with ElevenLabs). Animated short film; no real people or real data.
@@ -56,9 +60,11 @@ Pinned comment: `If your data could talk, what would it say to you? I'm reading 
 
 ## Before you publish
 
-1. Watch both videos once with headphones. I checked timing, loudness and stills from every scene of the final
-   videos, but I cannot hear: if Dot's voice is wrong for you, compare the samples in `audio/samples/` (River, Will, Brian; Will is
-   used) and rebuild with another voice (see below). Everything re-times itself to the new voice.
+1. Watch both videos once with headphones. Dot's voice is ElevenLabs "Zelda - Sad and Sobbing" on the v3 model, with
+   emotion directions (whispering, voice breaking, sobbing) in `build/lines-performance.json`; the spoken words are
+   checked against the approved script, and every line was transcribed back and matched word for word. I cannot hear
+   it: if a line's emotion is off, change its [direction] and regenerate that line only; the film re-times itself.
+   The earlier Will version is kept in `audio/voice/` (and River/Brian samples in `audio/samples/`).
 2. Your ElevenLabs plan is Starter: check it covers commercial use of generated voice and music on YouTube.
 3. YouTube Studio: "Altered or synthetic content": this is clearly animated, so the realistic-content label should not
    be required; the description already says the voice and music are synthetic. Audience: not made for kids.
@@ -69,17 +75,18 @@ Pinned comment: `If your data could talk, what would it say to you? I'm reading 
 
 From `marketing-assets/youtube/dot/build`. Needs Chromium at /opt/pw-browsers/chromium, ffmpeg, the Inter font, and
 `pnpm install` run at the repo root (it provides `playwright-core` and the `three` package in `artifacts/landing-video`).
-Voice IDs: Will `bIHbv24MWmeRgasZH58o` (used), River `SAz9YHcvj6GT2YYXdXww`, Brian `nPczCjzI2devNBz1zQrb`.
+Voice IDs: Zelda `wcIrsZmi758yTtAxuW4l` (used, model eleven_v3), Will `bIHbv24MWmeRgasZH58o`, River `SAz9YHcvj6GT2YYXdXww`, Brian `nPczCjzI2devNBz1zQrb`.
 
 ```
-node voice.mjs bIHbv24MWmeRgasZH58o ../audio/voice     # ElevenLabs key from the session proxy, or ELEVENLABS_API_KEY
+LINES=lines-performance.json MODEL=eleven_v3 node voice.mjs wcIrsZmi758yTtAxuW4l ../audio/voice-zelda   # key from the session proxy, or ELEVENLABS_API_KEY
+python3 logo_cutout.py ../../../../artifacts/eraseai/public/brand/eraseai-icon-512.png logo-shield.png   # end-card shield, no background
 ./music.sh                                              # writes ../audio/music.mp3
-node timeline.mjs ../audio/voice film > timeline-film.json
-node timeline.mjs ../audio/voice short > timeline-short.json
+node timeline.mjs ../audio/voice-zelda film > timeline-film.json
+node timeline.mjs ../audio/voice-zelda short > timeline-short.json
 node render.mjs timeline-film.json 1920 1080 /tmp/film-video.mp4
 node render.mjs timeline-short.json 1080 1920 /tmp/short-video.mp4
-node compose.mjs timeline-film.json /tmp/film-video.mp4 ../audio/voice ../audio/music.mp3 ../files/dot-film-1920x1080.mp4
-node compose.mjs timeline-short.json /tmp/short-video.mp4 ../audio/voice ../audio/music.mp3 ../files/dot-short-1080x1920.mp4
+node compose.mjs timeline-film.json /tmp/film-video.mp4 ../audio/voice-zelda ../audio/music.mp3 ../files/dot-film-1920x1080.mp4
+node compose.mjs timeline-short.json /tmp/short-video.mp4 ../audio/voice-zelda ../audio/music.mp3 ../files/dot-short-1080x1920.mp4
 node thumbs.mjs ../files
 node --test timeline.test.mjs
 ```
