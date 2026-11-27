@@ -10,6 +10,10 @@ copies inside the bubbles; voice is Zelda (v3) with emotion; the end-card logo i
 
 ## Files (`files/`)
 
+> Videos and audio (`.mp4`, `.mp3`, `.wav`) are not in Git (see `.gitignore`); the owner keeps the originals locally
+> (`eraseai-youtube-media-2026-11-27.zip`). Thumbnails, captions and build scripts stay in the repo; the build scripts
+> can regenerate everything.
+
 | File | What |
 |---|---|
 | `dot-film-1920x1080.mp4` | The film, 1:28, for YouTube (captions: `dot-film.en.srt`) |
