@@ -209,3 +209,62 @@ Vertical version (0:47) for team chats: <paste the Short's link here>
 
 Notes: post on a weekday morning Singapore time; reply to every comment in the first hours; do not tag people who
 have not asked to be tagged.
+
+## Reddit posts
+
+Rules (same as `docs/marketing/reddit-posts-nov-2026.md`):
+- I could not check each subreddit's current rules. Read the sidebar and rules page first; many ban self-promotion,
+  need a flair, or only allow your own work on certain days. If unsure, message the moderators or skip that sub.
+- Say plainly that you made it and that your company builds data-protection tools. Never hide it.
+- Say the voice and music are synthetic (ElevenLabs) and the animation is coded by hand (three.js). Several art and
+  animation subs ban AI-generated work; being upfront avoids removal and backlash. If a sub bans synthetic voices, skip it.
+- One sub per day, different text each time, no vote-asking, reply to every comment (including criticism).
+- Link the YouTube film; do not add the company URL in the post (it is on the end card and the channel).
+
+### Post A: r/cybersecurity (discussion, not promotion)
+
+Title: `I made a 90-second short film for staff instead of another data-handling slide. Does story beat training?`
+
+```
+Most awareness material I've seen is slides, quizzes and a padlock icon. People click through it and forget it.
+
+So I tried something different: a short film told by a person's own data. It's called Dot. No product, no logos until the last frame, no "hackers". It's about the moment someone pastes a customer's details into a chat or forwards a file without looking, and what happens to that data after Send.
+
+Film (1:28): <paste the film's link here>
+
+Disclosure: I run a small Singapore company that builds data-protection tools, so I'm not neutral. The voice and music are synthetic (ElevenLabs); the animation is coded by hand.
+
+Genuine questions for people who run awareness programmes:
+- Would something like this land with your staff, or does an emotional film feel manipulative at work?
+- What has actually changed behaviour in your organisation, as opposed to ticking a training box?
+
+Anyone is welcome to show it in a team meeting. Share the link or embed it.
+```
+
+### Post B: a short-film / animation sub (check that it allows your own work and synthetic voices)
+
+Title: `Dot (1:28): a short film narrated by someone's lost data`
+
+```
+Dot is two eyes in the dark. Dot is your name, your birthday, your number, and the things you only ever told it. Then you press Send, and Dot drifts through a network, copied again and again, looking back for you.
+
+Film: <paste the film's link here>
+
+How it was made: the animation is coded by hand in three.js (every frame rendered in a browser, then assembled with ffmpeg). The voice and the music are synthetic, generated with ElevenLabs; I directed the emotion line by line.
+
+I made it for a small Singapore data-protection company, but the film itself has no product in it. Feedback welcome, especially on pacing and whether the blinks-to-black work.
+```
+
+### Post C: r/privacy (only if the rules allow original content; otherwise skip)
+
+Title: `A short film about what happens to personal data after we press Send`
+
+```
+Not a guide, not a product: a 90-second film told from the point of view of someone's data, as it gets copied, screenshotted and forwarded after one careless Send.
+
+<paste the film's link here>
+
+Disclosure: I made it, and my company builds data-protection tools. Synthetic voice (ElevenLabs), hand-coded animation.
+
+The question it leaves me with: what's the last thing you sent that you'd take back if you could?
+```
