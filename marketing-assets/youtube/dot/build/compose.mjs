@@ -9,10 +9,17 @@ const [tlPath, video, voiceDir, music, out] = process.argv.slice(2);
 const tl = JSON.parse(fs.readFileSync(tlPath, "utf8"));
 const inputs = ["-i", video, "-i", music];
 const parts = [];
+// level each line to about -21 LUFS (at most +8 dB) so whispered lines stay whispered but sit above the music
+const lineGain = (file) => {
+  const o = spawnSync("ffmpeg", ["-hide_banner", "-nostats", "-i", file, "-af", "ebur128", "-f", "null", "-"], { encoding: "utf8" }).stderr;
+  const I = Number([...o.matchAll(/^\s+I:\s+(-?[\d.]+) LUFS/gm)].pop()[1]);
+  return Math.max(-6, Math.min(8, -21 - I));
+};
 tl.items.forEach((it, n) => {
-  inputs.push("-i", `${voiceDir}/${it.id}.mp3`);
+  const file = `${voiceDir}/${it.id}.mp3`;
+  inputs.push("-i", file);
   const ms = Math.round(it.start * 1000);
-  parts.push(`[${n + 2}:a]aresample=48000,aformat=channel_layouts=stereo,adelay=${ms}|${ms}[v${n}]`);
+  parts.push(`[${n + 2}:a]aresample=48000,aformat=channel_layouts=stereo,volume=${lineGain(file).toFixed(2)}dB,adelay=${ms}|${ms}[v${n}]`);
 });
 const T = tl.total.toFixed(3);
 // an extra 4.4 dB dip in the music under every line, on top of the sidechain ducking
