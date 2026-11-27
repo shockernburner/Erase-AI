@@ -95,7 +95,49 @@ above "Product videos" (Chrome Web Store and Google Play trailers, demos) and "V
 non-subscribers = Dot; featured video for returning subscribers = a product demo; Dot's end screen = Subscribe only,
 placed clear of the end-card logo. The permission line in the description is approved by the owner (2026-11-27).
 
-Pinned comment (both): `If your data could talk, what would it say to you? I'm reading every reply.`
+Pinned comments
+
+Film:
+```
+Dot was every little dot of someone: a name, a birthday, a number, the things they only ever told it.
+
+If your data could talk to you, what would it say?
+
+Showing this in a team meeting or an awareness session? You're welcome to. Tell me below how it landed.
+```
+
+Short:
+```
+Dot has a longer story (1:28): <paste the film's link here>
+
+If your data could talk to you, what would it say?
+```
+
+Community posts (Studio > Create > Create post, or the channel's Posts tab)
+
+1. Launch day, image post (attach `files/thumb-1-eyes.png`):
+```
+Meet Dot.
+
+Dot was your name. Your birthday. Your number. The things you only ever told it.
+Then you pressed Send.
+
+Our first short film, 1:28. No pitch, just Dot.
+<paste the film's link here>
+```
+
+2. Three to four days later, poll post (no image):
+```
+Before you press Send, do you ever stop to check what's going with it?
+```
+Options: `Every time` / `Sometimes` / `Never thought about it` / `I will now, after Dot`
+
+3. After about a week, if the film is being shared at work, a short thank-you (text only):
+```
+Some of you have shown Dot to your teams. Thank you. It's free to show in meetings and awareness sessions: share the link or embed it.
+Which line stayed with you?
+```
+Only post 3 if comments or shares show it is actually happening.
 
 Words kept out on purpose: AI, ChatGPT, EraseAI, security, cybersecurity, breach, hackers, protect, shocking,
 terrifying, must watch, viral, "watch till the end".
