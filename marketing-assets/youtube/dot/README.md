@@ -14,7 +14,7 @@ copies inside the bubbles; voice is Zelda (v3) with emotion; the end-card logo i
 |---|---|
 | `dot-film-1920x1080.mp4` | The film, 1:28, for YouTube |
 | `dot-short-1080x1920.mp4` | The Short, 0:47 (lines 1, 3, 5, 7, 10, 12), for YouTube Shorts, Reels, LinkedIn |
-| `thumb-1-tunnel.png` | Tilted endless-screen tunnel, "ARE YOU WATCHING ME?", eyes at the far end (the film itself now opens on the eyes alone) |
+| `thumb-1-eyes.png` | Dot's eyes on black under "ARE YOU WATCHING ME?" (matches the opening) |
 | `thumb-2-dot.png` | Close-up of Dot's sad eyes, "I'M DOT" |
 | `thumb-3-letgo.png` | Dot above the Send button, "YOU LET ME GO" |
 
@@ -26,7 +26,7 @@ All thumbnails are 1280x720 (YouTube's A/B test drops anything smaller to 480p).
 2. `I am your data. You lost me when you pressed Send.`
 3. `Your data has a name. You never asked.`
 
-My pick to lead: 1 with `thumb-1-tunnel.png` (title and thumbnail say the same thing). Test thumbnails 1, 2 and 3
+My pick to lead: 1 with `thumb-1-eyes.png` (title and thumbnail say the same thing). Test thumbnails 1, 2 and 3
 against each other first; YouTube picks the winner by watch time, and editing the title during a test stops it.
 
 ## Description (paste as is)
