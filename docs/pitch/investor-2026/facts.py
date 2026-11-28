@@ -57,7 +57,10 @@ def build():
                         "cash": usd(by["cash_usd"]), "arr_raw": round(by["arr_usd"]), "head_raw": by["headcount"]}
     y5 = P["years"]["5"]
     f["y5_share_core"] = pct(y5["arr_by_line_usd"]["core"] / y5["arr_usd"])
-    f["y5_share_new"] = pct((y5["arr_usd"] - y5["arr_by_line_usd"]["core"] - y5["arr_by_line_usd"]["personal"]) / y5["arr_usd"])
+    L5 = y5["arr_by_line_usd"]
+    f["y5_share_new"] = pct((L5["sector"] + L5["rom"] + L5["gateway"]) / y5["arr_usd"])
+    f["y5_personal_api"] = usd(L5["personal"] + L5["api"])
+    f["base_raised"] = usd(sum(B["years"][y]["funding_usd"] for y in yrs))
     f["plan_vs_base_y5"] = f"{P['years']['5']['arr_usd'] / B['years']['5']['arr_usd']:.1f}x"
     f["breakeven_plan"] = str(P["breakeven_month"])
     f["breakeven_base"] = str(B["breakeven_month"])
@@ -67,6 +70,7 @@ def build():
         total += r["amount_usd"]
         f["rounds"].append({
             "name": r["name"], "month": str(r["month"]),
+            "arr_at": "–" if r["name"] == "Pre-seed" else usd(r["arr_at_round_usd"]),
             "amount": "about US$770k" if r["name"] == "Pre-seed" else usd(r["amount_usd"]),
             "pre": f"{usd(r['pre_low_usd'])} to {usd(r['pre_high_usd'])}",
             "method": r["method"], "founder": pct(r["founder_after"]),

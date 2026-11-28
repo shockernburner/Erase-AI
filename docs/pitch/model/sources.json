@@ -55,7 +55,7 @@
   "quote": "One in five organizations reported a breach due to shadow AI, and only 37% have policies to manage AI or detect shadow AI. Organizations that used high levels of shadow AI observed an average of $670,000 in higher breach costs than those with a low level or no shadow AI.",
   "checked": "2026-11-28",
   "deck_figure": "1 in 5",
-  "deck_label": "organisations studied had a breach linked to shadow AI, adding about US$670,000 to the cost",
+  "deck_label": "organisations studied had a breach linked to shadow AI (2025). High shadow-AI use added about US$670,000 to breach costs",
   "short": "IBM Cost of a Data Breach"
  },
  {
@@ -88,7 +88,7 @@
   "quote": "The global data loss prevention market was valued at USD 3.4 billion in 2025 ... projected to grow from USD 4.1 billion in 2026 to USD 13.8 billion in 2033 ... at a CAGR of 19.0% from 2026 to 2033",
   "checked": "2026-11-28",
   "deck_figure": "US$13.8B",
-  "deck_label": "data loss prevention market by 2033, from US$3.4B in 2025 (19.0% a year)",
+  "deck_label": "data loss prevention market by 2033, from US$3.4B in 2025 (19.0% a year, 2026 to 2033)",
   "short": "Grand View Research"
  },
  {
@@ -111,7 +111,7 @@
   "quote": "Use of generative AI has nearly doubled in the last six months, 1 with 75% of global knowledge workers using it.",
   "checked": "2026-11-28",
   "deck_figure": "75%",
-  "deck_label": "of knowledge workers use generative AI at work",
+  "deck_label": "of knowledge workers used generative AI at work (2024)",
   "short": "Microsoft and LinkedIn Work Trend Index"
  },
  {
@@ -133,8 +133,8 @@
   "url": "https://www.harmonic.security/blog-posts/genai-data-exposure-report-fa6wt",
   "quote": "In the second quarter of 2025, Harmonic analyzed 1 million GenAI prompts and 20,000 uploaded files across more than 300 GenAI and AI-enabled SaaS applications. ... Nearly 22% of uploaded files and 4.37% of prompts contained sensitive content.",
   "checked": "2026-11-28",
-  "deck_figure": "22%",
-  "deck_label": "of files sent to AI tools held sensitive content (Q2 2025, vendor study of 1 million prompts)",
+  "deck_figure": "Nearly 22%",
+  "deck_label": "of about 20,000 files uploaded to AI tools held sensitive content (Q2 2025, vendor study)",
   "short": "Harmonic Security"
  },
  {

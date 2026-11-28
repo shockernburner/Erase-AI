@@ -56,12 +56,12 @@
   },
   "3": {
    "arr": "US$2.0M",
-   "revenue": "US$1.4M",
+   "revenue": "US$1.2M",
    "head": "45",
    "opex": "US$4.4M",
-   "burn": "US$3.1M",
-   "funding": "US$6.0M",
-   "cash": "US$5.4M",
+   "burn": "US$3.2M",
+   "funding": "US$7.0M",
+   "cash": "US$6.2M",
    "lines": {
     "core": "US$1.5M",
     "personal": "US$23k",
@@ -83,12 +83,12 @@
   },
   "4": {
    "arr": "US$7.3M",
-   "revenue": "US$5.6M",
+   "revenue": "US$4.9M",
    "head": "68",
-   "opex": "US$8.6M",
-   "burn": "US$2.9M",
-   "funding": "US$5.5M",
-   "cash": "US$7.9M",
+   "opex": "US$8.5M",
+   "burn": "US$3.6M",
+   "funding": "US$5.0M",
+   "cash": "US$7.6M",
    "lines": {
     "core": "US$4.7M",
     "personal": "US$53k",
@@ -110,12 +110,12 @@
   },
   "5": {
    "arr": "US$20.4M",
-   "revenue": "US$17.1M",
+   "revenue": "US$14.5M",
    "head": "84",
-   "opex": "US$12.9M",
-   "burn": "−US$4.2M",
+   "opex": "US$12.7M",
+   "burn": "−US$1.8M",
    "funding": "–",
-   "cash": "US$12.1M",
+   "cash": "US$9.4M",
    "lines": {
     "core": "US$10.8M",
     "personal": "US$98k",
@@ -192,9 +192,10 @@
   {
    "name": "Pre-seed",
    "month": "1",
+   "arr_at": "–",
    "amount": "about US$770k",
    "pre": "US$1.2M to US$2.3M",
-   "method": "Pre-revenue: cross-checks (VC method, scorecard) to the ask anchor",
+   "method": "Pre-revenue: priced at the ask (S$3.0M pre-money), the top of a S$1.5M to S$3.0M range",
    "founder": "75%",
    "investors": "25%",
    "esop": "–"
@@ -202,31 +203,34 @@
   {
    "name": "Seed",
    "month": "15",
+   "arr_at": "US$113k",
    "amount": "US$3.5M",
-   "pre": "US$7.8M to US$11.7M",
+   "pre": "US$6.0M to US$9.0M",
    "method": "Forward 12-month ARR x 8 to 12 (estimate)",
-   "founder": "50%",
-   "investors": "26%",
+   "founder": "46%",
+   "investors": "32%",
    "esop": "10%"
   },
   {
    "name": "Series A",
    "month": "30",
-   "amount": "US$6.0M",
-   "pre": "US$43.3M to US$65.0M",
+   "arr_at": "US$1.1M",
+   "amount": "US$7.0M",
+   "pre": "US$36.5M to US$54.8M",
    "method": "Forward 12-month ARR x 8 to 12 (estimate)",
-   "founder": "42%",
-   "investors": "10%",
+   "founder": "38%",
+   "investors": "13%",
    "esop": "5%"
   },
   {
    "name": "Series B",
    "month": "48",
-   "amount": "US$5.5M",
+   "arr_at": "US$7.3M",
+   "amount": "US$5.0M",
    "pre": "US$163.1M to US$244.7M",
    "method": "Forward 12-month ARR x 8 to 12 (estimate)",
-   "founder": "39%",
-   "investors": "3%",
+   "founder": "35%",
+   "investors": "2%",
    "esop": "5%"
   }
  ],
@@ -330,7 +334,7 @@
    "quote": "One in five organizations reported a breach due to shadow AI, and only 37% have policies to manage AI or detect shadow AI. Organizations that used high levels of shadow AI observed an average of $670,000 in higher breach costs than those with a low level or no shadow AI.",
    "checked": "2026-11-28",
    "deck_figure": "1 in 5",
-   "deck_label": "organisations studied had a breach linked to shadow AI, adding about US$670,000 to the cost",
+   "deck_label": "organisations studied had a breach linked to shadow AI (2025). High shadow-AI use added about US$670,000 to breach costs",
    "short": "IBM Cost of a Data Breach"
   },
   "ibm_2025_ai_breaches_and_access_controls": {
@@ -363,7 +367,7 @@
    "quote": "The global data loss prevention market was valued at USD 3.4 billion in 2025 ... projected to grow from USD 4.1 billion in 2026 to USD 13.8 billion in 2033 ... at a CAGR of 19.0% from 2026 to 2033",
    "checked": "2026-11-28",
    "deck_figure": "US$13.8B",
-   "deck_label": "data loss prevention market by 2033, from US$3.4B in 2025 (19.0% a year)",
+   "deck_label": "data loss prevention market by 2033, from US$3.4B in 2025 (19.0% a year, 2026 to 2033)",
    "short": "Grand View Research"
   },
   "dlp_market_mordor": {
@@ -386,7 +390,7 @@
    "quote": "Use of generative AI has nearly doubled in the last six months, 1 with 75% of global knowledge workers using it.",
    "checked": "2026-11-28",
    "deck_figure": "75%",
-   "deck_label": "of knowledge workers use generative AI at work",
+   "deck_label": "of knowledge workers used generative AI at work (2024)",
    "short": "Microsoft and LinkedIn Work Trend Index"
   },
   "microsoft_wti_2024_byoai": {
@@ -408,8 +412,8 @@
    "url": "https://www.harmonic.security/blog-posts/genai-data-exposure-report-fa6wt",
    "quote": "In the second quarter of 2025, Harmonic analyzed 1 million GenAI prompts and 20,000 uploaded files across more than 300 GenAI and AI-enabled SaaS applications. ... Nearly 22% of uploaded files and 4.37% of prompts contained sensitive content.",
    "checked": "2026-11-28",
-   "deck_figure": "22%",
-   "deck_label": "of files sent to AI tools held sensitive content (Q2 2025, vendor study of 1 million prompts)",
+   "deck_figure": "Nearly 22%",
+   "deck_label": "of about 20,000 files uploaded to AI tools held sensitive content (Q2 2025, vendor study)",
    "short": "Harmonic Security"
   },
   "layerx_2025_paste_into_genai": {
@@ -437,12 +441,14 @@
   }
  },
  "y5_share_core": "53%",
- "y5_share_new": "47%",
+ "y5_share_new": "46%",
+ "y5_personal_api": "US$189k",
+ "base_raised": "US$6.9M",
  "plan_vs_base_y5": "2.8x",
- "breakeven_plan": "49",
+ "breakeven_plan": "53",
  "breakeven_base": "53",
  "min_cash_plan": "US$181k",
- "raised_total": "US$15.8M",
+ "raised_total": "US$16.3M",
  "constants": [
   "1",
   "2",

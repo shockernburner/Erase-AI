@@ -193,7 +193,7 @@ const A = F.assumptions;
     ["Personal", `${F.prices.personal}/month`, `or ${F.prices.personal_year}/year. Sanitize & Send, attachments, clean copies, Android.`],
     ["Pro", `${F.prices.pro}/month`, "Personal plus the Developer API, webhooks and request logs."],
     ["Teams", `${F.prices.teams}/person`, `per month (${F.prices.teams_annual} on annual), 3 to 10 people, admin dashboard.`],
-    ["Enterprise", "On request", "Sales-led: central policy, rollout, invoice."],
+    ["Enterprise", "On request", "Sales-led: invoice, rollout support, custom terms."],
   ];
   const w = 2.3, g = 0.13;
   tiers.forEach((t, i) => {
@@ -225,7 +225,7 @@ const A = F.assumptions;
     card(s, x, 2.15, 3.85, 2.75);
     stat(s, x + 0.3, 2.45, 3.3, S(id).deck_figure, S(id).deck_label, i === 1 ? K.violet : K.cyan);
   });
-  txt(s, `Our year-5 plan needs ${A.rom_y5} phones a year with the check built in, and business seats in firms that already pay for data-loss controls.`, { x: M, y: 5.25, w: W - 2 * M, h: 0.6, fontSize: 16 });
+  txt(s, `Our year-5 plan needs ${A.rom_y5} phones running the check under licence, and business seats in firms that already pay for data-loss controls.`, { x: M, y: 5.25, w: W - 2 * M, h: 0.6, fontSize: 16 });
   note(s, cite(...ids) + " Market sizes are third-party estimates.", 6.15);
 }
 
@@ -328,7 +328,7 @@ const A = F.assumptions;
   ];
   s.addTable(rows, { x: M, y: 2.05, w: W - 2 * M, colW: [2.63, 1.9, 1.9, 1.9, 1.9, 1.9], fontFace: FONT, rowH: 0.4,
     border: { type: "solid", color: K.line, pt: 0.75 }, margin: [0.04, 0.1, 0.04, 0.1] });
-  note(s, `Base case: the existing model (core seats and Personal), same prices and costs. Plan: the same with the account curve at ${A.core_mult} times and the three new engines. Operating break-even in month ${F.breakeven_plan} (plan) and month ${F.breakeven_base} (base). Negative burn means cash generated. Every figure is an assumption we intend to test.`, 5.85);
+  note(s, `Base case: the existing model (core seats and Personal), same prices and costs. Plan: the same with the account curve at ${A.core_mult} times and the three new engines. ${F.breakeven_plan === F.breakeven_base ? `Both reach operating break-even in month ${F.breakeven_plan}.` : `Operating break-even in month ${F.breakeven_plan} (plan) and month ${F.breakeven_base} (base).`} Negative burn means cash generated. Every figure is an assumption we intend to test.`, 5.85);
 }
 
 // 15 Revenue mix -------------------------------------------------------------
@@ -350,13 +350,13 @@ const A = F.assumptions;
     valGridLine: { color: "1E2B3D", size: 0.5 }, catGridLine: { style: "none" },
   });
   const y5 = Y("5").lines;
-  const items = [["Business seats", y5.core, K.cyan], ["Sector packs", y5.sector, K.green], ["Phone software", y5.rom, K.violet], ["Gateway", y5.gateway, K.amber]];
+  const items = [["Business seats", y5.core, K.cyan], ["Sector packs", y5.sector, K.green], ["Phone software", y5.rom, K.violet], ["Gateway", y5.gateway, K.amber], ["Personal and API", F.y5_personal_api, K.mu]];
   txt(s, "Year 5 ARR by line", { x: 9.2, y: 2.1, w: 3.5, h: 0.4, fontSize: 15, bold: true, color: K.fg });
   items.forEach((it, i) => {
-    txt(s, it[1], { x: 9.2, y: 2.6 + i * 0.8, w: 1.6, h: 0.5, fontSize: 22, bold: true, color: it[2] });
-    txt(s, it[0], { x: 10.85, y: 2.72 + i * 0.8, w: 1.9, h: 0.4, fontSize: 13 });
+    txt(s, it[1], { x: 9.2, y: 2.55 + i * 0.68, w: 1.6, h: 0.5, fontSize: 22, bold: true, color: it[2] });
+    txt(s, it[0], { x: 10.85, y: 2.67 + i * 0.68, w: 1.9, h: 0.4, fontSize: 13 });
   });
-  txt(s, `New engines are ${F.y5_share_new} of year-5 ARR; business seats are ${F.y5_share_core}. The plan is ${F.plan_vs_base_y5} the base case.`, { x: 9.2, y: 5.85, w: 3.53, h: 0.8, fontSize: 12.5, color: K.mu });
+  txt(s, `Sector packs, phone software and the gateway are ${F.y5_share_new} of year-5 ARR; business seats are ${F.y5_share_core}. The plan is ${F.plan_vs_base_y5} the base case.`, { x: 9.2, y: 5.85, w: 3.53, h: 0.8, fontSize: 12.5, color: K.mu });
 }
 
 // 16 Team --------------------------------------------------------------------
@@ -390,13 +390,13 @@ const A = F.assumptions;
   const head = { bold: true, color: K.cyan, fontSize: 12.5 };
   const c = { color: K.body, fontSize: 12.5 };
   const rows = [[{ text: "Round", options: head }, { text: "Month", options: head }, { text: "Amount", options: head },
-    { text: "Pre-money (estimate)", options: head }, { text: "Founder after", options: head }],
+    { text: "ARR at round", options: head }, { text: "Pre-money (estimate)", options: head }, { text: "Founder after", options: head }],
   ...F.rounds.map((r) => [{ text: r.name, options: Object.assign({}, c, { bold: true, color: K.fg }) }, { text: r.month, options: c },
-    { text: r.amount, options: c }, { text: r.pre, options: c }, { text: r.founder, options: c }])];
-  s.addTable(rows, { x: M, y: 2.05, w: 7.7, colW: [1.4, 0.9, 1.65, 2.55, 1.2], fontFace: FONT, rowH: 0.42,
+    { text: r.amount, options: c }, { text: r.arr_at, options: c }, { text: r.pre, options: c }, { text: r.founder, options: c }])];
+  s.addTable(rows, { x: M, y: 2.05, w: 7.7, colW: [1.25, 0.75, 1.4, 1.15, 2.2, 0.95], fontFace: FONT, rowH: 0.42,
     border: { type: "solid", color: K.line, pt: 0.75 }, margin: [0.04, 0.08, 0.04, 0.08] });
-  txt(s, `Each round is sized so cash stays above ${A.buffer} months of operating cost (${F.raised_total} in total). Pre-seed: cross-checks to the ask (S$1.0M at S$3.0M pre-money). Later rounds: forward 12-month ARR times ${A.mult_lo} to ${A.mult_hi}. These are estimates by method, not market quotes.`,
-    { x: M, y: 4.35, w: 7.7, h: 1.2, fontSize: 12.5, color: K.mu });
+  txt(s, `Each round is sized to leave about ${A.buffer} months of operating cost in the bank when it closes (${F.raised_total} in total). Pre-seed: priced at the ask, the top of the range (S$1.0M at S$3.0M pre-money). Later rounds: forward 12-month plan ARR times ${A.mult_lo} to ${A.mult_hi}, so they rest on the plan being met. Estimates by method, not market quotes.`,
+    { x: M, y: 4.7, w: 7.7, h: 1.2, fontSize: 12.5, color: K.mu });
   card(s, 8.6, 2.05, 4.13, 4.4);
   txt(s, "IPO-ready track, years 6 and 7", { x: 8.85, y: 2.25, w: 3.7, h: 0.4, fontSize: 15, bold: true, color: K.fg });
   txt(s, [{ text: `Year 6: ${F.ipo.y6} ARR.  Year 7: ${F.ipo.y7}.`, options: { breakLine: true, bold: true, color: K.cyan } },
@@ -411,7 +411,7 @@ const A = F.assumptions;
   const s = content("What could go wrong", "The honest list");
   const rows = [
     ["Detection is rules and can miss things.", "A published benchmark, a person decides at Send, and sector packs built with advisers."],
-    ["Traction is early.", `Pilots before scale. The base case alone breaks even in month ${F.breakeven_base}; the engines are upside on top.`],
+    ["Traction is early.", `Pilots before scale. If the engines stall, hiring falls back to the base case, which breaks even in month ${F.breakeven_base} with ${F.base_raised} raised.`],
     ["One founder.", "Opening hires are named and hiring is gated on milestones."],
     ["Phone makers and carriers move slowly.", "Phone software counts from a signed, paid pilot in year 3, not before."],
     ["A gateway could be seen as surveillance.", "Opt-in, on the device, no decryption, no message text kept, people see every hold."],
@@ -434,7 +434,7 @@ const A = F.assumptions;
   txt(s, "What we will show you", { x: 7.5, y: 2.3, w: 5, h: 0.4, fontSize: 17, bold: true, color: K.fg });
   bullets(s, ["3 design partners signed by month 6", `${Y("1").arr} ARR by month 12 (plan)`, "The benchmark, published",
     `A team of ${Y("1").head} by month 12`, "The seed round prepared by month 12"], { x: 7.5, y: 2.8, w: 4.9, h: 3.4, fontSize: 14.5, paraSpaceAfter: 6 });
-  note(s, `Two tranches: ${A.tranche_close} at close and ${A.tranche_m7} when the month-7 milestones are met (S$600k and S$400k). Terms open.`, 6.45);
+  note(s, `Two tranches: ${A.tranche_close} at close and ${A.tranche_m7} when the month-7 milestones are met (S$600k and S$400k). The model books the full amount at close. Terms open.`, 6.45);
 }
 
 // 20 Contact -----------------------------------------------------------------

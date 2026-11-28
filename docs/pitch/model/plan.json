@@ -123,7 +123,7 @@
     "cash_usd": 2452823.51
    },
    "3": {
-    "revenue_usd": 1364156.22,
+    "revenue_usd": 1226656.22,
     "arr_usd": 2024387.63,
     "arr_by_line_usd": {
      "core": 1548864.29,
@@ -136,13 +136,13 @@
     "seats": 18438.86,
     "accounts": 348.19,
     "headcount": 45,
-    "opex_usd": 4443292.95,
-    "burn_usd": 3079136.73,
-    "funding_usd": 6000000.0,
-    "cash_usd": 5373686.78
+    "opex_usd": 4434382.95,
+    "burn_usd": 3207726.73,
+    "funding_usd": 7000000.0,
+    "cash_usd": 6245096.78
    },
    "4": {
-    "revenue_usd": 5637503.99,
+    "revenue_usd": 4858337.32,
     "arr_usd": 7334147.32,
     "arr_by_line_usd": {
      "core": 4699301.58,
@@ -155,13 +155,13 @@
     "seats": 55944.07,
     "accounts": 656.85,
     "headcount": 68,
-    "opex_usd": 8574615.87,
-    "burn_usd": 2937111.88,
-    "funding_usd": 5500000.0,
-    "cash_usd": 7936574.9
+    "opex_usd": 8492445.87,
+    "burn_usd": 3634108.55,
+    "funding_usd": 5000000.0,
+    "cash_usd": 7610988.23
    },
    "5": {
-    "revenue_usd": 17113519.16,
+    "revenue_usd": 14455185.83,
     "arr_usd": 20390331.11,
     "arr_by_line_usd": {
      "core": 10783683.54,
@@ -174,10 +174,10 @@
     "seats": 128377.18,
     "accounts": 996.5,
     "headcount": 84,
-    "opex_usd": 12929352.92,
-    "burn_usd": -4184166.24,
+    "opex_usd": 12669972.92,
+    "burn_usd": -1785212.91,
     "funding_usd": 0.0,
-    "cash_usd": 12120741.14
+    "cash_usd": 9396201.14
    }
   },
   "rounds": [
@@ -185,9 +185,10 @@
     "name": "Pre-seed",
     "month": 1,
     "amount_usd": 769230.77,
+    "arr_at_round_usd": 2035.33,
     "pre_low_usd": 1153846.15,
     "pre_high_usd": 2307692.31,
-    "method": "Pre-revenue: cross-checks (VC method, scorecard) to the ask anchor",
+    "method": "Pre-revenue: priced at the ask (S$3.0M pre-money), the top of a S$1.5M to S$3.0M range",
     "investors_own_mid": 0.25,
     "esop_topup": 0,
     "founder_after": 0.75,
@@ -197,41 +198,44 @@
     "name": "Seed",
     "month": 15,
     "amount_usd": 3500000.0,
-    "pre_low_usd": 7773032.04,
-    "pre_high_usd": 11659548.06,
+    "arr_at_round_usd": 113077.59,
+    "pre_low_usd": 5973032.04,
+    "pre_high_usd": 8959548.06,
     "method": "Forward 12-month ARR x 8 to 12 (estimate)",
-    "investors_own_mid": 0.26,
+    "investors_own_mid": 0.32,
     "esop_topup": 0.1,
-    "founder_after": 0.5,
+    "founder_after": 0.46,
     "modelled": true
    },
    {
     "name": "Series A",
     "month": 30,
-    "amount_usd": 6000000.0,
-    "pre_low_usd": 43313006.52,
-    "pre_high_usd": 64969509.78,
+    "amount_usd": 7000000.0,
+    "arr_at_round_usd": 1112303.86,
+    "pre_low_usd": 36513006.52,
+    "pre_high_usd": 54769509.78,
     "method": "Forward 12-month ARR x 8 to 12 (estimate)",
-    "investors_own_mid": 0.1,
+    "investors_own_mid": 0.13,
     "esop_topup": 0.05,
-    "founder_after": 0.42,
+    "founder_after": 0.38,
     "modelled": true
    },
    {
     "name": "Series B",
     "month": 48,
-    "amount_usd": 5500000.0,
+    "amount_usd": 5000000.0,
+    "arr_at_round_usd": 7334147.32,
     "pre_low_usd": 163122648.88,
     "pre_high_usd": 244683973.32,
     "method": "Forward 12-month ARR x 8 to 12 (estimate)",
-    "investors_own_mid": 0.03,
+    "investors_own_mid": 0.02,
     "esop_topup": 0.05,
-    "founder_after": 0.39,
+    "founder_after": 0.35,
     "modelled": true
    }
   ],
   "min_cash_usd": 181298.93,
-  "breakeven_month": 49
+  "breakeven_month": 53
  },
  "ipo": {
   "years": {

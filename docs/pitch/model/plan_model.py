@@ -162,10 +162,16 @@ def plan_case(inp, P):
     fx = P["fx"]
 
     def extra_rev(m, y, seats):  # S$ per month
-        n, price = P["gateway"][y]
+        # Phone devices and gateway contract value ramp month by month from last year-end level to this year's
+        # year-end target (no step on the first day of a year).
+        k = (m - 1) % 12 + 1
+        ramp = lambda prev, cur: prev + (cur - prev) * k / 12  # noqa: E731
+        devices = ramp(P["rom_devices"][y - 1] if y > 1 else 0, P["rom_devices"][y])
+        gw_prev = P["gateway"][y - 1][0] * P["gateway"][y - 1][1] if y > 1 else 0
+        gw_value = ramp(gw_prev, P["gateway"][y][0] * P["gateway"][y][1])
         return {"sector": seats * P["sector_attach"][y] * P["sector_price"] * fx,
-                "rom": P["rom_devices"][y] * P["rom_fee"] / 12 * fx,
-                "gateway": n * price / 12 * fx,
+                "rom": devices * P["rom_fee"] / 12 * fx,
+                "gateway": gw_value / 12 * fx,
                 "api": P["api_subs_m60"] * (m / 60) ** 2 * P["api_price"] * fx}
 
     def extra_cost(m, y, ex):
@@ -204,7 +210,7 @@ def plan_case(inp, P):
         amount = rounds_sgd[m] / fx
         if i == 0:
             lo, hi = P["preseed_pre_usd"]
-            method = "Pre-revenue: cross-checks (VC method, scorecard) to the ask anchor"
+            method = "Pre-revenue: priced at the ask (S$3.0M pre-money), the top of a S$1.5M to S$3.0M range"
         else:
             fwd = months[min(m + 11, 59)]["arr"] / fx
             lo, hi = fwd * P["forward_arr_multiple"][0], fwd * P["forward_arr_multiple"][1]
@@ -213,7 +219,7 @@ def plan_case(inp, P):
         investors = amount / (used + amount)
         esop = P["esop_topup"].get(name, 0)
         founder = founder * (1 - investors) * (1 - esop)
-        rounds.append({"name": name, "month": m, "amount_usd": amount, "pre_low_usd": lo, "pre_high_usd": hi,
+        rounds.append({"name": name, "month": m, "amount_usd": amount, "arr_at_round_usd": months[m - 1]["arr"] / fx, "pre_low_usd": lo, "pre_high_usd": hi,
                        "method": method, "investors_own_mid": investors, "esop_topup": esop,
                        "founder_after": founder, "modelled": True})
     return {"months": months, "years": years, "rounds": rounds,
