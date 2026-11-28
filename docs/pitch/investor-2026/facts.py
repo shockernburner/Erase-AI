@@ -87,7 +87,7 @@ def build():
         "gw_y5_n": str(A["gateway"]["5"][0]), "gw_y5_p": usd(A["gateway"]["5"][1]),
         "api_subs": str(A["api_subs_m60"]), "buffer": str(A["buffer_months"]),
         "mult_lo": str(A["forward_arr_multiple"][0]), "mult_hi": str(A["forward_arr_multiple"][1]),
-        "fx": f"{A['fx']:.2f}",
+        "fx": f"{A['fx']:.2f}", "core_mult": f"{A['core_multiplier']:.1f}",
         "tranche_close": usd(600_000 / FX), "tranche_m7": usd(400_000 / FX),
     }
     for s in sources:

@@ -269,6 +269,7 @@
   "mult_lo": "8",
   "mult_hi": "12",
   "fx": "1.30",
+  "core_mult": "1.5",
   "tranche_close": "US$462k",
   "tranche_m7": "US$308k"
  },

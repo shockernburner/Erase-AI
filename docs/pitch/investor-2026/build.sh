@@ -7,5 +7,6 @@ python3 ../model/plan_model.py
 python3 facts.py
 node build_deck.js
 zip -dq ../EraseAI_Investor_Deck_2026.pptx '*/' || true   # folder entries upset some cloud viewers
-if [ -f build_script.py ]; then python3 build_script.py; fi
+node build_script.js
+zip -dq ../EraseAI_Investor_Script_2026.docx "*/" || true
 if [ -f check_numbers.py ]; then python3 check_numbers.py; fi

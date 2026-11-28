@@ -268,7 +268,7 @@ const A = F.assumptions;
 // 12 Engine 2: phone software -------------------------------------------------
 {
   const s = content("Growth engine 2", "The check, built into the phone");
-  bullets(s, ["Phone makers and carriers preload the send-point check in device software, for business phones first.",
+  bullets(s, ["Phone makers and carriers preload the send-point check in device software, starting with business phones.",
     "Why they would pay: privacy is a selling point, and business device programmes need a control they can show.",
     `Priced at ${A.rom_fee} per device per year. A paid pilot of ${A.rom_y3} devices in year 3, ${A.rom_y4} in year 4, ${A.rom_y5} in year 5.`,
     "Gated: the Android send gate proven at scale, a policy review, and a signed pilot before any revenue counts."],
@@ -328,7 +328,7 @@ const A = F.assumptions;
   ];
   s.addTable(rows, { x: M, y: 2.05, w: W - 2 * M, colW: [2.63, 1.9, 1.9, 1.9, 1.9, 1.9], fontFace: FONT, rowH: 0.4,
     border: { type: "solid", color: K.line, pt: 0.75 }, margin: [0.04, 0.1, 0.04, 0.1] });
-  note(s, `Base case: the existing model (core seats and Personal only), same prices and costs. Plan: the same with the account curve at 1.5 times and the three new engines. Operating break-even in month ${F.breakeven_plan} (plan) and month ${F.breakeven_base} (base). Negative burn means cash generated. Every figure is an assumption we intend to test.`, 5.85);
+  note(s, `Base case: the existing model (core seats and Personal), same prices and costs. Plan: the same with the account curve at ${A.core_mult} times and the three new engines. Operating break-even in month ${F.breakeven_plan} (plan) and month ${F.breakeven_base} (base). Negative burn means cash generated. Every figure is an assumption we intend to test.`, 5.85);
 }
 
 // 15 Revenue mix -------------------------------------------------------------
@@ -381,7 +381,7 @@ const A = F.assumptions;
     txt(s, st[0], { x: 6.6, y: 2.05 + i * 1.1, w: 1.5, h: 0.4, fontSize: 15, bold: true, color: K.cyan2 });
     txt(s, st[1], { x: 8.15, y: 2.05 + i * 1.1, w: 4.58, h: 1.0, fontSize: 13 });
   });
-  note(s, "Each hire starts only when the milestone before it is met. The Hiring and PlanAssumptions sheets list every role, start month and salary.", 6.5);
+  note(s, "Each hire starts when the milestone before it is met, not before. The Hiring and PlanAssumptions sheets list every role, start month and salary.", 6.5);
 }
 
 // 17 Rounds and IPO track -----------------------------------------------------
@@ -411,9 +411,9 @@ const A = F.assumptions;
   const s = content("What could go wrong", "The honest list");
   const rows = [
     ["Detection is rules and can miss things.", "A published benchmark, a person decides at Send, and sector packs built with advisers."],
-    ["Traction is early.", `Pilots first. The base case alone breaks even in month ${F.breakeven_base}; the engines are upside on top.`],
+    ["Traction is early.", `Pilots before scale. The base case alone breaks even in month ${F.breakeven_base}; the engines are upside on top.`],
     ["One founder.", "Opening hires are named and hiring is gated on milestones."],
-    ["Phone makers and carriers move slowly.", "Phone software counts only from a signed, paid pilot in year 3."],
+    ["Phone makers and carriers move slowly.", "Phone software counts from a signed, paid pilot in year 3, not before."],
     ["A gateway could be seen as surveillance.", "Opt-in, on the device, no decryption, no message text kept, people see every hold."],
     ["AI sites change their pages.", "Tests against real hosts and fast updates. A store once rejected a build for code readability; we fixed it and added a test."],
   ];
