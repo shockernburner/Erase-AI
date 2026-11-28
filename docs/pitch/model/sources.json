@@ -1,0 +1,163 @@
+[
+ {
+  "id": "ibm_2026_breach_cost_global",
+  "claim": "The global average cost of a data breach reached a record US$4.99M in 2026, up 12% on the year before (IBM / Ponemon).",
+  "figure": "US$4.99M",
+  "publisher": "IBM (research by Ponemon Institute), Cost of a Data Breach Report 2026",
+  "year": 2026,
+  "url": "https://www.ibm.com/reports/data-breach",
+  "quote": "4.99M The global average cost of a data breach, in USD, a 12% increase over last year and a record high—driven by higher detection, escalation and lost business costs.",
+  "checked": "2026-11-28",
+  "deck_figure": "US$4.99M",
+  "deck_label": "average cost of a data breach worldwide, a record high",
+  "short": "IBM Cost of a Data Breach"
+ },
+ {
+  "id": "ibm_2025_breach_cost_global",
+  "claim": "In IBM's 2025 report the global average cost of a data breach was US$4.44M (US average a record US$10.22M).",
+  "figure": "US$4.44M",
+  "publisher": "IBM Newsroom (Cost of a Data Breach Report 2025, Ponemon Institute)",
+  "year": 2025,
+  "url": "https://newsroom.ibm.com/2025-07-30-ibm-report-13-of-organizations-reported-breaches-of-ai-models-or-applications,-97-of-which-reported-lacking-proper-ai-access-controls",
+  "quote": "The global average cost of a data breach fell to $4.44 million , the first decline in five years, while the average U.S. cost of a breach reached a record $10.22 million .",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "ibm_2025_breach_cost_healthcare",
+  "claim": "Healthcare breaches were the most expensive of any industry, averaging US$7.42M (IBM 2025).",
+  "figure": "US$7.42M",
+  "publisher": "IBM Newsroom (Cost of a Data Breach Report 2025, Ponemon Institute)",
+  "year": 2025,
+  "url": "https://newsroom.ibm.com/2025-07-30-ibm-report-13-of-organizations-reported-breaches-of-ai-models-or-applications,-97-of-which-reported-lacking-proper-ai-access-controls",
+  "quote": "Averaging $7.42 million , healthcare breaches remained the most expensive across all studied industries, even as this sector saw a $2.35 million reduction in costs compared to 2024.",
+  "checked": "2026-11-28",
+  "deck_figure": "US$7.42M",
+  "deck_label": "average healthcare breach, the costliest sector",
+  "short": "IBM Cost of a Data Breach"
+ },
+ {
+  "id": "ibm_2026_breach_cost_financial",
+  "claim": "Financial-services breaches cost US$6.3M on average (IBM 2026).",
+  "figure": "US$6.3M",
+  "publisher": "IBM Newsroom (Cost of a Data Breach Report 2026, Ponemon Institute)",
+  "year": 2026,
+  "url": "https://newsroom.ibm.com/2026-07-29-ibm-study-one-in-four-malicious-breaches-are-ai-enabled,-costing-companies-6-million-on-average",
+  "quote": "Financial services breaches were reported to cost on average $6.3 million, while energy breaches cost on average $5.2 million.",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "ibm_2025_shadow_ai",
+  "claim": "One in five organisations reported a breach caused by shadow AI, and high shadow-AI use added about US$670,000 to breach costs (IBM 2025).",
+  "figure": "1 in 5 (20%); +US$670,000",
+  "publisher": "IBM Newsroom (Cost of a Data Breach Report 2025, Ponemon Institute)",
+  "year": 2025,
+  "url": "https://newsroom.ibm.com/2025-07-30-ibm-report-13-of-organizations-reported-breaches-of-ai-models-or-applications,-97-of-which-reported-lacking-proper-ai-access-controls",
+  "quote": "One in five organizations reported a breach due to shadow AI, and only 37% have policies to manage AI or detect shadow AI. Organizations that used high levels of shadow AI observed an average of $670,000 in higher breach costs than those with a low level or no shadow AI.",
+  "checked": "2026-11-28",
+  "deck_figure": "1 in 5",
+  "deck_label": "organisations studied had a breach linked to shadow AI, adding about US$670,000 to the cost",
+  "short": "IBM Cost of a Data Breach"
+ },
+ {
+  "id": "ibm_2025_ai_breaches_and_access_controls",
+  "claim": "13% of organisations reported breaches of AI models or applications, and 97% of those had no AI access controls in place (IBM 2025).",
+  "figure": "13%; 97%",
+  "publisher": "IBM Newsroom (Cost of a Data Breach Report 2025, Ponemon Institute)",
+  "year": 2025,
+  "url": "https://newsroom.ibm.com/2025-07-30-ibm-report-13-of-organizations-reported-breaches-of-ai-models-or-applications,-97-of-which-reported-lacking-proper-ai-access-controls",
+  "quote": "13% of organizations reported breaches of AI models or applications, while 8% of organizations reported not knowing if they had been compromised in this way. Of those compromised, 97% report not having AI access controls in place.",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "ibm_2026_ai_model_breaches",
+  "claim": "In 2026 more than 20% of organisations reported a breach targeting AI models or applications (up from 13% in IBM's 2025 report).",
+  "figure": "more than 20%",
+  "publisher": "IBM Newsroom (Cost of a Data Breach Report 2026, Ponemon Institute)",
+  "year": 2026,
+  "url": "https://newsroom.ibm.com/2026-07-29-ibm-study-one-in-four-malicious-breaches-are-ai-enabled,-costing-companies-6-million-on-average",
+  "quote": "AI's Weakest Link. More than 20% of organizations reported a breach targeting AI models or applications.",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "dlp_market_grandview",
+  "claim": "The global data loss prevention market was worth US$3.4B in 2025 and is forecast to reach US$13.8B by 2033 (19.0% CAGR, Grand View Research).",
+  "figure": "US$3.4B (2025) to US$13.8B (2033), 19.0% CAGR",
+  "publisher": "Grand View Research, Data Loss Prevention Market report (published July 2026). Quote assembled from fragments returned by the fetch tool; the full sentence could not be downloaded raw (bot protection).",
+  "year": 2026,
+  "url": "https://www.grandviewresearch.com/industry-analysis/data-loss-prevention-market",
+  "quote": "The global data loss prevention market was valued at USD 3.4 billion in 2025 ... projected to grow from USD 4.1 billion in 2026 to USD 13.8 billion in 2033 ... at a CAGR of 19.0% from 2026 to 2033",
+  "checked": "2026-11-28",
+  "deck_figure": "US$13.8B",
+  "deck_label": "data loss prevention market by 2033, from US$3.4B in 2025 (19.0% a year)",
+  "short": "Grand View Research"
+ },
+ {
+  "id": "dlp_market_mordor",
+  "claim": "Mordor Intelligence sizes the DLP market at US$42.87B in 2026, rising to US$111.98B by 2031 (21.17% CAGR); its definition is far broader than Grand View's.",
+  "figure": "US$42.87B (2026) to US$111.98B (2031), 21.17% CAGR",
+  "publisher": "Mordor Intelligence, Data Loss Prevention (DLP) Market report",
+  "year": 2026,
+  "url": "https://www.mordorintelligence.com/industry-reports/data-loss-prevention-market",
+  "quote": "The Data loss prevention (DLP) market size expanded from USD 33.26 billion in 2025, to USD 42.87 billion in 2026, and will touch USD 111.98 billion by 2031, rising at a 21.17% CAGR during 2026-2031.",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "microsoft_wti_2024_ai_use",
+  "claim": "75% of knowledge workers use generative AI at work (Microsoft and LinkedIn Work Trend Index 2024).",
+  "figure": "75%",
+  "publisher": "Microsoft WorkLab, 2024 Work Trend Index (May 8, 2024)",
+  "year": 2024,
+  "url": "https://www.microsoft.com/en-us/worklab/work-trend-index/ai-at-work-is-here-now-comes-the-hard-part",
+  "quote": "Use of generative AI has nearly doubled in the last six months, 1 with 75% of global knowledge workers using it.",
+  "checked": "2026-11-28",
+  "deck_figure": "75%",
+  "deck_label": "of knowledge workers use generative AI at work",
+  "short": "Microsoft and LinkedIn Work Trend Index"
+ },
+ {
+  "id": "microsoft_wti_2024_byoai",
+  "claim": "78% of AI users bring their own AI tools to work, 80% at small and medium-sized companies (Microsoft Work Trend Index 2024).",
+  "figure": "78% (80% at SMBs)",
+  "publisher": "Microsoft WorkLab, 2024 Work Trend Index (May 8, 2024)",
+  "year": 2024,
+  "url": "https://www.microsoft.com/en-us/worklab/work-trend-index/ai-at-work-is-here-now-comes-the-hard-part",
+  "quote": "78% of AI users are bringing their own AI tools to work (BYOAI)—it’s even more common at small and medium-sized companies ( 80% ).",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "harmonic_2025_sensitive_prompts",
+  "claim": "In Q2 2025, 4.37% of prompts and nearly 22% of files sent to GenAI tools contained sensitive content (Harmonic Security, 1 million prompts analysed).",
+  "figure": "4.37% of prompts; ~22% of files",
+  "publisher": "Harmonic Security (vendor research, browser-extension telemetry), published July 31, 2025",
+  "year": 2025,
+  "url": "https://www.harmonic.security/blog-posts/genai-data-exposure-report-fa6wt",
+  "quote": "In the second quarter of 2025, Harmonic analyzed 1 million GenAI prompts and 20,000 uploaded files across more than 300 GenAI and AI-enabled SaaS applications. ... Nearly 22% of uploaded files and 4.37% of prompts contained sensitive content.",
+  "checked": "2026-11-28",
+  "deck_figure": "22%",
+  "deck_label": "of files sent to AI tools held sensitive content (Q2 2025, vendor study of 1 million prompts)",
+  "short": "Harmonic Security"
+ },
+ {
+  "id": "layerx_2025_paste_into_genai",
+  "claim": "LayerX browser data shows 77% of employees paste data into GenAI prompts, and 82% of those pastes come from personal accounts.",
+  "figure": "77%; 82%",
+  "publisher": "Akamai blog (Oct 6, 2025) citing LayerX Enterprise AI and SaaS Data Security Report 2025 (LayerX now part of Akamai; the original LayerX PDF redirects). Vendor research. Denominator not defined on the page: press coverage (The Register) reads it as 77% of employees who use AI tools, and the same page says 45% of enterprise employees use GenAI.",
+  "year": 2025,
+  "url": "https://www.akamai.com/blog/ai/ai-is-now-the-1-data-exfiltration-vector-in-the-enterprise-and-nobodys-watching",
+  "quote": "77% of employees paste data into GenAI prompts",
+  "checked": "2026-11-28"
+ },
+ {
+  "id": "idc_2025_smartphone_shipments",
+  "claim": "1.26 billion smartphones were shipped worldwide in 2025, up 1.9% on 2024 (IDC, preliminary).",
+  "figure": "1.26 billion units (1,260.3M)",
+  "publisher": "IDC Worldwide Quarterly Mobile Phone Tracker, press release January 13, 2026 (preliminary data)",
+  "year": 2026,
+  "url": "https://www.idc.com/resource-center/press-releases/q425mobilephonetop5/",
+  "quote": "The total number of smartphones shipped reached 1.26 billion units in 2025. [CY 2025 table] Total 1,260.3 100% 1,236.3 100% 1.9%",
+  "checked": "2026-11-28",
+  "deck_figure": "1.26B",
+  "deck_label": "smartphones shipped worldwide in 2025 (preliminary)",
+  "short": "IDC"
+ }
+]

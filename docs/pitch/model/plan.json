@@ -188,9 +188,9 @@
     "pre_low_usd": 1153846.15,
     "pre_high_usd": 2307692.31,
     "method": "Pre-revenue: cross-checks (VC method, scorecard) to the ask anchor",
-    "investors_own_mid": 0.31,
+    "investors_own_mid": 0.25,
     "esop_topup": 0,
-    "founder_after": 0.69,
+    "founder_after": 0.75,
     "modelled": true
    },
    {
@@ -202,7 +202,7 @@
     "method": "Forward 12-month ARR x 8 to 12 (estimate)",
     "investors_own_mid": 0.26,
     "esop_topup": 0.1,
-    "founder_after": 0.46,
+    "founder_after": 0.5,
     "modelled": true
    },
    {
@@ -214,7 +214,7 @@
     "method": "Forward 12-month ARR x 8 to 12 (estimate)",
     "investors_own_mid": 0.1,
     "esop_topup": 0.05,
-    "founder_after": 0.39,
+    "founder_after": 0.42,
     "modelled": true
    },
    {
@@ -226,7 +226,7 @@
     "method": "Forward 12-month ARR x 8 to 12 (estimate)",
     "investors_own_mid": 0.03,
     "esop_topup": 0.05,
-    "founder_after": 0.36,
+    "founder_after": 0.39,
     "modelled": true
    }
   ],

@@ -209,8 +209,8 @@ def plan_case(inp, P):
             fwd = months[min(m + 11, 59)]["arr"] / fx
             lo, hi = fwd * P["forward_arr_multiple"][0], fwd * P["forward_arr_multiple"][1]
             method = "Forward 12-month ARR x 8 to 12 (estimate)"
-        mid = (lo + hi) / 2
-        investors = amount / (mid + amount)
+        used = hi if i == 0 else (lo + hi) / 2  # pre-seed priced at the ask anchor; later rounds at the mid-point
+        investors = amount / (used + amount)
         esop = P["esop_topup"].get(name, 0)
         founder = founder * (1 - investors) * (1 - esop)
         rounds.append({"name": name, "month": m, "amount_usd": amount, "pre_low_usd": lo, "pre_high_usd": hi,
