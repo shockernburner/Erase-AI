@@ -1,0 +1,353 @@
+{
+ "generated": "2026-11-28",
+ "fx": 1.3,
+ "base": {
+  "years": {
+   "1": {
+    "revenue_usd": 13115.44,
+    "arr_usd": 30867.94,
+    "arr_by_line_usd": {
+     "core": 29643.31,
+     "personal": 1224.63
+    },
+    "seats": 352.9,
+    "accounts": 22.62,
+    "headcount": 7,
+    "opex_usd": 457350.65,
+    "burn_usd": 444235.21,
+    "funding_usd": 769230.77,
+    "cash_usd": 324995.56
+   },
+   "2": {
+    "revenue_usd": 126746.48,
+    "arr_usd": 226792.96,
+    "arr_by_line_usd": {
+     "core": 219820.11,
+     "personal": 6972.85
+    },
+    "seats": 2616.91,
+    "accounts": 91.49,
+    "headcount": 13,
+    "opex_usd": 1232996.31,
+    "burn_usd": 1106249.83,
+    "funding_usd": 2307692.31,
+    "cash_usd": 1526438.04
+   },
+   "3": {
+    "revenue_usd": 650051.45,
+    "arr_usd": 1055783.72,
+    "arr_by_line_usd": {
+     "core": 1032576.2,
+     "personal": 23207.52
+    },
+    "seats": 12292.57,
+    "accounts": 232.13,
+    "headcount": 20,
+    "opex_usd": 2186184.2,
+    "burn_usd": 1536132.74,
+    "funding_usd": 3846153.85,
+    "cash_usd": 3836459.14
+   },
+   "4": {
+    "revenue_usd": 2170319.03,
+    "arr_usd": 3185709.0,
+    "arr_by_line_usd": {
+     "core": 3132867.72,
+     "personal": 52841.28
+    },
+    "seats": 37296.04,
+    "accounts": 437.9,
+    "headcount": 27,
+    "opex_usd": 3454088.41,
+    "burn_usd": 1283769.38,
+    "funding_usd": 0.0,
+    "cash_usd": 2552689.76
+   },
+   "5": {
+    "revenue_usd": 5388382.41,
+    "arr_usd": 7287017.4,
+    "arr_by_line_usd": {
+     "core": 7189122.36,
+     "personal": 97895.04
+    },
+    "seats": 85584.79,
+    "accounts": 664.33,
+    "headcount": 32,
+    "opex_usd": 4731405.18,
+    "burn_usd": -656977.23,
+    "funding_usd": 0.0,
+    "cash_usd": 3209666.99
+   }
+  },
+  "min_cash_usd": 179635.35,
+  "breakeven_month": 53
+ },
+ "plan": {
+  "years": {
+   "1": {
+    "revenue_usd": 20695.24,
+    "arr_usd": 49337.59,
+    "arr_by_line_usd": {
+     "core": 44464.96,
+     "personal": 1224.63,
+     "sector": 0.0,
+     "rom": 0.0,
+     "gateway": 0.0,
+     "api": 3648.0
+    },
+    "seats": 529.34,
+    "accounts": 33.93,
+    "headcount": 7,
+    "opex_usd": 457841.82,
+    "burn_usd": 437146.58,
+    "funding_usd": 769230.77,
+    "cash_usd": 332084.19
+   },
+   "2": {
+    "revenue_usd": 204694.02,
+    "arr_usd": 365426.31,
+    "arr_by_line_usd": {
+     "core": 329730.16,
+     "personal": 6972.85,
+     "sector": 14131.29,
+     "rom": 0.0,
+     "gateway": 0.0,
+     "api": 14592.0
+    },
+    "seats": 3925.36,
+    "accounts": 137.24,
+    "headcount": 21,
+    "opex_usd": 1583954.7,
+    "burn_usd": 1379260.68,
+    "funding_usd": 3500000.0,
+    "cash_usd": 2452823.51
+   },
+   "3": {
+    "revenue_usd": 1364156.22,
+    "arr_usd": 2024387.63,
+    "arr_by_line_usd": {
+     "core": 1548864.29,
+     "personal": 23207.52,
+     "sector": 119483.82,
+     "rom": 300000.0,
+     "gateway": 0.0,
+     "api": 32832.0
+    },
+    "seats": 18438.86,
+    "accounts": 348.19,
+    "headcount": 45,
+    "opex_usd": 4443292.95,
+    "burn_usd": 3079136.73,
+    "funding_usd": 6000000.0,
+    "cash_usd": 5373686.78
+   },
+   "4": {
+    "revenue_usd": 5637503.99,
+    "arr_usd": 7334147.32,
+    "arr_by_line_usd": {
+     "core": 4699301.58,
+     "personal": 52841.28,
+     "sector": 523636.46,
+     "rom": 1200000.0,
+     "gateway": 800000.0,
+     "api": 58368.0
+    },
+    "seats": 55944.07,
+    "accounts": 656.85,
+    "headcount": 68,
+    "opex_usd": 8574615.87,
+    "burn_usd": 2937111.88,
+    "funding_usd": 5500000.0,
+    "cash_usd": 7936574.9
+   },
+   "5": {
+    "revenue_usd": 17113519.16,
+    "arr_usd": 20390331.11,
+    "arr_by_line_usd": {
+     "core": 10783683.54,
+     "personal": 97895.04,
+     "sector": 1617552.53,
+     "rom": 4800000.0,
+     "gateway": 3000000.0,
+     "api": 91200.0
+    },
+    "seats": 128377.18,
+    "accounts": 996.5,
+    "headcount": 84,
+    "opex_usd": 12929352.92,
+    "burn_usd": -4184166.24,
+    "funding_usd": 0.0,
+    "cash_usd": 12120741.14
+   }
+  },
+  "rounds": [
+   {
+    "name": "Pre-seed",
+    "month": 1,
+    "amount_usd": 769230.77,
+    "pre_low_usd": 1153846.15,
+    "pre_high_usd": 2307692.31,
+    "method": "Pre-revenue: cross-checks (VC method, scorecard) to the ask anchor",
+    "investors_own_mid": 0.31,
+    "esop_topup": 0,
+    "founder_after": 0.69,
+    "modelled": true
+   },
+   {
+    "name": "Seed",
+    "month": 15,
+    "amount_usd": 3500000.0,
+    "pre_low_usd": 7773032.04,
+    "pre_high_usd": 11659548.06,
+    "method": "Forward 12-month ARR x 8 to 12 (estimate)",
+    "investors_own_mid": 0.26,
+    "esop_topup": 0.1,
+    "founder_after": 0.46,
+    "modelled": true
+   },
+   {
+    "name": "Series A",
+    "month": 30,
+    "amount_usd": 6000000.0,
+    "pre_low_usd": 43313006.52,
+    "pre_high_usd": 64969509.78,
+    "method": "Forward 12-month ARR x 8 to 12 (estimate)",
+    "investors_own_mid": 0.1,
+    "esop_topup": 0.05,
+    "founder_after": 0.39,
+    "modelled": true
+   },
+   {
+    "name": "Series B",
+    "month": 48,
+    "amount_usd": 5500000.0,
+    "pre_low_usd": 163122648.88,
+    "pre_high_usd": 244683973.32,
+    "method": "Forward 12-month ARR x 8 to 12 (estimate)",
+    "investors_own_mid": 0.03,
+    "esop_topup": 0.05,
+    "founder_after": 0.36,
+    "modelled": true
+   }
+  ],
+  "min_cash_usd": 181298.93,
+  "breakeven_month": 49
+ },
+ "ipo": {
+  "years": {
+   "6": {
+    "arr_usd": 42169542.7,
+    "growth": 1.07
+   },
+   "7": {
+    "arr_usd": 69194686.77,
+    "growth": 0.64
+   }
+  },
+  "note": "Extrapolation: growth slows to 60% of the previous year's rate each year. Not modelled bottom-up.",
+  "pre_ipo": {
+   "year": 6,
+   "pre_low_usd": 253017256.19,
+   "pre_high_usd": 421695426.99,
+   "method": "Year-6 ARR x 6 to 10 (illustrative estimate)"
+  },
+  "checklist": [
+   "Three years of audited financial statements",
+   "An independent board with audit and risk committees",
+   "SOC 2 Type II and ISO 27001 certification, and tested internal controls",
+   "Recurring revenue, growth and a path to profit at the scale growth-board technology listings expect",
+   "Listing advisers appointed, and the reporting and governance of a public company in place"
+  ]
+ },
+ "assumptions": {
+  "fx": 1.3,
+  "core_multiplier": 1.5,
+  "sector_price": 3.0,
+  "sector_attach": {
+   "1": 0.0,
+   "2": 0.1,
+   "3": 0.18,
+   "4": 0.26,
+   "5": 0.35
+  },
+  "rom_fee": 0.6,
+  "rom_devices": {
+   "1": 0,
+   "2": 0,
+   "3": 500000,
+   "4": 2000000,
+   "5": 8000000
+  },
+  "gateway": {
+   "1": [
+    0,
+    0
+   ],
+   "2": [
+    0,
+    0
+   ],
+   "3": [
+    0,
+    0
+   ],
+   "4": [
+    2,
+    400000
+   ],
+   "5": [
+    6,
+    500000
+   ]
+  },
+  "gateway_hosting": 0.08,
+  "api_subs_m60": 400,
+  "api_price": 19.0,
+  "marketing_multiplier": {
+   "1": 1,
+   "2": 1,
+   "3": 2,
+   "4": 2,
+   "5": 2
+  },
+  "round_months": [
+   1,
+   15,
+   30,
+   48
+  ],
+  "round_names": [
+   "Pre-seed",
+   "Seed",
+   "Series A",
+   "Series B"
+  ],
+  "preseed_usd": 769230.77,
+  "preseed_pre_usd": [
+   1153846.15,
+   2307692.31
+  ],
+  "forward_arr_multiple": [
+   8,
+   12
+  ],
+  "esop_topup": {
+   "Seed": 0.1,
+   "Series A": 0.05,
+   "Series B": 0.05
+  },
+  "buffer_months": 9,
+  "round_step": 500000
+ },
+ "before_fix": {
+  "arr_y5_usd": 7287017.4,
+  "min_cash_usd": 214098.49,
+  "opex_by_year_usd": {
+   "1": 426217.48,
+   "2": 1207266.77,
+   "3": 2142803.02,
+   "4": 3387227.53,
+   "5": 4640890.29
+  }
+ }
+}

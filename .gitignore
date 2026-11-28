@@ -59,3 +59,4 @@ attached_assets/
 marketing-assets/youtube/**/*.mp4
 marketing-assets/youtube/**/*.mp3
 marketing-assets/youtube/**/*.wav
+__pycache__/
